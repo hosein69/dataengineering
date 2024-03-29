@@ -2,7 +2,7 @@
 
 **Overview:**
 
-Welcome to our first data engineering project! This repository serves as an introduction to the fundamentals of data engineering. Whether you're a beginner or an experienced developer looking to delve into the world of data engineering, you've come to the right place. In this project, we'll explore key concepts, tools, and techniques essential for working with data at scale.
+Welcome to my journey into the realm of data engineering! This repository marks the beginning of my exploration into the fascinating world of organizing, processing, and analyzing data at scale. As I embark on this learning adventure, I invite you to join me in discovering the fundamental concepts and tools that form the backbone of data engineering.
 
 **Project Structure:**
 
