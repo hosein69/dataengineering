@@ -11,6 +11,7 @@ Streamlit در زمان import کد سطح-ماژول را اجرا می‌کن�
 from __future__ import annotations
 
 import ast
+import logging
 import os
 import re
 import sys
@@ -429,6 +430,111 @@ def test_regressions_v26_2_3() -> None:
           not bad, f"خراب: {bad}" if bad else f"python {sys.version_info.major}.{sys.version_info.minor}")
 
 
+def test_email_from_hr() -> None:
+    """R11 ── گیرندگان ایمیل از سورس HR.
+
+    فهرست گیرنده داده شخصی است: نه در سورس، نه در فایل جانبیِ کهنه.
+    بهترین منبع، ستون Email همان فایل پرسنلی است که همیشه به‌روز است و
+    پرسنل غیرفعال خودکار از آن حذف می‌شوند.
+    """
+    print("\n── ۸) گیرنده ایمیل از سورس HR ──")
+    from aibl.integrations import daily_email as de
+
+    ppl = pd.DataFrame([
+        # فعال، مدیر، نشانی سالم → باید بیاید
+        dict(HR_EMAIL="a.manager@x.invalid", HR_STATUS="فعال",
+             HR_POST="مدیر مواد اولیه", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
+        # فعال، رئیس → باید بیاید
+        dict(HR_EMAIL="b.head@x.invalid", HR_STATUS="فعال",
+             HR_POST="رئیس اداره ترخیص", HR_DEPT="قطعات", HR_OFFICE="ترخیص"),
+        # غیرفعال با پست مدیریتی → نباید بیاید
+        dict(HR_EMAIL="c.left@x.invalid", HR_STATUS="غیرفعال",
+             HR_POST="مدیر", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
+        # کارشناس فعال → با پیش‌فرضِ مدیریتی نباید بیاید
+        dict(HR_EMAIL="d.expert@x.invalid", HR_STATUS="فعال",
+             HR_POST="کارشناس خرید خارجی", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
+        # نشانی ناقص → هرگز
+        dict(HR_EMAIL="not-an-email", HR_STATUS="فعال",
+             HR_POST="مدیر", HR_DEPT="قطعات", HR_OFFICE="خرید"),
+        # نشانی خالی → هرگز
+        dict(HR_EMAIL="", HR_STATUS="فعال",
+             HR_POST="مدیر", HR_DEPT="قطعات", HR_OFFICE="خرید"),
+    ])
+    keys = ["AIBL_EMAIL_TO", "AIBL_RECIPIENTS_FILE", "AIBL_EMAIL_FROM_HR",
+            "AIBL_EMAIL_HR_POSTS", "AIBL_EMAIL_HR_MANAGEMENTS",
+            "AIBL_EMAIL_HR_OFFICES", "AIBL_EMAIL_HR_MAX"]
+    saved = {k: os.environ.pop(k, None) for k in keys}
+    try:
+        got = de.hr_recipients(ppl)
+        check("پیش‌فرض فقط سطوح مدیریتیِ فعال است",
+              got == ["a.manager@x.invalid", "b.head@x.invalid"], str(got))
+        check("پرسنل غیرفعال حذف می‌شود", "c.left@x.invalid" not in got)
+        check("نشانی نامعتبر حذف می‌شود",
+              not any("not-an-email" in g for g in got))
+        check("ردیف بدون نشانی حذف می‌شود", "" not in got)
+
+        os.environ["AIBL_EMAIL_HR_POSTS"] = "کارشناس"
+        got = de.hr_recipients(ppl)
+        check("فیلتر شرح پست کار می‌کند", got == ["d.expert@x.invalid"], str(got))
+
+        os.environ["AIBL_EMAIL_HR_MANAGEMENTS"] = "قطعات"
+        check("فیلترها با هم AND می‌شوند", de.hr_recipients(ppl) == [])
+        os.environ.pop("AIBL_EMAIL_HR_MANAGEMENTS")
+
+        os.environ["AIBL_EMAIL_HR_POSTS"] = "مدیر,رئیس,کارشناس"
+        os.environ["AIBL_EMAIL_HR_MAX"] = "2"
+        check("سقف تعداد رعایت می‌شود", len(de.hr_recipients(ppl)) == 2)
+        os.environ.pop("AIBL_EMAIL_HR_MAX")
+        os.environ.pop("AIBL_EMAIL_HR_POSTS")
+
+        check("جدول خالی ⇒ فهرست خالی", de.hr_recipients(pd.DataFrame()) == [])
+        check("سورس بدون ستون Email ⇒ فهرست خالی",
+              de.hr_recipients(pd.DataFrame({"HR_POST": ["مدیر"]})) == [])
+
+        # ── زنجیره حل ──
+        check("بدون AIBL_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
+              de._recipients() == [])
+        os.environ["AIBL_EMAIL_FROM_HR"] = "1"
+        _real = de.hr_recipients
+        de.hr_recipients = lambda frame=None: ["from.hr@x.invalid"]
+        try:
+            check("با فعال‌سازی، زنجیره به سورس HR می‌رسد",
+                  de._recipients() == ["from.hr@x.invalid"])
+            os.environ["AIBL_EMAIL_TO"] = "override@x.invalid"
+            check("متغیر محیطی صریح بر سورس HR اولویت دارد",
+                  de._recipients() == ["override@x.invalid"])
+            os.environ.pop("AIBL_EMAIL_TO")
+        finally:
+            de.hr_recipients = _real
+
+        # ── نشانی‌ها فقط شمرده می‌شوند، هرگز لاگ نمی‌شوند ──
+        rec: list = []
+        _h = _LogCatcher(rec)
+        de.log.addHandler(_h)
+        try:
+            de.hr_recipients(ppl)
+        finally:
+            de.log.removeHandler(_h)
+        body = " ".join(rec)
+        check("هیچ نشانی‌ای لاگ نمی‌شود", "@x.invalid" not in body, body[:90])
+        check("تعداد گیرنده لاگ می‌شود", any("گیرنده" in m for m in rec), body[:90])
+    finally:
+        for k in keys:
+            os.environ.pop(k, None)
+            if saved.get(k) is not None:
+                os.environ[k] = saved[k]
+
+
+class _LogCatcher(logging.Handler):
+    def __init__(self, sink: list) -> None:
+        super().__init__()
+        self.sink = sink
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.sink.append(record.getMessage())
+
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("AIBL — تست منطق داشبورد")
@@ -440,6 +546,7 @@ if __name__ == "__main__":
     test_dashboard_module()
     test_scorecard_group_criticality()
     test_regressions_v26_2_3()
+    test_email_from_hr()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

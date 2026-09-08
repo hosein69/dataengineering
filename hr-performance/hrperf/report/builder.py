@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from . import templates as tpl
-from .email import build_email_html
+from .email import build_email_html, recipients
 from .excel import build_excel
 from .html import build_html
 from .pdf import html_to_pdf
@@ -41,6 +41,8 @@ class ReportResult:
     messages: List[str] = field(default_factory=list)
     html: str = ""
     email_html: str = ""
+    #: تعداد گیرندگان حل‌شده — فقط شمارش، هرگز خودِ نشانی‌ها.
+    email_recipients: int = 0
 
     @property
     def ok(self) -> bool:
@@ -150,5 +152,12 @@ def build(run, spec: ReportSpec, out_dir: str | Path = ".") -> ReportResult:
         p.write_text(res.email_html, encoding="utf-8")
         res.files["email"] = p
         res.messages.append(f"بسته ایمیل: {p.name}")
+        # فهرست گیرندگان از همان جدول پرسنلی این اجرا حل می‌شود
+        # (HRP_EMAIL_FROM_HR=1). فقط تعداد ثبت می‌شود؛ نشانی‌ها نه.
+        try:
+            res.email_recipients = len(recipients(getattr(run, "people", None)))
+        except Exception:
+            res.email_recipients = 0
+        res.messages.append(f"گیرندگان: {res.email_recipients}")
 
     return res

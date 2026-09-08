@@ -28,7 +28,8 @@ from hrperf.dataio.sources import melt_wide, normalize_long  # noqa: E402
 from hrperf.pipeline import Pipeline  # noqa: E402
 from hrperf.report import templates as tpl  # noqa: E402
 from hrperf.report.builder import ReportSpec, build  # noqa: E402
-from hrperf.report.email import NoRecipients, recipients  # noqa: E402
+from hrperf.report.email import (NoRecipients, hr_recipients,  # noqa: E402
+                                 recipients)
 from tests.make_synthetic import build as make  # noqa: E402
 
 PASS, FAIL = [], []
@@ -206,6 +207,98 @@ def test_email_config():
     check("هیچ نشانی ایمیل واقعی در سورس نیست", not leaked, str(leaked[:3]))
 
 
+def _hr_people():
+    """جدول پرسنلی نمونه — عمداً شامل موارد مرزی."""
+    return pd.DataFrame([
+        # فعال، مدیر، نشانی سالم  → باید بیاید
+        dict(person_key="p1", email="a.manager@x.invalid", active=1,
+             role="مدیر", management="مواد اولیه", department="خرید"),
+        # فعال، رئیس  → باید بیاید
+        dict(person_key="p2", email="b.head@x.invalid", active=1,
+             role="رئیس اداره", management="قطعات", department="ترخیص"),
+        # غیرفعال با پست مدیریتی → نباید بیاید
+        dict(person_key="p3", email="c.left@x.invalid", active=0,
+             role="مدیر", management="مواد اولیه", department="خرید"),
+        # کارشناس فعال → با پیش‌فرض نباید بیاید
+        dict(person_key="p4", email="d.expert@x.invalid", active=1,
+             role="کارشناس خرید", management="مواد اولیه", department="خرید"),
+        # نشانی ناقص → هرگز نباید بیاید
+        dict(person_key="p5", email="not-an-email", active=1,
+             role="مدیر", management="قطعات", department="خرید"),
+        # نشانی خالی → هرگز نباید بیاید
+        dict(person_key="p6", email="", active=1,
+             role="مدیر", management="قطعات", department="خرید"),
+    ])
+
+
+def test_email_from_hr():
+    print("\n── ۸) گیرنده از سورس HR ──")
+    ppl = _hr_people()
+    keys = ["HRP_EMAIL_TO", "HRP_RECIPIENTS_FILE", "HRP_EMAIL_FROM_HR",
+            "HRP_EMAIL_HR_ROLES", "HRP_EMAIL_HR_MANAGEMENTS",
+            "HRP_EMAIL_HR_DEPARTMENTS", "HRP_EMAIL_HR_MAX"]
+    saved = {k: os.environ.pop(k, None) for k in keys}
+    try:
+        got = hr_recipients(ppl)
+        check("پیش‌فرض فقط سطوح مدیریتیِ فعال است",
+              got == ["a.manager@x.invalid", "b.head@x.invalid"], str(got))
+        check("پرسنل غیرفعال حذف می‌شود", "c.left@x.invalid" not in got)
+        check("نشانی نامعتبر حذف می‌شود",
+              not any("not-an-email" in g for g in got))
+        check("ردیف بدون نشانی حذف می‌شود", "" not in got)
+
+        os.environ["HRP_EMAIL_HR_ROLES"] = "کارشناس"
+        got = hr_recipients(ppl)
+        check("فیلتر نقش کار می‌کند", got == ["d.expert@x.invalid"], str(got))
+
+        os.environ["HRP_EMAIL_HR_MANAGEMENTS"] = "قطعات"
+        got = hr_recipients(ppl)
+        check("فیلترها با هم AND می‌شوند (کارشناسِ قطعات نداریم)",
+              got == [], str(got))
+        os.environ.pop("HRP_EMAIL_HR_MANAGEMENTS")
+
+        os.environ["HRP_EMAIL_HR_ROLES"] = "مدیر,رئیس,کارشناس"
+        os.environ["HRP_EMAIL_HR_MAX"] = "2"
+        check("سقف تعداد رعایت می‌شود", len(hr_recipients(ppl)) == 2)
+        os.environ.pop("HRP_EMAIL_HR_MAX")
+        os.environ.pop("HRP_EMAIL_HR_ROLES")
+
+        check("جدول خالی ⇒ فهرست خالی", hr_recipients(pd.DataFrame()) == [])
+        check("None ⇒ فهرست خالی", hr_recipients(None) == [])
+        check("جدول بدون ستون ایمیل ⇒ فهرست خالی",
+              hr_recipients(pd.DataFrame({"person_key": ["p1"]})) == [])
+        check("ستون فارسی «ایمیل» هم شناخته می‌شود",
+              hr_recipients(pd.DataFrame({"ایمیل": ["z@x.invalid"]}))
+              == ["z@x.invalid"])
+
+        # ── زنجیره حل ──
+        check("بدون HRP_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
+              recipients(ppl) == [])
+        os.environ["HRP_EMAIL_FROM_HR"] = "1"
+        check("با فعال‌سازی، از سورس HR خوانده می‌شود",
+              recipients(ppl) == ["a.manager@x.invalid", "b.head@x.invalid"])
+        os.environ["HRP_EMAIL_TO"] = "override@x.invalid"
+        check("متغیر محیطی صریح بر سورس HR اولویت دارد",
+              recipients(ppl) == ["override@x.invalid"])
+        os.environ.pop("HRP_EMAIL_TO")
+
+        # ── نشانی‌ها نباید لاگ شوند ──
+        import io
+        import contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            hr_recipients(ppl)
+        printed = buf.getvalue()
+        check("هیچ نشانی‌ای چاپ/لاگ نمی‌شود",
+              "@x.invalid" not in printed, printed[:80])
+    finally:
+        for k in keys:
+            os.environ.pop(k, None)
+            if saved.get(k) is not None:
+                os.environ[k] = saved[k]
+
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — تست علیت، خط لوله، پایگاه داده و گزارش")
@@ -217,6 +310,7 @@ if __name__ == "__main__":
     r = test_pipeline_and_db()
     test_reports(r)
     test_email_config()
+    test_email_from_hr()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

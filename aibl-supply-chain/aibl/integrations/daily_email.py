@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 import pandas as pd
 from ..config.settings import SETTINGS
+from ..dataio.logging_setup import log
 
 THEME, NAVY = "#0F6E6E", "#102D4D"
 RED, ORANGE, YELLOW, GREEN, GREY = "#C0392B", "#F39C12", "#F1C40F", "#27AE60", "#95A5A6"
@@ -17,6 +18,11 @@ BG, BORDER, TEXT = "#F2F5F5", "#D8E4E1", "#243447"
 #   ۱) متغیر محیطی AIBL_EMAIL_TO  (جدا با «,» یا «;»)
 #   ۲) فایلی که AIBL_RECIPIENTS_FILE به آن اشاره می‌کند
 #   ۳) recipients.yaml کنار پیکربندی (AIBL_HOME یا پوشه جاری)
+#   ۴) **سورس HR** — ستون Email همان فایل پرسنلی (AIBL_EMAIL_FROM_HR=1)
+#
+# گزینه ۴ بهترین حالت است: فهرست هرگز در مخزن یا فایل جانبی کپی نمی‌شود،
+# همیشه با آخرین وضعیت پرسنلی هم‌گام است، و کسی که غیرفعال شده خودکار
+# از فهرست بیرون می‌رود.
 # اگر هیچ‌کدام نبود، فهرست خالی است: ساخت گزارش کار می‌کند ولی ارسال
 # با خطای صریح متوقف می‌شود — به‌جای آنکه بی‌صدا به فهرستی قدیمی برود.
 RECIPIENTS_ENV = "AIBL_EMAIL_TO"
@@ -55,6 +61,89 @@ def _from_file(path: Path) -> list:
     return out
 
 
+# ── انتخاب گیرنده از سورس HR ──────────────────────────────────────────────
+HR_ENABLE_ENV = "AIBL_EMAIL_FROM_HR"
+HR_POSTS_ENV = "AIBL_EMAIL_HR_POSTS"          # شرح پست، جدا با «,»
+HR_MANAGEMENTS_ENV = "AIBL_EMAIL_HR_MANAGEMENTS"
+HR_OFFICES_ENV = "AIBL_EMAIL_HR_OFFICES"
+HR_MAX_ENV = "AIBL_EMAIL_HR_MAX"
+
+#: پیش‌فرض: فقط سطوح مدیریتی. گزارش روزانه مدیریتی است و ارسال آن به کل
+#: پرسنل نه مفید است نه محتاطانه.
+DEFAULT_HR_POSTS = ("مدیر", "رئیس", "معاون")
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
+
+
+def _csv_env(name: str, default=()) -> tuple:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return tuple(default)
+    return tuple(x.strip() for x in raw.split(",") if x.strip())
+
+
+def hr_recipients(hr_frame: Optional["pd.DataFrame"] = None) -> list:
+    """گیرندگان را از ستون Email سورس HR برمی‌دارد.
+
+    فیلترها، به ترتیب:
+      • فقط پرسنل **فعال** (کسی که غیرفعال شده خودکار حذف می‌شود)
+      • نشانی معتبر از نظر شکل
+      • انطباق با شرح پست / مدیریت / اداره، اگر تعیین شده باشد
+
+    نشانی‌ها هرگز لاگ یا ذخیره نمی‌شوند؛ فقط **تعداد** گزارش می‌گردد.
+    """
+    df = hr_frame
+    if df is None:
+        try:
+            from ..adapters import discover, REGISTRY
+            discover()
+            cls = REGISTRY.get("hr")
+            if cls is None:
+                return []
+            df = (cls().load() or {}).get("main")
+        except Exception as ex:
+            log.warning(f"⚠️ سورس HR برای گیرندگان ایمیل خوانده نشد: {ex}")
+            return []
+    if df is None or getattr(df, "empty", True):
+        return []
+
+    def col(suffix: str):
+        name = f"HR_{suffix}"
+        return df[name] if name in df.columns else None
+
+    email = col("EMAIL")
+    if email is None:
+        log.warning("⚠️ ستون Email در سورس HR نیست؛ گیرنده‌ای استخراج نشد.")
+        return []
+    mail = email.fillna("").astype(str).str.strip()
+
+    keep = mail.map(lambda x: bool(_EMAIL_RE.match(x)))
+
+    status = col("STATUS")
+    if status is not None:
+        st = status.fillna("").astype(str)
+        keep &= st.str.contains("فعال", na=False) & ~st.str.contains("غیرفعال", na=False)
+
+    for env, suffix in ((HR_POSTS_ENV, "POST"), (HR_MANAGEMENTS_ENV, "DEPT"),
+                        (HR_OFFICES_ENV, "OFFICE")):
+        wanted = _csv_env(env, DEFAULT_HR_POSTS if env == HR_POSTS_ENV else ())
+        if not wanted:
+            continue
+        c = col(suffix)
+        if c is None:
+            continue
+        text = c.fillna("").astype(str)
+        keep &= text.apply(lambda v: any(w in v for w in wanted))
+
+    out = sorted({m.lower() for m in mail[keep] if m})
+    cap = os.environ.get(HR_MAX_ENV, "").strip()
+    if cap.isdigit():
+        out = out[:int(cap)]
+    log.info(f"👥 {len(out)} گیرنده از سورس HR انتخاب شد "
+             f"(از {len(df)} پرسنل؛ نشانی‌ها لاگ نمی‌شوند).")
+    return out
+
+
 def recipients_path() -> Optional[Path]:
     explicit = os.environ.get(RECIPIENTS_FILE_ENV, "").strip()
     if explicit:
@@ -71,7 +160,14 @@ def _recipients() -> list:
     if raw.strip():
         return _split(raw)
     path = recipients_path()
-    return _from_file(path) if path else []
+    if path:
+        found = _from_file(path)
+        if found:
+            return found
+    # سورس HR — تازه‌ترین و کم‌خطاترین منبع، چون کپی جانبی نمی‌سازد.
+    if os.environ.get(HR_ENABLE_ENV, "").strip().lower() in ("1", "true", "yes", "on"):
+        return hr_recipients()
+    return []
 
 
 def daily_paths(day: Optional[date]=None) -> Dict[str,Path]:
@@ -212,7 +308,8 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
             "هیچ گیرنده‌ای پیکربندی نشده است. یکی از این‌ها را تنظیم کنید:\n"
             f"    {RECIPIENTS_ENV}=\"a@example.invalid;b@example.invalid\"\n"
             f"    {RECIPIENTS_FILE_ENV}=/path/to/{RECIPIENTS_BASENAME}\n"
-            f"    یا فایل {RECIPIENTS_BASENAME} را در AIBL_HOME بگذارید.\n"
+            f"    یا فایل {RECIPIENTS_BASENAME} را در AIBL_HOME بگذارید،\n"
+            f"    یا {HR_ENABLE_ENV}=1 تا از ستون Email سورس HR خوانده شود.\n"
             "نمونه: recipients.example.yaml")
     try: import win32com.client as win32
     except ImportError as ex: raise RuntimeError("برای Outlook باید pywin32 و Classic Outlook نصب باشد.") from ex
@@ -235,5 +332,5 @@ def main(argv=None)->int:
     import argparse
     ap=argparse.ArgumentParser(description="AIBL Executive Daily Insight email"); ap.add_argument("--send",action="store_true"); ap.add_argument("--no-display",action="store_true")
     a=ap.parse_args(argv); r=create_daily_email(send=a.send,display=not a.no_display)
-    print(f"Excel: {r['excel']}"); print(f"HTML: {r['html']}"); print(f"Charts: {len(r['charts'])}"); print(f"Sent: {r['sent']}"); return 0
+    print(f"Excel: {r['excel']}"); print(f"HTML: {r['html']}"); print(f"Charts: {len(r['charts'])}"); print(f"Recipients: {len(r['recipients'])}"); print(f"Sent: {r['sent']}"); return 0
 if __name__=="__main__": raise SystemExit(main())

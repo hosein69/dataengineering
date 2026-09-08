@@ -7,6 +7,12 @@
 #   ۱) متغیر محیطی AIBL_EMAIL_TO="a@example.invalid;b@example.invalid"
 #   ۲) AIBL_RECIPIENTS_FILE=/secure/path/recipients.yaml
 #   ۳) $AIBL_HOME/recipients.yaml   (پیش‌فرض ~/.aibl/recipients.yaml)
+#   ۴) سورس HR — AIBL_EMAIL_FROM_HR=1  ← توصیه‌شده
+#
+# گزینه ۴ بهتر از این فایل است: ستون Email فایل پرسنلی خوانده می‌شود، پس
+# هیچ کپی‌ای ساخته نمی‌شود، فهرست کهنه نمی‌شود و پرسنل غیرفعال خودکار حذف
+# می‌شوند. فیلترها: AIBL_EMAIL_HR_POSTS (پیش‌فرض «مدیر,رئیس,معاون»)،
+# AIBL_EMAIL_HR_MANAGEMENTS، AIBL_EMAIL_HR_OFFICES، AIBL_EMAIL_HR_MAX.
 #
 # اگر هیچ‌کدام تنظیم نشود، ساخت گزارش کار می‌کند ولی ارسال با خطای صریح
 # متوقف می‌شود — عمداً، تا هرگز به فهرستی قدیمی ارسال نشود.

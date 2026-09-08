@@ -1,4 +1,4 @@
-# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۱٫۰٫۰)
+# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۱٫۲٫۰)
 
 سنجش عملکرد بر پایه **علیت**، نه صرفاً همبستگی. مدل دو سطحی است، وزن‌ها
 در داشبورد زنده تغییر می‌کنند، و خروجی هم پایگاه داده است هم Excel و
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
 python -m hrperf.cli run             # اجرا روی input_files
 python app/run_dashboard.py          # داشبورد
-python run_all_tests.py              # ۸۷ تست
+python run_all_tests.py              # ۱۰۲ تست
 ```
 
 ---
@@ -144,16 +144,34 @@ DAG صریح اعلام می‌شود، مجموعه تعدیل با **معیا�
 
 ### فهرست گیرندگان ایمیل — پیکربندی محرمانه
 
-نشانی کارکنان داده شخصی است و در سورس نگه‌داری نمی‌شود:
+نشانی کارکنان داده شخصی است و در سورس نگه‌داری نمی‌شود. ترتیب اولویت:
 
 ```
-HRP_EMAIL_TO="a@example.invalid;b@example.invalid"
-HRP_RECIPIENTS_FILE=/secure/recipients.yaml
-$HRP_HOME/recipients.yaml
+۱) HRP_EMAIL_TO="a@example.invalid;b@example.invalid"
+۲) HRP_RECIPIENTS_FILE=/secure/recipients.yaml
+۳) $HRP_HOME/recipients.yaml
+۴) HRP_EMAIL_FROM_HR=1   ← از جدول پرسنلی همین اجرا
 ```
 
 بدون پیکربندی، ساخت گزارش کار می‌کند ولی **ارسال با خطای صریح متوقف
 می‌شود**.
+
+**گزینه ۴ (توصیه‌شده).** ستون ایمیل جدول پرسنلی همین اجرا منبع گیرندگان
+می‌شود (`email` / `Email` / `HR_EMAIL` / `ایمیل` / …). چون همان جدولی است
+که امتیازها از آن ساخته شده‌اند، فهرست هرگز کهنه یا ناهم‌گام نمی‌شود و
+پرسنل غیرفعال خودکار حذف می‌شوند.
+
+| متغیر | پیش‌فرض | کار |
+|---|---|---|
+| `HRP_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
+| `HRP_EMAIL_HR_ROLES` | `مدیر,رئیس,مسئول` | فیلتر روی `role` |
+| `HRP_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی `management` |
+| `HRP_EMAIL_HR_DEPARTMENTS` | — | فیلتر روی `department` |
+| `HRP_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
+
+فیلترها با هم AND می‌شوند. فقط پرسنل **فعال** و نشانی‌های معتبر انتخاب
+می‌شوند، و در خروجی گزارش فقط **تعداد** گیرنده ثبت می‌شود
+(`ReportResult.email_recipients`) — هرگز خود نشانی‌ها.
 
 ---
 
@@ -170,7 +188,7 @@ hrperf/
   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
   pipeline.py · cli.py
 app/         dashboard.py · run_dashboard.py · styles.py
-tests/       ۸۷ تست
+tests/       ۱۰۲ تست
 ```
 
 ---
@@ -184,3 +202,4 @@ tests/       ۸۷ تست
 | `HRP_DB` | مسیر SQLite |
 | `HRP_TODAY` | تاریخ مرجع ثابت |
 | `HRP_EMAIL_TO` / `HRP_RECIPIENTS_FILE` / `HRP_EMAIL_SENDER` | ایمیل |
+| `HRP_EMAIL_FROM_HR` / `HRP_EMAIL_HR_ROLES` / `HRP_EMAIL_HR_MANAGEMENTS` / `HRP_EMAIL_HR_DEPARTMENTS` / `HRP_EMAIL_HR_MAX` | گیرنده از ستون ایمیل جدول پرسنلی |

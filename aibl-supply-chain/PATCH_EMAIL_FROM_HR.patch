@@ -1,0 +1,504 @@
+# پچ: گیرندگان ایمیل از سورس HR — AIBL 26.6.0 → 26.7.0
+#
+# اعمال:
+#     cd <ریشه پکیج AIBL>
+#     git apply --stat  PATCH_EMAIL_FROM_HR.patch     # فقط نمایش
+#     git apply --check PATCH_EMAIL_FROM_HR.patch     # آزمایش بدون تغییر
+#     git apply         PATCH_EMAIL_FROM_HR.patch
+#
+# اگر پروژه‌تان گیت نیست:
+#     patch -p1 < PATCH_EMAIL_FROM_HR.patch
+#
+# پس از اعمال، مانیفست را بازتولید کنید (عمداً در پچ نیست: هش فایل‌هاست و
+# با هر تغییر محلی تداخل می‌کند):
+#     python -m aibl.manifest
+#
+# سپس بررسی:
+#     python -m aibl.doctor
+#     python run_all_tests.py             # باید ۳۶۰ موفق / ۰ ناموفق بدهد
+#
+# فعال‌سازی:
+#     $env:AIBL_EMAIL_FROM_HR = "1"
+#     python -m aibl email
+#
+diff --git a/INSTALL.md b/INSTALL.md
+index 2319812..2b50166 100644
+--- a/INSTALL.md
++++ b/INSTALL.md
+@@ -165,7 +165,7 @@ KEY_BL         MSCU1234567    MSCU-1234567  ← خط تیره
+ ## فهرست گیرندگان ایمیل — پیکربندی محرمانه
+ 
+ نشانی‌های کارکنان **داده شخصی**اند و از نسخه ۲۶٫۴٫۰ داخل سورس نگه‌داری
+-نمی‌شوند. فهرست را یکی از این سه راه بدهید (به همین ترتیب اولویت):
++نمی‌شوند. فهرست را یکی از این چهار راه بدهید (به همین ترتیب اولویت):
+ 
+ ```powershell
+ # ۱) متغیر محیطی
+@@ -176,8 +176,48 @@ $env:AIBL_RECIPIENTS_FILE = "D:\secure\recipients.yaml"
+ 
+ # ۳) فایل پیش‌فرض
+ #    %USERPROFILE%\.aibl\recipients.yaml
++
++# ۴) مستقیم از سورس HR  ← توصیه‌شده
++$env:AIBL_EMAIL_FROM_HR = "1"
+ ```
+ 
++### گزینه ۴: گیرنده از سورس HR (توصیه‌شده)
++
++ستون `Email` همان فایل پرسنلی (`HR_Main_Updated.xlsx`) منبع گیرندگان
++می‌شود. مزیتش این است که **هیچ کپی جانبی‌ای ساخته نمی‌شود**: فهرست
++همیشه با آخرین وضعیت پرسنلی هم‌گام است و کسی که غیرفعال شده، خودکار از
++گیرندگان بیرون می‌رود — برخلاف فایل جانبی که کهنه می‌شود و کسی خبردار
++نمی‌شود.
++
++فیلترها، همه به‌صورت «شامل بودنِ متن» و با هم AND:
++
++| متغیر | پیش‌فرض | کار |
++|---|---|---|
++| `AIBL_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
++| `AIBL_EMAIL_HR_POSTS` | `مدیر,رئیس,معاون` | فیلتر روی شرح پست |
++| `AIBL_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی مدیریت |
++| `AIBL_EMAIL_HR_OFFICES` | — | فیلتر روی اداره |
++| `AIBL_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
++
++```powershell
++# فقط مدیران و رؤسای مدیریت مواد اولیه
++$env:AIBL_EMAIL_FROM_HR      = "1"
++$env:AIBL_EMAIL_HR_POSTS     = "مدیر,رئیس"
++$env:AIBL_EMAIL_HR_MANAGEMENTS = "مواد اولیه"
++python -m aibl email
++```
++
++نکته‌های امنیتی که در پیاده‌سازی رعایت شده:
++
++* پیش‌فرض عمداً **فقط سطوح مدیریتی** است؛ گزارش روزانه سند مدیریتی است و
++  ارسال آن به کل پرسنل نه مفید است نه محتاطانه.
++* فقط پرسنل **فعال** انتخاب می‌شوند.
++* نشانی‌های بدشکل حذف می‌شوند (اعتبارسنجی الگو).
++* در لاگ فقط **تعداد** گیرنده نوشته می‌شود، هرگز خود نشانی‌ها:
++  `👥 12 گیرنده از سورس HR انتخاب شد (از 430 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).`
++* اگر `AIBL_EMAIL_FROM_HR` تنظیم نشود، سورس HR اصلاً برای ایمیل خوانده
++  نمی‌شود.
++
+ قالب فایل (`recipients.example.yaml` را کپی کنید):
+ 
+ ```yaml
+@@ -206,6 +246,7 @@ recipients:
+ | `AIBL_SOURCES_YAML` | رجیستری سورس از فایل دیگر |
+ | `AIBL_TODAY` | تاریخ مرجع ثابت (برای بازتولید گزارش قدیمی) |
+ | `AIBL_EMAIL_TO` / `AIBL_RECIPIENTS_FILE` / `AIBL_EMAIL_SENDER` | گیرندگان و فرستنده ایمیل (محرمانه) |
++| `AIBL_EMAIL_FROM_HR` / `AIBL_EMAIL_HR_POSTS` / `AIBL_EMAIL_HR_MANAGEMENTS` / `AIBL_EMAIL_HR_OFFICES` / `AIBL_EMAIL_HR_MAX` | گیرندگان مستقیم از ستون Email سورس HR |
+ | `AIBL_FOREIGN` / `AIBL_BLS` / `AIBL_CLEARANCE` / `AIBL_HR` / `AIBL_ESMAEILI` / `AIBL_MOHAMADI` | مسیر سورس‌ها |
+ 
+ ---
+diff --git a/README.md b/README.md
+index caa2505..ac78301 100644
+--- a/README.md
++++ b/README.md
+@@ -1,7 +1,7 @@
+-# AIBL V26.6.0 — Studio — مغز شناختی لجستیک (ماژولار + کتابخانه قوانین)
++# AIBL V26.7.0 — Studio — مغز شناختی لجستیک (ماژولار + کتابخانه قوانین)
+ 
+ بازنویسی کامل `aibl.py` نسخه ۲۰.۱ به یک پکیج ماژولار، قانون‌محور و تست‌شده.
+-**346 تست صحت در یازده مجموعه — همه سبز، روی داده با هدرهای واقعی تولید.**
++**360 تست صحت در یازده مجموعه — همه سبز، روی داده با هدرهای واقعی تولید.**
+ 
+ > **اول این را بزنید:** `python -m aibl.doctor`
+ > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.
+diff --git a/RELEASE_NOTES_V26_7_0_EMAIL_FROM_HR.md b/RELEASE_NOTES_V26_7_0_EMAIL_FROM_HR.md
+new file mode 100644
+index 0000000..2309b7f
+--- /dev/null
++++ b/RELEASE_NOTES_V26_7_0_EMAIL_FROM_HR.md
+@@ -0,0 +1,82 @@
++# AIBL V26.7.0 — گیرندگان ایمیل از سورس HR
++
++## چه چیزی عوض شد
++
++فهرست گیرندگان گزارش روزانه می‌تواند مستقیم از **ستون `Email` سورس HR**
++خوانده شود، به‌جای فایل جانبی یا متغیر محیطی.
++
++## چرا
++
++تا نسخه ۲۶٫۶٫۰ فهرست گیرنده یا در متغیر محیطی بود یا در
++`recipients.yaml`. هر دو یک ایراد ساختاری داشتند: **کپی‌اند**. کپی کهنه
++می‌شود و هیچ‌کس خبردار نمی‌شود:
++
++* کسی که از شرکت رفته، ماه‌ها گزارش محرمانه دریافت می‌کند.
++* کسی که تازه آمده، در فهرست نیست و کسی متوجه نمی‌شود.
++* فهرست باید دستی نگه‌داری شود، یعنی همیشه یک نسخه عقب است.
++
++فایل پرسنلی همان جایی است که این اطلاعات **به‌طور رسمی** نگه‌داری می‌شود
++و در آن `Email` با پوشش ۸۵٫۷٪ موجود است. خواندن از آن یعنی فهرست هیچ‌وقت
++از واقعیت جدا نمی‌شود.
++
++## فعال‌سازی
++
++```powershell
++$env:AIBL_EMAIL_FROM_HR = "1"
++python -m aibl email
++```
++
++| متغیر | پیش‌فرض | کار |
++|---|---|---|
++| `AIBL_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی |
++| `AIBL_EMAIL_HR_POSTS` | `مدیر,رئیس,معاون` | فیلتر شرح پست |
++| `AIBL_EMAIL_HR_MANAGEMENTS` | — | فیلتر مدیریت |
++| `AIBL_EMAIL_HR_OFFICES` | — | فیلتر اداره |
++| `AIBL_EMAIL_HR_MAX` | — | سقف تعداد |
++
++فیلترها «شامل بودن متن» هستند و با هم AND می‌شوند.
++
++## ترتیب حل گیرنده
++
++```
++۱) AIBL_EMAIL_TO
++۲) AIBL_RECIPIENTS_FILE
++۳) $AIBL_HOME/recipients.yaml
++۴) سورس HR  (فقط اگر AIBL_EMAIL_FROM_HR روشن باشد)
++۵) خالی ⇒ ساخت گزارش کار می‌کند، ارسال با خطای صریح متوقف می‌شود
++```
++
++مرحله ۵ عمدی است: هرگز نباید بی‌صدا به فهرستی قدیمی ارسال شود.
++
++## تصمیم‌های محافظه‌کارانه
++
++* **پیش‌فرض فقط سطوح مدیریتی.** گزارش روزانه سند مدیریتی است؛ ارسال
++  خودکار آن به ۴۰۰+ نفر نه مفید است نه محتاطانه. اگر واقعاً لازم بود،
++  `AIBL_EMAIL_HR_POSTS` را خودتان باز کنید.
++* **فقط پرسنل فعال.** ردیفی که وضعیتش «غیرفعال» است حذف می‌شود. این
++  همان مزیتی است که فایل جانبی نداشت.
++* **اعتبارسنجی شکل نشانی.** ردیف‌های ناقص یا خالی کنار گذاشته می‌شوند.
++* **خاموش به‌صورت پیش‌فرض.** بدون `AIBL_EMAIL_FROM_HR` سورس HR اصلاً
++  برای ایمیل خوانده نمی‌شود؛ رفتار نسخه‌های قبل دست‌نخورده می‌ماند.
++* **فقط تعداد لاگ می‌شود، نه نشانی‌ها.**
++  `👥 12 گیرنده از سورس HR انتخاب شد (از 430 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).`
++
++## تست
++
++۱۴ تست تازه در `tests/test_dashboard.py` بخش ۸: فیلتر پیش‌فرض، حذف
++غیرفعال، حذف نشانی نامعتبر، AND شدن فیلترها، سقف تعداد، جدول خالی، سورس
++بدون ستون Email، اولویت متغیر محیطی بر سورس HR، و اینکه هیچ نشانی‌ای
++لاگ نمی‌شود.
++
++کل مجموعه: **۳۶۰ تست، ۰ ناموفق.**
++
++## فایل‌های تغییریافته
++
++```
++aibl/integrations/daily_email.py   hr_recipients() و زنجیره حل
++tests/test_dashboard.py            بخش ۸
++INSTALL.md                         بخش گزینه ۴
++recipients.example.yaml            اشاره به گزینه بهتر
++aibl/factsheet.py                  26.6.0 → 26.7.0
++aibl/MANIFEST.json                 بازتولید
++```
+diff --git a/aibl/factsheet.py b/aibl/factsheet.py
+index aad9f03..957d7bb 100644
+--- a/aibl/factsheet.py
++++ b/aibl/factsheet.py
+@@ -36,7 +36,7 @@ _PKG = os.path.dirname(os.path.abspath(__file__))
+ _ROOT = os.path.dirname(_PKG)
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+-VERSION = "26.6.0"
++VERSION = "26.7.0"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 13
+diff --git a/aibl/integrations/daily_email.py b/aibl/integrations/daily_email.py
+index be2ece3..583c2e1 100644
+--- a/aibl/integrations/daily_email.py
++++ b/aibl/integrations/daily_email.py
+@@ -7,6 +7,7 @@ from pathlib import Path
+ from typing import Any, Dict, Iterable, Optional
+ import pandas as pd
+ from ..config.settings import SETTINGS
++from ..dataio.logging_setup import log
+ 
+ THEME, NAVY = "#0F6E6E", "#102D4D"
+ RED, ORANGE, YELLOW, GREEN, GREY = "#C0392B", "#F39C12", "#F1C40F", "#27AE60", "#95A5A6"
+@@ -17,6 +18,11 @@ BG, BORDER, TEXT = "#F2F5F5", "#D8E4E1", "#243447"
+ #   ۱) متغیر محیطی AIBL_EMAIL_TO  (جدا با «,» یا «;»)
+ #   ۲) فایلی که AIBL_RECIPIENTS_FILE به آن اشاره می‌کند
+ #   ۳) recipients.yaml کنار پیکربندی (AIBL_HOME یا پوشه جاری)
++#   ۴) **سورس HR** — ستون Email همان فایل پرسنلی (AIBL_EMAIL_FROM_HR=1)
++#
++# گزینه ۴ بهترین حالت است: فهرست هرگز در مخزن یا فایل جانبی کپی نمی‌شود،
++# همیشه با آخرین وضعیت پرسنلی هم‌گام است، و کسی که غیرفعال شده خودکار
++# از فهرست بیرون می‌رود.
+ # اگر هیچ‌کدام نبود، فهرست خالی است: ساخت گزارش کار می‌کند ولی ارسال
+ # با خطای صریح متوقف می‌شود — به‌جای آنکه بی‌صدا به فهرستی قدیمی برود.
+ RECIPIENTS_ENV = "AIBL_EMAIL_TO"
+@@ -55,6 +61,89 @@ def _from_file(path: Path) -> list:
+     return out
+ 
+ 
++# ── انتخاب گیرنده از سورس HR ──────────────────────────────────────────────
++HR_ENABLE_ENV = "AIBL_EMAIL_FROM_HR"
++HR_POSTS_ENV = "AIBL_EMAIL_HR_POSTS"          # شرح پست، جدا با «,»
++HR_MANAGEMENTS_ENV = "AIBL_EMAIL_HR_MANAGEMENTS"
++HR_OFFICES_ENV = "AIBL_EMAIL_HR_OFFICES"
++HR_MAX_ENV = "AIBL_EMAIL_HR_MAX"
++
++#: پیش‌فرض: فقط سطوح مدیریتی. گزارش روزانه مدیریتی است و ارسال آن به کل
++#: پرسنل نه مفید است نه محتاطانه.
++DEFAULT_HR_POSTS = ("مدیر", "رئیس", "معاون")
++
++_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
++
++
++def _csv_env(name: str, default=()) -> tuple:
++    raw = os.environ.get(name, "").strip()
++    if not raw:
++        return tuple(default)
++    return tuple(x.strip() for x in raw.split(",") if x.strip())
++
++
++def hr_recipients(hr_frame: Optional["pd.DataFrame"] = None) -> list:
++    """گیرندگان را از ستون Email سورس HR برمی‌دارد.
++
++    فیلترها، به ترتیب:
++      • فقط پرسنل **فعال** (کسی که غیرفعال شده خودکار حذف می‌شود)
++      • نشانی معتبر از نظر شکل
++      • انطباق با شرح پست / مدیریت / اداره، اگر تعیین شده باشد
++
++    نشانی‌ها هرگز لاگ یا ذخیره نمی‌شوند؛ فقط **تعداد** گزارش می‌گردد.
++    """
++    df = hr_frame
++    if df is None:
++        try:
++            from ..adapters import discover, REGISTRY
++            discover()
++            cls = REGISTRY.get("hr")
++            if cls is None:
++                return []
++            df = (cls().load() or {}).get("main")
++        except Exception as ex:
++            log.warning(f"⚠️ سورس HR برای گیرندگان ایمیل خوانده نشد: {ex}")
++            return []
++    if df is None or getattr(df, "empty", True):
++        return []
++
++    def col(suffix: str):
++        name = f"HR_{suffix}"
++        return df[name] if name in df.columns else None
++
++    email = col("EMAIL")
++    if email is None:
++        log.warning("⚠️ ستون Email در سورس HR نیست؛ گیرنده‌ای استخراج نشد.")
++        return []
++    mail = email.fillna("").astype(str).str.strip()
++
++    keep = mail.map(lambda x: bool(_EMAIL_RE.match(x)))
++
++    status = col("STATUS")
++    if status is not None:
++        st = status.fillna("").astype(str)
++        keep &= st.str.contains("فعال", na=False) & ~st.str.contains("غیرفعال", na=False)
++
++    for env, suffix in ((HR_POSTS_ENV, "POST"), (HR_MANAGEMENTS_ENV, "DEPT"),
++                        (HR_OFFICES_ENV, "OFFICE")):
++        wanted = _csv_env(env, DEFAULT_HR_POSTS if env == HR_POSTS_ENV else ())
++        if not wanted:
++            continue
++        c = col(suffix)
++        if c is None:
++            continue
++        text = c.fillna("").astype(str)
++        keep &= text.apply(lambda v: any(w in v for w in wanted))
++
++    out = sorted({m.lower() for m in mail[keep] if m})
++    cap = os.environ.get(HR_MAX_ENV, "").strip()
++    if cap.isdigit():
++        out = out[:int(cap)]
++    log.info(f"👥 {len(out)} گیرنده از سورس HR انتخاب شد "
++             f"(از {len(df)} پرسنل؛ نشانی‌ها لاگ نمی‌شوند).")
++    return out
++
++
+ def recipients_path() -> Optional[Path]:
+     explicit = os.environ.get(RECIPIENTS_FILE_ENV, "").strip()
+     if explicit:
+@@ -71,7 +160,14 @@ def _recipients() -> list:
+     if raw.strip():
+         return _split(raw)
+     path = recipients_path()
+-    return _from_file(path) if path else []
++    if path:
++        found = _from_file(path)
++        if found:
++            return found
++    # سورس HR — تازه‌ترین و کم‌خطاترین منبع، چون کپی جانبی نمی‌سازد.
++    if os.environ.get(HR_ENABLE_ENV, "").strip().lower() in ("1", "true", "yes", "on"):
++        return hr_recipients()
++    return []
+ 
+ 
+ def daily_paths(day: Optional[date]=None) -> Dict[str,Path]:
+@@ -212,7 +308,8 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
+             "هیچ گیرنده‌ای پیکربندی نشده است. یکی از این‌ها را تنظیم کنید:\n"
+             f"    {RECIPIENTS_ENV}=\"a@example.invalid;b@example.invalid\"\n"
+             f"    {RECIPIENTS_FILE_ENV}=/path/to/{RECIPIENTS_BASENAME}\n"
+-            f"    یا فایل {RECIPIENTS_BASENAME} را در AIBL_HOME بگذارید.\n"
++            f"    یا فایل {RECIPIENTS_BASENAME} را در AIBL_HOME بگذارید،\n"
++            f"    یا {HR_ENABLE_ENV}=1 تا از ستون Email سورس HR خوانده شود.\n"
+             "نمونه: recipients.example.yaml")
+     try: import win32com.client as win32
+     except ImportError as ex: raise RuntimeError("برای Outlook باید pywin32 و Classic Outlook نصب باشد.") from ex
+@@ -235,5 +332,5 @@ def main(argv=None)->int:
+     import argparse
+     ap=argparse.ArgumentParser(description="AIBL Executive Daily Insight email"); ap.add_argument("--send",action="store_true"); ap.add_argument("--no-display",action="store_true")
+     a=ap.parse_args(argv); r=create_daily_email(send=a.send,display=not a.no_display)
+-    print(f"Excel: {r['excel']}"); print(f"HTML: {r['html']}"); print(f"Charts: {len(r['charts'])}"); print(f"Sent: {r['sent']}"); return 0
++    print(f"Excel: {r['excel']}"); print(f"HTML: {r['html']}"); print(f"Charts: {len(r['charts'])}"); print(f"Recipients: {len(r['recipients'])}"); print(f"Sent: {r['sent']}"); return 0
+ if __name__=="__main__": raise SystemExit(main())
+diff --git a/recipients.example.yaml b/recipients.example.yaml
+index 4f231db..467b35e 100644
+--- a/recipients.example.yaml
++++ b/recipients.example.yaml
+@@ -7,6 +7,12 @@
+ #   ۱) متغیر محیطی AIBL_EMAIL_TO="a@example.invalid;b@example.invalid"
+ #   ۲) AIBL_RECIPIENTS_FILE=/secure/path/recipients.yaml
+ #   ۳) $AIBL_HOME/recipients.yaml   (پیش‌فرض ~/.aibl/recipients.yaml)
++#   ۴) سورس HR — AIBL_EMAIL_FROM_HR=1  ← توصیه‌شده
++#
++# گزینه ۴ بهتر از این فایل است: ستون Email فایل پرسنلی خوانده می‌شود، پس
++# هیچ کپی‌ای ساخته نمی‌شود، فهرست کهنه نمی‌شود و پرسنل غیرفعال خودکار حذف
++# می‌شوند. فیلترها: AIBL_EMAIL_HR_POSTS (پیش‌فرض «مدیر,رئیس,معاون»)،
++# AIBL_EMAIL_HR_MANAGEMENTS، AIBL_EMAIL_HR_OFFICES، AIBL_EMAIL_HR_MAX.
+ #
+ # اگر هیچ‌کدام تنظیم نشود، ساخت گزارش کار می‌کند ولی ارسال با خطای صریح
+ # متوقف می‌شود — عمداً، تا هرگز به فهرستی قدیمی ارسال نشود.
+diff --git a/tests/test_dashboard.py b/tests/test_dashboard.py
+index ecdc645..1783df3 100644
+--- a/tests/test_dashboard.py
++++ b/tests/test_dashboard.py
+@@ -11,6 +11,7 @@ Streamlit در زمان import کد سطح-ماژول را اجرا می‌کن
+ from __future__ import annotations
+ 
+ import ast
++import logging
+ import os
+ import re
+ import sys
+@@ -429,6 +430,111 @@ def test_regressions_v26_2_3() -> None:
+           not bad, f"خراب: {bad}" if bad else f"python {sys.version_info.major}.{sys.version_info.minor}")
+ 
+ 
++def test_email_from_hr() -> None:
++    """R11 ── گیرندگان ایمیل از سورس HR.
++
++    فهرست گیرنده داده شخصی است: نه در سورس، نه در فایل جانبیِ کهنه.
++    بهترین منبع، ستون Email همان فایل پرسنلی است که همیشه به‌روز است و
++    پرسنل غیرفعال خودکار از آن حذف می‌شوند.
++    """
++    print("\n── ۸) گیرنده ایمیل از سورس HR ──")
++    from aibl.integrations import daily_email as de
++
++    ppl = pd.DataFrame([
++        # فعال، مدیر، نشانی سالم → باید بیاید
++        dict(HR_EMAIL="a.manager@x.invalid", HR_STATUS="فعال",
++             HR_POST="مدیر مواد اولیه", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
++        # فعال، رئیس → باید بیاید
++        dict(HR_EMAIL="b.head@x.invalid", HR_STATUS="فعال",
++             HR_POST="رئیس اداره ترخیص", HR_DEPT="قطعات", HR_OFFICE="ترخیص"),
++        # غیرفعال با پست مدیریتی → نباید بیاید
++        dict(HR_EMAIL="c.left@x.invalid", HR_STATUS="غیرفعال",
++             HR_POST="مدیر", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
++        # کارشناس فعال → با پیش‌فرضِ مدیریتی نباید بیاید
++        dict(HR_EMAIL="d.expert@x.invalid", HR_STATUS="فعال",
++             HR_POST="کارشناس خرید خارجی", HR_DEPT="مواد اولیه", HR_OFFICE="خرید"),
++        # نشانی ناقص → هرگز
++        dict(HR_EMAIL="not-an-email", HR_STATUS="فعال",
++             HR_POST="مدیر", HR_DEPT="قطعات", HR_OFFICE="خرید"),
++        # نشانی خالی → هرگز
++        dict(HR_EMAIL="", HR_STATUS="فعال",
++             HR_POST="مدیر", HR_DEPT="قطعات", HR_OFFICE="خرید"),
++    ])
++    keys = ["AIBL_EMAIL_TO", "AIBL_RECIPIENTS_FILE", "AIBL_EMAIL_FROM_HR",
++            "AIBL_EMAIL_HR_POSTS", "AIBL_EMAIL_HR_MANAGEMENTS",
++            "AIBL_EMAIL_HR_OFFICES", "AIBL_EMAIL_HR_MAX"]
++    saved = {k: os.environ.pop(k, None) for k in keys}
++    try:
++        got = de.hr_recipients(ppl)
++        check("پیش‌فرض فقط سطوح مدیریتیِ فعال است",
++              got == ["a.manager@x.invalid", "b.head@x.invalid"], str(got))
++        check("پرسنل غیرفعال حذف می‌شود", "c.left@x.invalid" not in got)
++        check("نشانی نامعتبر حذف می‌شود",
++              not any("not-an-email" in g for g in got))
++        check("ردیف بدون نشانی حذف می‌شود", "" not in got)
++
++        os.environ["AIBL_EMAIL_HR_POSTS"] = "کارشناس"
++        got = de.hr_recipients(ppl)
++        check("فیلتر شرح پست کار می‌کند", got == ["d.expert@x.invalid"], str(got))
++
++        os.environ["AIBL_EMAIL_HR_MANAGEMENTS"] = "قطعات"
++        check("فیلترها با هم AND می‌شوند", de.hr_recipients(ppl) == [])
++        os.environ.pop("AIBL_EMAIL_HR_MANAGEMENTS")
++
++        os.environ["AIBL_EMAIL_HR_POSTS"] = "مدیر,رئیس,کارشناس"
++        os.environ["AIBL_EMAIL_HR_MAX"] = "2"
++        check("سقف تعداد رعایت می‌شود", len(de.hr_recipients(ppl)) == 2)
++        os.environ.pop("AIBL_EMAIL_HR_MAX")
++        os.environ.pop("AIBL_EMAIL_HR_POSTS")
++
++        check("جدول خالی ⇒ فهرست خالی", de.hr_recipients(pd.DataFrame()) == [])
++        check("سورس بدون ستون Email ⇒ فهرست خالی",
++              de.hr_recipients(pd.DataFrame({"HR_POST": ["مدیر"]})) == [])
++
++        # ── زنجیره حل ──
++        check("بدون AIBL_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
++              de._recipients() == [])
++        os.environ["AIBL_EMAIL_FROM_HR"] = "1"
++        _real = de.hr_recipients
++        de.hr_recipients = lambda frame=None: ["from.hr@x.invalid"]
++        try:
++            check("با فعال‌سازی، زنجیره به سورس HR می‌رسد",
++                  de._recipients() == ["from.hr@x.invalid"])
++            os.environ["AIBL_EMAIL_TO"] = "override@x.invalid"
++            check("متغیر محیطی صریح بر سورس HR اولویت دارد",
++                  de._recipients() == ["override@x.invalid"])
++            os.environ.pop("AIBL_EMAIL_TO")
++        finally:
++            de.hr_recipients = _real
++
++        # ── نشانی‌ها فقط شمرده می‌شوند، هرگز لاگ نمی‌شوند ──
++        rec: list = []
++        _h = _LogCatcher(rec)
++        de.log.addHandler(_h)
++        try:
++            de.hr_recipients(ppl)
++        finally:
++            de.log.removeHandler(_h)
++        body = " ".join(rec)
++        check("هیچ نشانی‌ای لاگ نمی‌شود", "@x.invalid" not in body, body[:90])
++        check("تعداد گیرنده لاگ می‌شود", any("گیرنده" in m for m in rec), body[:90])
++    finally:
++        for k in keys:
++            os.environ.pop(k, None)
++            if saved.get(k) is not None:
++                os.environ[k] = saved[k]
++
++
++class _LogCatcher(logging.Handler):
++    def __init__(self, sink: list) -> None:
++        super().__init__()
++        self.sink = sink
++
++    def emit(self, record: logging.LogRecord) -> None:
++        self.sink.append(record.getMessage())
++
++
++
+ if __name__ == "__main__":
+     print("=" * 78)
+     print("AIBL — تست منطق داشبورد")
+@@ -440,6 +546,7 @@ if __name__ == "__main__":
+     test_dashboard_module()
+     test_scorecard_group_criticality()
+     test_regressions_v26_2_3()
++    test_email_from_hr()
+     print("\n" + "=" * 78)
+     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
+     if FAIL:

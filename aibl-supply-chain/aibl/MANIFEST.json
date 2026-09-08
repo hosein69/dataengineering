@@ -33,9 +33,9 @@
   "engines/criticality.py": "362b0102c3e9258c",
   "engines/math_engine.py": "956021bba1eb3ac2",
   "engines/risk.py": "1c803de6ed988453",
-  "factsheet.py": "6c40b6b5d78b96ec",
+  "factsheet.py": "a9e3b218c176a6bf",
   "integrations/__init__.py": "36f09d8286b1d64f",
-  "integrations/daily_email.py": "7aa636629c4aa4d5",
+  "integrations/daily_email.py": "657a964142717866",
   "manifest.py": "2ee6085b2982e325",
   "narrate/__init__.py": "e3b0c44298fc1c14",
   "narrate/narrator.py": "dac6c23f548e3aa3",
@@ -88,5 +88,5 @@
   "studio_core/templates.py": "98b04882a1d333b3",
   "version.py": "89a819bc5b2c7765"
  },
- "package_version": "26.6.0"
+ "package_version": "26.7.0"
 }
