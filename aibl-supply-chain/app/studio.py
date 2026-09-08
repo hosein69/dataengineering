@@ -589,7 +589,7 @@ with tab_export:
 
     with st.container(border=True):
         panel_open("گزارش رسمی خط لوله",
-                   "۱۶ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
+                   "۱۷ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
         if official_excel and Path(official_excel).exists():
             st.download_button("⬇ دانلود Excel رسمی", Path(official_excel).read_bytes(),
                                file_name=Path(official_excel).name,

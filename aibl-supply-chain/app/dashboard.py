@@ -25,6 +25,7 @@ import base64
 import io
 import os
 import sys
+from pathlib import Path
 from datetime import date
 from typing import Any, Dict, Optional
 
@@ -212,6 +213,25 @@ except Exception as ex:                               # pragma: no cover
 
 df = data["main"] if not data["main"].empty else data["df"]
 all_df = data["df"] if not data["df"].empty else df
+
+# ── سلامت داده امروز، پیش از هر عددی ────────────────────────────────────
+# اگر سورسی ناقص بوده، خواننده باید قبل از KPIها بداند؛ وگرنه یک عدد
+# سبز را «همه‌چیز مرتب» می‌خواند در حالی که مبنایش ناقص بوده.
+try:
+    from aibl import health as _health
+    from aibl.config.settings import SETTINGS as _S
+    _hp = _health.load(str(Path(_S.daily_report_path(_S.today)).parent))
+except Exception:
+    _hp = None
+if _hp and (_hp.get("verdict") != _health.OK or _hp.get("blocking")):
+    _c = _hp.get("counts", {})
+    _bits = [f"وضعیت داده امروز: **{_hp.get('verdict')}**"]
+    if _hp.get("blocking"):
+        _bits.append("سورس الزامیِ ناموجود: " + "، ".join(_hp["blocking"]))
+    _bits.append(f"سورس سالم/ناقص/خراب: {_c.get('سورس سالم',0)} / "
+                 f"{_c.get('سورس ناقص',0)} / {_c.get('سورس خراب/ردشده',0)}")
+    (st.error if _hp.get("blocking") else st.warning)(
+        " — ".join(_bits) + "  \nجزئیات در شیت «۱۷. سلامت سیستم» گزارش رسمی است.")
 
 # فیلترها
 if "بحرانی (کوتاه)" in df.columns:

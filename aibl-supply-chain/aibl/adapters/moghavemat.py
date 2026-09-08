@@ -24,6 +24,7 @@ import pandas as pd
 
 from ..core.text import (clean_employee_code, clean_order_ref, clean_part_no,
                          is_empty_val, num_safe, order_ref_base)
+from .. import health
 from ..dataio.logging_setup import log
 from ..rulebook import get_rulebook
 from .base import KEY_ORDER, SourceAdapter, register
@@ -153,11 +154,25 @@ class MoghavematAdapter(SourceAdapter):
         return {"main": agg, "lines": lines}
 
     # ═══════════ تجمیع سطح سفارش ═══════════
+    @staticmethod
+    def _uniq_values(s: pd.Series) -> List[str]:
+        """مقادیر یکتا و مرتب، بدون خالی — برای حفظ نسب."""
+        seen: List[str] = []
+        for v in s:
+            if is_empty_val(v):
+                continue
+            t = str(v).strip()
+            if t and t not in seen:
+                seen.append(t)
+        return sorted(seen)
+
     def _aggregate(self, lines: pd.DataFrame) -> pd.DataFrame:
         p = self.p
         src = lines[lines[KEY_ORDER].astype(str).str.strip() != ""]
         if src.empty:
             return pd.DataFrame(columns=[KEY_ORDER])
+
+        _uniq = self._uniq_values
 
         def first_valid(s: pd.Series) -> Any:
             for v in s:
@@ -205,8 +220,35 @@ class MoghavematAdapter(SourceAdapter):
                 p("EXCLUDED_FROM_KPI"): bool(g[p("EXCLUDED_FROM_KPI")].any()),
                 p("CLEARANCE_HINT"): first_valid(g[p("CLEARANCE_HINT")]),
                 p("ALERTS"): " ؛ ".join(sorted({a for a in g[p("ALERTS")] if a})),
+                # ── نسب متریال ──────────────────────────────────────────
+                # سورس در دانه «قلم درخواست» است و اینجا به دانه «سفارش»
+                # تجمیع می‌شود. برای متریال از first_valid استفاده می‌شود،
+                # یعنی اگر سفارشی پنج قلم داشته باشد جدول اصلی فقط یکی را
+                # نمایندگی می‌کند و چهارتای دیگر **بی‌صدا ناپدید می‌شوند**.
+                #
+                # این نقطه کور واقعیِ داده است، نه یک شرط اشتباه؛ با عوض
+                # کردن یک خط حل نمی‌شود چون دانه جدول اصلی سفارش است.
+                # کاری که می‌شود و باید کرد این است که نسب حفظ شود و
+                # سفارش چندمتریاله صریحاً علامت بخورد، تا هیچ تحلیلی
+                # ناخواسته آن را «تک‌متریال» فرض نکند.
+                p("MATERIAL_COUNT"): int(_uniq(g[p("MATERIAL")]).__len__()),
+                p("MATERIALS_ALL"): "، ".join(_uniq(g[p("MATERIAL")])),
+                p("PARTS_ALL"): "، ".join(_uniq(g[p("MFR_PART_NO")])),
+                p("MULTI_MATERIAL"): bool(len(_uniq(g[p("MATERIAL")])) > 1),
             })
         out = pd.DataFrame(rows)
+        multi = int(out[p("MULTI_MATERIAL")].sum()) if not out.empty else 0
+        if multi:
+            log.warning(
+                f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. جدول اصلی در دانه "
+                f"«سفارش» خلاصه شده و ستون متریال فقط یکی از اقلام را نشان "
+                f"می‌دهد؛ فهرست کامل در «{p('MATERIALS_ALL')}» است. تحلیل "
+                f"مقاومت مستقلِ هر قلم نیازمند تحلیل در دانه «قلم سفارش» است.")
+            health.current().find(
+                "دانه‌بندی", health.WARN,
+                f"{multi} سفارش چندمتریاله در سورس خرید",
+                "جدول اصلی در دانه سفارش است؛ ستون متریال یکی از اقلام را "
+                "نمایندگی می‌کند. فهرست کامل اقلام در ستون نسب متریال است.")
         # درصد تکمیل ترخیص در سطح سفارش (بدون تقسیم بر صفر)
         ordered = out[p("ORDER_QTY_SUM")].astype(float)
         cleared = out[p("CLEARED_QTY_SUM")].astype(float)

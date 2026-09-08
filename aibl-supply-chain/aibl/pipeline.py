@@ -37,7 +37,8 @@ from .report.dashboard import ExcelDashboardBuilder
 from .report.extracts import write_audit_report, write_expert_extracts
 from .resolve.canonical import CanonicalEntityResolver
 from .resolve.partition import partition
-from .resolve.commercial_coverage import annotate as annotate_commercial_coverage
+from . import health
+from .resolve.commercial_coverage import apply as apply_commercial_coverage
 from .resolve.commercial_coverage import kpi as commercial_kpi
 from .rulebook import get_rulebook
 from .stages import (PipelineContext, collect_columns, describe, discover as
@@ -246,22 +247,25 @@ class Pipeline:
                     log.warning(f"⚠️ {msg} (مرحله رد شد)")
                     continue
                 raise RuntimeError(msg)
-            n_before = len(df)
-            df = st.run(df, self.ctx)
-            # هر مرحله ده‌ها ستون اضافه می‌کند؛ بدون این، pandas قاب را
-            # تکه‌تکه نگه می‌دارد و PerformanceWarning می‌دهد.
-            df = df.copy()
+            n_before, c_before = len(df), len(df.columns)
+            with health.current().timed_stage(st.name, st.title, st.order,
+                                              n_before, c_before) as box:
+                # copy: هر مرحله ده‌ها ستون اضافه می‌کند و بدون آن pandas
+                # قاب را تکه‌تکه نگه می‌دارد و PerformanceWarning می‌دهد.
+                box["df"] = df = st.run(df, self.ctx).copy()
             if len(df) != n_before and st.name != "sort":
                 raise RuntimeError(
                     f"مرحله «{st.name}» تعداد سطرها را عوض کرد "
                     f"({n_before} → {len(df)}). مرحله‌ها نباید سطر اضافه/حذف کنند.")
+            health.check_key_integrity(st.name, df)
+        health.log_slowest_stages(log)
         return df
 
     # ═══════ اجرا ═══════
     def run(self, build_report: bool = True) -> PipelineResult:
-        log.info("=" * 90)
-        log.info(f"🚀 AIBL {PACKAGE_VERSION} — تاریخ مرجع: {self.today}")
-        log.info("=" * 90)
+        bar = "=" * 90
+        log.info(f"{bar}\n🚀 AIBL {PACKAGE_VERSION} — تاریخ مرجع: {self.today}\n{bar}")
+        health.reset()
         self.preflight()
         self.load_sources()
         df = self.build_base()
@@ -270,11 +274,10 @@ class Pipeline:
         # پوشش Commercial Expert Data باید روی **کل جریان اصلی** سنجیده شود،
         # نه فقط part.main؛ چون سفارشِ فاقد مقاومت/سند نیز ممکن است در M3
         # و «تعیین تکلیف» قرار بگیرد و نباید از شمارش جا بیفتد.
-        df, missing_commercial_count = annotate_commercial_coverage(df, lines)
         # این پرچم فقط پوشش سورس را گزارش می‌کند؛ هیچ کارشناس خریدی از روی
         # فقدان رکورد ساخته نمی‌شود و موتور بحرانی از آن استفاده نمی‌کند.
+        df = apply_commercial_coverage(df, lines, self.ctx)
         part = partition(df, self.moghavemat_available)
-        self.ctx.extras["missing_commercial_order_count"] = missing_commercial_count
 
         res = PipelineResult(part.df, part.main, part.to_resolve, part.excluded,
                              part.counts, self.resolver.audit_df(),
@@ -350,6 +353,7 @@ class Pipeline:
         b.build_insight(main)
         b.build_material(main)
         b.build_supply_views(main)
+        b.build_system_health()
         return b.save()
 
 

@@ -45,6 +45,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+from .. import health
 from ..core.jalali import CalendarEngine
 from .expert_scope import SCOPE_LABELS, STAGE_TO_SCOPE
 
@@ -79,11 +80,14 @@ WHEN, AGE = "STATUS_WHEN", "STATUS_AGE_DAYS"
 ACTIVITY = "STATUS_ACTIVITY"
 WHO, WHO_SCOPE = "STATUS_WHO", "STATUS_WHO_SCOPE"
 BASIS = "STATUS_BASIS"
+ANOMALY = "STATUS_TIME_ANOMALY"
+PLANNED = "STATUS_PLANNED_DATES"
 NEXT_ACT, WAITING_SCOPE, WAITING_WHO = "NEXT_ACTIVITY", "WAITING_ON_SCOPE", "WAITING_ON_WHO"
 MISSING = "STATUS_MISSING"
 
 OUTPUT_COLUMNS = [WHERE, WHERE_CODE, ACTIVITY, WHEN, AGE, WHO, WHO_SCOPE,
-                  BASIS, NEXT_ACT, WAITING_SCOPE, WAITING_WHO, MISSING]
+                  BASIS, NEXT_ACT, WAITING_SCOPE, WAITING_WHO, MISSING,
+                  ANOMALY, PLANNED]
 
 _UNKNOWN = "نامشخص"
 _NO_EVIDENCE = "هیچ فعالیت تاریخ‌داری برای این ردیف ثبت نشده است"
@@ -105,15 +109,58 @@ def _to_date(s: pd.Series) -> pd.Series:
 
 
 def _dates(df: pd.DataFrame, today: pd.Timestamp
-           ) -> Tuple[pd.DataFrame, List[Tuple[str, str, int, str]]]:
-    """ماتریس تاریخ فعالیت‌های موجود — برداری، بدون حلقه روی ردیف."""
+           ) -> Tuple[pd.DataFrame, pd.DataFrame, List[Tuple[str, str, int, str]]]:
+    """ماتریس تاریخ فعالیت‌های موجود — برداری، بدون حلقه روی ردیف.
+
+    برمی‌گرداند: (ماتریس گذشته، ماتریس خام، فهرست فعالیت‌های موجود).
+    ماتریس گذشته برای «وضعیت فعلی» است؛ خام برای تشخیص ناسازگاری.
+    """
     present = [a for a in TIMELINE if a[0] in df.columns]
     if not present:
-        return pd.DataFrame(index=df.index), []
-    mat = pd.DataFrame({a[0]: _to_date(df[a[0]]) for a in present}, index=df.index)
-    # تاریخ آینده شاهد وضعیت فعلی نیست (تاریخ برنامه‌ای یا غلط تایپی)
-    mat = mat.mask(mat > today + pd.Timedelta(days=1))
-    return mat, present
+        return pd.DataFrame(index=df.index), pd.DataFrame(index=df.index), []
+    raw = pd.DataFrame({a[0]: _to_date(df[a[0]]) for a in present}, index=df.index)
+    # تاریخ آینده شاهد وضعیت فعلی نیست (تاریخ برنامه‌ای یا غلط تایپی) —
+    # ولی از داده پاک نمی‌شود؛ جداگانه به‌عنوان «تاریخ برنامه‌ای» گزارش می‌شود.
+    mat = raw.mask(raw > today + pd.Timedelta(days=1))
+    return mat, raw, present
+
+
+def _anomalies(raw: pd.DataFrame, present: List[Tuple[str, str, int, str]],
+               today: pd.Timestamp) -> Tuple[pd.Series, pd.Series]:
+    """دو ناسازگاری زمانی که در سکوت وضعیت را خراب می‌کنند.
+
+    **۱) ترتیب معکوس.** کوتاژ ۰۱-۰۹ و ترخیص ۲۵-۰۸ یعنی ترخیص پیش از کوتاژ
+    ثبت شده. چنین پرونده‌ای نه فقط وضعیتش مشکوک است، بلکه گراف فرآیند را
+    هم آلوده می‌کند — و هیچ‌جا اعلام نمی‌شد.
+
+    **۲) تاریخ آینده.** تاریخی که هنوز نرسیده احتمالاً برنامه‌ای است؛ نباید
+    «وضعیت فعلی» را تعیین کند، ولی حذفش هم غلط است — داده برنامه‌ای است و
+    باید دیده شود.
+    """
+    idx = raw.index
+    if raw.empty or not present:
+        return pd.Series("", index=idx, dtype=object), pd.Series("", index=idx, dtype=object)
+
+    order = [a[2] for a in present]
+    labels = [a[1] for a in present]
+    seq = sorted(range(len(present)), key=lambda i: order[i])
+
+    anomaly = pd.Series("", index=idx, dtype=object)
+    prev_i: Optional[int] = None
+    for i in seq:
+        if prev_i is not None:
+            a, b = raw.iloc[:, prev_i], raw.iloc[:, i]
+            bad = a.notna() & b.notna() & (b < a)
+            if bad.any():
+                txt = f"«{labels[i]}» پیش از «{labels[prev_i]}» ثبت شده"
+                anomaly = anomaly.mask(
+                    bad, anomaly.where(anomaly.eq(""), anomaly + " ؛ ").fillna("") + txt)
+        prev_i = i
+
+    future = raw > today + pd.Timedelta(days=1)
+    lbl = np.array(labels, dtype=object)
+    planned = pd.Series(["، ".join(lbl[row]) for row in future.to_numpy()], index=idx)
+    return anomaly, planned
 
 
 def resolve(df: pd.DataFrame, today: Optional[pd.Timestamp] = None) -> pd.DataFrame:
@@ -121,7 +168,7 @@ def resolve(df: pd.DataFrame, today: Optional[pd.Timestamp] = None) -> pd.DataFr
     out = df
     today = pd.Timestamp(today).normalize() if today is not None \
         else pd.Timestamp.today().normalize()
-    mat, present = _dates(out, today)
+    mat, raw, present = _dates(out, today)
     n = len(out)
 
     if not present:
@@ -179,6 +226,22 @@ def resolve(df: pd.DataFrame, today: Optional[pd.Timestamp] = None) -> pd.DataFr
     lbl = np.array([a[1] for a in present], dtype=object)
     miss = has.to_numpy() == False  # noqa: E712 — ماتریس بولی، not روی numpy
     out[MISSING] = ["، ".join(lbl[row]) for row in miss]
+
+    # ── ناسازگاری زمانی ──
+    out[ANOMALY], out[PLANNED] = _anomalies(raw, present, today)
+    n_bad = int(out[ANOMALY].ne("").sum())
+    if n_bad:
+        health.current().find(
+            "زمان‌بندی", health.WARN,
+            f"{n_bad} ردیف ترتیب زمانی معکوس دارد",
+            "تاریخ یک فعالیت پیش از فعالیت قبلی‌اش ثبت شده؛ "
+            "وضعیت و گراف فرآیند این ردیف‌ها قابل اتکا نیست.")
+    n_plan = int(out[PLANNED].ne("").sum())
+    if n_plan:
+        health.current().find(
+            "زمان‌بندی", health.INFO,
+            f"{n_plan} ردیف تاریخ آینده (برنامه‌ای) دارد",
+            "این تاریخ‌ها وضعیت فعلی را تعیین نکردند ولی در داده باقی‌اند.")
     return out
 
 

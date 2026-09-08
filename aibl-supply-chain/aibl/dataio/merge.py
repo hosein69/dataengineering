@@ -22,6 +22,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 
+from .. import health
 from .logging_setup import log
 
 
@@ -131,11 +132,28 @@ def safe_merge(
     if n_after != n_before:
         msg = (f"❌ [{label}] انفجار سطر: {n_before} → {n_after} "
                f"(کلید {key} در سمت راست یکتا نیست)")
+        health.current().join(health.JoinHealth(
+            label=label, key=key, rows_before=n_before, rows_after=n_after,
+            status=health.FAILED, note="انفجار سطر — ادغام اعمال نشد"))
+        health.current().find("ادغام", health.ERROR, msg)
         if strict:
             raise RowExplosionError(msg)
         log.error(msg)
         return left
 
     matched = merged[[c for c in r.columns if c != key]].notna().any(axis=1).sum() if len(r.columns) > 1 else 0
+    # ادغامی که هیچ ردیفی منطبق نکند، «موفق» نیست — یعنی کلید دو طرف
+    # هم‌جنس نیست و کسی متوجه نمی‌شود مگر اینکه ثبت شود.
+    rate = (matched / n_before) if n_before else 0.0
+    status = health.OK if rate > 0 else health.DEGRADED
+    health.current().join(health.JoinHealth(
+        label=label, key=key, rows_before=n_before, rows_after=n_after,
+        matched=int(matched), status=status,
+        note="" if rate else "هیچ ردیفی منطبق نشد — کلید دو طرف را بررسی کنید"))
+    if n_before and not matched and len(r.columns) > 1:
+        health.current().find(
+            "ادغام", health.WARN,
+            f"ادغام «{label}» روی کلید {key} هیچ انطباقی نداشت",
+            "ستون‌های این سورس در جدول اصلی خالی می‌مانند.")
     log.info(f"🔗 [{label}] ادغام روی {key} انجام شد — {matched} ردیف منطبق از {n_before}")
     return merged

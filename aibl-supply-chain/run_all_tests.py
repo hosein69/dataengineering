@@ -29,21 +29,40 @@ SUITES = [
     ("۱۰) AIBL Studio ماژولار", "tests/test_studio.py"),
     ("۱۱) سازنده گزارش و صحت دانه‌ای", "tests/test_report_builder.py"),
     ("۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین", "tests/test_supply_views.py"),
+    ("۱۳) نقاط کور سیستمی و فرآیندی", "tests/test_system_health.py"),
 ]
+
+
+#: سقف زمان هر مجموعه. تست تولیدی نباید بدون سقف اجرا شود: یک حلقه
+#: بی‌پایان یا یک I/O معلق، اجرای CI را تا ابد نگه می‌دارد و کسی نمی‌فهمد
+#: کدام مجموعه گیر کرده. با سقف، خروجی صریح TIMEOUT می‌شود.
+SUITE_TIMEOUT_S = int(os.environ.get("AIBL_TEST_TIMEOUT", "600"))
 
 
 def main() -> int:
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
     total_ok = total_fail = 0
     failed_suites = []
+    timed_out = []
     for label, path in SUITES:
         print("\n" + "\u2588" * 78)
         print(f"\u2588  {label}")
         print("\u2588" * 78)
         # یک بار اجرا، خروجی هم چاپ و هم تحلیل می‌شود
-        out = subprocess.run([sys.executable, path], cwd=ROOT, env=env,
-                             capture_output=True, text=True,
-                             encoding="utf-8", errors="replace")
+        try:
+            out = subprocess.run([sys.executable, path], cwd=ROOT, env=env,
+                                 capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace",
+                                 timeout=SUITE_TIMEOUT_S)
+        except subprocess.TimeoutExpired as ex:
+            print((ex.stdout or "") if isinstance(ex.stdout, str)
+                  else (ex.stdout or b"").decode("utf-8", "replace"))
+            print(f"\u23f1\ufe0f TIMEOUT — «{label}» پس از {SUITE_TIMEOUT_S} ثانیه "
+                  f"تمام نشد و متوقف شد.")
+            timed_out.append(label)
+            failed_suites.append(f"{label} (TIMEOUT)")
+            total_fail += 1
+            continue
         print(out.stdout)
         if out.stderr.strip():
             print(out.stderr)
@@ -74,7 +93,8 @@ def main() -> int:
                 doc_note = "✅ ادعای تعداد تست در README با واقعیت می‌خواند."
 
     print("\n" + "═" * 78)
-    print(f"جمع کل: {total_ok} تست موفق | {total_fail} ناموفق")
+    print(f"جمع کل: {total_ok} تست موفق | {total_fail} ناموفق"
+          + (f" | {len(timed_out)} TIMEOUT" if timed_out else ""))
     if doc_note:
         print(doc_note)
     if failed_suites:

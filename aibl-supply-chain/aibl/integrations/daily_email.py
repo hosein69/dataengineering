@@ -269,6 +269,29 @@ def executive_kpis(df:pd.DataFrame)->list[dict[str,Any]]:
     missing_commercial = unique(df["ORDER_MISSING_COMMERCIAL_EXPERT"].astype(bool), "CANONICAL_ORDER") if "ORDER_MISSING_COMMERCIAL_EXPERT" in df.columns else 0
     return [{"label":"متریال بحرانی","value":crit_mat,"tone":"red","note":"توقف خط + بحرانی"},{"label":"بارنامه بحرانی","value":crit_bl,"tone":"red","note":"علت تا متریال مشخص است"},{"label":"سفارش بحرانی","value":crit_ord,"tone":"amber","note":"علت تا متریال مشخص است"},{"label":"کمترین مقاومت","value":"—" if pd.isna(low) else f"{low:.1f} روز","tone":"red" if pd.notna(low) and low<10 else "green","note":"بحرانی‌ترین وضعیت"},{"label":"تعهدات معوق","value":overdue,"tone":"amber" if overdue else "green","note":"نیازمند پیگیری"},{"label":"سفارش خارج از Commercial Expert Data","value":missing_commercial if cov_measured else "سنجیده نشد","tone":("red" if missing_commercial else "green") if cov_measured else "amber","note":"بدون انتساب کارشناس خرید" if cov_measured else "سورس خرید بارگذاری نشد"}]
 
+def _health_banner(folder)->str:
+    """اگر داده امروز ناقص بود، خواننده باید **قبل از اعداد** بداند.
+
+    بدون این بنر، «۰ سفارش خارج از Commercial Expert Data» و «فایل
+    بارگذاری نشد» در ایمیل یک شکل دارند.
+    """
+    from .. import health as _h
+    data=_h.load(str(folder))
+    if not data: return ""
+    verdict=data.get("verdict",""); blocking=data.get("blocking") or []
+    if verdict==_h.OK and not blocking: return ""
+    c=data.get("counts",{})
+    bits=[f"وضعیت داده امروز: <b>{html.escape(str(verdict))}</b>"]
+    if blocking: bits.append("سورس الزامیِ ناموجود: "+html.escape("، ".join(blocking)))
+    bits.append(f"سورس سالم/ناقص/خراب: {c.get('سورس سالم',0)} / "
+                f"{c.get('سورس ناقص',0)} / {c.get('سورس خراب/ردشده',0)}")
+    return (f'<div style="background:{ORANGE}1a;border-right:4px solid {ORANGE};'
+            f'padding:10px 14px;border-radius:8px;margin:0 0 14px;font-size:13px;'
+            f'color:{TEXT}">⚠️ ' + " — ".join(bits) +
+            ' <div style="font-size:12px;margin-top:4px">جزئیات در شیت «۱۷. سلامت '
+            'سیستم» گزارش رسمی است. KPIهای وابسته به سورس‌های ناقص را با احتیاط '
+            'بخوانید.</div></div>')
+
 def _kpi_cards(kpis:Iterable[dict[str,Any]])->str:
     colors={"red":RED,"amber":ORANGE,"green":GREEN}; cards=[]
     for k in kpis:
@@ -284,7 +307,7 @@ def build_email_html(day:date,df:pd.DataFrame,charts:list[Path],excel:Path)->str
         for _,r in g.iterrows(): rows.append((r.get("CANONICAL_BL","—"),r.get("BL_CRITICAL_MATERIALS","—"),r.get("BL_CRITICAL_REASON","—")))
     table="".join(f'<tr><td style="padding:7px;border-bottom:1px solid {BORDER}">{html.escape(str(a))}</td><td style="padding:7px;border-bottom:1px solid {BORDER}">{html.escape(str(b))}</td><td style="padding:7px;border-bottom:1px solid {BORDER}">{html.escape(str(c))}</td></tr>' for a,b,c in rows)
     cause=(f'<div style="margin:18px 0 8px;font-size:16px;font-weight:800;color:{NAVY}">نمونه بارنامه‌های بحرانی و علت</div><table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-size:12px"><tr style="background:{THEME};color:#fff"><th style="padding:8px">بارنامه</th><th style="padding:8px">متریال</th><th style="padding:8px">علت</th></tr>{table}</table>') if table else ""
-    return f'''<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"></head><body style="margin:0;background:{BG};font-family:'IRANSans Light','IRANSans',Tahoma,Arial,sans-serif;color:{TEXT}"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px 8px"><table width="820" cellpadding="0" cellspacing="0" style="max-width:820px;width:100%;background:#fff;border:1px solid {BORDER};border-radius:16px;overflow:hidden"><tr><td style="padding:22px 28px;background:{NAVY}"><div style="color:#fff;font-size:24px;font-weight:800">AIBL · Executive Daily Insight</div><div style="color:#d9f1ed;font-size:13px;margin-top:5px">مغز شناختی لجستیک ایران خودرو · {day:%Y-%m-%d}</div></td></tr><tr><td style="padding:20px 24px"><table width="100%" cellpadding="0" cellspacing="0">{_kpi_cards(executive_kpis(df))}</table><div style="margin:20px 0 12px;font-size:18px;font-weight:800;color:{NAVY}">سه نگاه برای تصمیم امروز</div><table width="100%" cellpadding="0" cellspacing="0">{img}</table><div style="margin:18px 0 10px;font-size:17px;font-weight:800;color:{NAVY}">چرا فایل Excel را باز کنیم؟</div><div style="background:#f5faf8;border:1px solid {BORDER};border-radius:10px;padding:14px;line-height:1.9;font-size:13px">در ایمیل فقط <b>سیگنال مدیریتی</b> را می‌بینید؛ جزئیات تصمیم در Excel است: متریال‌های بحرانی، علت بحرانی شدن هر بارنامه/سفارش، مقاومت، موجودی، تعهد ارزی، گلوگاه فرآیند و ردیابی پرونده. <b>یک متریال بحرانی، کل پرونده را بحرانی می‌کند؛ علت آن در فایل تا سطح متریال قابل مشاهده است.</b></div>{cause}<div style="margin-top:20px;text-align:center"><span style="display:inline-block;background:{THEME};color:#fff;border-radius:9px;padding:11px 18px;font-weight:800">📎 {html.escape(excel.name)}</span></div></td></tr><tr><td style="padding:14px 24px;background:#f7f9f9;color:#6b7b88;font-size:11px">این پیام توسط AIBL تولید شده است · داده‌ها از Pipeline همان روز استخراج شده‌اند.</td></tr></table></td></tr></table></body></html>'''
+    return f'''<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"></head><body style="margin:0;background:{BG};font-family:'IRANSans Light','IRANSans',Tahoma,Arial,sans-serif;color:{TEXT}"><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:18px 8px"><table width="820" cellpadding="0" cellspacing="0" style="max-width:820px;width:100%;background:#fff;border:1px solid {BORDER};border-radius:16px;overflow:hidden"><tr><td style="padding:22px 28px;background:{NAVY}"><div style="color:#fff;font-size:24px;font-weight:800">AIBL · Executive Daily Insight</div><div style="color:#d9f1ed;font-size:13px;margin-top:5px">مغز شناختی لجستیک ایران خودرو · {day:%Y-%m-%d}</div></td></tr><tr><td style="padding:20px 24px">{_health_banner(excel.parent)}<table width="100%" cellpadding="0" cellspacing="0">{_kpi_cards(executive_kpis(df))}</table><div style="margin:20px 0 12px;font-size:18px;font-weight:800;color:{NAVY}">سه نگاه برای تصمیم امروز</div><table width="100%" cellpadding="0" cellspacing="0">{img}</table><div style="margin:18px 0 10px;font-size:17px;font-weight:800;color:{NAVY}">چرا فایل Excel را باز کنیم؟</div><div style="background:#f5faf8;border:1px solid {BORDER};border-radius:10px;padding:14px;line-height:1.9;font-size:13px">در ایمیل فقط <b>سیگنال مدیریتی</b> را می‌بینید؛ جزئیات تصمیم در Excel است: متریال‌های بحرانی، علت بحرانی شدن هر بارنامه/سفارش، مقاومت، موجودی، تعهد ارزی، گلوگاه فرآیند و ردیابی پرونده. <b>یک متریال بحرانی، کل پرونده را بحرانی می‌کند؛ علت آن در فایل تا سطح متریال قابل مشاهده است.</b></div>{cause}<div style="margin-top:20px;text-align:center"><span style="display:inline-block;background:{THEME};color:#fff;border-radius:9px;padding:11px 18px;font-weight:800">📎 {html.escape(excel.name)}</span></div></td></tr><tr><td style="padding:14px 24px;background:#f7f9f9;color:#6b7b88;font-size:11px">این پیام توسط AIBL تولید شده است · داده‌ها از Pipeline همان روز استخراج شده‌اند.</td></tr></table></td></tr></table></body></html>'''
 
 def _add_inline(mail,path:Path,cid:str)->None:
     att=mail.Attachments.Add(str(path.resolve()),1,0,path.name); acc=att.PropertyAccessor

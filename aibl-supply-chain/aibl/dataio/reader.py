@@ -16,6 +16,7 @@ import pandas as pd
 
 from ..config.sources import SourceSpec, get_source
 from ..core.text import normalize_col_name
+from .. import health
 from .logging_setup import log
 
 _EXTS = (".xlsx", ".xlsm", ".xls")
@@ -47,7 +48,25 @@ def find_file(source_key: str) -> Optional[str]:
 
 
 def read_sheet(path: str, sheet: Optional[str], source_key: str = "") -> Optional[pd.DataFrame]:
-    """خواندن یک شیت مشخص. ``sheet=None`` یعنی شیت ۰."""
+    """خواندن یک شیت مشخص. ``sheet=None`` یعنی «شیت اول، هرچه باشد».
+
+    ## چرا اینجا fail-closed است
+
+    تا نسخه ۲۶٫۱۰ اگر شیت خواسته‌شده پیدا نمی‌شد، **شیت اول فایل** خوانده
+    می‌شد و فقط یک warning در لاگ می‌نشست. زنجیره‌اش این بود:
+
+        شیت «Expert Data» نبود → شیت اول خوانده شد → ستون‌ها نگاشت نشدند
+        → فریم تقریباً خالی ولی «موجود» → خط لوله ادامه داد
+        → گزارش تولید شد و هیچ‌جا ننوشت که مبنایش عوض شده
+
+    یعنی داده‌ی اشتباه با ظاهر معتبر. در سیستمی که روی خروجی‌اش تصمیم
+    عملیاتی گرفته می‌شود، این بدترین حالت ممکن است — بدتر از خطا دادن.
+
+    قاعده جدید: شیتی که **صریحاً نام برده شده** یا هست یا نیست. اگر نیست،
+    ``None`` برمی‌گردد و شکاف اسکیما در «سلامت سیستم» ثبت می‌شود. تنها
+    جایی که شیت اول خوانده می‌شود، وقتی است که پیکربندی خودش گفته باشد
+    ``sheet=None`` — یعنی «شیت اول، هرچه باشد».
+    """
     try:
         xl = pd.ExcelFile(path)
         if sheet is None:
@@ -55,17 +74,19 @@ def read_sheet(path: str, sheet: Optional[str], source_key: str = "") -> Optiona
         elif sheet in xl.sheet_names:
             target = sheet
         else:
-            # تطبیق بدون حساسیت به حروف/فاصله
+            # تطبیق بدون حساسیت به حروف/فاصله — این هنوز مجاز است، چون
+            # همان شیت است با املای متفاوت، نه شیتی دیگر.
             norm = {s.strip().lower(): s for s in xl.sheet_names}
             key = sheet.strip().lower()
             if key in norm:
                 target = norm[key]
             else:
-                target = xl.sheet_names[0]
-                log.warning(
-                    f"⚠️ [{source_key}] شیت «{sheet}» در {os.path.basename(path)} نبود؛ "
-                    f"به شیت «{target}» fallback شد. شیت‌های موجود: {xl.sheet_names}"
-                )
+                gap = (f"شیت «{sheet}» در {os.path.basename(path)} نیست "
+                       f"(شیت‌های موجود: {xl.sheet_names})")
+                log.error(f"❌ [{source_key}] {gap} — این فریم نامعتبر اعلام شد "
+                          f"و به شیت دیگری fallback نمی‌شود.")
+                health.current().schema_gap(source_key or "?", gap)
+                return None
         df = xl.parse(target, dtype=str)
         df.columns = [normalize_col_name(c) for c in df.columns]
         df = df.loc[:, [c for c in df.columns if c != ""]]

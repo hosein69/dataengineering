@@ -11,5 +11,22 @@
 """
 from __future__ import annotations
 
-from .factsheet import VERSION as __version__   # تنها منبع نسخه
 __all__ = ["__version__"]
+
+
+def __getattr__(name: str):
+    """نسخه به‌صورت تنبل خوانده می‌شود.
+
+    ``from .factsheet import VERSION`` در سطح پکیج باعث می‌شد
+    ``python -m aibl.factsheet`` با این هشدار اجرا شود:
+
+        RuntimeWarning: 'aibl.factsheet' found in sys.modules after import
+        of package 'aibl', but prior to execution of 'aibl.factsheet'
+
+    یعنی ماژول دو بار در دو هویت اجرا می‌شد. با PEP 562 نسخه فقط وقتی
+    خوانده می‌شود که واقعاً بخواهندش، و ``aibl.factsheet`` تمیز اجرا می‌شود.
+    """
+    if name == "__version__":
+        from .factsheet import VERSION
+        return VERSION
+    raise AttributeError(f"module 'aibl' has no attribute '{name}'")

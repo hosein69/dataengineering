@@ -665,8 +665,15 @@ def _build_criticality(self, df: "pd.DataFrame") -> None:
                "موجودی کل", "نیاز روزانه",
                "انبار", "شماره سفارش", "شماره بارنامه",
                "مرحله سفارش", "پیشرفت (٪)", "روزهای رسوب", "طبقه ریسک",
-               "کارشناس", "هشدار ترکیبی", "اقدام لازم"]
-    widths = [26, 16, 30, 14, 16, 15, 13, 11, 11, 13, 12, 12, 16, 20, 20, 12, 14, 16, 20, 46, 52]
+               # ── دو ستون، عمداً جدا ────────────────────────────────────
+               # یک ستون به اسم «کارشناس» یعنی خواننده باید حدس بزند این
+               # نام مالک قطعه است یا کسی که اتفاقاً مرحله فعلی دستش است.
+               # در گزارش بحرانی این حدس گران تمام می‌شود، چون بر مبنایش
+               # به کسی تلفن می‌زنند. پس هر دو نوشته می‌شوند و هرکدام
+               # اسم خودش را دارد.
+               "مالک قطعه (کارشناس خرید)", "کارشناس مالک مرحله فعلی",
+               "هشدار ترکیبی", "اقدام لازم"]
+    widths = [26, 16, 30, 14, 16, 15, 13, 11, 11, 13, 12, 12, 16, 20, 20, 12, 14, 16, 24, 22, 46, 52]
     for i, h in enumerate(headers, start=1):
         c = ws.cell(row=start, column=i, value=h)
         c.font = P.font_header(1)
@@ -683,17 +690,20 @@ def _build_criticality(self, df: "pd.DataFrame") -> None:
             "موجودی کل قابل احتساب", "نیاز روزانه",
             "WAREHOUSE", "CANONICAL_ORDER", "CANONICAL_BL",
             "ORDER_STAGE_FA", "ORDER_PROGRESS", "روزهای رسوب", "طبقه ریسک",
-            "CANONICAL_EXPERT", "هشدار ترکیبی بحرانی", "اقدام هشدار ترکیبی"]
+            "PART_OWNER", "CANONICAL_EXPERT",
+            "هشدار ترکیبی بحرانی", "اقدام هشدار ترکیبی"]
 
     rr = start + 1
     for _, row in detail.iterrows():
         for i, key in enumerate(cols, start=1):
             value = row.get(key, "")
-            # برای سفارش‌هایی که در Commercial Expert Data نیستند، هیچ نام
-            # کارشناس خرید به گزارش بحرانی تزریق نمی‌شود. مالک فعلی سایر
-            # مراحل مستقل از این پرچم باقی می‌ماند.
-            if key == "CANONICAL_EXPERT" and bool(row.get("ORDER_MISSING_COMMERCIAL_EXPERT", False)):
-                value = "— (در Commercial Expert Data درج نشده)"
+            # مالک قطعه fail-safe است: اگر از سورس خرید قابل انتساب نباشد،
+            # هیچ نامی از HR/ترخیص/اعتبارات جایش گذاشته نمی‌شود.
+            if key == "PART_OWNER" and not str(value or "").strip():
+                state = str(row.get("COMMERCIAL_COVERAGE_STATE", "") or "")
+                value = ("— (سنجیده نشد: سورس خرید در دسترس نبود)"
+                         if state and state != "measured"
+                         else "— (در Commercial Expert Data درج نشده)")
             ws.cell(row=rr, column=i, value=self._cell_value(value))
         self._style_row(ws, rr, len(headers),
                         fills.get(str(row.get("کد طبقه بحرانی", "")), P.GREEN_L4))
@@ -826,3 +836,24 @@ def _build_supply_views(self, df) -> None:
 
 
 ExcelDashboardBuilder.build_supply_views = _build_supply_views
+
+
+def _build_system_health(self) -> None:
+    """شیت ۱۷ — مبنای اعتماد به بقیه شیت‌ها.
+
+    مثل نماهای تأمین، شکستِ این شیت نباید گزارش رسمی را زمین بزند.
+    """
+    try:
+        from .. import health as _h
+        from .system_health import SHEET as _SH
+        from .system_health import build as _build
+        _build(self.wb)
+        # دفتر کنار گزارش هم نوشته می‌شود: ایمیل و داشبورد Streamlit در
+        # فرآیند دیگری اجرا می‌شوند و دفترِ درون‌حافظه‌ای را نمی‌بینند.
+        _h.save(os.path.dirname(self.output_path) or ".")
+        log.info(f"📄 شیت «{_SH}» ساخته شد.")
+    except Exception as ex:      # noqa: BLE001
+        log.warning(f"⚠️ شیت سلامت سیستم ساخته نشد ({type(ex).__name__}: {ex}).")
+
+
+ExcelDashboardBuilder.build_system_health = _build_system_health

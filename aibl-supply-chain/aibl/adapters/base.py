@@ -26,6 +26,7 @@ import pandas as pd
 from ..config.sources import SourceSpec, get_source
 from ..core.columns import find_col
 from ..core.text import clean_bl, clean_employee_code, clean_key, clean_part_no
+from .. import health
 from ..dataio.logging_setup import log
 from ..dataio.reader import read_source
 
@@ -55,17 +56,50 @@ class SourceAdapter(ABC):
 
     # ── API عمومی ──
     def load(self) -> Dict[str, pd.DataFrame]:
-        """خروجی: {نام منطقی: DataFrame استانداردشده}."""
-        sheets = read_source(self.key)
+        """خروجی: {نام منطقی: DataFrame استانداردشده}.
+
+        وضعیت هر سورس اینجا در «سلامت سیستم» ثبت می‌شود — چون این تنها
+        نقطه‌ای است که همه سورس‌ها از آن رد می‌شوند. بدون این ثبت،
+        «۰ سفارش خارج از Commercial Expert Data» و «فایل بارگذاری نشد»
+        در گزارش یک شکل دارند.
+        """
+        import time
+        rec = health.current().source(
+            self.key, title=self.spec.role, required=bool(self.spec.required))
+        t0 = time.time()
+        try:
+            sheets = read_source(self.key)
+        except Exception as ex:                     # noqa: BLE001
+            rec.status = health.FAILED
+            rec.error = f"{type(ex).__name__}: {ex}"
+            rec.elapsed_s = round(time.time() - t0, 3)
+            raise
         if not sheets:
+            rec.elapsed_s = round(time.time() - t0, 3)
+            if rec.schema_gaps:
+                # فایل بود، ساختارش نبود. این «ناقص» است نه «ردشده» —
+                # چون درمانش تماس با صاحب فایل است، نه با شبکه.
+                rec.status = health.DEGRADED
+                rec.error = rec.error or "ساختار فایل با انتظار نمی‌خواند"
+            else:
+                rec.status = health.FAILED if self.spec.required else health.SKIPPED
+                rec.error = rec.error or "فایل/شیت در دسترس نبود"
+            health.current().find(
+                "سورس", health.ERROR if self.spec.required else health.WARN,
+                f"سورس «{self.key}» بارگذاری نشد", self.spec.role)
             if self.spec.required:
                 raise FileNotFoundError(f"سورس الزامی «{self.key}» در دسترس نیست.")
             log.warning(f"⏭️ سورس «{self.key}» ({self.spec.role}) در دسترس نیست؛ رد شد.")
             return {}
         try:
-            return self.transform(sheets)
+            out = self.transform(sheets)
         except Exception as ex:
+            rec.status = health.FAILED
+            rec.error = f"{type(ex).__name__}: {ex}"
+            rec.elapsed_s = round(time.time() - t0, 3)
             log.error(f"❌ خطا در adapter «{self.key}»: {ex}", exc_info=True)
+            health.current().find("سورس", health.ERROR,
+                                  f"adapter «{self.key}» خطا داد", rec.error)
             if self.spec.required or os.environ.get("AIBL_STRICT_ADAPTERS") == "1":
                 raise
             log.critical(
@@ -73,6 +107,14 @@ class SourceAdapter(ABC):
                 f"خروجی این اجرا ناقص است — برای توقف در چنین حالتی "
                 f"AIBL_STRICT_ADAPTERS=1 را تنظیم کنید.")
             return {}
+        rec.elapsed_s = round(time.time() - t0, 3)
+        rec.frames = len(out)
+        rec.rows = int(sum(len(f) for f in out.values()))
+        rec.files = 1 if out else 0
+        # شکاف اسکیما را read_sheet قبلاً ثبت کرده؛ آن وضعیت نباید پاک شود
+        if rec.status != health.DEGRADED:
+            rec.status = health.OK if out else health.SKIPPED
+        return out
 
     @abstractmethod
     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
