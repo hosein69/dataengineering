@@ -434,77 +434,126 @@ with tab_quality:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  ۷) خروجی
+#  ۷) خروجی — سازنده گزارش با قالب، فرمت و کنترل صحت
 # ══════════════════════════════════════════════════════════════════════════
 with tab_export:
+    from aibl.studio_core import templates as tpl
+    from aibl.studio_core.grain import GRAIN_FA, column_grain, measure_kind, KIND_FA
+    from aibl.studio_core.report_builder import ReportSpec, build as build_report
+
     sel_cols = [c for c in st.session_state.sel_fields if c in fdf.columns]
-    st.markdown(f'<div class="panel"><h3>خروجی‌ها</h3><p class="hint">'
-                f'همه خروجی‌ها همان {len(sel_cols):,} فیلد انتخابی و همان فیلتر '
-                f'فعلی ({len(fdf):,} ردیف) را حمل می‌کنند.</p></div>',
-                unsafe_allow_html=True)
 
-    e1, e2, e3 = st.columns(3)
+    with st.container(border=True):
+        panel_open("۱ · قالب گزارش",
+                   "قالب فقط چیدمان و نقطه شروع فیلدهاست؛ انتخاب نهایی فیلد با شماست.")
+        keys = list(tpl.TEMPLATES)
+        pick = st.radio(
+            "قالب", keys, horizontal=True, label_visibility="collapsed",
+            format_func=lambda k: f"{tpl.TEMPLATES[k].icon} {tpl.TEMPLATES[k].title}")
+        T = tpl.get(pick)
+        st.caption(T.description)
+        c1, c2 = st.columns([1, 1])
+        if c1.button("استفاده از فیلدهای پیش‌فرض این قالب", use_container_width=True):
+            st.session_state.sel_fields = [c for c in T.default_fields if c in df.columns]
+            st.rerun()
+        c2.caption(f"بخش‌ها: " + " · ".join(tpl.SECTIONS.get(x, x) for x in T.sections))
 
-    with e1:
-        st.markdown("**HTML داینامیک**")
-        rows = st.number_input("حداکثر ردیف", 500, 50000, 5000, 500)
-        title = st.text_input("عنوان", "AIBL — نمای اجرایی")
-        if st.button("ساخت HTML", use_container_width=True):
-            html = build_dynamic_html(fdf, ref_date, title, int(rows),
-                                      selected_fields=sel_cols)
-            st.session_state.html_out = html
-            st.success(f"ساخته شد — {len(html)/1e6:.2f} مگابایت")
-        if st.session_state.get("html_out"):
-            st.download_button("⬇ دانلود HTML",
-                               st.session_state.html_out.encode("utf-8"),
-                               file_name=f"AIBL_Studio_{ref_date}.html",
-                               mime="text/html", use_container_width=True)
+    with st.container(border=True):
+        panel_open("۲ · محتوا و فرمت")
+        a, b, c = st.columns([1, 1, 1])
+        with a:
+            st.markdown("**فرمت خروجی**")
+            f_xls = st.checkbox("Excel", value=True)
+            f_html = st.checkbox("HTML داینامیک (فیلترپذیر)", value=True)
+            f_pdf = st.checkbox("PDF", value=True)
+        with b:
+            st.markdown("**محتوا**")
+            want_vis = st.checkbox("نمودارها / ویژوال", value=True)
+            want_tab = st.checkbox("جدول‌ها", value=True)
+        with c:
+            st.markdown("**دامنه**")
+            rows_cap = st.number_input("حداکثر ردیف", 100, 100000,
+                                       int(T.max_rows), 100)
+            stem = st.text_input("نام فایل", f"AIBL {T.title}")
+        st.caption(f"فیلدهای انتخابی: **{len(sel_cols):,}** — از تب «سازنده گزارش» "
+                   f"تغییرشان دهید.")
 
-    with e2:
-        st.markdown("**Excel سفارشی**")
-        # نام پیش‌فرض عمداً با گزارش رسمی فرق دارد؛ writer هم نگهبان دارد.
-        name = st.text_input("نام فایل", DEFAULT_CUSTOM_NAME)
-        include_process = st.checkbox(
-            "افزودن شیت‌های فرآیند", value=True,
-            help="لاگ رویداد، جدول پرونده، گلوگاه، واریانت و انطباق")
-        if st.button("ساخت Excel", use_container_width=True):
-            p = (Path(os.getenv("AIBL_DAILY_REPORT_ROOT",
-                                str(Path(official_excel).parent)))
-                 / ref_date / f"{ref_date}_{name.strip() or DEFAULT_CUSTOM_NAME}.xlsx")
+    # ── کنترل صحت، پیش از ساخت ──
+    with st.container(border=True):
+        panel_open("۳ · کنترل صحت محاسبات",
+                   "هر ستون عددی با دانه‌ی خودش تجمیع می‌شود تا دوباره‌شماری رخ ندهد.")
+        from aibl.studio_core.grain import fanout as _fanout, integrity_report as _integ
+        fo = _fanout(fdf)
+        if not fo.empty:
+            risky = fo[fo["ضریب تکرار"] > 1.0]
+            if not risky.empty:
+                st.warning(
+                    "دانه‌های زیر در این فیلتر تکرار دارند؛ جمع ساده روی آن‌ها "
+                    "چند برابر می‌شد و به‌جایش تجمیع دانه‌ای اعمال می‌شود: "
+                    + "، ".join(f"{r['دانه']} ×{r['ضریب تکرار']}"
+                                for _, r in risky.iterrows()))
+            else:
+                st.success("در این فیلتر هیچ دانه‌ای تکرار ندارد — جمع ساده و "
+                           "جمع دانه‌ای یکی می‌شوند.")
+            st.dataframe(fo, use_container_width=True, hide_index=True)
+        integ = _integ(fdf, sel_cols, DISPLAY)
+        if not integ.empty:
+            with st.expander(f"ردپای محاسباتی {len(integ)} ستون عددی", expanded=False):
+                st.dataframe(integ, use_container_width=True, hide_index=True)
+
+    # ── ساخت ──
+    formats = ([("excel") ] if f_xls else []) + (["html"] if f_html else []) \
+        + (["pdf"] if f_pdf else [])
+    if st.button("🛠 ساخت گزارش", type="primary", use_container_width=True,
+                 disabled=not formats):
+        out_dir = (Path(os.getenv("AIBL_DAILY_REPORT_ROOT",
+                                  str(Path(official_excel).parent)))
+                   / ref_date / "reports")
+        spec = ReportSpec(template=pick, fields=sel_cols, ref_date=ref_date,
+                          title=f"AIBL — {T.title}", formats=formats,
+                          visuals=want_vis, tables=want_tab,
+                          max_rows=int(rows_cap), file_stem=stem.strip() or f"AIBL {T.title}")
+        with st.spinner("در حال ساخت گزارش…"):
             try:
-                out = build_custom_excel(
-                    fdf, p, ["kpi", "criticality", "table"] + (
-                        ["process"] if include_process else []),
-                    ref_date, selected_fields=sel_cols, field_labels=DISPLAY,
-                    process_tables=extras if include_process else None)
-                st.session_state.xls_out = out
-                st.success(f"ساخته شد: {Path(out).name}")
-            except OfficialReportOverwrite as ex:
-                st.error(str(ex))
+                res = build_report(fdf, extras, spec, DISPLAY, out_dir)
+                st.session_state.report_files = {k: str(v) for k, v in res.files.items()}
+                st.session_state.report_msgs = res.messages
             except Exception as ex:
-                st.error(f"ساخت Excel ناموفق بود: {ex}")
-        if st.session_state.get("xls_out") and Path(st.session_state.xls_out).exists():
-            p = Path(st.session_state.xls_out)
-            st.download_button("⬇ دانلود Excel", p.read_bytes(), file_name=p.name,
-                               mime=("application/vnd.openxmlformats-officedocument"
-                                     ".spreadsheetml.sheet"),
-                               use_container_width=True, key="xls_dl")
+                st.session_state.report_files = {}
+                st.session_state.report_msgs = [f"⚠️ ساخت ناموفق بود: {ex}"]
+        st.rerun()
 
-    with e3:
-        st.markdown("**گزارش رسمی خط لوله**")
-        st.caption("۱۳ شیت کامل — ساخته‌شده توسط خط لوله، نه فیلترشده.")
+    files = st.session_state.get("report_files") or {}
+    msgs = st.session_state.get("report_msgs") or []
+    if msgs:
+        with st.container(border=True):
+            panel_open("۴ · خروجی‌ها")
+            for m in msgs:
+                (st.warning if str(m).startswith("⚠️") else st.write)(m)
+            mimes = {
+                "excel": ("⬇ دانلود Excel", "application/vnd.openxmlformats-"
+                          "officedocument.spreadsheetml.sheet"),
+                "html": ("⬇ دانلود HTML داینامیک", "text/html"),
+                "pdf": ("⬇ دانلود PDF", "application/pdf"),
+            }
+            dl = st.columns(max(len(files), 1))
+            for i, (kind, path) in enumerate(files.items()):
+                p = Path(path)
+                if not p.exists():
+                    continue
+                label, mime = mimes.get(kind, (f"⬇ {kind}", "application/octet-stream"))
+                dl[i].download_button(label, p.read_bytes(), file_name=p.name,
+                                      mime=mime, use_container_width=True,
+                                      key=f"dl_{kind}")
+
+    with st.container(border=True):
+        panel_open("گزارش رسمی خط لوله",
+                   "۱۳ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
         if official_excel and Path(official_excel).exists():
             st.download_button("⬇ دانلود Excel رسمی", Path(official_excel).read_bytes(),
                                file_name=Path(official_excel).name,
                                mime=("application/vnd.openxmlformats-officedocument"
-                                     ".spreadsheetml.sheet"),
-                               use_container_width=True)
-        st.markdown("**CSV کامل**")
-        if sel_cols:
-            full = fdf[sel_cols].rename(columns={c: lab(c) for c in sel_cols})
-            st.download_button("⬇ دانلود CSV", full.to_csv(index=False).encode("utf-8-sig"),
-                               file_name=f"AIBL_{ref_date}_full.csv", mime="text/csv",
-                               use_container_width=True)
+                                     ".spreadsheetml.sheet"))
 
 st.caption("AIBL Studio — لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
            "منطق کسب‌وکار در موتور AIBL باقی می‌ماند.")

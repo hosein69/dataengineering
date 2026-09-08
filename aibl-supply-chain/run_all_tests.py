@@ -27,6 +27,7 @@ SUITES = [
     ("۸) ادعاهای مستندات", "tests/test_doc_claims.py"),
     ("۹) بسته ایمیل مدیریتی", "tests/test_email_report.py"),
     ("۱۰) AIBL Studio ماژولار", "tests/test_studio.py"),
+    ("۱۱) سازنده گزارش و صحت دانه‌ای", "tests/test_report_builder.py"),
 ]
 
 

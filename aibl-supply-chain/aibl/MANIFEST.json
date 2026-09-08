@@ -33,7 +33,7 @@
   "engines/criticality.py": "362b0102c3e9258c",
   "engines/math_engine.py": "956021bba1eb3ac2",
   "engines/risk.py": "1c803de6ed988453",
-  "factsheet.py": "542a06b424a92375",
+  "factsheet.py": "7dd599d68c5a3410",
   "integrations/__init__.py": "36f09d8286b1d64f",
   "integrations/daily_email.py": "7aa636629c4aa4d5",
   "manifest.py": "2ee6085b2982e325",
@@ -79,9 +79,13 @@
   "studio_core/excel_export.py": "b16ddbfea49307de",
   "studio_core/field_catalog.py": "adba754d4ab33fea",
   "studio_core/filters.py": "61a5bed397ac01b6",
-  "studio_core/html_export.py": "8d076af5246b74ad",
+  "studio_core/grain.py": "db243d3874bb96a5",
+  "studio_core/html_export.py": "da0643f0ad8e3bfa",
+  "studio_core/pdf_export.py": "ef1595268bb505a7",
   "studio_core/registry.py": "79e614b025e81dff",
+  "studio_core/report_builder.py": "112fe2887ebb6bf0",
+  "studio_core/templates.py": "98b04882a1d333b3",
   "version.py": "89a819bc5b2c7765"
  },
- "package_version": "26.4.0"
+ "package_version": "26.5.0"
 }
