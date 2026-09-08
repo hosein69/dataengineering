@@ -252,6 +252,15 @@ with t_over:
             st.plotly_chart(fig, use_container_width=True)
 
     with st.container(border=True):
+        st.markdown("##### نقش‌های کاری")
+        st.caption("«کارشناس» یک شغل نیست — هفت شغل است. هر نقش فقط با "
+                   "هم‌نقش خودش سنجیده می‌شود و شاخصی که برای آن نقش "
+                   "بی‌معناست اصلاً محاسبه نمی‌گردد.")
+        if not RUN.role_coverage.empty:
+            st.dataframe(RUN.role_coverage, use_container_width=True,
+                         hide_index=True)
+
+    with st.container(border=True):
         st.markdown("##### گروه‌های همتا")
         st.caption("مقایسه فقط درون گروه انجام می‌شود. «صعود» یعنی گروه از حد "
                    "نصاب کوچک‌تر بوده و ناچار در سطح بالاتری سنجیده شده است.")

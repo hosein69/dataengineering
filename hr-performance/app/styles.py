@@ -60,6 +60,74 @@ box-shadow:0 8px 20px rgba(13,54,107,.14);border-color:var(--brand)}}
 [data-testid="stSidebar"] *{{font-family:{FONT_STACK}!important}}
 div[data-testid="stDataFrame"]{{border-radius:12px;overflow:hidden;
 border:1px solid var(--border)}}
+
+/* ── فونت: باید به **همه** عناصر برسد ──────────────────────────────────
+   CSS قبلی فقط html/body/.stApp را هدف می‌گرفت و ویجت‌های داخلی
+   Streamlit (اسلایدر، تب، جدول، دکمه) روی فونت پیش‌فرض «Source Sans»
+   می‌ماندند — اندازه‌گیری: ۱۶۵ عنصر با فونت اشتباه. انتخابگر عام لازم
+   است چون کلاس‌های Streamlit هش‌شده و ناپایدارند. */
+html, body, .stApp, .stApp *, [data-testid] , [data-testid] * ,
+[class*="st-"], [class*="st-"] * {{
+  font-family: {FONT_STACK} !important;
+}}
+/* استثنا: کد و عدد تک‌فاصله */
+code, pre, kbd, samp, [data-testid="stCode"] * {{
+  font-family: 'Cascadia Mono','Consolas','Courier New',monospace !important;
+}}
+
+/* ── کنتراست: هیچ متنی نباید هم‌رنگ پس‌زمینه‌اش باشد ──────────────────
+   مقدارِ روی اسلایدر با رنگ primary روی نوارِ هم‌رنگ نوشته می‌شد
+   (نسبت کنتراست ۱٫۰ — عملاً نامرئی). */
+[data-testid="stSliderTickBarMin"],
+[data-testid="stSliderTickBarMax"] {{
+  color: var(--text) !important;
+  font-weight: 700;
+}}
+/* مقدارِ اسلایدر روی نوارِ رنگی می‌نشیند، پس باید سفید باشد نه تیره
+   (تیره روی برند ۲٫۹۷ می‌داد؛ سفید ۶٫۶۳). */
+[data-testid="stSliderThumbValue"] {{
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,.45);
+}}
+
+[data-baseweb="slider"] div[role="slider"] + div {{ color: var(--text) !important; }}
+
+/* برچسب ویجت‌ها و متن کمکی */
+label, [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] * ,
+.stCheckbox label, .stRadio label, .stSelectbox label, .stMultiSelect label {{
+  color: var(--text) !important;
+}}
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * ,
+small, .stCaption {{ color: var(--t2) !important; }}
+
+/* چیپ‌های multiselect: متن روشن روی پس‌زمینه برند */
+[data-baseweb="tag"] {{ background: var(--brand) !important; }}
+[data-baseweb="tag"], [data-baseweb="tag"] * ,
+[data-baseweb="tag"] span {{ color: #ffffff !important; }}
+
+/* تب‌ها */
+.stTabs [data-baseweb="tab"] {{ color: var(--t2) !important; }}
+.stTabs [data-baseweb="tab"][aria-selected="true"] {{
+  color: var(--brand) !important; font-weight: 700; }}
+
+/* جدول و متریک */
+[data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {{ color: var(--t2) !important; }}
+[data-testid="stMetricValue"] {{ color: var(--text) !important; }}
+[data-testid="stDataFrame"] {{ color: var(--text); }}
+
+/* دکمه‌ها: متن باید روی پس‌زمینه‌اش خوانا بماند */
+.stButton>button, .stDownloadButton>button {{
+  background: #ffffff; color: var(--text) !important; }}
+.stButton>button[kind="primary"], .stDownloadButton>button[kind="primary"] {{
+  background: var(--brand); color: #ffffff !important; border-color: var(--brand); }}
+.stButton>button:hover, .stDownloadButton>button:hover {{ color: var(--brand) !important; }}
+.stButton>button[kind="primary"]:hover {{ color: #ffffff !important; }}
+
+/* expander و alert */
+[data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {{
+  color: var(--text) !important; }}
+.stAlert, .stAlert * {{ color: var(--text) !important; }}
+
 @media (prefers-reduced-motion: reduce){{
  .kpi,.kpi::after,.band,.stButton>button{{transition:none!important}}
  .kpi:hover{{transform:none}}}}

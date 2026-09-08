@@ -19,8 +19,13 @@ import numpy as np
 import pandas as pd
 
 MANAGEMENTS = ["مدیریت خرید خارجی مواد اولیه", "مدیریت خرید خارجی قطعات تولیدی"]
-DEPARTMENTS = ["اداره ترخیص", "اداره اعتبارات", "اداره ثبت سفارش"]
-JOB_FAMILIES = ["ترخیص", "اعتبارات", "ثبت سفارش"]
+#: اداره و نقش کاری جفت‌اند — کارشناس ترخیص در اداره ترخیص می‌نشیند.
+DEPARTMENTS = ["اداره ترخیص", "اداره اعتبارات", "اداره ثبت سفارش",
+               "اداره خرید خارجی", "اداره رفع تعهد ارزی", "اداره کنترل اسناد"]
+#: هفت نقش کاری متمایز — «کارشناس» یک شغل نیست، هفت شغل است.
+JOB_FAMILIES = ["کارشناس ترخیص", "کارشناس اعتبارات", "کارشناس ثبت سفارش",
+                "کارشناس خرید خارجی", "کارشناس رفع تعهد ارزی",
+                "کارشناس کنترل اسناد"]
 ROLES = ["کارشناس", "مسئول", "رئیس"]
 
 
@@ -32,8 +37,8 @@ def build(n_people: int = 60, seed: int = 11) -> Tuple[pd.DataFrame, pd.DataFram
     for i in range(n_people):
         mg = MANAGEMENTS[i % 2]
         # T6: توزیع واقعی روی اداره و نوع کار
-        d = DEPARTMENTS[i % 3]
-        jf = JOB_FAMILIES[i % 3]
+        d = DEPARTMENTS[i % len(DEPARTMENTS)]
+        jf = JOB_FAMILIES[i % len(JOB_FAMILIES)]
         role = ROLES[0] if i % 11 else ROLES[1]
         if i in (0, 1):
             role = ROLES[2]
@@ -56,7 +61,7 @@ def build(n_people: int = 60, seed: int = 11) -> Tuple[pd.DataFrame, pd.DataFram
         "person_key": "E9001", "full_name": "کارمند تک‌نفره",
         "personnel_id": "9001", "vice": "معاونت خرید",
         "management": MANAGEMENTS[0], "department": "اداره ویژه",
-        "job_family": "بازرسی", "role": "کارشناس",
+        "job_family": "کارشناس بازرگانی", "role": "کارشناس",
         "manager": "مدیر ۱", "head": "رئیس ۱", "active": 1,
         "tenure_years": 3.0,
     })

@@ -29,7 +29,7 @@ BORDER = "#e3e3dd"
 BORDER_STRONG = "#cfcfc6"
 TEXT = "#0b0b0b"
 TEXT_SECONDARY = "#52514e"
-TEXT_MUTED = "#7a7a73"
+TEXT_MUTED = "#6e6e66"
 
 # ── هویت AIBL ─────────────────────────────────────────────────────────────
 BRAND = "#0f6e6e"

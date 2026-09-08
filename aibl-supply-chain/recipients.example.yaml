@@ -4,7 +4,7 @@
 #    نباید در مخزن نگه‌داری شود (در .gitignore آمده).
 #
 # محل قرارگیری فایل واقعی، به ترتیب اولویت:
-#   ۱) متغیر محیطی AIBL_EMAIL_TO="a@x.ir;b@x.ir"
+#   ۱) متغیر محیطی AIBL_EMAIL_TO="a@example.invalid;b@example.invalid"
 #   ۲) AIBL_RECIPIENTS_FILE=/secure/path/recipients.yaml
 #   ۳) $AIBL_HOME/recipients.yaml   (پیش‌فرض ~/.aibl/recipients.yaml)
 #

@@ -39,7 +39,7 @@ BAND_ORDER = list(BANDS)
 
 BRAND, BRAND_DEEP = "#0f6e6e", "#0a4f4f"
 SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
-TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#7a7a73"
+TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
 
 
 def _measure_cols(df: pd.DataFrame, cols: List[str]) -> Dict[str, str]:

@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
-TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#7a7a73"
+TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
 BRAND, BRAND_DEEP = "#1c5cab", "#0d366b"      # آبی — هویت منابع انسانی
 
 STATUS = {

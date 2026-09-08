@@ -160,6 +160,62 @@ def test_coverage() -> None:
           pd.notna(r.performance["partial"]))
 
 
+def test_job_families() -> None:
+    print("\n── ۸) نقش کاری — هفت شغل، نه یک شغل ──")
+    from hrperf.identity.roles import (FAMILIES, applicable, classify,
+                                       coverage, metrics_for)
+    check("هفت نقش کاری تعریف شده است", len(FAMILIES) == 7, str(len(FAMILIES)))
+    for txt, want in [("کارشناس ترخیص", "clearance"),
+                      ("اعتبارات", "credit"),
+                      ("رفع تعهد", "settlement"),
+                      ("EXPERT_BUYER", "buyer"),
+                      ("کنترل اسناد", "doc_control")]:
+        check(f"«{txt}» به نقش درست نگاشت می‌شود", classify(txt) == want,
+              str(classify(txt)))
+    check("متن ناشناخته نقش نمی‌گیرد (حدس زده نمی‌شود)",
+          classify("چیز نامربوط") is None)
+
+    cl = set(metrics_for("clearance") or [])
+    cr = set(metrics_for("credit") or [])
+    check("مجموعه شاخص هر نقش متفاوت است", cl != cr)
+    check("«نرخ بارنامه باز» برای ترخیص هست", "open_bill_rate" in cl)
+    check("«نرخ بارنامه باز» برای اعتبارات نیست", "open_bill_rate" not in cr)
+
+    ppl = pd.DataFrame({"person_key": ["a", "b"],
+                        "job_family": ["کارشناس ترخیص", "کارشناس اعتبارات"]})
+    lg = pd.DataFrame({
+        "person_key": ["a", "a", "b", "b"],
+        "metric_key": ["open_bill_rate", "fpy", "open_bill_rate", "fpy"],
+        "value": [0.2, 0.9, 0.3, 0.8], "sample_n": [10, 10, 10, 10],
+        "source": ["s"] * 4})
+    out = applicable(lg, ppl)
+    kept_b = set(out[out["person_key"] == "b"]["metric_key"])
+    check("شاخص بی‌ربط به نقش، برای آن فرد کنار گذاشته می‌شود",
+          "open_bill_rate" not in kept_b and "fpy" in kept_b, str(sorted(kept_b)))
+    kept_a = set(out[out["person_key"] == "a"]["metric_key"])
+    check("شاخص مرتبط با نقش حفظ می‌شود",
+          {"open_bill_rate", "fpy"} <= kept_a, str(sorted(kept_a)))
+    check("توزیع نقش‌ها گزارش می‌شود", not coverage(ppl).empty)
+
+
+def test_peer_group_by_role() -> None:
+    print("\n── ۹) گروه همتا روی نقش کاری ──")
+    ppl = pd.DataFrame({
+        "person_key": [f"p{i}" for i in range(12)],
+        "management": ["م۱"] * 12,
+        "department": ["اداره ترخیص"] * 6 + ["اداره اعتبارات"] * 6,
+        "job_family": ["کارشناس ترخیص"] * 6 + ["کارشناس اعتبارات"] * 6,
+        "role": ["کارشناس"] * 12,
+    })
+    a = assign(ppl, min_size=4)
+    check("کارشناس ترخیص و اعتبارات در یک گروه نمی‌افتند",
+          a["peer_group"].nunique() == 2, str(a["peer_group"].nunique()))
+    groups = a.groupby("peer_group")["person_key"].apply(set).to_dict()
+    mixed = [g for g, members in groups.items()
+             if len(members & set(ppl["person_key"][:6])) not in (0, len(members))]
+    check("هیچ گروهی دو نقش کاری را قاطی نکرده است", not mixed, str(mixed))
+
+
 def test_contribution() -> None:
     print("\n── ۷) توضیح‌پذیری ──")
     m = load_model()
@@ -184,6 +240,8 @@ if __name__ == "__main__":
     test_absolute_scoring()
     test_peers()
     test_coverage()
+    test_job_families()
+    test_peer_group_by_role()
     test_contribution()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")

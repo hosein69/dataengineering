@@ -73,6 +73,9 @@ class CreditAdapter(SourceAdapter):
         "CARGO_DESC":   ["شرح محموله"],
         "DEPARTMENT":   ["اداره"],
         "EXPERT":       ["کارشناس اعتبارات"],
+        # ⚠️ ستون جداگانه کارشناس خرید. تا نسخه ۲۶٫۵ خوانده نمی‌شد و
+        # resolver ناچار نام کارشناس ترخیص را جای خرید می‌نشاند.
+        "BUYER":        ["کارشناس خرید خارجی", "کارشناس خريد خارجي"],
         "SUPPLIER":     ["نام تامین کننده"],
         "PAYMENT_TYPE": ["نوع پرداخت"],
         "BANK_BRANCH":  ["بانك عامل شعبه", "بانک عامل شعبه"],
@@ -121,6 +124,8 @@ class IlAppendAdapter(SourceAdapter):
         "COMPANY":      ["نام شرکت"],
         "FILE_NO":      ["شماره پرونده ثبت سفارش"],
         "REG_DATE":     ["تاریخ صدور ثبت سفارش"],
+        # کارشناس ثبت سفارش — نقش مستقل، نه «کارشناس» عمومی.
+        "EXPERT":       ["نام کارشناس", "کارشناس ثبت سفارش"],
     }
 
     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:

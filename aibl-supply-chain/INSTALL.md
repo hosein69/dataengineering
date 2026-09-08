@@ -158,7 +158,7 @@ KEY_BL         MSCU1234567    MSCU-1234567  ← خط تیره
 | `python -m aibl.rulebook.validate` | اعتبارسنجی قوانین + فهرست ۱۹ قاعده نیازمند تطبیق |
 | `python -m aibl.pipeline` | اجرای کامل |
 | `python -m aibl run` | doctor سپس اجرا |
-| `python run_all_tests.py` | هر ۳۳۸ تست |
+| `python run_all_tests.py` | هر ۳۴۶ تست |
 
 ---
 

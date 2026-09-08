@@ -30,6 +30,7 @@ from .config.settings import SETTINGS
 from .dataio import db as dbmod
 from .dataio.sources import load_inputs, read_org_map
 from .identity import peers as peermod
+from .identity import roles as rolemod
 from .metrics.derive import apply_derived
 from .score.aggregate import ScoreResult, aggregate
 from .score.normalize import (build_reference, calibrate_k, evidence,
@@ -63,6 +64,8 @@ class RunResult:
     model: PerformanceModel
     run_id: Optional[int] = None
     warnings: List[str] = field(default_factory=list)
+    #: توزیع نفرات روی نقش‌های کاری
+    role_coverage: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @property
     def leaderboard(self) -> pd.DataFrame:
@@ -144,6 +147,22 @@ class Pipeline:
         keys = people["person_key"].tolist()
         mkeys = list(self.model.metrics)
 
+        # ۳۵ نقش کاری — شاخصی که برای نقشِ فرد بی‌معناست کنار گذاشته می‌شود
+        before = len(long)
+        long = rolemod.applicable(long, people)
+        dropped = before - len(long)
+        if dropped:
+            warnings.append(
+                f"{dropped:,} رکورد شاخص برای نقش کاریِ صاحبش بی‌معنا بود و "
+                f"کنار گذاشته شد (مثلاً «نرخ بارنامه باز» برای کارشناس اعتبارات).")
+        rcov = rolemod.coverage(people)
+        if not rcov.empty:
+            unknown = rcov[rcov["نقش"] == "نامشخص"]["نفر"].sum()
+            if unknown:
+                warnings.append(
+                    f"{int(unknown):,} نفر نقش کاری مشخصی ندارند و در گروه "
+                    f"همتای عمومی سنجیده می‌شوند.")
+
         # ۴۰ derive
         long = apply_derived(long, self.model)
 
@@ -201,6 +220,7 @@ class Pipeline:
         rr = RunResult(people, long, raw, scores, n_mat, result, effects, fair,
                        peer_summary, pd.DataFrame(calib), self.model,
                        warnings=warnings)
+        rr.role_coverage = rcov
 
         # ۸۰ persist
         if persist:

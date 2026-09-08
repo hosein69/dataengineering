@@ -35,7 +35,16 @@ COMPUTED_LABELS: Dict[str, str] = {
     "KEY_EMP": "کد پرسنلی", "KEY_MATERIAL": "کد متریال", "KEY_PR": "شماره درخواست خرید",
     "CANONICAL_BL": "شماره بارنامه", "CANONICAL_ORDER": "شماره سفارش",
     "CANONICAL_PART_NO": "شماره فنی", "CANONICAL_GOODS_DESC": "شرح کالا",
-    "CANONICAL_EXPERT": "نام کارشناس", "CANONICAL_REG": "ثبت سفارش",
+    "CANONICAL_EXPERT": "کارشناس مالک مرحله فعلی", "CANONICAL_REG": "ثبت سفارش",
+    # نقش‌های کارشناسی — هر نقش مستقل، بدون سرریز به نقش دیگر
+    "EXPERT_ROLE": "نقش کارشناس مالک",
+    "EXPERT_BUYER": "کارشناس خرید خارجی",
+    "EXPERT_ORDER_REG": "کارشناس ثبت سفارش",
+    "EXPERT_CREDIT": "کارشناس اعتبارات",
+    "EXPERT_SETTLEMENT": "کارشناس رفع تعهد ارزی",
+    "EXPERT_CLEARANCE": "کارشناس ترخیص",
+    "EXPERT_DOC": "کارشناس کنترل اسناد",
+    "EXPERT_COMMERCIAL": "کارشناس بازرگانی",
     # سازمان
     "ORG_DEPT": "مدیریت", "ORG_MANAGER": "مدیر", "ORG_HEAD": "رئیس",
     "ORG_VICE": "معاونت", "ORG_CHAIN": "زنجیره سازمانی", "ORG_MATCHED": "تطبیق سازمانی",
@@ -114,7 +123,7 @@ DERIVED_LABELS: Dict[str, str] = {
 #: گروه‌بندی ستون‌های محاسباتی بر اساس الگوی نام
 COMPUTED_GROUPS: List[tuple] = [
     ("کلیدهای کانونی", re.compile(r"^(KEY_|CANONICAL_)")),
-    ("سازمان و مالکیت", re.compile(r"^ORG_")),
+    ("سازمان و مالکیت", re.compile(r"^ORG_|^EXPERT_")),
     ("بحرانی بودن و مقاومت", re.compile(
         r"(بحرانی|مقاومت|CRITICAL|نیاز روزانه|موجودی کل)")),
     ("ریسک و تعهد ارزی", re.compile(r"(ریسک|تعهد|جریمه|تأخیر|رسوب)")),

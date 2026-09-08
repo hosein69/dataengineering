@@ -130,12 +130,17 @@ opts = filter_options(df)
 crit = st.sidebar.multiselect("طبقه بحرانی", opts["criticality"], default=opts["criticality"])
 mgmt = st.sidebar.multiselect("مدیریت", opts["management"], default=opts["management"])
 transport = st.sidebar.multiselect("روش حمل", opts["transport"], default=opts["transport"])
-expert = st.sidebar.multiselect("کارشناس", opts.get("expert", []), default=opts.get("expert", []))
+expert_role = st.sidebar.multiselect(
+    "نقش کارشناس", opts.get("expert_role", []), default=opts.get("expert_role", []),
+    help="کارشناس ترخیص، خرید، اعتبارات، ثبت سفارش و رفع تعهد نقش‌های جدا هستند.")
+expert = st.sidebar.multiselect("کارشناس مالک", opts.get("expert", []),
+                                default=opts.get("expert", []))
 search = st.sidebar.text_input("جستجوی سریع", placeholder="Material / Order / BL / Expert")
 critical_only = st.sidebar.checkbox("فقط پرونده‌های بحرانی")
 
 state = FilterState(criticality=crit, management=mgmt, transport=transport,
-                    expert=expert, search=search, critical_only=critical_only)
+                    expert=expert, expert_role=expert_role, search=search,
+                    critical_only=critical_only)
 fdf = apply_filters(df, state)
 
 st.sidebar.markdown("---")

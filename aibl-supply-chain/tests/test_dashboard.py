@@ -372,6 +372,46 @@ def test_regressions_v26_2_3() -> None:
     check("جمع سنجه با بُعد ستون درست است",
           float(_pivot(pv, "dept", "band", "sum", "val").values.sum()) == float(pv["val"].sum()))
 
+    # R10 ── نام کارشناس ترخیص جای کارشناس خرید می‌نشست.
+    # «CANONICAL_EXPERT» با «اولین مقدار غیرتهی» از پنج سورس پر می‌شد و
+    # چون ORC_BUYER فقط ۱۷٪ پر است، برای بیشتر ردیف‌ها به CL_EXPERT
+    # (کارشناس ترخیص) می‌افتاد و عملکرد ترخیص به پای خرید نوشته می‌شد.
+    from aibl.resolve.expert_roles import (ROLES, coverage as role_coverage,
+                                           current_owner, resolve_roles)
+    probe = pd.DataFrame({
+        "ORC_BUYER": ["اباذر بالی", "", ""],
+        "CL_EXPERT": ["یعقوب طایفه", "عقیل بقاپور", "امیر آقامحمدی"],
+        "SATA_CREDIT_EXPERT": ["حمید یحیائی", "مرتضی یزدی", ""],
+        "DOC_EXPERT": ["نیما صابری", "", ""],
+    })
+    res = resolve_roles(probe.copy())
+    check("هر نقش کارشناسی ستون مستقل دارد",
+          all(r.key in res.columns for r in ROLES), f"{len(ROLES)} نقش")
+    check("کارشناس ترخیص هرگز در ستون کارشناس خرید نمی‌نشیند",
+          list(res["EXPERT_BUYER"]) == ["اباذر بالی", "", ""],
+          str(list(res["EXPERT_BUYER"])))
+    check("ستون ترخیص فقط کارشناس ترخیص را دارد",
+          list(res["EXPERT_CLEARANCE"]) == ["یعقوب طایفه", "عقیل بقاپور",
+                                            "امیر آقامحمدی"])
+    check("ستون اعتبارات با ترخیص آلوده نمی‌شود",
+          list(res["EXPERT_CREDIT"]) == ["حمید یحیائی", "مرتضی یزدی", ""])
+
+    name, role = current_owner(res)
+    check("مالک مرحله فعلی همراه با نام نقشش گزارش می‌شود",
+          bool(str(role.iloc[0]).strip()) and bool(str(name.iloc[0]).strip()),
+          f"{name.iloc[0]} / {role.iloc[0]}")
+    check("نقش مالک با ستونی که نامش از آن آمده هم‌خوان است",
+          str(role.iloc[1]) == "کارشناس ترخیص"
+          and str(name.iloc[1]) == "عقیل بقاپور",
+          f"{name.iloc[1]} / {role.iloc[1]}")
+
+    cov = role_coverage(res)
+    check("پوشش هر نقش جداگانه گزارش می‌شود",
+          len(cov) == len(ROLES) and "پرشدگی (٪)" in cov.columns)
+    empty_roles = cov[cov["پرشدگی (٪)"] == 0]["نقش"].tolist()
+    check("نقش بدون داده صریحاً صفر گزارش می‌شود (نه پر از نقش دیگر)",
+          "کارشناس ثبت سفارش" in empty_roles, str(empty_roles))
+
     # R5 ── settings.py با f-string تودرتوی هم‌نقل‌قول فقط روی پایتون ۳٫۱۲+
     # کامپایل می‌شد؛ روی ۳٫۹–۳٫۱۱ کل پکیج SyntaxError می‌داد.
     bad = []

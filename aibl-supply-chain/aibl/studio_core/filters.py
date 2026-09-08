@@ -11,6 +11,9 @@ class FilterState:
     management: List[str] = field(default_factory=list)
     transport: List[str] = field(default_factory=list)
     expert: List[str] = field(default_factory=list)
+    #: فیلتر بر اساس نقش کارشناسی — «کارشناس ترخیص» با «کارشناس خرید»
+    #: یکی نیست و نباید در یک فهرست قاطی شوند.
+    expert_role: List[str] = field(default_factory=list)
     search: str = ""
     critical_only: bool = False
 
@@ -31,6 +34,8 @@ def apply_filters(df: pd.DataFrame, state: FilterState) -> pd.DataFrame:
         out = out[_str_series(out, "روش حمل").isin(state.transport)]
     if state.expert and "CANONICAL_EXPERT" in out.columns:
         out = out[_str_series(out, "CANONICAL_EXPERT").isin(state.expert)]
+    if state.expert_role and "EXPERT_ROLE" in out.columns:
+        out = out[_str_series(out, "EXPERT_ROLE").isin(state.expert_role)]
     if state.critical_only:
         mask = pd.Series(False, index=out.index)
         for c in ("BL_CRITICAL", "ORDER_CRITICAL"):
@@ -58,4 +63,5 @@ def filter_options(df: pd.DataFrame) -> Dict[str, List[str]]:
         "management": vals("ORG_DEPT"),
         "transport": vals("روش حمل"),
         "expert": vals("CANONICAL_EXPERT"),
+        "expert_role": vals("EXPERT_ROLE"),
     }

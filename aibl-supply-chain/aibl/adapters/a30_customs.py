@@ -134,6 +134,7 @@ class CotageAdapter(SourceAdapter):
         "PACK_COUNT":      ["تعداد بسته بندی"],
         "PACK_TYPE":       ["نوع بسته بندی"],
         "TRANSIT_STATUS":  ["وضعیت ترانزیت"],
+        "EXPERT":          ["کارشناس ترخیص", "کارشناس"],
         "ENTRY_BORDER":    ["مرز ورودی"],
         "DEST_CUSTOMS":    ["گمرک مقصد"],
         "DOC_DATE":        ["تاریخ دریافت اسناد جهت اظهار گمرکی از اعتبارات"],
