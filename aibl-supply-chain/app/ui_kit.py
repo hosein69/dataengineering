@@ -65,6 +65,11 @@ def kpis(df: pd.DataFrame) -> List[Dict[str, Any]]:
     overdue = int((num(df, "روزهای تأخیر").fillna(0) > 0).sum())
     crit_bl = int(df.loc[df["BL_CRITICAL"].astype(bool), "CANONICAL_BL"].replace("", pd.NA).nunique()) if "BL_CRITICAL" in df and "CANONICAL_BL" in df else 0
     crit_ord = int(df.loc[df["ORDER_CRITICAL"].astype(bool), "CANONICAL_ORDER"].replace("", pd.NA).nunique()) if "ORDER_CRITICAL" in df and "CANONICAL_ORDER" in df else 0
+    # «سنجیده نشد» ≠ «صفر». وقتی سورس خرید بارگذاری نشده، نباید کارت سبز
+    # نشان دهد که انگار همه سفارش‌ها مالک دارند.
+    cov_measured = ("COMMERCIAL_COVERAGE_STATE" in df
+                    and (df["COMMERCIAL_COVERAGE_STATE"] == "measured").any())
+    missing_commercial = int(df.loc[df["ORDER_MISSING_COMMERCIAL_EXPERT"].astype(bool), "CANONICAL_ORDER"].replace("", pd.NA).nunique()) if "ORDER_MISSING_COMMERCIAL_EXPERT" in df and "CANONICAL_ORDER" in df else 0
     stuck = num(df, "روزهای رسوب")
     risk = num(df, "امتیاز ریسک")
     return [
@@ -87,6 +92,11 @@ def kpis(df: pd.DataFrame) -> List[Dict[str, Any]]:
          "sub": "از تاریخ تخلیه", "critical": False},
         {"label": "بارنامه‌های بحرانی", "value": crit_bl, "sub": "حداقل یک متریال بحرانی", "critical": crit_bl > 0},
         {"label": "سفارش‌های بحرانی", "value": crit_ord, "sub": "حداقل یک متریال بحرانی", "critical": crit_ord > 0},
+        {"label": "سفارش خارج از Commercial Expert Data",
+         "value": missing_commercial if cov_measured else "سنجیده نشد",
+         "sub": "بدون انتساب کارشناس خرید" if cov_measured
+                else "سورس خرید در این اجرا بارگذاری نشد",
+         "critical": bool(cov_measured and missing_commercial > 0)},
         {"label": "میانگین ریسک",
          "value": "—" if not risk.notna().any() else f"{risk.mean():,.1f}",
          "sub": "موتور ۸ مؤلفه‌ای", "critical": False},

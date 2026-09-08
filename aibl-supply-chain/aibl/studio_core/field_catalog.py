@@ -118,6 +118,31 @@ DERIVED_LABELS: Dict[str, str] = {
     # فرآیند
     "CASE_KEY": "کلید پرونده", "EVENT_COUNT": "تعداد رویداد",
     "THROUGHPUT_DAYS": "طول چرخه (روز)", "PROCESS_COMPLETENESS": "کامل بودن فرآیند",
+    "ORDER_MISSING_COMMERCIAL_EXPERT": "سفارش درج‌نشده در Commercial Expert Data",
+    "COMMERCIAL_EXPERT_SOURCE_PRESENT": "وجود سفارش در Commercial Expert Data",
+    "ORDER_MISSING_COMMERCIAL_REASON": "علت نبود سفارش در Commercial Expert Data",
+    "COMMERCIAL_COVERAGE_STATE": "وضعیت سنجش پوشش سورس خرید",
+    # حوزه مسئولیت و مالکیت قطعه
+    "EXPERT_PURCHASING": "کارشناس خرید",
+    "EXPERT_COMMERCIAL": "کارشناس بازرگانی",
+    "EXPERT_LOGISTICS": "کارشناس حمل و لجستیک",
+    "PART_OWNER": "مالک قطعه (کارشناس خرید)",
+    "PART_OWNER_SOURCE": "منبع شناسایی مالک",
+    "PART_OWNER_DATA_GAP": "شکاف داده مالک",
+    "PART_OWNER_SOURCE_GAP": "فیلدهای غایب سورس مالک",
+    # وضعیت: کجا / کِی / چه کسی
+    "STATUS_WHERE": "موقعیت فعلی",
+    "STATUS_STAGE": "کد مرحله وضعیت",
+    "STATUS_ACTIVITY": "آخرین فعالیت",
+    "STATUS_WHEN": "تاریخ آخرین رویداد",
+    "STATUS_AGE_DAYS": "سن وضعیت (روز)",
+    "STATUS_WHO": "کارشناس مسئول وضعیت",
+    "STATUS_WHO_SCOPE": "حوزه مسئول وضعیت",
+    "STATUS_BASIS": "مبنای تعیین وضعیت",
+    "NEXT_ACTIVITY": "فعالیت بعدی مورد انتظار",
+    "WAITING_ON_SCOPE": "معطل حوزه",
+    "WAITING_ON_WHO": "معطل کارشناس",
+    "STATUS_MISSING": "تاریخ‌های ثبت‌نشده",
 }
 
 #: گروه‌بندی ستون‌های محاسباتی بر اساس الگوی نام

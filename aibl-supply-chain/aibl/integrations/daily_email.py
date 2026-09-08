@@ -264,7 +264,10 @@ def executive_kpis(df:pd.DataFrame)->list[dict[str,Any]]:
     crit_ord=unique(df["ORDER_CRITICAL"].astype(bool),"CANONICAL_ORDER") if "ORDER_CRITICAL" in df.columns else 0
     low=pd.to_numeric(df.get("مقاومت (روز)"),errors="coerce").min()
     overdue=int((pd.to_numeric(df["روزهای تأخیر"],errors="coerce").fillna(0)>0).sum()) if "روزهای تأخیر" in df.columns else 0
-    return [{"label":"متریال بحرانی","value":crit_mat,"tone":"red","note":"توقف خط + بحرانی"},{"label":"بارنامه بحرانی","value":crit_bl,"tone":"red","note":"علت تا متریال مشخص است"},{"label":"سفارش بحرانی","value":crit_ord,"tone":"amber","note":"علت تا متریال مشخص است"},{"label":"کمترین مقاومت","value":"—" if pd.isna(low) else f"{low:.1f} روز","tone":"red" if pd.notna(low) and low<10 else "green","note":"بحرانی‌ترین وضعیت"},{"label":"تعهدات معوق","value":overdue,"tone":"amber" if overdue else "green","note":"نیازمند پیگیری"}]
+    cov_measured = ("COMMERCIAL_COVERAGE_STATE" in df.columns
+                    and (df["COMMERCIAL_COVERAGE_STATE"] == "measured").any())
+    missing_commercial = unique(df["ORDER_MISSING_COMMERCIAL_EXPERT"].astype(bool), "CANONICAL_ORDER") if "ORDER_MISSING_COMMERCIAL_EXPERT" in df.columns else 0
+    return [{"label":"متریال بحرانی","value":crit_mat,"tone":"red","note":"توقف خط + بحرانی"},{"label":"بارنامه بحرانی","value":crit_bl,"tone":"red","note":"علت تا متریال مشخص است"},{"label":"سفارش بحرانی","value":crit_ord,"tone":"amber","note":"علت تا متریال مشخص است"},{"label":"کمترین مقاومت","value":"—" if pd.isna(low) else f"{low:.1f} روز","tone":"red" if pd.notna(low) and low<10 else "green","note":"بحرانی‌ترین وضعیت"},{"label":"تعهدات معوق","value":overdue,"tone":"amber" if overdue else "green","note":"نیازمند پیگیری"},{"label":"سفارش خارج از Commercial Expert Data","value":missing_commercial if cov_measured else "سنجیده نشد","tone":("red" if missing_commercial else "green") if cov_measured else "amber","note":"بدون انتساب کارشناس خرید" if cov_measured else "سورس خرید بارگذاری نشد"}]
 
 def _kpi_cards(kpis:Iterable[dict[str,Any]])->str:
     colors={"red":RED,"amber":ORANGE,"green":GREEN}; cards=[]

@@ -81,7 +81,7 @@ def test_metrics() -> None:
           num(df, "ستون ناموجود").isna().all() and len(num(df, "ستون ناموجود")) == len(df))
 
     k = kpis(df)
-    check("هشت کارت تولید می‌شود", len(k) == 10, str(len(k)))
+    check("کارت‌های مدیریتی کامل تولید می‌شوند", len(k) == 11, str(len(k)))
     by = {c["label"]: c for c in k}
     check("کارت «توقف خط» بحرانی علامت می‌خورد", by["توقف خط"]["critical"] is True)
     check("کمترین مقاومت درست است", by["کمترین مقاومت"]["value"] == "0.0 روز",
@@ -94,7 +94,7 @@ def test_metrics() -> None:
 
     empty = kpis(pd.DataFrame())
     check("روی داده خالی خطا نمی‌دهد و «—» می‌گذارد",
-          len(empty) == 10 and empty[3]["value"] == "—")
+          len(empty) == 11 and empty[3]["value"] == "—")
 
 
 def test_cards() -> None:

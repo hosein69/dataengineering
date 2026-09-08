@@ -21,7 +21,7 @@ class OfficialReportOverwrite(Exception):
     """تلاش برای بازنویسی گزارش رسمی روزانه با یک خروجی فیلترشده.
 
     خروجی Studio همیشه *زیرمجموعه* داده است (فیلتر کاربر + چند شیت). گزارش
-    رسمی خط لوله ۱۳ شیت کامل دارد و ایمیل مدیریتی به همان فایل لینک می‌دهد.
+    رسمی خط لوله ۱۶ شیت کامل دارد و ایمیل مدیریتی به همان فایل لینک می‌دهد.
     اگر نام پیش‌فرض یکی شود، یک کلیک روی «ساخت Excel سفارشی» گزارش رسمی را
     بی‌صدا نابود می‌کند. این استثنا جلوی آن را می‌گیرد.
     """
@@ -80,7 +80,7 @@ def build_custom_excel(df: pd.DataFrame, output_path: str | Path, modules: Itera
     if not allow_official_overwrite and os.path.normcase(os.path.abspath(path)) in _official_report_paths(ref_date):
         raise OfficialReportOverwrite(
             f"نام انتخابی دقیقاً همان گزارش رسمی روزانه است:\n    {path}\n"
-            f"این فایل ۱۳ شیت کامل خط لوله را دارد و ایمیل مدیریتی به آن لینک می‌دهد؛ "
+            f"این فایل ۱۶ شیت کامل خط لوله را دارد و ایمیل مدیریتی به آن لینک می‌دهد؛ "
             f"خروجی Studio فیلترشده است و جایگزین آن نمی‌شود.\n"
             f"یک نام دیگر بگذارید (مثلاً «AIBL Studio»).")
     path.parent.mkdir(parents=True, exist_ok=True)

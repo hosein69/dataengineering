@@ -41,6 +41,7 @@ from aibl.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOv
 from aibl.studio_core.field_catalog import build_catalog, catalog_groups, unique_labels
 from aibl.studio_core.filters import FilterState, apply_filters, filter_options
 from aibl.studio_core.html_export import build_dynamic_html
+from aibl.report.supply_views import build_material_view, build_bl_view, build_dept_view
 
 try:
     import plotly.express as px
@@ -201,9 +202,9 @@ st.markdown(
     "".join(band_chip(*band_of(k)) for k in BAND_ORDER) +
     '</div>', unsafe_allow_html=True)
 
-(tab_over, tab_proc, tab_analytics, tab_fields, tab_data,
+(tab_over, tab_proc, tab_supply, tab_analytics, tab_fields, tab_data,
  tab_quality, tab_export) = st.tabs(
-    ["نمای اجرایی", "⛓ فرآیند", "⊞ تحلیل", "🧩 سازنده گزارش",
+    ["نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "⊞ تحلیل", "🧩 سازنده گزارش",
      "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
 
 
@@ -298,7 +299,42 @@ with tab_analytics:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  ۴) سازنده گزارش — دسترسی به هر ۳۶۷ فیلد
+#  ۳) دید تأمین — کجا / کِی / دست کیست
+# ══════════════════════════════════════════════════════════════════════════
+@st.cache_data(show_spinner=False)
+def _supply_view(kind: str, frame: pd.DataFrame) -> pd.DataFrame:
+    """نما را کش می‌کند تا با هر تعامل کوچک از نو ساخته نشود."""
+    return {"material": build_material_view, "bl": build_bl_view,
+            "dept": build_dept_view}[kind](frame)
+
+
+with tab_supply:
+    panel_open("دید تأمین",
+               "پاسخ به چهار سؤال: الان کجاست؟ از کِی؟ دست کیست؟ معطل چه کسی است؟")
+    st.caption("مالک و مسئول قطعه در هر سه نما «کارشناس خرید» است — "
+               "حتی وقتی توپ در زمین حوزه دیگری باشد.")
+    sv1, sv2, sv3 = st.tabs(["متریال محور", "بارنامه محور", "اداره محور"])
+    for tab, kind, fname in [(sv1, "material", "AIBL_Material_View.xlsx"),
+                             (sv2, "bl", "AIBL_BL_View.xlsx"),
+                             (sv3, "dept", "AIBL_Department_View.xlsx")]:
+        with tab:
+            view = _supply_view(kind, fdf)
+            if view.empty:
+                st.info("داده کافی برای این نما وجود ندارد.")
+                continue
+            st.dataframe(view, use_container_width=True, hide_index=True)
+            # ساخت Excel فقط با کلیک کاربر — نه در هر بازتولید صفحه
+            if st.checkbox("آماده‌سازی خروجی Excel", key=f"prep_{kind}"):
+                bio = io.BytesIO()
+                with pd.ExcelWriter(bio, engine="openpyxl") as ew:
+                    view.to_excel(ew, index=False, sheet_name="Supply View")
+                st.download_button(
+                    "⬇️ دانلود Excel", bio.getvalue(), file_name=fname,
+                    mime=("application/vnd.openxmlformats-officedocument"
+                          ".spreadsheetml.sheet"),
+                    key=f"dl_{kind}")
+
+
 # ══════════════════════════════════════════════════════════════════════════
 with tab_fields:
     st.markdown(
@@ -553,7 +589,7 @@ with tab_export:
 
     with st.container(border=True):
         panel_open("گزارش رسمی خط لوله",
-                   "۱۳ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
+                   "۱۶ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
         if official_excel and Path(official_excel).exists():
             st.download_button("⬇ دانلود Excel رسمی", Path(official_excel).read_bytes(),
                                file_name=Path(official_excel).name,

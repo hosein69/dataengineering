@@ -37,6 +37,8 @@ from .report.dashboard import ExcelDashboardBuilder
 from .report.extracts import write_audit_report, write_expert_extracts
 from .resolve.canonical import CanonicalEntityResolver
 from .resolve.partition import partition
+from .resolve.commercial_coverage import annotate as annotate_commercial_coverage
+from .resolve.commercial_coverage import kpi as commercial_kpi
 from .rulebook import get_rulebook
 from .stages import (PipelineContext, collect_columns, describe, discover as
                      discover_stages, log_plan, validate_graph)
@@ -264,8 +266,15 @@ class Pipeline:
         self.load_sources()
         df = self.build_base()
         df = self.run_stages(df)
-        part = partition(df, self.moghavemat_available)
         lines = self._sheet("moghavemat", "lines")
+        # پوشش Commercial Expert Data باید روی **کل جریان اصلی** سنجیده شود،
+        # نه فقط part.main؛ چون سفارشِ فاقد مقاومت/سند نیز ممکن است در M3
+        # و «تعیین تکلیف» قرار بگیرد و نباید از شمارش جا بیفتد.
+        df, missing_commercial_count = annotate_commercial_coverage(df, lines)
+        # این پرچم فقط پوشش سورس را گزارش می‌کند؛ هیچ کارشناس خریدی از روی
+        # فقدان رکورد ساخته نمی‌شود و موتور بحرانی از آن استفاده نمی‌کند.
+        part = partition(df, self.moghavemat_available)
+        self.ctx.extras["missing_commercial_order_count"] = missing_commercial_count
 
         res = PipelineResult(part.df, part.main, part.to_resolve, part.excluded,
                              part.counts, self.resolver.audit_df(),
@@ -299,6 +308,8 @@ class Pipeline:
         uniq_ord = int(active["CANONICAL_ORDER"].replace("", np.nan).nunique())
         kpis.update({
             "سفارش‌های یکتا در جریان": (uniq_ord, "بر اساس CANONICAL_ORDER"),
+            "سفارش خارج از Commercial Expert Data": commercial_kpi(
+                res.df, int(res.extras.get("missing_commercial_order_count", 0))),
             "بارنامه‌های یکتا": (uniq_bl, "بر اساس CANONICAL_BL، نه تعداد ردیف"),
             "ردیف‌های ابطالی (خارج از KPI)": (
                 int(main.get("IS_CANCELLED", pd.Series(dtype=bool)).sum()),
@@ -316,7 +327,7 @@ class Pipeline:
         specs = collect_columns(self.stages)
         rows = b.build_matrix(main, specs)
         b.build_executive(kpis, narrative, rows)
-        b.build_to_resolve(res.to_resolve)
+        b.build_to_resolve(res.to_resolve, main_df=res.df)
         b.build_commitment(main)
         b.build_scorecard(active)
         # مستندات ریاضی را هم خود مرحله‌ها اعلام می‌کنند
@@ -338,6 +349,7 @@ class Pipeline:
         b.build_charts(main, res.extras)
         b.build_insight(main)
         b.build_material(main)
+        b.build_supply_views(main)
         return b.save()
 
 

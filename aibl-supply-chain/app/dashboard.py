@@ -211,6 +211,7 @@ except Exception as ex:                               # pragma: no cover
     st.stop()
 
 df = data["main"] if not data["main"].empty else data["df"]
+all_df = data["df"] if not data["df"].empty else df
 
 # فیلترها
 if "بحرانی (کوتاه)" in df.columns:
@@ -271,6 +272,45 @@ c[3].markdown(card("میانگین ریسک", f"{num(df, 'امتیاز ریسک'
                    if num(df, "امتیاز ریسک").notna().any() else "—",
                    "موتور ۸ مؤلفه‌ای"), unsafe_allow_html=True)
 
+_cov_measured = ("COMMERCIAL_COVERAGE_STATE" in all_df.columns
+                 and (all_df["COMMERCIAL_COVERAGE_STATE"] == "measured").any())
+missing_commercial = int(all_df.loc[all_df["ORDER_MISSING_COMMERCIAL_EXPERT"].astype(bool), "CANONICAL_ORDER"].replace("", pd.NA).nunique()) if "ORDER_MISSING_COMMERCIAL_EXPERT" in all_df.columns and "CANONICAL_ORDER" in all_df.columns else 0
+# ── ردیف حاکمیت: مالکیت قطعه و پاسخگویی ──
+_owned = int(df["PART_OWNER"].astype(str).str.strip().ne("").sum()) if "PART_OWNER" in df.columns else 0
+_gap = int(df["PART_OWNER_DATA_GAP"].astype(str).str.strip().ne("").sum()) if "PART_OWNER_DATA_GAP" in df.columns else 0
+_wait = df["WAITING_ON_SCOPE"].astype(str).str.strip() if "WAITING_ON_SCOPE" in df.columns else pd.Series(dtype=str)
+_wait = _wait[_wait.ne("")].value_counts()
+_age = num(df, "STATUS_AGE_DAYS")
+
+c = st.columns(4)
+c[0].markdown(card("سفارش خارج از Commercial Expert Data",
+                   missing_commercial if _cov_measured else "سنجیده نشد",
+                   "در جریان اصلی هست؛ بدون انتساب کارشناس خرید" if _cov_measured
+                   else "سورس Commercial Expert Data بارگذاری نشد",
+                   critical=bool(_cov_measured and missing_commercial > 0)),
+              unsafe_allow_html=True)
+c[1].markdown(card("قطعه دارای مالک", _owned,
+                   f"کارشناس خرید — از {len(df)} ردیف",
+                   critical=(len(df) > 0 and _owned < len(df))),
+              unsafe_allow_html=True)
+c[2].markdown(card("ردیف با شکاف داده مالک", _gap,
+                   "داده ناقص است ولی ردیف حذف نشده — علت ثبت شده",
+                   critical=_gap > 0), unsafe_allow_html=True)
+c[3].markdown(card("بیشترین انتظار روی",
+                   _wait.index[0] if not _wait.empty else "—",
+                   f"{int(_wait.iloc[0])} ردیف معطل" if not _wait.empty
+                   else "معطلی ثبت‌نشده"), unsafe_allow_html=True)
+
+c = st.columns(4)
+c[0].markdown(card("کهنه‌ترین وضعیت",
+                   "—" if not _age.notna().any() else f"{_age.max():,.0f} روز",
+                   "از آخرین رویداد تاریخ‌دار",
+                   critical=bool(_age.notna().any() and _age.max() > 90)),
+              unsafe_allow_html=True)
+c[1].markdown(card("میانگین سن وضعیت",
+                   "—" if not _age.notna().any() else f"{_age.mean():,.0f} روز",
+                   "میانگین روزهای سکون پرونده‌ها"), unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ═══════════ هشدارهای سطح پرونده ═══════════
@@ -278,7 +318,8 @@ if "BL_CRITICAL" in df.columns or "ORDER_CRITICAL" in df.columns:
     st.markdown("## 🔴 بحرانی بودن پرونده — علت تا سطح متریال")
     gcols = [c for c in ["CANONICAL_BL", "CANONICAL_ORDER", "BL_CRITICAL", "ORDER_CRITICAL",
                          "BL_CRITICAL_MATERIALS", "ORDER_CRITICAL_MATERIALS",
-                         "BL_CRITICAL_REASON", "ORDER_CRITICAL_REASON"] if c in df.columns]
+                         "BL_CRITICAL_REASON", "ORDER_CRITICAL_REASON",
+                         "ORDER_MISSING_COMMERCIAL_EXPERT", "ORDER_MISSING_COMMERCIAL_REASON"] if c in df.columns]
     g = df[gcols].copy()
     subset=[c for c in ["CANONICAL_BL","CANONICAL_ORDER"] if c in g.columns]
     if subset:

@@ -226,7 +226,7 @@ class ExcelDashboardBuilder:
         return str(v)
 
     # ═══════════ شیت ۳ — تعیین تکلیف ═══════════
-    def build_to_resolve(self, df: pd.DataFrame) -> None:
+    def build_to_resolve(self, df: pd.DataFrame, main_df: Optional[pd.DataFrame] = None) -> None:
         ws = self._new_sheet(SHEET_RESOLVE)
         headers = ["شماره سفارش کانونی", "شماره بارنامه کانونی", "مسئولیت سازمانی",
                    "شرح کالا", "افراز کلید", "شرح علت عدم تعیین تکلیف",
@@ -250,7 +250,40 @@ class ExcelDashboardBuilder:
             ws.cell(row=r, column=6).alignment = P.align("right", wrap=True)
             ws.cell(row=r, column=7).alignment = P.align("right", wrap=True)
             r += 1
-        log.info(f"📄 شیت «{SHEET_RESOLVE}» ساخته شد — {r - 2} ردیف.")
+        # ── سفارش‌های خارج از Commercial Expert Data ──
+        # این بخش عمداً از «تعیین تکلیف» جداست: سفارش در جریان اصلی هست،
+        # اما در سورس کارشناسان خرید بازرگانی ثبت نشده است. هیچ کارشناس خریدی
+        # از روی این فقدان داده حدس زده نمی‌شود.
+        source_for_missing = main_df if main_df is not None else df
+        missing = source_for_missing[source_for_missing.get("ORDER_MISSING_COMMERCIAL_EXPERT", False).astype(bool)].copy() if "ORDER_MISSING_COMMERCIAL_EXPERT" in source_for_missing.columns else pd.DataFrame()
+        if not missing.empty:
+            r += 1
+            title_row = r
+            ws.cell(row=r, column=1, value="⚠️ سفارش‌های موجود در جریان اصلی ولی درج‌نشده در Commercial Expert Data")
+            ws.cell(row=r, column=1).font = P.font_title(12)
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=len(headers))
+            r += 1
+            miss_headers = ["شماره سفارش کانونی", "شماره بارنامه کانونی", "مسئولیت سازمانی",
+                            "شرح کالا", "افراز کلید", "علت عدم درج در Commercial Expert Data",
+                            "وضعیت انتساب کارشناس خرید"]
+            for i, h in enumerate(miss_headers, 1):
+                c = ws.cell(row=r, column=i, value=h); c.font=P.font_header(1); c.fill=P.fill(P.CRITICAL_FILL); c.alignment=P.align("center", wrap=True)
+            miss_start = r
+            r += 1
+            for _, row in missing.drop_duplicates(subset=["CANONICAL_ORDER"], keep="first").iterrows():
+                vals = [row.get("CANONICAL_ORDER", ""), row.get("CANONICAL_BL", ""),
+                        row.get("ORG_CHAIN", ""), row.get("CANONICAL_GOODS_DESC", ""),
+                        row.get("PARTITION_KEY", ""),
+                        row.get("ORDER_MISSING_COMMERCIAL_REASON", "این سفارش در Commercial Expert Data درج نشده است."),
+                        "کارشناس خرید قابل انتساب نیست — داده مبدأ وجود ندارد"]
+                for i,v in enumerate(vals,1):
+                    ws.cell(row=r,column=i,value=self._cell_value(v))
+                self._style_row(ws,r,len(miss_headers),P.CRITICAL_FILL)
+                ws.cell(row=r,column=6).alignment=P.align("right",wrap=True)
+                ws.cell(row=r,column=7).alignment=P.align("right",wrap=True)
+                r += 1
+            ws.auto_filter.ref = f"A{miss_start}:{get_column_letter(len(miss_headers))}{r-1}"
+        log.info(f"📄 شیت «{SHEET_RESOLVE}» ساخته شد — {r - 2} ردیف، سفارش خارج از Commercial Expert Data: {len(missing.drop_duplicates('CANONICAL_ORDER')) if not missing.empty else 0}.")
 
     # ═══════════ شیت ۴ — رفع تعهد ارزی ═══════════
     def build_commitment(self, df: pd.DataFrame) -> None:
@@ -383,16 +416,47 @@ class ExcelDashboardBuilder:
 
     # ═══════════ ذخیره ═══════════
     def save(self) -> str:
+        """ذخیره اتمیک و مقاوم در برابر فایل قفل‌شده توسط Excel/Outlook.
+
+        ابتدا Workbook در فایل موقتِ همان پوشه نوشته می‌شود؛ سپس جایگزینی
+        اتمیک انجام می‌گیرد. اگر فایل مقصد در Windows توسط Excel قفل باشد،
+        نسخه زمان‌دار ساخته می‌شود. خطای دوم دیگر در سکوت گم نمی‌شود.
+        """
+        import tempfile
+        from datetime import datetime
+        folder = os.path.dirname(self.output_path) or "."
+        base = os.path.basename(self.output_path)
+        tmp_path = ""
         try:
-            self.wb.save(self.output_path)
-            log.info(f"🏆 داشبورد ذخیره شد: {self.output_path}")
-            return self.output_path
-        except PermissionError:
-            from datetime import datetime
-            alt = self.output_path.replace(".xlsx", f"_{datetime.now():%H%M%S}.xlsx")
-            self.wb.save(alt)
-            log.warning(f"⚠️ فایل اصلی قفل بود؛ ذخیره در {alt}")
-            return alt
+            fd, tmp_path = tempfile.mkstemp(prefix=".aibl_", suffix=".xlsx", dir=folder)
+            os.close(fd)
+            self.wb.save(tmp_path)
+            try:
+                os.replace(tmp_path, self.output_path)
+                tmp_path = ""
+                log.info(f"🏆 داشبورد ذخیره شد: {self.output_path}")
+                return self.output_path
+            except PermissionError as exc:
+                alt = os.path.join(folder, base.replace(".xlsx", f"_{datetime.now():%H%M%S}.xlsx"))
+                self.wb.save(alt)
+                log.warning(f"⚠️ فایل مقصد قفل بود؛ نسخه جایگزین ساخته شد: {alt} | {exc}")
+                return alt
+        except PermissionError as exc:
+            alt = os.path.join(folder, base.replace(".xlsx", f"_{datetime.now():%H%M%S}.xlsx"))
+            try:
+                self.wb.save(alt)
+                log.warning(f"⚠️ مسیر مقصد قابل جایگزینی نبود؛ نسخه جایگزین ساخته شد: {alt} | {exc}")
+                return alt
+            except Exception as exc2:
+                raise RuntimeError(f"ذخیره Excel شکست خورد. مقصد={self.output_path} | خطای اصلی={exc!r} | خطای جایگزین={exc2!r}") from exc2
+        except Exception as exc:
+            raise RuntimeError(f"ذخیره Workbook شکست خورد: {type(exc).__name__}: {exc}") from exc
+        finally:
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -624,7 +688,13 @@ def _build_criticality(self, df: "pd.DataFrame") -> None:
     rr = start + 1
     for _, row in detail.iterrows():
         for i, key in enumerate(cols, start=1):
-            ws.cell(row=rr, column=i, value=self._cell_value(row.get(key, "")))
+            value = row.get(key, "")
+            # برای سفارش‌هایی که در Commercial Expert Data نیستند، هیچ نام
+            # کارشناس خرید به گزارش بحرانی تزریق نمی‌شود. مالک فعلی سایر
+            # مراحل مستقل از این پرچم باقی می‌ماند.
+            if key == "CANONICAL_EXPERT" and bool(row.get("ORDER_MISSING_COMMERCIAL_EXPERT", False)):
+                value = "— (در Commercial Expert Data درج نشده)"
+            ws.cell(row=rr, column=i, value=self._cell_value(value))
         self._style_row(ws, rr, len(headers),
                         fills.get(str(row.get("کد طبقه بحرانی", "")), P.GREEN_L4))
         for i in (4, 5, 6, 7, 8, 9, 10, 11, 16, 17):
@@ -731,6 +801,28 @@ ExcelDashboardBuilder.build_charts = _charts_impl
 
 from .insight import _build_insight as _insight_impl  # noqa: E402
 from .insight import _build_material as _material_impl  # noqa: E402
+from .supply_views import SHEETS as SUPPLY_SHEETS  # noqa: E402
+from .supply_views import write_supply_sheets  # noqa: E402
 
 ExcelDashboardBuilder.build_insight = _insight_impl
 ExcelDashboardBuilder.build_material = _material_impl
+
+
+def _build_supply_views(self, df) -> None:
+    """شیت‌های ۱۴ تا ۱۶ — «کجا / کِی / دست کیست».
+
+    نسخه ۲۶٫۹ این کار را با وصله زدن به ``save()`` انجام می‌داد: یک کپی
+    کامل از دیتافریم روی builder نگه می‌داشت و هنگام ذخیره نماها را
+    می‌ساخت. دو اشکال داشت — کپی کامل داده در حافظه، و مهم‌تر اینکه
+    **هر خطایی در این سه نما، ذخیره کل گزارش رسمی را از بین می‌برد**.
+    حالا مرحله‌ای صریح در خط لوله است و شکستش گزارش را زمین نمی‌زند.
+    """
+    try:
+        write_supply_sheets(self.wb, df)
+        log.info(f"📄 شیت‌های «{'» و «'.join(SUPPLY_SHEETS)}» ساخته شد.")
+    except Exception as ex:      # noqa: BLE001 — گزارش رسمی نباید قربانی شود
+        log.warning(f"⚠️ نماهای تأمین ساخته نشد ({type(ex).__name__}: {ex}) — "
+                    f"بقیه گزارش دست‌نخورده ذخیره می‌شود.")
+
+
+ExcelDashboardBuilder.build_supply_views = _build_supply_views
