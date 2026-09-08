@@ -1,0 +1,108 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ارزها — ISO 4217
+#  برای افزودن ارز جدید فقط یک بلوک به currencies اضافه کنید.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: currencies
+version: "1.0"
+standard: "ISO 4217"
+status: verified
+updated_at: "2026-08-31"
+
+currencies:
+  - code: USD
+    numeric: 840
+    minor_units: 2
+    fa: "دلار آمریکا"
+    symbol: "$"
+    aliases: [dollar, usd, دلار, "دلار آمریکا", "us dollar", "usd$"]
+
+  - code: EUR
+    numeric: 978
+    minor_units: 2
+    fa: "یورو"
+    symbol: "€"
+    aliases: [euro, eur, یورو]
+
+  - code: AED
+    numeric: 784
+    minor_units: 2
+    fa: "درهم امارات"
+    aliases: [dirham, aed, درهم, "درهم امارات"]
+
+  - code: CNY
+    numeric: 156
+    minor_units: 2
+    fa: "یوان چین"
+    symbol: "¥"
+    aliases: [yuan, rmb, cny, یوان, یوآن, "renminbi"]
+
+  - code: GBP
+    numeric: 826
+    minor_units: 2
+    fa: "پوند انگلیس"
+    symbol: "£"
+    aliases: [pound, gbp, پوند, sterling]
+
+  - code: JPY
+    numeric: 392
+    minor_units: 0
+    fa: "ین ژاپن"
+    aliases: [yen, jpy, ین, "ین ژاپن"]
+
+  - code: KRW
+    numeric: 410
+    minor_units: 0
+    fa: "وون کره جنوبی"
+    aliases: [won, krw, وون]
+
+  - code: INR
+    numeric: 356
+    minor_units: 2
+    fa: "روپیه هند"
+    aliases: [rupee, inr, روپیه]
+
+  - code: TRY
+    numeric: 949
+    minor_units: 2
+    fa: "لیر ترکیه"
+    aliases: [lira, "try", لیر, "لیر ترکیه"]
+
+  - code: RUB
+    numeric: 643
+    minor_units: 2
+    fa: "روبل روسیه"
+    aliases: [ruble, rouble, rub, روبل]
+
+  - code: CHF
+    numeric: 756
+    minor_units: 2
+    fa: "فرانک سوئیس"
+    aliases: [franc, chf, فرانک]
+
+  - code: IRR
+    numeric: 364
+    minor_units: 2
+    fa: "ریال ایران"
+    aliases: [rial, irr, ریال]
+    domestic: true
+
+# واحد شمارشی داخلی (رسمی نیست ولی در گزارش‌ها رایج است)
+derived_units:
+  - code: IRT
+    fa: "تومان"
+    equals: { currency: IRR, factor: 10 }
+    aliases: [تومان, toman]
+
+# منابع نرخ
+rate_sources:
+  - code: PI_RATE
+    fa: "نرخ مندرج در پروفرما"
+    priority: 1
+  - code: FX_TRANSACTION
+    fa: "نرخ واقعی خرید ارز (سورس Foreign Exchange Transaction)"
+    priority: 2
+    preferred: true
+  - code: EXCHANGE_CENTER
+    fa: "نرخ مرکز مبادله ارز و طلا"
+    priority: 3
+    status: needs_verification

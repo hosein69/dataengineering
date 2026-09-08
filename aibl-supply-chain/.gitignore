@@ -1,0 +1,17 @@
+# ── داده شخصی / پیکربندی محرمانه ──
+recipients.yaml
+recipients.yml
+*.recipients.yaml
+
+# ── خروجی و لاگ اجرا ──
+output/
+logs/
+expert_extracts/
+
+# ── پایتون ──
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/

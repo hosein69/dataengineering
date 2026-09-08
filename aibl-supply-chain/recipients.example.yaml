@@ -1,0 +1,16 @@
+# نمونه فهرست گیرندگان گزارش روزانه مدیریتی.
+#
+# ⚠️ این فایل فقط نمونه است. فایل واقعی «recipients.yaml» داده شخصی است و
+#    نباید در مخزن نگه‌داری شود (در .gitignore آمده).
+#
+# محل قرارگیری فایل واقعی، به ترتیب اولویت:
+#   ۱) متغیر محیطی AIBL_EMAIL_TO="a@x.ir;b@x.ir"
+#   ۲) AIBL_RECIPIENTS_FILE=/secure/path/recipients.yaml
+#   ۳) $AIBL_HOME/recipients.yaml   (پیش‌فرض ~/.aibl/recipients.yaml)
+#
+# اگر هیچ‌کدام تنظیم نشود، ساخت گزارش کار می‌کند ولی ارسال با خطای صریح
+# متوقف می‌شود — عمداً، تا هرگز به فهرستی قدیمی ارسال نشود.
+
+recipients:
+  - first.person@example.invalid
+  - second.person@example.invalid

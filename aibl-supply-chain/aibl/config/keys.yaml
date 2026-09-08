@@ -1,0 +1,139 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  رجیستری کلیدها — تعریف کلیدهای اتصال بین جدول‌ها
+#
+#  این فایل تنها جایی است که تعیین می‌کند «هر کلید از کجا می‌آید و چطور
+#  نرمال می‌شود». اگر بخواهید:
+#     • کلید یک جدول را عوض کنید            → sources یک کلید را ویرایش کنید
+#     • از دو ستون به‌عنوان کلید مرکب استفاده کنید → composite بنویسید
+#     • کلید تازه‌ای تعریف کنید             → یک بلوک به keys اضافه کنید
+#  هیچ فایل پایتونی تغییر نمی‌کند.
+#
+#  ⚠️ درس گران‌قیمت نسخه‌های قبل: کلید REG از «شماره پرونده ثبت سفارش» فایل IL
+#  گرفته می‌شد که ۹ رقمی است، در حالی که کلید واقعی NTSW عدد ۸ رقمی «ثبت
+#  سفارش» ساتاست. کل لایه رفع تعهد ارزی به همین یک سطر وابسته بود. به همین
+#  دلیل الان هر کلید pattern اعتبارسنجی دارد تا چنین اشتباهی خودش را نشان دهد.
+# ═══════════════════════════════════════════════════════════════════════════
+registry_version: "1.0"
+updated_at: "2026-09-02"
+
+# توابع نرمال‌سازی مجاز (پیاده‌سازی در aibl/core/text.py)
+#   clean_bl        حذف کاراکترهای غیرمجاز + اعتبارسنجی طول بارنامه
+#   clean_key       نرمال‌سازی عمومی عدد/رشته + حذف پسوند «.0» اکسل
+#   clean_order_ref مرجع سفارش IKCO (602164B، شکست خط، پسوند Item)
+#   clean_part_no   شماره فنی / کد متریال
+#   clean_employee_code  کد پرسنلی (حذف پسوند «_GS»، صفرهای ابتدایی)
+#   passthrough     بدون تغییر
+
+keys:
+  BL:
+    column: KEY_BL
+    fa: "شماره بارنامه"
+    normalizer: clean_bl
+    # الگوی اعتبارسنجی — مقادیر نامنطبق قرنطینه می‌شوند، نه اینکه کلید شوند
+    pattern: "^[A-Z0-9]{6,20}$"
+    min_length: 6
+    sources:
+      - {source: abbasi,     frame: main, column: KEY_BL}
+      - {source: sata,       frame: main, column: KEY_BL}
+      - {source: clearance,  frame: main, column: KEY_BL}
+
+  ORDER:
+    column: KEY_ORDER
+    fa: "مرجع سفارش IKCO"
+    normalizer: clean_order_ref
+    pattern: "^[0-9]{5,7}[A-Z]?$"
+    sources:
+      - {source: abbasi,     frame: main, column: KEY_ORDER}
+      - {source: moghavemat, frame: main, column: KEY_ORDER}
+      - {source: sata,       frame: main, column: KEY_ORDER}
+
+  REG:
+    column: KEY_REG
+    fa: "کد ثبت سفارش (۸ رقمی)"
+    normalizer: clean_key
+    pattern: "^[0-9]{8}$"
+    # ترتیب = اولویت. ساتا اول است چون تنها سورسی است که این ستون را
+    # ۱۰۰٪ پر دارد و بارنامه را هم کنارش دارد.
+    sources:
+      - {source: sata,           frame: main, column: SATA_KEY_REG}
+      - {source: fx_transaction, frame: main, column: FX_KEY_REG}
+      - {source: credit,         frame: main, column: CRD_KEY_REG}
+      - {source: ilappend,       frame: main, column: IL_KEY_REG}
+    # ⚠️ هرگز از این ستون استفاده نکنید: عدد ۹ رقمیِ «شماره پرونده» است
+    forbidden_columns: [IL_FILE_NO, "شماره پرونده ثبت سفارش"]
+
+  MATERIAL:
+    column: KEY_MATERIAL
+    fa: "کد متریال / شماره فنی"
+    normalizer: clean_part_no
+    sources:
+      - {source: moghavemat, frame: main, column: MOGH_MATERIAL}
+      - {source: oracle,     frame: main, column: KEY_MATERIAL}
+      - {source: moghavemat, frame: main, column: MOGH_MFR_PART_NO}
+
+  PR:
+    column: KEY_PR
+    fa: "شماره درخواست خرید"
+    normalizer: clean_key
+    pattern: "^[0-9]{10}$"
+    sources:
+      - {source: moghavemat, frame: main, column: MOGH_KEY_PR}
+      - {source: sap,        frame: main, column: KEY_PR}
+
+  EMP:
+    column: KEY_EMP
+    fa: "کد پرسنلی"
+    normalizer: clean_employee_code
+    sources:
+      - {source: moghavemat, frame: main, column: MOGH_KEY_EMP}
+      - {source: oracle,     frame: main, column: ORC_EMP_CODE}
+      - {source: hr,         frame: main, column: KEY_EMP}
+
+# ───────────────────────────────────────────────────────────────────────────
+#  کلیدهای مرکب — وقتی یک ستون به‌تنهایی یکتا نیست
+#
+#  مثال واقعی: در فایل ترخیص، یک بارنامه می‌تواند چند «پرونده ترخیص» داشته
+#  باشد. اگر فقط روی بارنامه join کنید، سطر تکثیر می‌شود. کلید مرکب
+#  BL+ORDER این را حل می‌کند.
+#
+#  استفاده: در sources.yaml بنویسید  join_on: BL_ORDER
+# ───────────────────────────────────────────────────────────────────────────
+composite_keys:
+  BL_ORDER:
+    fa: "بارنامه + سفارش"
+    parts: [BL, ORDER]
+    separator: "|"
+    column: KEY_BL_ORDER
+    note: "برای سورس‌هایی که یک بارنامه چند ردیف سفارش دارد."
+
+  ORDER_MATERIAL:
+    fa: "سفارش + متریال"
+    parts: [ORDER, MATERIAL]
+    separator: "|"
+    column: KEY_ORDER_MATERIAL
+    note: "برای فایل مقاومت که یک سفارش چند قلم متریال دارد."
+
+  REG_CURRENCY:
+    fa: "ثبت سفارش + ارز"
+    parts: [REG, CURRENCY_CODE]
+    separator: "|"
+    column: KEY_REG_CURRENCY
+    note: >
+      اگر یک ثبت سفارش تعهد چندارزی داشته باشد و بخواهید تعهدها را
+      به‌تفکیک ارز نگه دارید نه جمع‌شده.
+
+# ───────────────────────────────────────────────────────────────────────────
+#  رفتار هنگام ادغام
+# ───────────────────────────────────────────────────────────────────────────
+merge_policy:
+  # اگر سمت راست برای یک کلید چند ردیف داشته باشد:
+  #   first   ردیف اول
+  #   last    ردیف آخر
+  #   latest  آخرین بر اساس ستون dedupe_by (تاریخ)
+  #   sum     جمع ستون‌های عددی (برای تعهدات NTSW)
+  #   error   خطا بده — ادغام مبهم را قبول نکن
+  default_on_duplicate: latest
+  # حداقل درصد انطباق؛ زیر این مقدار هشدار صادر می‌شود
+  min_coverage_warning: 30
+  # اگر ادغام تعداد سطر را عوض کند، خطا بده (ضد ضرب دکارتی)
+  fail_on_row_explosion: true

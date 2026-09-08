@@ -1,0 +1,81 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  گمرک، کوتاژ، ساتا و ترخیص
+# ═══════════════════════════════════════════════════════════════════════════
+pack: customs
+version: "1.0"
+updated_at: "2026-08-31"
+
+# انواع ترخیص
+clearance_types:
+  - code: FULL
+    fa: "ترخیص کامل"
+    detect:
+      when_field_present: [FULL_CLEAR_DATE]
+    terminal: true
+    narrative: "ترخیص قطعی گردیده"
+    recommendation: "خاتمه پرونده و ثبت سبز گمرکی"
+  - code: PARTIAL
+    fa: "ترخیص درصدی"
+    detect:
+      when_field_present: [PARTIAL_CLEAR_DATE]
+      when_value_matches: ["*", "٪", "%", "درصد"]
+      when_numeric_gt: 0
+    terminal: false
+    narrative: "در وضعیت ترخیص درصدی"
+    recommendation: "پیگیری روتین جهت ترخیص مابقی"
+    weibull_time_factor: 0.15
+  - code: NONE
+    fa: "عدم ترخیص"
+    default: true
+    narrative: "ترخیص انجام نشده"
+
+# اسناد و کدهای گمرکی
+identifiers:
+  - code: COTAGE
+    fa: "شماره کوتاژ (اظهارنامه گمرکی)"
+    issued_by: "گمرک جمهوری اسلامی ایران"
+    evidence_weight: 0.4
+    required_for_release: true
+  - code: SATA
+    fa: "کد رهگیری ساتا"
+    fa_full: "سامانه ثبت و تأیید اسناد"
+    evidence_weight: 0.2
+    status: needs_verification
+  - code: DISCHARGE
+    fa: "تاریخ تخلیه محموله"
+    evidence_weight: 0.4
+  - code: CUSTOMS_LICENSE
+    fa: "پروانه گمرکی ورود کالا"
+    note: "سند اصلی رفع تعهد ارزی"
+
+# رسوب و توقف کالا
+demurrage:
+  critical_days: 45
+  fa: "بیش از ۴۵ روز از تاریخ تخلیه بدون ترخیص = رسوب شدید"
+  status: internal
+  escalation:
+    - after_days: 45
+      action: "استعلام علت توقف و پیگیری فوری"
+    - after_days: 90
+      action: "ارجاع به کمیته رفع موانع و بررسی مشمولیت متروکه"
+      status: needs_verification
+    - after_days: 180
+      action: "بررسی وضعیت کالای متروکه طبق قانون امور گمرکی"
+      status: needs_verification
+
+# احتمال حضور در گمرک (بیزین)
+customs_presence_model:
+  prior: 0.60
+  false_positive_rate: 0.10
+  evidence_weights:
+    "تاریخ تخلیه": 0.4
+    "کوتاژ گمرکی": 0.4
+    "کد ساتا": 0.2
+
+# مدل بقای ویبول
+survival_model:
+  distribution: weibull
+  beta: 1.4
+  eta_days: 45.0
+  fa: "S(t) = exp(-(t/η)^β) — احتمال باقی‌ماندن پرونده در وضعیت جاری"
+  status: internal

@@ -1,0 +1,268 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  مقررات ارزی واردات — چرخه کامل
+#  ثبت سفارش → تخصیص ارز → تأمین/خرید ارز → حمل → ارائه اسناد → ترخیص → رفع تعهد
+#
+#  ⚠️ مقادیر با status: needs_verification باید با آخرین بخشنامه بانک مرکزی و
+#     «مجموعه مقررات ارزی — بخش اول: واردات کالا و خدمت» تطبیق داده شوند.
+#     مقادیر با status: internal از رویه جاری IKCO (of.txt / of2.txt) آمده‌اند.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: fx_governance
+version: "1.0"
+updated_at: "2026-08-31"
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۱) مراحل چرخه عمر ارزی (Lifecycle)
+#    ترتیب stageها منطق «مرحله بعدی» و محاسبه پیشرفت پرونده را تعیین می‌کند.
+# ───────────────────────────────────────────────────────────────────────────
+lifecycle:
+  stages:
+    - code: PR
+      order: 10
+      fa: "درخواست خرید (PR)"
+      system: "SAP"
+      key_field: "PR_NO"
+
+    - code: NEGOTIATION
+      order: 20
+      fa: "مذاکره بازرگانی و استعلام"
+      system: "داخلی"
+
+    - code: PO
+      order: 30
+      fa: "ابلاغ سفارش خرید (PO)"
+      system: "SAP"
+      key_field: "PO_SENT_DATE"
+
+    - code: ORDER_REG
+      order: 40
+      fa: "ثبت سفارش"
+      system: "NTSW (سامانه جامع تجارت)"
+      key_field: "REGISTRATION_NO"
+      output_doc: "شماره ثبت سفارش ۸ رقمی"
+
+    - code: ALLOCATION
+      order: 50
+      fa: "تخصیص ارز"
+      system: "NTSW / بانک مرکزی"
+      key_field: "ALLOCATION_DATE"
+
+    - code: FX_SUPPLY
+      order: 60
+      fa: "تأمین و خرید ارز"
+      system: "مرکز مبادله ارز و طلا / نیما / بانک عامل"
+      key_field: "CB_DATE"
+      output_doc: "اعلامیه تأمین ارز (CB)"
+
+    - code: SHIPMENT
+      order: 70
+      fa: "حمل کالا"
+      key_field: "BL_DATE"
+      output_doc: "بارنامه (B/L, AWB, CMR)"
+
+    - code: DOCS
+      order: 80
+      fa: "ارائه اسناد حمل به بانک"
+      key_field: "DOC_SUBMIT_DATE"
+
+    - code: CUSTOMS
+      order: 90
+      fa: "اظهار و ترخیص گمرکی"
+      key_field: "COTAGE_DATE"
+      output_doc: "پروانه گمرکی / کوتاژ"
+
+    - code: RELEASE
+      order: 100
+      fa: "رفع تعهد ارزی"
+      system: "بانک عامل / بانک مرکزی"
+      key_field: "RELEASE_DATE"
+      terminal: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۲) مهلت‌های قانونی (روز)
+#    هر مهلت: from → to ، مبنای شمارش، و مرجع.
+# ───────────────────────────────────────────────────────────────────────────
+deadlines:
+  release_production:
+    days: 540
+    from: CB_DATE
+    to: RELEASE_DATE
+    applies_to_segment: production
+    fa: "رفع تعهد ارزی واحدهای تولیدی — ۵۴۰ روز از تاریخ تأمین ارز"
+    status: internal
+    source: "رویه جاری IKCO (of.txt)"
+
+  release_commercial:
+    days: 360
+    from: CB_DATE
+    to: RELEASE_DATE
+    applies_to_segment: commercial
+    fa: "رفع تعهد ارزی واحدهای بازرگانی — ۳۶۰ روز از تاریخ تأمین ارز"
+    status: internal
+    source: "رویه جاری IKCO (of.txt)"
+
+  release_after_barat_due:
+    days: 90
+    from: BARAT_DUE_DATE
+    to: RELEASE_DATE
+    fa: "رفع تعهد پس از سررسید برات — ۹۰ روز"
+    status: internal
+
+  docs_after_opening:
+    days: 180
+    from: LC_OPEN_DATE
+    to: DOC_SUBMIT_DATE
+    fa: "ارائه اسناد حمل پس از گشایش اعتبار — ۱۸۰ روز"
+    status: needs_verification
+    note: "با مهلت ابلاغی بانک مرکزی برای ارائه اسناد حمل تطبیق داده شود."
+
+  clearance_after_sata:
+    days: 90
+    from: SATA_DATE
+    to: CLEARANCE_DATE
+    fa: "ترخیص پس از دریافت کد ساتا — ۹۰ روز"
+    status: internal
+
+  default_barat_tenor:
+    days: 180
+    from: BL_DATE
+    to: BARAT_DUE_DATE
+    fa: "سررسید پیش‌فرض برات مدت‌دار — ۱۸۰ روز از تاریخ بارنامه"
+    status: internal
+
+  allocation_validity:
+    days: 90
+    from: ALLOCATION_DATE
+    to: CB_DATE
+    fa: "اعتبار تخصیص ارز تا تأمین"
+    status: needs_verification
+
+  registration_validity:
+    days: 180
+    from: REGISTRATION_DATE
+    to: SHIPMENT_DATE
+    fa: "اعتبار ثبت سفارش"
+    status: needs_verification
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۳) جریمه تأخیر در ایفای تعهد
+# ───────────────────────────────────────────────────────────────────────────
+penalties:
+  delay_tiers:
+    - up_to_months: 6
+      monthly_rate: 0.01
+      fa: "۱٪ ماهانه از مانده تعهد — شش ماه نخست تأخیر"
+    - up_to_months: null          # null = بدون سقف
+      monthly_rate: 0.02
+      fa: "۲٪ ماهانه از مانده تعهد — پس از شش ماه"
+  base: OUTSTANDING_BALANCE
+  status: internal
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۳.۵) پیامدهای عدم ایفای تعهد ارزی
+#      برای راوی استفاده می‌شود: «اگر رفع تعهد نشود، ثبت سفارش بعدی صادر نمی‌شود»
+# ───────────────────────────────────────────────────────────────────────────
+non_fulfillment_consequences:
+  status: needs_verification
+  source: "منابع عمومی حقوقی — باید با بخشنامه بانک مرکزی تطبیق داده شود"
+  items:
+    - code: TRADE_CARD_SUSPENSION
+      fa: "تعلیق و عدم تمدید کارت بازرگانی"
+      blocks_stage: ORDER_REG
+    - code: NO_NEW_REGISTRATION
+      fa: "عدم صدور، اصلاح یا تمدید ثبت سفارش"
+      blocks_stage: ORDER_REG
+      severity: CRITICAL
+    - code: NO_IMPORT_PERMIT
+      fa: "عدم صدور مجوزهای واردات"
+      blocks_stage: ORDER_REG
+    - code: NO_NEW_ALLOCATION
+      fa: "عدم تخصیص ارز جدید تا تسویه تعهد قبلی"
+      blocks_stage: ALLOCATION
+      severity: CRITICAL
+    - code: CASH_PENALTY
+      fa: "جریمه نقدی بر مبنای نرخ اعلامی بانک مرکزی"
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۴) روش‌های تأمین ارز
+# ───────────────────────────────────────────────────────────────────────────
+fx_supply_channels:
+  - code: EXCHANGE_CENTER
+    fa: "مرکز مبادله ارز و طلای ایران"
+    instruments: [حواله, اسکناس]
+    status: needs_verification
+  - code: NIMA
+    fa: "سامانه نیما"
+    instruments: [حواله]
+    status: needs_verification
+  - code: SELF_SUPPLY
+    fa: "ارز متقاضی (اشخاص)"
+    status: needs_verification
+  - code: EXPORT_PROCEEDS
+    fa: "ارز حاصل از صادرات (واگذاری/تهاتر)"
+    status: needs_verification
+  - code: BARTER
+    fa: "تهاتر"
+    status: needs_verification
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۵) روش‌های پرداخت و تشخیص آن از متن
+# ───────────────────────────────────────────────────────────────────────────
+payment_methods:
+  - code: BARAT
+    fa: "برات اسنادی / یوزانس"
+    keywords: [برات, بروات, یوزانس, "usance", "barat", "d/a", "بروات اسنادی"]
+    is_deferred: true
+    triggers_barat_rules: true
+  - code: LC
+    fa: "اعتبار اسنادی"
+    keywords: [اعتبار اسنادی, اعتبار, "lc", "l/c", "letter of credit", گشایش]
+    is_deferred: false
+  - code: CASH
+    fa: "نقدی / حواله"
+    keywords: [نقد, نقدی, حواله, "cash", "t/t", "tt"]
+    is_deferred: false
+  - code: SIGHT_DRAFT
+    fa: "برات دیداری"
+    keywords: [برات دیداری, دیداری, "d/p", "sight"]
+    is_deferred: false
+  - code: OTHER
+    fa: "سایر"
+    keywords: []
+    default: true
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۶) روش‌های رفع تعهد
+# ───────────────────────────────────────────────────────────────────────────
+release_methods:
+  - code: CUSTOMS_DECLARATION
+    fa: "ارائه پروانه گمرکی ورود کالا"
+    primary: true
+  - code: FX_RETURN
+    fa: "برگشت ارز تأمین‌شده به بانک"
+  - code: SETTLEMENT
+    fa: "مصالحه ریالی"
+    status: needs_verification
+  - code: EXTENSION
+    fa: "تمدید مهلت"
+    status: needs_verification
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۷) دسته‌بندی متقاضی
+# ───────────────────────────────────────────────────────────────────────────
+segments:
+  - code: production
+    fa: "تولیدی"
+    keywords: [تولیدی, تولید, واحد تولیدی]
+    default: true
+  - code: commercial
+    fa: "بازرگانی"
+    keywords: [بازرگانی, تجاری, بازرگان]
+
+# ───────────────────────────────────────────────────────────────────────────
+# ۸) سال مالی
+# ───────────────────────────────────────────────────────────────────────────
+fiscal_year:
+  jalali_year: 1405
+  starts_on: "2026-03-21"
+  ends_on: "2027-03-20"
+  note: "برای فیلتر داده‌های سال جاری استفاده می‌شود."
