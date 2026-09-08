@@ -1,0 +1,5 @@
+# نمونه فهرست گیرندگان.
+# ⚠️ فایل واقعی «recipients.yaml» داده شخصی است و در .gitignore آمده.
+recipients:
+  - first.person@example.invalid
+  - second.person@example.invalid

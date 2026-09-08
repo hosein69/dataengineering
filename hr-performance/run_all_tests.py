@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+"""اجرای همه مجموعه‌های تست.    python run_all_tests.py"""
+from __future__ import annotations
+
+import os
+import re
+import subprocess
+import sys
+
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+SUITES = [
+    ("۱) مدل، امتیازدهی و گروه همتا", "tests/test_model_and_scoring.py"),
+    ("۲) علیت، خط لوله، پایگاه داده و گزارش", "tests/test_causal_and_pipeline.py"),
+]
+
+
+def main() -> int:
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+    ok = fail = 0
+    failed = []
+    for label, path in SUITES:
+        print("\n" + "█" * 78)
+        print(f"█  {label}")
+        print("█" * 78)
+        out = subprocess.run([sys.executable, path], cwd=ROOT, env=env,
+                             capture_output=True, text=True,
+                             encoding="utf-8", errors="replace")
+        print(out.stdout)
+        if out.stderr.strip():
+            print(out.stderr)
+        line = next((l for l in out.stdout.splitlines()
+                     if l.startswith("نتیجه:")), "")
+        if line:
+            parts = line.split(":", 1)[1].split("|")
+            ok += int(parts[0].split()[0])
+            fail += int(parts[1].split()[0])
+        if out.returncode != 0:
+            failed.append(label)
+
+    note = ""
+    readme = os.path.join(ROOT, "README.md")
+    if os.path.exists(readme):
+        m = re.search(r"(\d+)\s*تست", open(readme, encoding="utf-8").read())
+        if m and int(m.group(1)) != ok:
+            note = (f"⚠️ README می‌گوید {m.group(1)} تست، ولی {ok} تست اجرا شد.")
+            failed.append("ادعای تعداد تست در README")
+        elif m:
+            note = "✅ ادعای تعداد تست در README با واقعیت می‌خواند."
+
+    print("\n" + "═" * 78)
+    print(f"جمع کل: {ok} تست موفق | {fail} ناموفق")
+    if note:
+        print(note)
+    if failed:
+        print("مجموعه‌های ناموفق: " + " ، ".join(failed))
+    else:
+        print("✅ همه تست‌ها سبز.")
+    print("═" * 78)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

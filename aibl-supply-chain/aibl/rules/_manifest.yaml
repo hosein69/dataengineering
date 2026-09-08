@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  AIBL RULEBOOK — فهرست بسته‌های قانونی
+#  هر بسته مستقل است. افزودن/حذف یک بسته فقط یک سطر در این فایل است.
+#  RuleBook این فایل را می‌خواند و بسته‌ها را به ترتیب load_order بارگذاری می‌کند.
+# ═══════════════════════════════════════════════════════════════════════════
+manifest_version: "1.0"
+updated_at: "2026-08-31"
+maintainer: "Global Sourcing — Governance & Integration"
+
+# وضعیت اعتبار هر قاعده (در سطح تک‌قاعده هم قابل تعریف است):
+#   verified            → از منبع رسمی استخراج و تأیید شده
+#   internal            → قاعده داخلی سازمان (of.txt / of2.txt / رویه جاری)
+#   needs_verification  → باید با آخرین بخشنامه تطبیق داده شود  ← اینها را اول به‌روز کنید
+status_levels: [verified, internal, needs_verification, deprecated]
+
+packs:
+  - id: currencies
+    file: currencies.yaml
+    title: "ارزها و نرخ‌ها (ISO 4217)"
+    load_order: 10
+    enabled: true
+
+  - id: incoterms
+    file: incoterms.yaml
+    title: "ترم‌های حمل — Incoterms® 2020"
+    load_order: 20
+    enabled: true
+
+  - id: transport
+    file: transport.yaml
+    title: "روش‌های حمل، اسناد حمل و کانتینر"
+    load_order: 30
+    enabled: true
+
+  - id: hs_codes
+    file: hs_codes.yaml
+    title: "نظام هماهنگ‌شده (HS) و تعرفه ۸ رقمی ایران"
+    load_order: 40
+    enabled: true
+
+  - id: fx_governance
+    file: fx_governance.yaml
+    title: "مقررات ارزی: ثبت سفارش → تخصیص → تأمین → رفع تعهد"
+    load_order: 50
+    enabled: true
+
+  - id: customs
+    file: customs.yaml
+    title: "گمرک، کوتاژ، ساتا و ترخیص"
+    load_order: 60
+    enabled: true
+
+  - id: alarms
+    file: alarms.yaml
+    title: "آستانه‌های هشدار و موتور ریسک"
+    load_order: 70
+    enabled: true
+
+  - id: criticality
+    file: criticality.yaml
+    title: "مقاومت قطعه و بحرانی بودن (زیر ۱۰ روز / ۱۰ تا ۲۰ روز)"
+    load_order: 75
+    enabled: true
+
+  - id: status_lexicon
+    file: status_lexicon.yaml
+    title: "واژگان وضعیت فارسی → مرحله چرخه عمر"
+    load_order: 80
+    enabled: true
+
+# ── راهنمای به‌روزرسانی ──
+# ۱. برای تغییر یک مهلت قانونی، فقط مقدار را در فایل مربوطه عوض کنید.
+# ۲. اگر قاعده جدید از تاریخ مشخصی اجرا می‌شود، از بلوک versions استفاده کنید:
+#        versions:
+#          - effective_from: "2025-03-21"
+#            value: 540
+#          - effective_from: "2026-03-21"
+#            value: 480
+#    RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخاب می‌کند.
+# ۳. پس از هر تغییر:  python -m aibl.rulebook.validate

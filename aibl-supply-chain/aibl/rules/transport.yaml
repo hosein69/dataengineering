@@ -1,0 +1,146 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  حمل و نقل بین‌المللی: روش‌ها، اسناد و کانتینر
+# ═══════════════════════════════════════════════════════════════════════════
+pack: transport
+version: "1.0"
+status: verified
+updated_at: "2026-08-31"
+
+modes:
+  - code: SEA
+    fa: "دریایی"
+    document: BL
+    aliases: [دریایی, sea, ocean, vessel, کشتی, "by sea"]
+    typical_transit_days: 35
+  - code: AIR
+    fa: "هوایی"
+    document: AWB
+    aliases: [هوایی, air, "by air", هواپیما]
+    typical_transit_days: 7
+  - code: ROAD
+    fa: "زمینی (جاده‌ای)"
+    document: CMR
+    aliases: [زمینی, جاده, road, truck, کامیون, "by road"]
+    typical_transit_days: 20
+  - code: RAIL
+    fa: "ریلی"
+    document: RWB
+    aliases: [ریلی, rail, قطار, train]
+    typical_transit_days: 25
+  - code: MULTIMODAL
+    fa: "چندوجهی"
+    document: MTD
+    aliases: [چندوجهی, multimodal, combined, ترکیبی]
+    typical_transit_days: 40
+  - code: COURIER
+    fa: "پست سریع / کوریر"
+    document: COURIER_AWB
+    aliases: [کوریر, courier, dhl, tnt, fedex, پست]
+    typical_transit_days: 5
+
+documents:
+  - code: BL
+    fa: "بارنامه دریایی"
+    en: "Bill of Lading"
+    negotiable: true
+    key_pattern: "^[A-Z]{4}[A-Z0-9]{5,}$"
+    note: "چهار حرف نخست معمولاً کد SCAC خط کشتیرانی است (مثال: MSCU, MAEU, HLCU, COSU, ONEY)."
+  - code: AWB
+    fa: "بارنامه هوایی"
+    en: "Air Waybill"
+    negotiable: false
+    key_pattern: "^[0-9]{3}-?[0-9]{8}$"
+    note: "سه رقم نخست کد پیشوند شرکت هواپیمایی (مثال: 176 = ایران‌ایر)."
+  - code: CMR
+    fa: "بارنامه جاده‌ای"
+    en: "CMR Consignment Note"
+    negotiable: false
+  - code: RWB
+    fa: "بارنامه ریلی"
+    en: "Rail Waybill / SMGS"
+    negotiable: false
+  - code: MTD
+    fa: "سند حمل چندوجهی"
+    en: "Multimodal Transport Document"
+    negotiable: true
+  - code: PI
+    fa: "پیش‌فاکتور"
+    en: "Proforma Invoice"
+  - code: CI
+    fa: "سیاهه تجاری"
+    en: "Commercial Invoice"
+  - code: PL
+    fa: "لیست عدل‌بندی"
+    en: "Packing List"
+  - code: COO
+    fa: "گواهی مبدأ"
+    en: "Certificate of Origin"
+  - code: INS
+    fa: "بیمه‌نامه"
+    en: "Insurance Policy"
+
+# اعتبارسنجی شماره بارنامه — برای جلوگیری از اتصال اشتباه به شماره فنی/پروفرما
+bl_validation:
+  min_length: 6
+  max_length: 20
+  strict_pattern: "^[A-Z]{3,4}[A-Z0-9]{4,}$"
+  reject_if_pure_digits_shorter_than: 9
+  known_scac_prefixes:
+    [MSCU, MAEU, MRKU, HLCU, HLXU, COSU, ONEY, EGLV, OOLU, CMDU, APLU,
+     YMLU, KMTU, PABV, ZIMU, TGHU, GESU, TCLU, SUDU, SEAU, HDMU, WHLC]
+  note: >
+    در سورس مقاومت مشاهده شد که ستون «BL No.» گاهی حاوی شماره فنی سازنده یا
+    شماره پروفرما است (نمونه: 541339، 2036866948، 603111/1). چنین مقادیری
+    نباید به عنوان کلید بارنامه استفاده شوند و به ستون قرنطینه منتقل می‌شوند.
+
+containers:
+  - code: 20DV
+    fa: "کانتینر ۲۰ فوت خشک"
+    teu: 1
+    max_payload_kg: 28200
+  - code: 40DV
+    fa: "کانتینر ۴۰ فوت خشک"
+    teu: 2
+    max_payload_kg: 26700
+  - code: 40HC
+    fa: "کانتینر ۴۰ فوت های‌کیوب"
+    teu: 2
+    max_payload_kg: 26500
+  - code: 20RF
+    fa: "کانتینر ۲۰ فوت یخچالی"
+    teu: 1
+  - code: 40RF
+    fa: "کانتینر ۴۰ فوت یخچالی"
+    teu: 2
+  - code: LCL
+    fa: "حمل کمتر از یک کانتینر"
+  - code: BREAKBULK
+    fa: "فله / غیرکانتینری"
+
+# بنادر و مرزهای پرتردد ورودی ایران
+entry_points:
+  - code: BND
+    fa: "بندر شهید رجایی (بندرعباس)"
+    type: sea
+    unlocode: IRBND
+  - code: BUZ
+    fa: "بندر بوشهر"
+    type: sea
+    unlocode: IRBUZ
+  - code: BKM
+    fa: "بندر امام خمینی"
+    type: sea
+    unlocode: IRBKM
+  - code: IKA
+    fa: "فرودگاه امام خمینی"
+    type: air
+    unlocode: IRIKA
+  - code: BZG
+    fa: "مرز بازرگان"
+    type: road
+  - code: ASTARA
+    fa: "مرز آستارا"
+    type: road
+  - code: SARAKHS
+    fa: "مرز سرخس"
+    type: rail

@@ -1,0 +1,19 @@
+# AIBL — وابستگی‌های اجرا
+# پایتون ۳٫۹ یا بالاتر (روی ۳٫۱۱ و ۳٫۱۲ تست شده)
+
+# ── هسته خط لوله ──
+pandas>=2.0
+numpy>=1.24
+openpyxl>=3.1
+PyYAML>=6.0          # کتابخانه قوانین aibl/rules/*.yaml بدون این بالا نمی‌آید
+
+# ── داشبورد و Studio ──
+streamlit>=1.35
+plotly>=5.20
+streamlit-sortables==0.3.1
+
+# ── بسته ایمیل مدیریتی (python -m aibl email) ──
+matplotlib>=3.7      # نمودارهای PNG ایمیل؛ نبودش یعنی ModuleNotFoundError
+
+# ── اختیاری ──
+# jdatetime         # مبدل شمسی داخلی هست؛ این فقط جایگزین است

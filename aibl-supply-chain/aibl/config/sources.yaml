@@ -1,0 +1,214 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  رجیستری سورس‌ها — نسخه ۳، منطبق بر هدرهای واقعی
+#  مرجع: HEADERS_MAP_20260901 (۶۶۶ ستون از ۱۷ فایل واقعی)
+#
+#  تغییرات نسبت به نسخه ۲ و دلیل هرکدام:
+#    clearance      شیت «Clearance Report» وجود نداشت → هر فایل شیت خودش را دارد
+#    sata           شیت «SATA» → «Sata Tracking»  + این سورس حامل «ثبت سفارش» است
+#    ilappend       شیت «IL Append» → «Append»
+#    credit         شیت «Credit Dept» → «PURCREDIT»
+#    sap            شیت «Sheet1» → «Data» و کلید اتصال از BL به PR تغییر کرد
+#    oracle         شیت «Total_Report ...» — سورس موجودی و نیاز روزانه
+#    moghavemat     الگو «*Commercial Expert Data*» و شیت «Expert Data»
+#    missmohammadi  هیچ فایلی با این الگو وجود ندارد → غیرفعال
+# ═══════════════════════════════════════════════════════════════════════════
+registry_version: "3.0"
+updated_at: "2026-09-01"
+source_of_truth: "HEADERS_MAP_20260901_1304.xlsx"
+
+defaults:
+  extensions: [".xlsx", ".xlsm", ".xls"]
+  ignore_prefix: "~$"
+  pick: newest
+
+sources:
+  abbasi:
+    folder: "${BLS_TOTAL_DIR}"
+    pattern: "*BLs*Tracking*"
+    sheets: ["BLs Tracking"]
+    join_on: BL
+    weight: 1.00
+    required: true
+    role: "ردیابی بارنامه‌ها (جدول پایه)"
+    enabled: true
+
+  moghavemat:
+    # ⚠️ مسیر واقعی (تأییدشده): GS_Combine\OUTPUT — نه پوشه اسماعیلی.
+    # با مسیر غلط، فایل پیدا نمی‌شد و کل دومینو از گام اول قطع می‌شد:
+    # مقاومت نیامد ⇒ کد متریال ساخته نشد ⇒ Oracle به هیچ نچسبید ⇒
+    # موجودی صفر ⇒ همه قطعات در طبقه «نامشخص».
+    folder: "${GS_COMBINE_OUT_DIR}"
+    pattern: "*Commercial Expert Data*"
+    sheets: ["Expert Data"]
+    join_on: ORDER
+    weight: 0.85
+    role: "چرخه خرید در سطح قلم + کد پرسنلی کارشناس بازرگانی"
+    enabled: true
+    notes: >
+      ستون Data type چند مقدار دارد (Pre Purchase Approval Data / Purchase
+      Approval Data) پس فایل چندنوعی است. ستون BL No. حاوی شماره فنی/پروفرما
+      است نه بارنامه و قرنطینه می‌شود.
+
+  sata:
+    folder: "${BLS_TOTAL_DIR}"
+    pattern: "*SATA*"
+    sheets: ["Sata Tracking"]
+    join_on: BL
+    weight: 0.95
+    role: "پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات"
+    enabled: true
+    notes: >
+      ⚠️ حیاتی‌ترین پل سیستم: تنها سورسی است که «بارنامه»، «سفارش» و
+      «ثبت سفارش ۸ رقمی» را کنار هم دارد. کلید KEY_REG از همین‌جا می‌آید و
+      بدون آن، NTSW هرگز متصل نمی‌شود.
+
+  clearance:
+    folder: "${CLEARANCE_DIR}"
+    pattern: "*Clearance*"
+    sheets: [null]
+    sheet_strategy: all_data_sheets
+    skip_sheets: ["Help", "Sheet2", "data", "Data", "راهنما"]
+    join_on: BL
+    weight: 0.90
+    multi_file: true
+    dedupe_by: CL_REF_DATE
+    role: "ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار"
+    enabled: true
+    notes: >
+      هر فایل شیت هم‌نام خودش را دارد (Sea/Air/Land/chabaharClearance) و
+      تعداد ستون‌ها متفاوت است. «ترخیص کامل» و «ترخیص درصدی» علامت «*» هستند
+      نه تاریخ؛ تاریخ واقعی در «تاریخ بارگیری» است.
+
+  cotage:
+    folder: "${BLS_TOTAL_DIR}"
+    pattern: "*Cottage*"
+    sheets: ["Cottage Tracking"]
+    join_on: BL
+    weight: 0.88
+    role: "کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد"
+    enabled: true
+
+  oracle:
+    folder: "${BLS_TOTAL_DIR}"
+    # فایل واقعی Oracle.xlsx است؛ هیچ فایلی با نام Total_Report وجود ندارد.
+    # نام شیت داخل فایل «Total_Report 14050610» است، نه نام فایل.
+    pattern: "*Oracle*"
+    sheets: [null]
+    join_on: MATERIAL
+    weight: 0.80
+    role: "متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت"
+    enabled: true
+    notes: >
+      ستون «قطعه بحراني» در فایل کاملاً خالی است، پس بحرانی بودن باید
+      محاسبه شود. مقاومت = (موجودی ایران‌خودرو + ساپکو + در راه + در گمرک)
+      ÷ نیاز روزانه قطعات.
+
+  ntsw:
+    folder: "${FOREIGN_DIR}"
+    pattern: "*NTSW*"
+    sheets: ["Release Commitment", "Allocation"]
+    join_on: REG
+    weight: 0.92
+    role: "تعهدات ارزی + تخصیص ارز"
+    enabled: true
+    notes: >
+      هر دو شیت چندردیفی‌اند: یک کد ثبت سفارش می‌تواند چند «ردیف تعهد» و چند
+      «درخواست تخصیص» داشته باشد. تعهدها باید جمع شوند و از تخصیص‌ها آخرین
+      وضعیت گرفته شود.
+
+  fx_transaction:
+    folder: "${FOREIGN_DIR}"
+    pattern: "*Foreign*Exchange*Transaction*"
+    sheets: [null]
+    join_on: REG
+    weight: 0.86
+    dedupe_by: FX_BUY_DATE
+    role: "خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص"
+    enabled: true
+
+  credit:
+    folder: "${FOREIGN_DIR}"
+    pattern: "*Credit*"
+    sheets: ["PURCREDIT"]
+    join_on: REG
+    weight: 0.70
+    role: "اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت"
+    enabled: true
+
+  ilappend:
+    folder: "${FOREIGN_DIR}"
+    pattern: "*IL*"
+    sheets: ["Append"]
+    join_on: REG
+    weight: 0.68
+    role: "الحاقیه ثبت سفارش"
+    enabled: true
+    notes: >
+      ⚠️ دو ستون شبیه هم دارد: «شماره ثبت سفارش» (۸ رقمی، کلید NTSW) و
+      «شماره پرونده ثبت سفارش» (۹ رقمی، شماره پرونده). نسخه قبلی دومی را
+      به‌عنوان کلید گرفته بود و به همین دلیل NTSW هیچ‌وقت وصل نشد.
+
+  sap:
+    folder: "${FOREIGN_DIR}"
+    pattern: "*SAP*"
+    sheets: ["Data"]
+    join_on: PR
+    weight: 0.60
+    role: "گردش کار درخواست خرید (PR) در SAP"
+    enabled: true
+    notes: >
+      این فایل بارنامه ندارد؛ کلیدش Purchase Requisition است که با ستون
+      «PR No.» فایل مقاومت جور می‌شود.
+
+  doccheck:
+    folder: "${MOHAMADI_DIR}"
+    pattern: "*Document*"
+    sheets: ["Checking"]
+    # ⚠️ ستون بارنامه در این فایل پرشدگی صفر دارد و «Order Number» صد درصد.
+    # جوین روی BL یعنی حذف کامل ۳۲۱۳ ردیف.
+    join_on: ORDER
+    dedupe_by: DOC_SUBMIT_DATE
+    weight: 0.55
+    role: "بررسی و مغایرت اسناد (سطح سند)"
+    enabled: true
+    notes: >
+      کاردینالیتی این فایل «سند» است نه «قلم سفارش»؛ پیش از ادغام روی
+      شماره سفارش به آخرین وضعیت تقلیل داده می‌شود تا جوین many-to-many
+      ردیف‌های خط لوله را تکثیر نکند.
+
+  hr:
+    folder: "${HR_DIR}"
+    pattern: "*HR_Main_Updated*"
+    sheets: [null]
+    join_on: EMP
+    weight: 0.50
+    required: true
+    role: "پرسنل و سلسله‌مراتب سازمانی"
+    enabled: true
+
+  missmohammadi:
+    folder: "${MOHAMADI_DIR}"
+    pattern: "*Miss*Mohammadi*"
+    sheets: [null]
+    join_on: BL
+    weight: 0.40
+    role: "داده تکمیلی"
+    enabled: false
+    notes: "هیچ فایلی با این الگو در پوشه یافت نشد (تأیید‌شده در HEADERS_MAP)."
+
+# ترتیب ادغام — منطق علّی، نه دلخواه:
+#   ۱ مقاومت و SAP: کد متریال و PR را می‌آورند
+#   ۲ oracle: موجودی را روی کد متریال می‌چسباند
+#   ۳ sata: کلید ثبت سفارش را می‌سازد  ← پیش‌نیاز NTSW و FX و اعتبارات
+#   ۴ گمرکی‌ها، سپس سورس‌های سطح ثبت سفارش
+merge_order:
+  - moghavemat
+  - sap
+  - oracle
+  - sata
+  - clearance
+  - cotage
+  - doccheck
+  - ilappend
+  - fx_transaction
+  - credit

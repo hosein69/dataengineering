@@ -1,0 +1,461 @@
+# پچ: گیرندگان ایمیل از جدول پرسنلی — HRPerf 1.1.0 → 1.2.0
+#
+# اعمال:
+#     cd <ریشه پکیج HRPerf>
+#     git apply --check PATCH_EMAIL_FROM_HR.patch
+#     git apply         PATCH_EMAIL_FROM_HR.patch
+#     # یا بدون گیت:  patch -p1 < PATCH_EMAIL_FROM_HR.patch
+#
+# بررسی:
+#     python run_all_tests.py             # باید ۱۰۲ موفق / ۰ ناموفق بدهد
+#
+# فعال‌سازی:
+#     export HRP_EMAIL_FROM_HR=1
+#     python -m hrperf run --formats excel,html,pdf,email
+#
+diff --git a/README.md b/README.md
+index 26ff512..3abb414 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,4 @@
+-# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۱٫۰٫۰)
++# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۱٫۲٫۰)
+ 
+ سنجش عملکرد بر پایه **علیت**، نه صرفاً همبستگی. مدل دو سطحی است، وزن‌ها
+ در داشبورد زنده تغییر می‌کنند، و خروجی هم پایگاه داده است هم Excel و
+@@ -11,7 +11,7 @@ pip install -r requirements.txt
+ python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
+ python -m hrperf.cli run             # اجرا روی input_files
+ python app/run_dashboard.py          # داشبورد
+-python run_all_tests.py              # ۸۷ تست
++python run_all_tests.py              # ۱۰۲ تست
+ ```
+ 
+ ---
+@@ -144,17 +144,35 @@ DAG صریح اعلام می‌شود، مجموعه تعدیل با **معیا
+ 
+ ### فهرست گیرندگان ایمیل — پیکربندی محرمانه
+ 
+-نشانی کارکنان داده شخصی است و در سورس نگه‌داری نمی‌شود:
++نشانی کارکنان داده شخصی است و در سورس نگه‌داری نمی‌شود. ترتیب اولویت:
+ 
+ ```
+-HRP_EMAIL_TO="a@example.invalid;b@example.invalid"
+-HRP_RECIPIENTS_FILE=/secure/recipients.yaml
+-$HRP_HOME/recipients.yaml
++۱) HRP_EMAIL_TO="a@example.invalid;b@example.invalid"
++۲) HRP_RECIPIENTS_FILE=/secure/recipients.yaml
++۳) $HRP_HOME/recipients.yaml
++۴) HRP_EMAIL_FROM_HR=1   ← از جدول پرسنلی همین اجرا
+ ```
+ 
+ بدون پیکربندی، ساخت گزارش کار می‌کند ولی **ارسال با خطای صریح متوقف
+ می‌شود**.
+ 
++**گزینه ۴ (توصیه‌شده).** ستون ایمیل جدول پرسنلی همین اجرا منبع گیرندگان
++می‌شود (`email` / `Email` / `HR_EMAIL` / `ایمیل` / …). چون همان جدولی است
++که امتیازها از آن ساخته شده‌اند، فهرست هرگز کهنه یا ناهم‌گام نمی‌شود و
++پرسنل غیرفعال خودکار حذف می‌شوند.
++
++| متغیر | پیش‌فرض | کار |
++|---|---|---|
++| `HRP_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
++| `HRP_EMAIL_HR_ROLES` | `مدیر,رئیس,مسئول` | فیلتر روی `role` |
++| `HRP_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی `management` |
++| `HRP_EMAIL_HR_DEPARTMENTS` | — | فیلتر روی `department` |
++| `HRP_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
++
++فیلترها با هم AND می‌شوند. فقط پرسنل **فعال** و نشانی‌های معتبر انتخاب
++می‌شوند، و در خروجی گزارش فقط **تعداد** گیرنده ثبت می‌شود
++(`ReportResult.email_recipients`) — هرگز خود نشانی‌ها.
++
+ ---
+ 
+ ## ۴. ساختار
+@@ -170,7 +188,7 @@ hrperf/
+   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
+   pipeline.py · cli.py
+ app/         dashboard.py · run_dashboard.py · styles.py
+-tests/       ۸۷ تست
++tests/       ۱۰۲ تست
+ ```
+ 
+ ---
+@@ -184,3 +202,4 @@ tests/       ۸۷ تست
+ | `HRP_DB` | مسیر SQLite |
+ | `HRP_TODAY` | تاریخ مرجع ثابت |
+ | `HRP_EMAIL_TO` / `HRP_RECIPIENTS_FILE` / `HRP_EMAIL_SENDER` | ایمیل |
++| `HRP_EMAIL_FROM_HR` / `HRP_EMAIL_HR_ROLES` / `HRP_EMAIL_HR_MANAGEMENTS` / `HRP_EMAIL_HR_DEPARTMENTS` / `HRP_EMAIL_HR_MAX` | گیرنده از ستون ایمیل جدول پرسنلی |
+diff --git a/RELEASE_NOTES_V1_2_0_EMAIL_FROM_HR.md b/RELEASE_NOTES_V1_2_0_EMAIL_FROM_HR.md
+new file mode 100644
+index 0000000..bc6ff48
+--- /dev/null
++++ b/RELEASE_NOTES_V1_2_0_EMAIL_FROM_HR.md
+@@ -0,0 +1,74 @@
++# HRPerf 1.2.0 — گیرندگان ایمیل از جدول پرسنلی
++
++## چه چیزی عوض شد
++
++فهرست گیرندگان بسته ایمیل می‌تواند از **ستون ایمیل جدول پرسنلی همان
++اجرا** خوانده شود، نه از یک فهرست دستیِ جداگانه.
++
++## چرا
++
++جدول پرسنلی (`run.people`) همان چیزی است که امتیازها از آن ساخته شده‌اند.
++گرفتن گیرنده از همان جدول یعنی گزارش و فهرست گیرنده **هرگز از هم جدا
++نمی‌افتند**: اگر کسی در این اجرا امتیاز دارد، وضعیت پرسنلی‌اش همان است که
++برای ایمیل هم به‌کار می‌رود. فهرست دستی این تضمین را ندارد و به‌مرور با
++واقعیت فاصله می‌گیرد.
++
++## فعال‌سازی
++
++```bash
++export HRP_EMAIL_FROM_HR=1
++python -m hrperf run --formats excel,html,pdf,email
++```
++
++| متغیر | پیش‌فرض | کار |
++|---|---|---|
++| `HRP_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی |
++| `HRP_EMAIL_HR_ROLES` | `مدیر,رئیس,مسئول` | فیلتر `role` |
++| `HRP_EMAIL_HR_MANAGEMENTS` | — | فیلتر `management` |
++| `HRP_EMAIL_HR_DEPARTMENTS` | — | فیلتر `department` |
++| `HRP_EMAIL_HR_MAX` | — | سقف تعداد |
++
++ستون ایمیل با چند نام شناخته می‌شود: `email` · `Email` · `EMAIL` ·
++`hr_email` · `HR_EMAIL` · `ایمیل` · `پست الکترونیک(ی)` — پس همان جدولی
++که از سورس AIBL می‌آید هم بدون نگاشت دستی کار می‌کند.
++
++## ترتیب حل گیرنده
++
++```
++۱) HRP_EMAIL_TO
++۲) HRP_RECIPIENTS_FILE
++۳) $HRP_HOME/recipients.yaml
++۴) جدول پرسنلی اجرا  (فقط اگر HRP_EMAIL_FROM_HR روشن باشد)
++۵) خالی ⇒ ساخت گزارش کار می‌کند، ارسال با خطای صریح متوقف می‌شود
++```
++
++## در خروجی گزارش
++
++`ReportResult.email_recipients` تعداد گیرندگان حل‌شده را نگه می‌دارد و در
++پیام‌های ساخت گزارش هم می‌آید («گیرندگان: ۱۲»). **فقط تعداد** — نشانی‌ها
++نه در پیام‌ها می‌آیند نه در لاگ.
++
++## تصمیم‌های محافظه‌کارانه
++
++همان قواعد پلتفرم AIBL: پیش‌فرضِ فقط سطوح مدیریتی، فقط پرسنل فعال،
++اعتبارسنجی شکل نشانی، خاموش به‌صورت پیش‌فرض، و لاگ‌نکردن نشانی‌ها.
++
++## تست
++
++۱۵ تست تازه در `tests/test_causal_and_pipeline.py` بخش ۸. کل مجموعه:
++**۱۰۲ تست، ۰ ناموفق.**
++
++## اصلاح جانبی
++
++`hrperf/version.py` روی `1.0.0` جا مانده بود در حالی که یادداشت انتشار
++۱٫۱٫۰ منتشر شده بود؛ حالا با نسخه واقعی (`1.2.0`) هم‌خوان است.
++
++## فایل‌های تغییریافته
++
++```
++hrperf/report/email.py             hr_recipients() و زنجیره حل
++hrperf/report/builder.py           شمارش گیرنده در ReportResult
++tests/test_causal_and_pipeline.py  بخش ۸
++README.md                          بخش گزینه ۴
++hrperf/version.py                  1.0.0 → 1.2.0
++```
+diff --git a/hrperf/report/builder.py b/hrperf/report/builder.py
+index e0c0c16..c3bb42a 100644
+--- a/hrperf/report/builder.py
++++ b/hrperf/report/builder.py
+@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
+ import pandas as pd
+ 
+ from . import templates as tpl
+-from .email import build_email_html
++from .email import build_email_html, recipients
+ from .excel import build_excel
+ from .html import build_html
+ from .pdf import html_to_pdf
+@@ -41,6 +41,8 @@ class ReportResult:
+     messages: List[str] = field(default_factory=list)
+     html: str = ""
+     email_html: str = ""
++    #: تعداد گیرندگان حل‌شده — فقط شمارش، هرگز خودِ نشانی‌ها.
++    email_recipients: int = 0
+ 
+     @property
+     def ok(self) -> bool:
+@@ -150,5 +152,12 @@ def build(run, spec: ReportSpec, out_dir: str | Path = ".") -> ReportResult:
+         p.write_text(res.email_html, encoding="utf-8")
+         res.files["email"] = p
+         res.messages.append(f"بسته ایمیل: {p.name}")
++        # فهرست گیرندگان از همان جدول پرسنلی این اجرا حل می‌شود
++        # (HRP_EMAIL_FROM_HR=1). فقط تعداد ثبت می‌شود؛ نشانی‌ها نه.
++        try:
++            res.email_recipients = len(recipients(getattr(run, "people", None)))
++        except Exception:
++            res.email_recipients = 0
++        res.messages.append(f"گیرندگان: {res.email_recipients}")
+ 
+     return res
+diff --git a/hrperf/report/email.py b/hrperf/report/email.py
+index d599733..f19c348 100644
+--- a/hrperf/report/email.py
++++ b/hrperf/report/email.py
+@@ -7,6 +7,10 @@
+     ۱) HRP_EMAIL_TO="a@x.invalid;b@x.invalid"
+     ۲) HRP_RECIPIENTS_FILE=/secure/recipients.yaml
+     ۳) $HRP_HOME/recipients.yaml
++    ۴) **جدول پرسنلی خودِ اجرا** — ستون email (HRP_EMAIL_FROM_HR=1)
++
++گزینه ۴ ترجیح دارد: فهرست هیچ‌جا کپی نمی‌شود، همیشه با آخرین وضعیت
++پرسنلی هم‌گام است، و پرسنل غیرفعال خودکار حذف می‌شود.
+ 
+ بدون پیکربندی، ساخت بسته کار می‌کند ولی **ارسال با خطای صریح متوقف
+ می‌شود** تا هرگز به فهرستی قدیمی ارسال نشود.
+@@ -56,6 +60,69 @@ def _from_file(path: Path) -> List[str]:
+     return out
+ 
+ 
++# ── انتخاب گیرنده از جدول پرسنلی اجرا ────────────────────────────────────
++HR_ENABLE_ENV = "HRP_EMAIL_FROM_HR"
++HR_ROLES_ENV = "HRP_EMAIL_HR_ROLES"
++HR_MANAGEMENTS_ENV = "HRP_EMAIL_HR_MANAGEMENTS"
++HR_DEPARTMENTS_ENV = "HRP_EMAIL_HR_DEPARTMENTS"
++HR_MAX_ENV = "HRP_EMAIL_HR_MAX"
++
++#: پیش‌فرض: سطوح مدیریتی. گزارش عملکرد، سند مدیریتی است.
++DEFAULT_HR_ROLES = ("مدیر", "رئیس", "مسئول")
++
++_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
++
++#: نام‌های محتمل ستون ایمیل در جدول پرسنلی
++EMAIL_COLUMNS = ("email", "Email", "EMAIL", "hr_email", "HR_EMAIL",
++                 "ایمیل", "پست الکترونیک", "پست الکترونیکی")
++
++
++def _csv_env(name: str, default=()) -> tuple:
++    raw = os.environ.get(name, "").strip()
++    if not raw:
++        return tuple(default)
++    return tuple(x.strip() for x in raw.split(",") if x.strip())
++
++
++def hr_recipients(people) -> List[str]:
++    """گیرندگان را از ستون ایمیل جدول پرسنلی همین اجرا برمی‌دارد.
++
++    فیلترها: فقط **فعال**، نشانی معتبر، و در صورت تعیین، انطباق با
++    نقش / مدیریت / اداره. نشانی‌ها لاگ یا ذخیره نمی‌شوند؛ فقط تعداد.
++    """
++    if people is None or getattr(people, "empty", True):
++        return []
++    col = next((c for c in EMAIL_COLUMNS if c in people.columns), None)
++    if col is None:
++        return []
++
++    mail = people[col].fillna("").astype(str).str.strip()
++    keep = mail.map(lambda x: bool(_EMAIL_RE.match(x)))
++
++    if "active" in people.columns:
++        act = people["active"]
++        keep &= act.map(lambda v: str(v).strip() not in
++                        ("0", "False", "false", "غیرفعال", "nan", ""))
++    elif "status" in people.columns:
++        st = people["status"].fillna("").astype(str)
++        keep &= st.str.contains("فعال", na=False) & ~st.str.contains("غیرفعال", na=False)
++
++    for env, col_name, default in ((HR_ROLES_ENV, "role", DEFAULT_HR_ROLES),
++                                   (HR_MANAGEMENTS_ENV, "management", ()),
++                                   (HR_DEPARTMENTS_ENV, "department", ())):
++        wanted = _csv_env(env, default)
++        if not wanted or col_name not in people.columns:
++            continue
++        text = people[col_name].fillna("").astype(str)
++        keep &= text.apply(lambda v: any(w in v for w in wanted))
++
++    out = sorted({m.lower() for m in mail[keep] if m})
++    cap = os.environ.get(HR_MAX_ENV, "").strip()
++    if cap.isdigit():
++        out = out[:int(cap)]
++    return out
++
++
+ def recipients_path() -> Optional[Path]:
+     explicit = os.environ.get(RECIPIENTS_FILE_ENV, "").strip()
+     if explicit:
+@@ -67,12 +134,18 @@ def recipients_path() -> Optional[Path]:
+     return None
+ 
+ 
+-def recipients() -> List[str]:
++def recipients(people=None) -> List[str]:
+     raw = os.environ.get(RECIPIENTS_ENV, "")
+     if raw.strip():
+         return _split(raw)
+     p = recipients_path()
+-    return _from_file(p) if p else []
++    if p:
++        found = _from_file(p)
++        if found:
++            return found
++    if os.environ.get(HR_ENABLE_ENV, "").strip().lower() in ("1", "true", "yes", "on"):
++        return hr_recipients(people)
++    return []
+ 
+ 
+ def build_email_html(title: str, ref_date: str, summary_rows: List[tuple],
+@@ -103,15 +176,17 @@ padding:18px 22px;border-radius:14px">
+ 
+ def send_via_outlook(subject: str, body_html: str,
+                      attachments: Optional[List[Path]] = None,
+-                     send: bool = False, display: bool = True) -> dict:
++                     send: bool = False, display: bool = True,
++                     people=None) -> dict:
+     """ساخت/ارسال ایمیل با Outlook کلاسیک (فقط ویندوز)."""
+-    to = recipients()
++    to = recipients(people)
+     if not to:
+         raise NoRecipients(
+             "هیچ گیرنده‌ای پیکربندی نشده است. یکی از این‌ها را تنظیم کنید:\n"
+             f"    {RECIPIENTS_ENV}=\"a@example.invalid;b@example.invalid\"\n"
+             f"    {RECIPIENTS_FILE_ENV}=/path/to/{RECIPIENTS_BASENAME}\n"
+-            f"    یا {RECIPIENTS_BASENAME} را در HRP_HOME بگذارید.")
++            f"    یا {RECIPIENTS_BASENAME} را در HRP_HOME بگذارید،\n"
++            f"    یا {HR_ENABLE_ENV}=1 تا از ستون email جدول پرسنلی خوانده شود.")
+     if not (send or display):
+         return {"recipients": to, "sent": False}
+     try:
+diff --git a/hrperf/version.py b/hrperf/version.py
+index d9c9832..d221676 100644
+--- a/hrperf/version.py
++++ b/hrperf/version.py
+@@ -1,4 +1,4 @@
+ # -*- coding: utf-8 -*-
+ """تنها منبع نسخه."""
+-VERSION = "1.0.0"
++VERSION = "1.2.0"
+ PACKAGE_VERSION = VERSION
+diff --git a/tests/test_causal_and_pipeline.py b/tests/test_causal_and_pipeline.py
+index e3b9c04..6376f03 100644
+--- a/tests/test_causal_and_pipeline.py
++++ b/tests/test_causal_and_pipeline.py
+@@ -28,7 +28,8 @@ from hrperf.dataio.sources import melt_wide, normalize_long  # noqa: E402
+ from hrperf.pipeline import Pipeline  # noqa: E402
+ from hrperf.report import templates as tpl  # noqa: E402
+ from hrperf.report.builder import ReportSpec, build  # noqa: E402
+-from hrperf.report.email import NoRecipients, recipients  # noqa: E402
++from hrperf.report.email import (NoRecipients, hr_recipients,  # noqa: E402
++                                 recipients)
+ from tests.make_synthetic import build as make  # noqa: E402
+ 
+ PASS, FAIL = [], []
+@@ -206,6 +207,98 @@ def test_email_config():
+     check("هیچ نشانی ایمیل واقعی در سورس نیست", not leaked, str(leaked[:3]))
+ 
+ 
++def _hr_people():
++    """جدول پرسنلی نمونه — عمداً شامل موارد مرزی."""
++    return pd.DataFrame([
++        # فعال، مدیر، نشانی سالم  → باید بیاید
++        dict(person_key="p1", email="a.manager@x.invalid", active=1,
++             role="مدیر", management="مواد اولیه", department="خرید"),
++        # فعال، رئیس  → باید بیاید
++        dict(person_key="p2", email="b.head@x.invalid", active=1,
++             role="رئیس اداره", management="قطعات", department="ترخیص"),
++        # غیرفعال با پست مدیریتی → نباید بیاید
++        dict(person_key="p3", email="c.left@x.invalid", active=0,
++             role="مدیر", management="مواد اولیه", department="خرید"),
++        # کارشناس فعال → با پیش‌فرض نباید بیاید
++        dict(person_key="p4", email="d.expert@x.invalid", active=1,
++             role="کارشناس خرید", management="مواد اولیه", department="خرید"),
++        # نشانی ناقص → هرگز نباید بیاید
++        dict(person_key="p5", email="not-an-email", active=1,
++             role="مدیر", management="قطعات", department="خرید"),
++        # نشانی خالی → هرگز نباید بیاید
++        dict(person_key="p6", email="", active=1,
++             role="مدیر", management="قطعات", department="خرید"),
++    ])
++
++
++def test_email_from_hr():
++    print("\n── ۸) گیرنده از سورس HR ──")
++    ppl = _hr_people()
++    keys = ["HRP_EMAIL_TO", "HRP_RECIPIENTS_FILE", "HRP_EMAIL_FROM_HR",
++            "HRP_EMAIL_HR_ROLES", "HRP_EMAIL_HR_MANAGEMENTS",
++            "HRP_EMAIL_HR_DEPARTMENTS", "HRP_EMAIL_HR_MAX"]
++    saved = {k: os.environ.pop(k, None) for k in keys}
++    try:
++        got = hr_recipients(ppl)
++        check("پیش‌فرض فقط سطوح مدیریتیِ فعال است",
++              got == ["a.manager@x.invalid", "b.head@x.invalid"], str(got))
++        check("پرسنل غیرفعال حذف می‌شود", "c.left@x.invalid" not in got)
++        check("نشانی نامعتبر حذف می‌شود",
++              not any("not-an-email" in g for g in got))
++        check("ردیف بدون نشانی حذف می‌شود", "" not in got)
++
++        os.environ["HRP_EMAIL_HR_ROLES"] = "کارشناس"
++        got = hr_recipients(ppl)
++        check("فیلتر نقش کار می‌کند", got == ["d.expert@x.invalid"], str(got))
++
++        os.environ["HRP_EMAIL_HR_MANAGEMENTS"] = "قطعات"
++        got = hr_recipients(ppl)
++        check("فیلترها با هم AND می‌شوند (کارشناسِ قطعات نداریم)",
++              got == [], str(got))
++        os.environ.pop("HRP_EMAIL_HR_MANAGEMENTS")
++
++        os.environ["HRP_EMAIL_HR_ROLES"] = "مدیر,رئیس,کارشناس"
++        os.environ["HRP_EMAIL_HR_MAX"] = "2"
++        check("سقف تعداد رعایت می‌شود", len(hr_recipients(ppl)) == 2)
++        os.environ.pop("HRP_EMAIL_HR_MAX")
++        os.environ.pop("HRP_EMAIL_HR_ROLES")
++
++        check("جدول خالی ⇒ فهرست خالی", hr_recipients(pd.DataFrame()) == [])
++        check("None ⇒ فهرست خالی", hr_recipients(None) == [])
++        check("جدول بدون ستون ایمیل ⇒ فهرست خالی",
++              hr_recipients(pd.DataFrame({"person_key": ["p1"]})) == [])
++        check("ستون فارسی «ایمیل» هم شناخته می‌شود",
++              hr_recipients(pd.DataFrame({"ایمیل": ["z@x.invalid"]}))
++              == ["z@x.invalid"])
++
++        # ── زنجیره حل ──
++        check("بدون HRP_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
++              recipients(ppl) == [])
++        os.environ["HRP_EMAIL_FROM_HR"] = "1"
++        check("با فعال‌سازی، از سورس HR خوانده می‌شود",
++              recipients(ppl) == ["a.manager@x.invalid", "b.head@x.invalid"])
++        os.environ["HRP_EMAIL_TO"] = "override@x.invalid"
++        check("متغیر محیطی صریح بر سورس HR اولویت دارد",
++              recipients(ppl) == ["override@x.invalid"])
++        os.environ.pop("HRP_EMAIL_TO")
++
++        # ── نشانی‌ها نباید لاگ شوند ──
++        import io
++        import contextlib
++        buf = io.StringIO()
++        with contextlib.redirect_stdout(buf):
++            hr_recipients(ppl)
++        printed = buf.getvalue()
++        check("هیچ نشانی‌ای چاپ/لاگ نمی‌شود",
++              "@x.invalid" not in printed, printed[:80])
++    finally:
++        for k in keys:
++            os.environ.pop(k, None)
++            if saved.get(k) is not None:
++                os.environ[k] = saved[k]
++
++
++
+ if __name__ == "__main__":
+     print("=" * 78)
+     print("HRPerf — تست علیت، خط لوله، پایگاه داده و گزارش")
+@@ -217,6 +310,7 @@ if __name__ == "__main__":
+     r = test_pipeline_and_db()
+     test_reports(r)
+     test_email_config()
++    test_email_from_hr()
+     print("\n" + "=" * 78)
+     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
+     if FAIL:
