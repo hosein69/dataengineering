@@ -1,0 +1,246 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  مدل عملکرد — دو سطحی: آیتم داخل کلاستر، سپس کلاسترها
+#
+#  چرا دو سطحی: در پکیج قبلی وزن‌ها تخت بودند (هر شاخص مستقیماً از ۱۰۰).
+#  کلاستر فقط یک برچسب بود، پس وزن هر کلاستر «حاصل جمع اتفاقی» اعضایش
+#  می‌شد؛ با تغییر وزن یک شاخص، سهم کل آن کلاستر هم بی‌صدا جابه‌جا می‌شد.
+#  اینجا هر دو سطح پارامتر صریح‌اند و هرکدام جداگانه به ۱ نرمال می‌شوند.
+#
+#  مبنای وزن‌های پیشنهادی (قابل تغییر در داشبورد):
+#    • SPACE framework (GitHub / Microsoft Research, 2021) — «فعالیت» به
+#      تنهایی معیار عملکرد نیست؛ حجم نباید امتیاز اصلی باشد.
+#    • DORA — سرعت و پایداری همیشه جفت سنجیده می‌شوند تا سرعت به قیمت
+#      کیفیت گرفته نشود.
+#    • Balanced Scorecard (Kaplan & Norton) — توازن کیفیت/سرعت/هزینه.
+#    • Six Sigma FPY/RTY — کیفیت بار اول، سنگین‌ترین وزن.
+# ═══════════════════════════════════════════════════════════════════════════
+model_version: "1.0"
+updated_at: "2026-09-08"
+
+clusters:
+  quality:
+    label: دقت و کیفیت
+    weight: 0.40
+    rationale: >
+      سنگین‌ترین کلاستر. خطای سند در زنجیره تأمین به توقف خط و جریمه ارزی
+      تبدیل می‌شود، پس کیفیت بار اول بالاترین ارزش سازمانی را دارد.
+  speed:
+    label: سرعت و پاسخ‌گویی
+    weight: 0.22
+    rationale: >
+      همیشه جفت با کیفیت سنجیده می‌شود (اصل DORA) تا تندی به قیمت خطا
+      پاداش نگیرد.
+  efficiency:
+    label: بازدهی و تکمیل
+    weight: 0.18
+    rationale: نرخ بستن پرونده و باز نماندن کار.
+  rework:
+    label: هزینه دوباره‌کاری
+    weight: 0.15
+    rationale: اثر مالی خطا؛ فقط هزینه صریحاً منتسب، بدون دوباره‌شماری با کیفیت.
+  workload:
+    label: حجم و پیچیدگی
+    weight: 0.05
+    rationale: >
+      عمداً وزن کم. حجم «شرایط کار» است نه عملکرد؛ پاداش دادن به حجم،
+      انگیزه برداشتن پرونده بیشتر می‌سازد نه بهتر کار کردن. حجم در عوض
+      به‌عنوان **تعدیل‌گر انتظار** در لایه علّی استفاده می‌شود.
+  exposure:
+    label: مسئولیت مالی
+    weight: 0.00
+    scored: false
+    rationale: >
+      ارزش ارزی پرونده «تخصیص» است نه «عملکرد». در پکیج قبلی با وزن ۲٫۱۳
+      امتیاز می‌گرفت در حالی که خود سند سیاست نوشته بود «کیفیت نیست».
+      اینجا فقط زمینه است و در امتیاز وارد نمی‌شود.
+
+# ── شاخص‌ها ──────────────────────────────────────────────────────────────
+# kind:  quality_rate | duration | ratio | count | money
+# entry: direct (مستقیم از سورس) | derived (محاسبه‌شده از شاخص‌های دیگر)
+# role:  scored (وارد امتیاز) | context (فقط نمایش) | driver (تعدیل‌گر علّی)
+metrics:
+  # ── کیفیت ──
+  fpy:
+    label: کیفیت بار اول (Strict FPY)
+    cluster: quality
+    weight: 0.42
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 20
+    source: document_checking
+  first_correction_success:
+    label: موفقیت اولین اصلاح
+    cluster: quality
+    weight: 0.24
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 10
+    source: document_checking
+  ae_deferred_reject:
+    label: نسبت واقعی به انتظار (A/E)
+    cluster: quality
+    weight: 0.20
+    direction: lower
+    kind: ratio
+    entry: derived
+    role: scored
+    q_target: 20
+    source: document_checking
+    formula: actual_over_expected
+  major_error_rate:
+    label: نرخ خطای بزرگ
+    cluster: quality
+    weight: 0.14
+    direction: lower
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 10
+    source: il_analysis
+
+  # ── سرعت ──
+  median_correction_hours:
+    label: میانه زمان اصلاح (ساعت)
+    cluster: speed
+    weight: 0.60
+    direction: lower
+    kind: duration
+    entry: direct
+    role: scored
+    q_target: 10
+    source: document_checking
+  under24_rate:
+    label: اصلاح زیر ۲۴ ساعت
+    cluster: speed
+    weight: 0.40
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 10
+    source: document_checking
+
+  # ── بازدهی ──
+  completion_rate:
+    label: نرخ تکمیل
+    cluster: efficiency
+    weight: 0.50
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 20
+    source: other_units
+  open_reject_ratio:
+    label: Reject باز به کل Reject-case
+    cluster: efficiency
+    weight: 0.30
+    direction: lower
+    kind: ratio
+    entry: direct
+    role: scored
+    q_target: 10
+    source: document_checking
+  open_bill_rate:
+    label: نرخ بارنامه باز
+    cluster: efficiency
+    weight: 0.20
+    direction: lower
+    kind: ratio
+    entry: direct
+    role: scored
+    q_target: 20
+    source: other_units
+
+  # ── هزینه دوباره‌کاری ──
+  rework_loss:
+    label: هزینه خطای بزرگ (یورو)
+    cluster: rework
+    weight: 0.70
+    direction: lower
+    kind: money
+    entry: direct
+    role: scored
+    q_target: 10
+    source: il_analysis
+  rework_rate:
+    label: نرخ دوباره‌کاری
+    cluster: rework
+    weight: 0.30
+    direction: lower
+    kind: quality_rate
+    entry: direct
+    role: scored
+    q_target: 10
+    source: document_checking
+
+  # ── حجم (وزن کم، و در عین حال تعدیل‌گر علّی) ──
+  unique_cases:
+    label: پرونده‌های یکتا
+    cluster: workload
+    weight: 0.45
+    direction: higher
+    kind: count
+    entry: direct
+    role: scored
+    q_target: 20
+    source: document_checking
+    is_driver: true
+  unique_orders:
+    label: سفارش‌های یکتا
+    cluster: workload
+    weight: 0.35
+    direction: higher
+    kind: count
+    entry: direct
+    role: scored
+    q_target: 20
+    source: il_analysis
+    is_driver: true
+  expected_difficulty:
+    label: سختی مورد انتظار
+    cluster: workload
+    weight: 0.20
+    direction: higher
+    kind: ratio
+    entry: derived
+    role: scored
+    q_target: 20
+    source: document_checking
+    is_driver: true
+    formula: case_mix_difficulty
+
+  # ── زمینه (امتیاز نمی‌گیرد) ──
+  financial_responsibility:
+    label: ارزش ثبت سفارش (معادل یورو)
+    cluster: exposure
+    weight: 1.00
+    direction: higher
+    kind: money
+    entry: direct
+    role: context
+    source: il_analysis
+    is_driver: true
+  repeat_reject_rate:
+    label: نرخ Reject تکراری
+    cluster: quality
+    weight: 0.0
+    direction: lower
+    kind: quality_rate
+    entry: direct
+    role: context
+    source: document_checking
+    note: با «موفقیت اولین اصلاح» همپوشانی دارد؛ وزن مستقل نمی‌گیرد.
+  p75_correction_hours:
+    label: صدک۷۵ زمان اصلاح
+    cluster: speed
+    weight: 0.0
+    direction: lower
+    kind: duration
+    entry: direct
+    role: context
+    source: document_checking

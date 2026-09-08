@@ -1,0 +1,11 @@
+recipients.yaml
+recipients.yml
+output/
+logs/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/

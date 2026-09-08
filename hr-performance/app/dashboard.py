@@ -1,0 +1,469 @@
+# -*- coding: utf-8 -*-
+"""داشبورد عملکرد منابع انسانی — ماژولار، با وزن‌دهی زنده.
+
+وزن‌ها در **هر دو سطح** قابل تغییرند (آیتم داخل کلاستر، و کلاسترها) و
+پس از هر تغییر بازنرمال می‌شوند تا مجموع همیشه ۱ بماند. دکمه «بازگشت به
+وزن پیشنهادی» همیشه در دسترس است.
+"""
+from __future__ import annotations
+
+import os
+import sys
+from copy import deepcopy
+from datetime import date
+from pathlib import Path
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+st.set_page_config(page_title="عملکرد منابع انسانی", page_icon="◈",
+                   layout="wide", initial_sidebar_state="expanded")
+
+from app.styles import band_chip, css, kpi_card
+from hrperf.config.model import Cluster, Metric, PerformanceModel, load_model
+from hrperf.config.settings import SETTINGS
+from hrperf.pipeline import Pipeline
+from hrperf.report import templates as tpl
+from hrperf.report.builder import ReportSpec, build as build_report
+from hrperf.report.theme import BANDS, SEQUENTIAL, SERIES, band_of, plotly_template
+from hrperf.score.aggregate import contribution
+
+try:
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    pio.templates["hrp"] = plotly_template()
+    pio.templates.default = "hrp"
+    HAS_PLOTLY = True
+except Exception:
+    HAS_PLOTLY = False
+
+st.markdown(css(), unsafe_allow_html=True)
+BASE_MODEL = load_model()
+
+
+def short(t, n=30):
+    t = str(t)
+    return t if len(t) <= n else t[:n - 1] + "…"
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  داده
+# ══════════════════════════════════════════════════════════════════════════
+@st.cache_data(show_spinner="در حال خواندن سورس‌ها…")
+def load_long(ref_date: str, use_demo: bool):
+    if use_demo:
+        from tests.make_synthetic import build
+        return build()
+    from hrperf.dataio.sources import load_inputs, read_org_map
+    long = load_inputs(SETTINGS.INPUT_DIR)
+    org = Path(SETTINGS.INPUT_DIR) / "organization_map.json"
+    people = read_org_map(org) if org.exists() else None
+    if people is not None and not people.empty:
+        if "person_key" not in people.columns or not people["person_key"].astype(str).str.strip().any():
+            people["person_key"] = people["full_name"]
+    return people, long
+
+
+st.sidebar.markdown("### ◈ عملکرد منابع انسانی")
+st.sidebar.caption("سنجش علّی، نه صرفاً همبستگی")
+
+ref_date = st.sidebar.text_input("تاریخ مرجع",
+                                 value=os.environ.get("HRP_TODAY") or str(date.today())).strip()
+try:
+    date.fromisoformat(ref_date)
+except ValueError:
+    st.sidebar.error("تاریخ باید YYYY-MM-DD باشد.")
+    st.stop()
+
+demo = st.sidebar.toggle("داده نمونه (بدون شبکه)", value=True,
+                         help="برای دموی بدون اتصال به سورس‌های واقعی")
+if st.sidebar.button("↻ خواندن مجدد", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+try:
+    people, long = load_long(ref_date, demo)
+except Exception as ex:
+    st.error(f"خواندن سورس‌ها ناموفق بود: {ex}")
+    st.stop()
+
+if long is None or long.empty:
+    st.warning("هیچ رکورد شاخصی خوانده نشد. فایل‌ها را در پوشه ورودی بگذارید "
+               "یا «داده نمونه» را روشن کنید.")
+    st.stop()
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  وزن‌دهی زنده — دو سطح
+# ══════════════════════════════════════════════════════════════════════════
+if "cluster_w" not in st.session_state:
+    st.session_state.cluster_w = {k: c.weight for k, c in BASE_MODEL.clusters.items()}
+if "metric_w" not in st.session_state:
+    st.session_state.metric_w = {k: m.weight for k, m in BASE_MODEL.metrics.items()}
+
+with st.sidebar.expander("⚖ وزن‌دهی", expanded=False):
+    st.caption("پس از هر تغییر، وزن‌ها خودکار بازنرمال می‌شوند تا مجموع ۱ بماند.")
+    if st.button("بازگشت به وزن پیشنهادی", use_container_width=True):
+        st.session_state.cluster_w = {k: c.weight for k, c in BASE_MODEL.clusters.items()}
+        st.session_state.metric_w = {k: m.weight for k, m in BASE_MODEL.metrics.items()}
+        st.rerun()
+    st.markdown("**سطح ۱ — کلاسترها**")
+    for k, c in BASE_MODEL.clusters.items():
+        if not c.scored:
+            continue
+        st.session_state.cluster_w[k] = st.slider(
+            c.label, 0.0, 1.0, float(st.session_state.cluster_w.get(k, c.weight)),
+            0.01, key=f"cw_{k}")
+    st.markdown("**سطح ۲ — آیتم‌ها داخل کلاستر**")
+    for k, c in BASE_MODEL.clusters.items():
+        if not c.scored:
+            continue
+        items = BASE_MODEL.cluster_metrics(k)
+        if not items:
+            continue
+        with st.expander(c.label, expanded=False):
+            for m in items:
+                st.session_state.metric_w[m.key] = st.slider(
+                    short(m.label, 34), 0.0, 1.0,
+                    float(st.session_state.metric_w.get(m.key, m.weight)),
+                    0.01, key=f"mw_{m.key}")
+
+
+def current_model() -> PerformanceModel:
+    clusters = {k: Cluster(c.key, c.label,
+                           float(st.session_state.cluster_w.get(k, c.weight)),
+                           c.scored, c.rationale)
+                for k, c in BASE_MODEL.clusters.items()}
+    metrics = {k: Metric(**{**m.__dict__,
+                            "weight": float(st.session_state.metric_w.get(k, m.weight))})
+               for k, m in BASE_MODEL.metrics.items()}
+    return PerformanceModel(clusters, metrics, BASE_MODEL.model_version).renormalize()
+
+
+MODEL = current_model()
+
+
+@st.cache_data(show_spinner="در حال محاسبه امتیاز…")
+def run_pipeline(ref_date: str, cw: tuple, mw: tuple, _people, _long):
+    model = current_model()
+    return Pipeline(model=model).run(long=_long, people=_people,
+                                     ref_date=ref_date, persist=False)
+
+
+RUN = run_pipeline(ref_date, tuple(sorted(st.session_state.cluster_w.items())),
+                   tuple(sorted(st.session_state.metric_w.items())), people, long)
+LB = RUN.leaderboard
+
+# ── فیلترها ──
+st.sidebar.markdown("#### فیلترها")
+def msel(col, label):
+    if col not in LB.columns:
+        return []
+    opts = sorted(x for x in LB[col].dropna().astype(str).unique() if x)
+    return st.sidebar.multiselect(label, opts, default=opts)
+
+f_mg = msel("مدیریت", "مدیریت")
+f_dep = msel("اداره", "اداره")
+f_jf = msel("نوع کار", "نوع کار")
+f_role = msel("نقش", "نقش")
+
+view = LB.copy()
+for col, sel in (("مدیریت", f_mg), ("اداره", f_dep), ("نوع کار", f_jf), ("نقش", f_role)):
+    if sel and col in view.columns:
+        view = view[view[col].astype(str).isin(sel)]
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"**{len(LB):,}** نفر · **{len(view):,}** پس از فیلتر")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  سربرگ
+# ══════════════════════════════════════════════════════════════════════════
+st.markdown(f"# عملکرد منابع انسانی")
+st.caption(f"تاریخ مرجع {ref_date} · {len(view):,} نفر · مدل {MODEL.model_version} · "
+           f"{len(MODEL.scored_metrics)} شاخص امتیازی در {len([c for c in MODEL.clusters.values() if c.scored])} کلاستر")
+
+perf = pd.to_numeric(view.get("عملکرد"), errors="coerce")
+counts = {}
+for v in perf.dropna():
+    counts[band_of(v)[2]] = counts.get(band_of(v)[2], 0) + 1
+
+cards = [("میانه عملکرد", f"{perf.median():.1f}" if perf.notna().any() else "—",
+          "نیمه بالا/پایین", SERIES[0], "◎"),
+         ("میانگین اطمینان",
+          f"{pd.to_numeric(view.get('اطمینان'), errors='coerce').mean():.2f}"
+          if "اطمینان" in view else "—", "پوشش × شواهد", SERIES[2], "◈")]
+for _f, color, icon, label in BANDS:
+    cards.append((label, f"{counts.get(label, 0):,}", "نفر", color, icon))
+st.markdown('<div class="kpi-row">' + "".join(kpi_card(*c) for c in cards[:8]) + "</div>",
+            unsafe_allow_html=True)
+st.markdown('<div style="margin:12px 0 2px">' +
+            "".join(band_chip(c, i, l) for _f, c, i, l in BANDS) + "</div>",
+            unsafe_allow_html=True)
+
+for w in RUN.warnings:
+    st.info(w)
+
+t_over, t_people, t_cluster, t_causal, t_model, t_export = st.tabs(
+    ["نمای کلی", "افراد", "کلاسترها", "🕸 تحلیل علّی", "⚖ مدل و وزن", "📦 خروجی"])
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_over:
+    c1, c2 = st.columns(2)
+    with c1, st.container(border=True):
+        st.markdown("##### توزیع عملکرد")
+        st.caption("رده‌ها با رنگ و آیکن و برچسب — رنگ به‌تنهایی حامل معنا نیست.")
+        if HAS_PLOTLY and perf.notna().any():
+            order = [l for _f, _c, _i, l in BANDS]
+            vals = [counts.get(l, 0) for l in order]
+            cols_ = [c for _f, c, _i, _l in BANDS]
+            icons = [i for _f, _c, i, _l in BANDS]
+            fig = go.Figure(go.Bar(
+                x=[f"{i} {l}" for i, l in zip(icons, order)], y=vals,
+                marker_color=cols_, marker_line=dict(color="#fcfcfb", width=2),
+                text=[f"{v:,}" for v in vals], textposition="outside",
+                hovertemplate="%{x}<br>%{y:,} نفر<extra></extra>"))
+            fig.update_layout(height=330, showlegend=False, yaxis_title="نفر",
+                              xaxis_title=None)
+            st.plotly_chart(fig, use_container_width=True)
+
+    with c2, st.container(border=True):
+        st.markdown("##### میانه عملکرد به تفکیک اداره")
+        if HAS_PLOTLY and "اداره" in view.columns and not view.empty:
+            g = (view.groupby("اداره")["عملکرد"].median()
+                 .sort_values(ascending=False).head(12))
+            fig = go.Figure(go.Bar(
+                x=g.values, y=[short(i, 28) for i in g.index], orientation="h",
+                customdata=list(g.index),
+                marker=dict(color=[band_of(v)[0] for v in g.values],
+                            line=dict(color="#fcfcfb", width=2)),
+                text=[f"{v:.1f}" for v in g.values], textposition="outside",
+                hovertemplate="%{customdata}<br>میانه %{x:.1f}<extra></extra>"))
+            fig.update_layout(height=330, showlegend=False, xaxis_title="میانه عملکرد",
+                              xaxis=dict(range=[0, max(60.0, float(g.max()) * 1.25)]),
+                              yaxis=dict(autorange="reversed", automargin=False),
+                              margin=dict(t=16, r=24, b=44, l=200))
+            st.plotly_chart(fig, use_container_width=True)
+
+    with st.container(border=True):
+        st.markdown("##### گروه‌های همتا")
+        st.caption("مقایسه فقط درون گروه انجام می‌شود. «صعود» یعنی گروه از حد "
+                   "نصاب کوچک‌تر بوده و ناچار در سطح بالاتری سنجیده شده است.")
+        st.dataframe(RUN.peer_summary, use_container_width=True, hide_index=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_people:
+    st.markdown("##### جدول عملکرد")
+    st.caption("رتبه فقط درون گروه همتا معنا دارد.")
+    show = [c for c in ["کد", "نام", "مدیریت", "اداره", "نوع کار", "نقش",
+                        "عملکرد", "امتیاز منصفانه", "رتبه در گروه", "نفرات گروه",
+                        "پوشش", "شواهد", "اطمینان"] if c in view.columns]
+    st.dataframe(
+        view[show], use_container_width=True, height=440, hide_index=True,
+        column_config={
+            "عملکرد": st.column_config.ProgressColumn("عملکرد", format="%.1f",
+                                                      min_value=0, max_value=100),
+            "امتیاز منصفانه": st.column_config.ProgressColumn(
+                "منصفانه", format="%.1f", min_value=0, max_value=100),
+            "پوشش": st.column_config.ProgressColumn("پوشش", format="%.0f%%",
+                                                    min_value=0, max_value=1),
+            "اطمینان": st.column_config.ProgressColumn("اطمینان", format="%.0f%%",
+                                                       min_value=0, max_value=1),
+        })
+
+    st.markdown("---")
+    st.markdown("##### چرا این عدد؟ — سهم شاخص‌ها")
+    if "کد" in view.columns and not view.empty:
+        who = st.selectbox("فرد", view["کد"].tolist(),
+                           format_func=lambda k: f"{k} — "
+                           f"{view.loc[view['کد'] == k, 'نام'].iloc[0]}"
+                           if "نام" in view.columns else k)
+        contrib = contribution(RUN.metric_scores, MODEL, who)
+        if contrib.empty:
+            st.info("برای این فرد شاخص امتیازی موجود نیست.")
+        else:
+            if HAS_PLOTLY:
+                cc = contrib.head(12).iloc[::-1]
+                fig = go.Figure(go.Bar(
+                    x=cc["سهم"], y=[short(x, 30) for x in cc["شاخص"]],
+                    orientation="h", customdata=cc["شاخص"],
+                    marker=dict(color=["#0ca30c" if v >= 0 else "#d03b3b"
+                                       for v in cc["سهم"]],
+                                line=dict(color="#fcfcfb", width=2)),
+                    text=[f"{v:+.2f}" for v in cc["سهم"]], textposition="outside",
+                    hovertemplate="%{customdata}<br>سهم %{x:+.2f}<extra></extra>"))
+                fig.update_layout(height=max(300, 30 * len(cc) + 90), showlegend=False,
+                                  xaxis_title="سهم در امتیاز (واحد امتیاز)",
+                                  yaxis=dict(automargin=False),
+                                  margin=dict(t=16, r=24, b=44, l=230))
+                st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(contrib, use_container_width=True, hide_index=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_cluster:
+    st.markdown("##### امتیاز کلاسترها")
+    cs = RUN.scores.cluster_scores.copy()
+    cs.columns = [MODEL.clusters[c].label if c in MODEL.clusters else c
+                  for c in cs.columns]
+    keys = view["کد"] if "کد" in view.columns else cs.index
+    cs = cs.loc[[i for i in cs.index if i in set(keys)]]
+    st.dataframe(cs.round(1), use_container_width=True, height=380)
+
+    if HAS_PLOTLY and not cs.empty:
+        med = cs.median().sort_values(ascending=False)
+        fig = go.Figure(go.Bar(
+            x=med.values, y=[short(i, 26) for i in med.index], orientation="h",
+            customdata=list(med.index),
+            marker=dict(color=SEQUENTIAL[4], line=dict(color="#fcfcfb", width=2)),
+            text=[f"{v:.1f}" for v in med.values], textposition="outside",
+            hovertemplate="%{customdata}<br>میانه %{x:.1f}<extra></extra>"))
+        fig.update_layout(height=330, showlegend=False, xaxis_title="میانه امتیاز کلاستر",
+                          xaxis=dict(range=[0, max(60.0, float(med.max()) * 1.25)]),
+                          yaxis=dict(autorange="reversed", automargin=False),
+                          margin=dict(t=16, r=24, b=44, l=190))
+        st.plotly_chart(fig, use_container_width=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_causal:
+    st.markdown("##### همبستگی خام در برابر اثر تعدیل‌شده")
+    st.caption("جایی که این دو فرق دارند، تصمیم بر پایه همبستگی خام غلط "
+               "می‌شد. «تعدیل برای» می‌گوید چه مخدوش‌کننده‌هایی خنثی شده‌اند.")
+    if RUN.effects.empty:
+        st.info("برای برآورد اثر، نمونه کافی نیست.")
+    else:
+        st.dataframe(RUN.effects, use_container_width=True, hide_index=True)
+        if HAS_PLOTLY:
+            e = RUN.effects.dropna(subset=["همبستگی خام", "اثر تعدیل‌شده"]).copy()
+            if not e.empty:
+                lbl = (e["از"].astype(str) + " → " + e["به"].astype(str)).map(
+                    lambda t: short(t, 34))
+                fig = go.Figure()
+                fig.add_bar(y=lbl, x=e["همبستگی خام"], orientation="h",
+                            name="همبستگی خام", marker_color=SERIES[3],
+                            marker_line=dict(color="#fcfcfb", width=2))
+                fig.add_bar(y=lbl, x=e["اثر تعدیل‌شده"], orientation="h",
+                            name="اثر تعدیل‌شده", marker_color=SERIES[0],
+                            marker_line=dict(color="#fcfcfb", width=2))
+                fig.update_layout(height=max(360, 42 * len(e) + 100), barmode="group",
+                                  xaxis_title="اندازه اثر",
+                                  yaxis=dict(autorange="reversed", automargin=False),
+                                  margin=dict(t=40, r=24, b=44, l=250))
+                st.plotly_chart(fig, use_container_width=True)
+        st.caption("⚠️ با داده مشاهده‌ای نمی‌توان علیت را اثبات کرد. این اعداد "
+                   "«اثر تعدیل‌شده تحت فرض‌های DAG اعلام‌شده» هستند. ستون "
+                   "E-value می‌گوید یک مخدوش‌کننده اندازه‌گیری‌نشده چقدر باید "
+                   "قوی باشد تا نتیجه را برگرداند.")
+
+    st.markdown("---")
+    st.markdown("##### امتیاز منصفانه — پس از حذف اثر شرایط کار")
+    st.caption("عملکرد واقعی منهای آنچه از حجم، سختی و تخصیص کار انتظار می‌رفت.")
+    fair = RUN.fair.copy()
+    fair.index.name = "کد"
+    fair = fair.reset_index().rename(columns={"expected": "انتظار",
+                                              "residual": "تفاوت", "fair": "منصفانه"})
+    st.dataframe(fair.round(2), use_container_width=True, height=320, hide_index=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_model:
+    st.markdown("##### وزن‌های مؤثر")
+    st.caption("وزن مؤثر = وزن آیتم داخل کلاستر × وزن کلاستر. مجموع همیشه ۱۰۰٪.")
+    rows = []
+    for k, m in MODEL.metrics.items():
+        rows.append({
+            "شاخص": m.label,
+            "کلاستر": MODEL.clusters[m.cluster].label if m.cluster in MODEL.clusters else m.cluster,
+            "نقش": {"scored": "امتیازی", "context": "زمینه"}.get(m.role, m.role),
+            "ورود": {"direct": "مستقیم", "derived": "محاسبه‌شده"}.get(m.entry, m.entry),
+            "جهت": {"higher": "بیشتر بهتر", "lower": "کمتر بهتر"}.get(m.direction, m.direction),
+            "وزن در کلاستر": round(m.weight, 4),
+            "وزن مؤثر (٪)": round(MODEL.effective_weight(k) * 100, 2),
+        })
+    wdf = pd.DataFrame(rows).sort_values("وزن مؤثر (٪)", ascending=False)
+    st.dataframe(wdf, use_container_width=True, hide_index=True, height=420,
+                 column_config={"وزن مؤثر (٪)": st.column_config.ProgressColumn(
+                     "وزن مؤثر", format="%.2f%%", min_value=0, max_value=25)})
+    st.metric("مجموع وزن مؤثر", f"{wdf['وزن مؤثر (٪)'].sum():.2f}%")
+
+    st.markdown("---")
+    st.markdown("##### کالیبراسیون انقباض")
+    st.caption("k از خود داده برآورد می‌شود. k بزرگ یعنی بیشترِ پراکندگی "
+               "دیده‌شده نویزِ نمونه است نه تفاوت واقعی، پس انقباض شدیدتر است.")
+    st.dataframe(RUN.calibration, use_container_width=True, hide_index=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+with t_export:
+    st.markdown("##### ساخت گزارش")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        pick = st.radio("قالب", list(tpl.TEMPLATES),
+                        format_func=lambda k: f"{tpl.get(k).icon} {tpl.get(k).title}")
+        st.caption(tpl.get(pick).description)
+    with c2:
+        st.markdown("**فرمت**")
+        f_x = st.checkbox("Excel", True)
+        f_h = st.checkbox("HTML داینامیک", True)
+        f_p = st.checkbox("PDF", True)
+        f_e = st.checkbox("بسته ایمیل", True)
+    with c3:
+        st.markdown("**محتوا**")
+        vis = st.checkbox("نمودار/ویژوال", True)
+        tab = st.checkbox("جدول‌ها", True)
+        stem = st.text_input("نام فایل", f"HR {tpl.get(pick).title}")
+
+    fmts = ([("excel")] if f_x else []) + (["html"] if f_h else []) \
+        + (["pdf"] if f_p else []) + (["email"] if f_e else [])
+
+    if st.button("🛠 ساخت گزارش", type="primary", use_container_width=True,
+                 disabled=not fmts):
+        out_dir = Path(SETTINGS.OUTPUT_DIR) / ref_date / "reports"
+        spec = ReportSpec(template=pick, ref_date=ref_date,
+                          title=f"عملکرد منابع انسانی — {tpl.get(pick).title}",
+                          formats=fmts, visuals=vis, tables=tab,
+                          file_stem=stem.strip() or "HR Performance")
+        with st.spinner("در حال ساخت…"):
+            filtered = RUN
+            res = build_report(filtered, spec, out_dir)
+        st.session_state.rep_files = {k: str(v) for k, v in res.files.items()}
+        st.session_state.rep_msgs = res.messages
+        st.rerun()
+
+    files = st.session_state.get("rep_files") or {}
+    for m in (st.session_state.get("rep_msgs") or []):
+        (st.warning if str(m).startswith("⚠️") else st.write)(m)
+    if files:
+        mimes = {"excel": ("⬇ Excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                 "html": ("⬇ HTML", "text/html"), "pdf": ("⬇ PDF", "application/pdf"),
+                 "email": ("⬇ بسته ایمیل", "text/html")}
+        cols_ = st.columns(len(files))
+        for i, (kind, path) in enumerate(files.items()):
+            p = Path(path)
+            if not p.exists():
+                continue
+            lab, mime = mimes.get(kind, (kind, "application/octet-stream"))
+            cols_[i].download_button(lab, p.read_bytes(), file_name=p.name,
+                                     mime=mime, use_container_width=True,
+                                     key=f"dl_{kind}")
+
+    st.markdown("---")
+    st.markdown("##### پایگاه داده")
+    st.caption("هر اجرا یک `run` ثبت می‌شود، پس روند زمانی بدون بازنویسی "
+               "داده قبلی قابل پیگیری است.")
+    if st.button("ثبت این اجرا در پایگاه داده", use_container_width=True):
+        try:
+            rid = Pipeline(model=MODEL)._persist(RUN, ref_date)
+            st.success(f"ثبت شد — run_id = {rid} · {SETTINGS.DB_PATH}")
+        except Exception as ex:
+            st.error(f"ثبت ناموفق بود: {ex}")
+
+st.caption("رتبه‌ها فقط درون گروه همتا (مدیریت + اداره + نوع کار) معنا دارند.")
