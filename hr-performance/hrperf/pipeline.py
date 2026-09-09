@@ -28,7 +28,8 @@ from .causal.effects import effect_table, fair_score
 from .config.model import PerformanceModel, load_model
 from .config.settings import SETTINGS
 from .dataio import db as dbmod
-from .dataio.sources import load_inputs, read_org_map
+from .dataio.sources import (explain_missing, find_org_map, load_inputs,
+                             read_org_map)
 from .identity import peers as peermod
 from .identity import roles as rolemod
 from .metrics.derive import apply_derived
@@ -137,11 +138,9 @@ class Pipeline:
             people = self._people_from(long)
         people = people.copy()
         if people.empty or "person_key" not in people.columns:
-            raise NoInputData(
-                "هیچ فردی برای سنجش پیدا نشد.\n"
-                f"  • فایل‌های خروجی واحدها را در «{self.input_dir}» بگذارید،\n"
-                "  • یا برای دموی بدون شبکه: python -m hrperf.cli demo")
+            raise NoInputData(explain_missing(self.input_dir))
         people["person_key"] = people["person_key"].astype(str).str.strip()
+        warnings.extend(self._org_notes(len(people)))
 
         # ۳۰ peers
         peer = peermod.assign(people)
@@ -286,11 +285,57 @@ class Pipeline:
                 weight="بار کاری" if "بار کاری" in board.columns else None)
 
     # ── کمکی ──
+    ORG_COLS = ("full_name", "management", "department", "job_family", "role",
+                "manager", "head", "vice")
+
     def _people_from(self, long: pd.DataFrame) -> pd.DataFrame:
+        """افراد را از رکوردها می‌سازد و ساختار سازمانی را رویشان می‌نشاند.
+
+        اگر نقشه سازمانی خوانده نشود، همه در یک گروه همتای عمومی می‌افتند
+        و کارشناس ترخیص با کارشناس اعتبارات مقایسه می‌شود — همان چیزی که
+        این پکیج برای جلوگیری از آن ساخته شده.
+        """
         keys = sorted(long["person_key"].astype(str).unique()) if not long.empty else []
-        return pd.DataFrame({"person_key": keys, "full_name": keys,
-                             "management": "", "department": "",
-                             "job_family": "", "role": ""})
+        base = pd.DataFrame({"person_key": keys, "full_name": keys})
+        for c in self.ORG_COLS:
+            if c not in base.columns:
+                base[c] = ""
+
+        src = find_org_map(self.input_dir)
+        org = read_org_map(src) if src else pd.DataFrame()
+        self.org_map_path = str(src) if src else ""
+        self.org_matched = 0
+        if org.empty or "person_key" not in org.columns:
+            return base
+
+        org = org.copy()
+        org["person_key"] = org["person_key"].astype(str).str.strip()
+        org = org[org["person_key"].ne("")].drop_duplicates("person_key")
+        cols = ["person_key"] + [c for c in self.ORG_COLS if c in org.columns]
+        merged = base.merge(org[cols], on="person_key", how="left",
+                            suffixes=("", "_org"))
+        for c in self.ORG_COLS:
+            oc = f"{c}_org"
+            if oc in merged.columns:
+                fill = merged[oc].fillna("").astype(str).str.strip()
+                merged[c] = merged[c].where(fill.eq(""), fill)
+                merged = merged.drop(columns=[oc])
+        self.org_matched = int(base["person_key"].isin(org["person_key"]).sum())
+        return merged
+
+    def _org_notes(self, n_people: int) -> List[str]:
+        """پوشش نقشه سازمانی — سکوت در این‌باره، خطای بی‌صدا می‌سازد."""
+        if getattr(self, "org_map_path", None) is None:
+            return []
+        if not getattr(self, "org_map_path", ""):
+            return [f"نقشه سازمانی در «{self.input_dir}» پیدا نشد؛ گروه همتا "
+                    "عمومی می‌شود. فایل organization_map.json را کنار سورس‌ها بگذارید."]
+        matched = int(getattr(self, "org_matched", 0))
+        if matched < n_people:
+            return [f"{n_people - matched:,} نفر در نقشه سازمانی «"
+                    f"{Path(self.org_map_path).name}» نبودند و بدون ساختار "
+                    "سنجیده می‌شوند."]
+        return []
 
     def _causal_frame(self, result: ScoreResult, raw: pd.DataFrame,
                       people: pd.DataFrame) -> pd.DataFrame:

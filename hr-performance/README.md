@@ -1,4 +1,4 @@
-# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۲٫۰٫۰)
+# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۲٫۱٫۰)
 
 سنجش عملکرد بر پایه **علیت**، نه صرفاً همبستگی. مدل دو سطحی است، وزن‌ها
 در داشبورد زنده تغییر می‌کنند، و خروجی هم پایگاه داده است هم Excel و
@@ -9,10 +9,38 @@ HTML و PDF و بسته ایمیل.
 ```bash
 pip install -r requirements.txt
 python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
-python -m hrperf.cli run             # اجرا روی input_files
+python -m hrperf.cli run             # اجرا روی input_files (کنار همین پکیج)
 python app/run_dashboard.py          # داشبورد
-python run_all_tests.py              # ۱۸۵ تست
+python run_all_tests.py              # ۲۰۳ تست
 ```
+
+### پوشه ورودی کجاست؟
+
+پکیج پوشه `input_files` را به این ترتیب می‌گردد و **اولین موردی که فایل
+داده دارد** را برمی‌دارد:
+
+1. متغیر محیطی `HRP_INPUT` — همیشه مقدم
+2. پوشه‌ای که فرمان در آن اجرا شده
+3. کنار خود پکیج (جایی که زیپ باز شده)
+4. `HRP_HOME` (پیش‌فرض `~/.hrperf`)
+5. `D:\HRPerf\input_files` — فقط روی ویندوز
+
+خروجی، لاگ و پایگاه داده **کنار همان ورودی** ساخته می‌شوند. اگر داده‌ای
+پیدا نشود، پیام خطا **هر مسیری را که واقعاً بررسی شده** فهرست می‌کند —
+دیگر لازم نیست حدس بزنید کد کجا را گشته است.
+
+مسیر صریح:
+
+```bash
+# ویندوز
+set HRP_INPUT=G:\000\hru\input_files
+# لینوکس/مک
+export HRP_INPUT=/srv/hru/input_files
+```
+
+نقشه سازمانی (`organization_map.json`) را کنار همان سورس‌ها بگذارید؛
+بدون آن همه در یک «گروه همتای عمومی» می‌افتند و کارشناس ترخیص با
+کارشناس اعتبارات مقایسه می‌شود.
 
 ---
 
@@ -188,7 +216,7 @@ hrperf/
   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
   pipeline.py · cli.py
 app/         dashboard.py · run_dashboard.py · styles.py
-tests/       ۱۸۵ تست
+tests/       ۲۰۳ تست
 ```
 
 ---

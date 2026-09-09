@@ -60,13 +60,12 @@ def load_long(ref_date: str, use_demo: bool):
     if use_demo:
         from tests.make_synthetic import build
         return build()
-    from hrperf.dataio.sources import load_inputs, read_org_map
+    from hrperf.dataio.sources import find_org_map, load_inputs, read_org_map
     long = load_inputs(SETTINGS.INPUT_DIR)
-    org = Path(SETTINGS.INPUT_DIR) / "organization_map.json"
-    people = read_org_map(org) if org.exists() else None
-    if people is not None and not people.empty:
-        if "person_key" not in people.columns or not people["person_key"].astype(str).str.strip().any():
-            people["person_key"] = people["full_name"]
+    org = find_org_map(SETTINGS.INPUT_DIR)
+    people = read_org_map(org) if org else None
+    if people is not None and people.empty:
+        people = None
     return people, long
 
 

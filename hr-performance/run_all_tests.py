@@ -30,6 +30,8 @@ def main() -> int:
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
     ok = fail = 0
     failed = []
+    #: خودِ خطوط ❌ — تا کاربر برای دیدن ۴ خطا، ۲۰۰ خط را بالا نرود
+    red: list = []
     for label, path in SUITES:
         print("\n" + "█" * 78)
         print(f"█  {label}")
@@ -45,6 +47,8 @@ def main() -> int:
             failed.append(f"{label} (TIMEOUT)")
             continue
         print(out.stdout)
+        red.extend(f"[{label.split(')')[0]})] {l.strip()}"
+                   for l in out.stdout.splitlines() if l.lstrip().startswith("❌"))
         if out.stderr.strip():
             print(out.stderr)
         line = next((l for l in out.stdout.splitlines()
@@ -70,6 +74,13 @@ def main() -> int:
     print(f"جمع کل: {ok} تست موفق | {fail} ناموفق")
     if note:
         print(note)
+    if red:
+        print("\nخطاهای دقیق (همین‌ها را بفرستید، نه کل خروجی):")
+        for i, line in enumerate(red, 1):
+            print(f"  {i:>2}. {line}")
+        import platform
+        print(f"\nمحیط: {platform.system()} {platform.release()} · "
+              f"python {sys.version.split()[0]}")
     if failed:
         print("مجموعه‌های ناموفق: " + " ، ".join(failed))
     else:

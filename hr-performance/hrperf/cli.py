@@ -15,13 +15,23 @@ from .version import VERSION
 
 
 def _run(demo: bool, ref_date: str, persist: bool):
+    """اجرا، و اعلام صریحِ اینکه عددها از کجا آمده‌اند.
+
+    گزارشی که نمی‌گوید داده‌اش واقعی است یا نمونه، بدتر از نبودنش است.
+    """
     if demo:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from tests.make_synthetic import build as make
         people, long = make()
+        print("🧪 داده نمونه (ساختگی) — این اعداد مبنای تصمیم نیستند.")
         return Pipeline().run(long=long, people=people, ref_date=ref_date,
                               persist=persist)
-    return Pipeline().run(ref_date=ref_date, persist=persist)
+    pipe = Pipeline()
+    print(f"📂 پوشه ورودی: {pipe.input_dir}")
+    r = pipe.run(ref_date=ref_date, persist=persist)
+    org = getattr(pipe, "org_map_path", "")
+    print(f"🗺 نقشه سازمانی: {org or '— پیدا نشد'}")
+    return r
 
 
 def main(argv=None) -> int:

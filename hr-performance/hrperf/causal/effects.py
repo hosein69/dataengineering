@@ -59,6 +59,10 @@ def _spearman(a: pd.Series, b: pd.Series) -> float:
     s = pd.concat([a, b], axis=1).dropna()
     if len(s) < 3:
         return math.nan
+    # ستون ثابت، همبستگی ندارد — بدون این محافظ، تقسیم بر صفرِ numpy
+    # هر اجرا را با هشدار پر می‌کند و کاربر گمان می‌کند چیزی خراب است.
+    if s.iloc[:, 0].nunique() < 2 or s.iloc[:, 1].nunique() < 2:
+        return math.nan
     r = s.iloc[:, 0].rank().corr(s.iloc[:, 1].rank())
     return float(r) if pd.notna(r) else math.nan
 

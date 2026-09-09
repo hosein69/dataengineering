@@ -111,12 +111,15 @@ def read_org_map(path: str | Path) -> pd.DataFrame:
         return pd.DataFrame()
     if p.suffix.lower() == ".json":
         raw = json.loads(p.read_text(encoding="utf-8"))
-        people = raw.get("people", raw) if isinstance(raw, dict) else {}
+        people = raw.get("people", raw) if isinstance(raw, dict) else raw
         rows = []
-        for name, rec in people.items():
-            rec = dict(rec or {})
-            rec.setdefault("full_name", name)
-            rows.append(rec)
+        if isinstance(people, dict):          # {نام: {…}}
+            for name, rec in people.items():
+                rec = dict(rec or {})
+                rec.setdefault("full_name", name)
+                rows.append(rec)
+        elif isinstance(people, list):        # [{…}, {…}] — همان‌قدر رایج
+            rows = [dict(r) for r in people if isinstance(r, dict)]
         df = pd.DataFrame(rows)
     else:
         df = pd.read_excel(p) if p.suffix.lower().startswith(".xls") else pd.read_csv(p)
@@ -128,7 +131,37 @@ def read_org_map(path: str | Path) -> pd.DataFrame:
               "manager", "head", "person_key", "personnel_id", "vice"):
         if c not in df.columns:
             df[c] = ""
+    # کلید فرد ممکن است نیامده باشد؛ از کد پرسنلی و در نهایت از نام پر می‌شود.
+    key = df["person_key"].astype(str).str.strip()
+    for alt in ("personnel_id", "full_name"):
+        blank = key.eq("") | key.str.lower().isin(("nan", "none"))
+        if blank.any():
+            key = key.mask(blank, df[alt].astype(str).str.strip())
+    df["person_key"] = key
     return df
+
+
+#: نام‌های محتملِ فایل نقشه سازمانی در پوشه ورودی
+ORG_MAP_PATTERNS = ("organization_map.json", "org_map.json", "*rganization*.json",
+                    "*rganization*.xlsx", "*ساختار*.xlsx", "*سازمان*.xlsx")
+
+
+def find_org_map(input_dir: str | Path) -> Optional[Path]:
+    """نقشه سازمانی را در پوشه ورودی پیدا می‌کند — با چند نام محتمل.
+
+    بدون این، خط فرمان ساختار سازمانی را اصلاً نمی‌خواند و همه در یک
+    «گروه همتای عمومی» می‌افتادند: مقایسه کارشناس ترخیص با کارشناس
+    اعتبارات، که دقیقاً همان بی‌عدالتی‌ای است که این پکیج قرار است
+    جلویش را بگیرد.
+    """
+    d = Path(input_dir)
+    if not d.is_dir():
+        return None
+    for pat in ORG_MAP_PATTERNS:
+        for f in sorted(d.glob(pat)):
+            if f.is_file() and not f.name.startswith("~$"):
+                return f
+    return None
 
 
 def load_inputs(input_dir: str | Path,
@@ -155,3 +188,46 @@ def load_inputs(input_dir: str | Path,
     if not frames:
         return pd.DataFrame(columns=LONG_COLUMNS)
     return pd.concat(frames, ignore_index=True)
+
+
+def explain_missing(chosen: str | Path) -> str:
+    """چرا داده‌ای پیدا نشد — با فهرست **هر مسیری که واقعاً بررسی شد**.
+
+    پیام قبلی فقط یک مسیر ثابت را نشان می‌داد. کاربری که پکیج را جای
+    دیگری باز کرده بود، از آن پیام می‌فهمید «سورس تعریف نشده»، در حالی
+    که مشکل «سورس همان‌جا بود، ولی کد جای دیگر را گشت» بود.
+    """
+    from ..config.settings import DATA_SUFFIXES, has_data, input_candidates
+
+    chosen_p = Path(chosen).resolve()
+    lines = ["هیچ فردی برای سنجش پیدا نشد.", "",
+             "مسیرهایی که برای پوشه ورودی بررسی شدند:"]
+    seen: List[Path] = []
+    for c in [chosen_p] + [x for x in input_candidates()]:
+        c = Path(c).resolve()
+        if c in seen:
+            continue
+        seen.append(c)
+        if not c.is_dir():
+            state = "وجود ندارد"
+        else:
+            files = [f for f in c.iterdir() if f.is_file()
+                     and f.suffix.lower() in DATA_SUFFIXES
+                     and not f.name.startswith("~$")]
+            state = (f"{len(files)} فایل داده" if files
+                     else "هست ولی فایل داده‌ای ندارد")
+        mark = "◀ انتخاب‌شده" if c == chosen_p else ""
+        lines.append(f"  • {c} — {state} {mark}".rstrip())
+    lines += [
+        "",
+        "یکی از این سه راه:",
+        f"  ۱) فایل‌های xlsx/csv واحدها را در «{chosen_p}» بگذارید",
+        "  ۲) یا مسیر را صریح بدهید:  set HRP_INPUT=<مسیر پوشه>",
+        "  ۳) یا برای دموی بدون داده:  python -m hrperf.cli demo",
+        "",
+        "قالب فایل — یکی از این دو:",
+        "  بلند:  person_key | metric_key | value | sample_n",
+        "  عریض:  person_key | <شاخص> | <شاخص>_n | ...",
+        "نقشه سازمانی (اختیاری): organization_map.json در همان پوشه.",
+    ]
+    return "\n".join(lines)

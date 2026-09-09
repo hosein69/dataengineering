@@ -299,6 +299,112 @@ def test_email_from_hr():
 
 
 
+# ═══════════ ۹) کشف مسیر ورودی و نقشه سازمانی ═══════════
+def test_input_discovery() -> None:
+    """خطایی که نمی‌گوید کجا را گشته، دیباگ را به حدس تبدیل می‌کند."""
+    print("\n── ۹) کشف مسیر ورودی و نقشه سازمانی ──")
+    import json
+    from hrperf.config import settings as cfg
+    from hrperf.dataio.sources import (explain_missing, find_org_map,
+                                       read_org_map)
+
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        (base / "input_files").mkdir()
+        old_cwd = os.getcwd()
+        saved = os.environ.pop("HRP_INPUT", None)
+        try:
+            os.chdir(base)
+            cands = [str(x) for x in cfg.input_candidates()]
+            check("پوشه جاری اولین نامزد جست‌وجوست",
+                  cands[0] == str((base / "input_files").resolve()), cands[0])
+            check("مسیر ثابت ویندوزی دیگر تنها نامزد نیست", len(cands) >= 2,
+                  str(len(cands)))
+
+            # پوشه هست ولی خالی — نباید «داده‌دار» شمرده شود
+            check("پوشه بدون فایل داده، «داده‌دار» نیست",
+                  not cfg.has_data(base / "input_files"))
+            (base / "input_files" / "README.txt").write_text("x", encoding="utf-8")
+            check("فایل متنی، پوشه را داده‌دار نمی‌کند",
+                  not cfg.has_data(base / "input_files"))
+            (base / "input_files" / "u.csv").write_text(
+                "person_key,metric_key,value,sample_n\nE1,q,0.9,10\n",
+                encoding="utf-8")
+            check("فایل csv پوشه را داده‌دار می‌کند",
+                  cfg.has_data(base / "input_files"))
+            check("ورودی، همان پوشه کنار محل اجراست",
+                  Path(cfg.resolve_input()).resolve()
+                  == (base / "input_files").resolve(), cfg.resolve_input())
+            check("خروجی کنار ورودی ساخته می‌شود، نه در درایو دیگر",
+                  Path(cfg.Settings().OUTPUT_DIR).resolve()
+                  == (base / "output").resolve(), cfg.Settings().OUTPUT_DIR)
+
+            os.environ["HRP_INPUT"] = str(base / "elsewhere")
+            check("متغیر محیطی بر همه نامزدها مقدم است",
+                  cfg.resolve_input() == str(base / "elsewhere"))
+            os.environ.pop("HRP_INPUT")
+
+            msg = explain_missing(base / "input_files")
+            check("پیام خطا هر مسیر بررسی‌شده را نام می‌برد",
+                  str((base / "input_files").resolve()) in msg
+                  and "HRP_INPUT" in msg, msg[:60])
+            check("پیام خطا مسیر انتخاب‌شده را علامت می‌زند",
+                  "انتخاب‌شده" in msg)
+            check("پیام خطا راه دمو را هم می‌گوید", "hrperf.cli demo" in msg)
+
+            # نقشه سازمانی: هم قالب فهرستی، هم قالب دیکشنری
+            omap = base / "input_files" / "organization_map.json"
+            omap.write_text(json.dumps({"people": [
+                {"person_key": "E1", "full_name": "الف", "department": "اداره ترخیص",
+                 "job_family": "کارشناس ترخیص"}]}, ensure_ascii=False),
+                encoding="utf-8")
+            check("نقشه سازمانی در پوشه ورودی پیدا می‌شود",
+                  find_org_map(base / "input_files") == omap)
+            org = read_org_map(omap)
+            check("قالب فهرستی نقشه خوانده می‌شود (نه فقط دیکشنری)",
+                  len(org) == 1 and org.iloc[0]["department"] == "اداره ترخیص")
+
+            omap.write_text(json.dumps({"people": {
+                "الف": {"personnel_id": "E1", "department": "اداره ترخیص"}}},
+                ensure_ascii=False), encoding="utf-8")
+            org2 = read_org_map(omap)
+            check("در قالب دیکشنری، کلید فرد از کد پرسنلی پر می‌شود",
+                  org2.iloc[0]["person_key"] == "E1", str(org2.iloc[0].to_dict())[:60])
+
+            # خط لوله باید ساختار را واقعاً بنشاند
+            omap.write_text(json.dumps({"people": [
+                {"person_key": "E1", "full_name": "الف",
+                 "department": "اداره ترخیص", "job_family": "کارشناس ترخیص"}]},
+                ensure_ascii=False), encoding="utf-8")
+            pipe = Pipeline(input_dir=str(base / "input_files"))
+            ppl = pipe._people_from(pd.DataFrame(
+                {"person_key": ["E1", "E2"], "metric_key": ["q", "q"],
+                 "value": [0.9, 0.8], "sample_n": [10, 10], "source": ["s", "s"]}))
+            row = ppl.set_index("person_key").loc["E1"]
+            check("ساختار سازمانی روی افراد می‌نشیند (خط فرمان هم، نه فقط داشبورد)",
+                  row["department"] == "اداره ترخیص" and row["full_name"] == "الف",
+                  str(row.to_dict())[:70])
+            check("فردِ خارج از نقشه حذف نمی‌شود",
+                  "E2" in set(ppl["person_key"]))
+            check("پوشش ناقص نقشه، هشدار می‌دهد",
+                  any("نقشه سازمانی" in w for w in pipe._org_notes(2)),
+                  str(pipe._org_notes(2))[:60])
+            blind = Pipeline(input_dir=str(base / "none"))
+            blind._people_from(pd.DataFrame(
+                {"person_key": ["E1"], "metric_key": ["q"], "value": [0.9],
+                 "sample_n": [10], "source": ["s"]}))
+            check("نبودِ نقشه سازمانی هشدار می‌دهد، نه سکوت",
+                  any("پیدا نشد" in w for w in blind._org_notes(1)),
+                  str(blind._org_notes(1))[:70])
+        finally:
+            os.chdir(old_cwd)
+            if saved is not None:
+                os.environ["HRP_INPUT"] = saved
+            else:
+                os.environ.pop("HRP_INPUT", None)
+
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — تست علیت، خط لوله، پایگاه داده و گزارش")
@@ -311,6 +417,7 @@ if __name__ == "__main__":
     test_reports(r)
     test_email_config()
     test_email_from_hr()
+    test_input_discovery()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:
