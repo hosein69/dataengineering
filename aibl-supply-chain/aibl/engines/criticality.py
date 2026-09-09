@@ -16,7 +16,7 @@ __contract__ = 2
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from ..core.text import is_empty_val, num_safe
+from ..core.text import is_empty_val, num_parse, num_safe
 from ..rulebook import RuleBook, get_rulebook
 
 BAND_STOCKOUT = "STOCKOUT"
@@ -110,33 +110,51 @@ class CriticalityEngine:
         اجزای صورت کسر از ``rules/criticality.yaml`` می‌آیند؛ غیرفعال کردن
         هر جزء (مثلاً «در راه») فقط یک ``enabled: false`` در YAML است.
         """
+        # ── «عدد نداریم» با «عدد صفر است» یکی نیست ──────────────────────
+        # سلولی که «ندارد» یا «N/A» یا یک متن دیگر در آن نوشته شده، اگر
+        # صفر خوانده شود یعنی **موجودی صفر** یعنی **توقف خط** — یک هشدار
+        # اضطراری که هیچ‌کس تولیدش نکرده. num_parse برای چنین سلولی None
+        # می‌دهد و ردیف به طبقه «نامشخص» می‌رود، نه به STOCKOUT.
         comps: Dict[str, float] = {}
+        unreadable: List[str] = []
+        # شمارنده روی نمونه موتور می‌ماند تا مرحله بتواند گزارشش کند؛
+        # یک سلول ناخوانا در موجودی، یعنی یک ردیف که وضعیتش قابل اتکا نیست.
+        if not hasattr(self, "unreadable_cells"):
+            self.unreadable_cells = {}
         for c in self.components_spec():
-            comps[c["field"]] = num_safe(row.get(c["field"]))
+            field = c["field"]
+            raw = row.get(field)
+            val = num_parse(raw)
+            if val is None and not is_empty_val(raw, treat_zero_as_empty=False):
+                unreadable.append(field)      # مقدار هست ولی عدد نیست
+            comps[field] = val or 0.0
 
-        ikco = num_safe(row.get("STOCK_IKCO"))
-        sapco = num_safe(row.get("STOCK_SAPCO"))
-        transit = num_safe(row.get("IN_TRANSIT_QTY"))
-        customs = num_safe(row.get("IN_CUSTOMS_QTY"))
-        need = num_safe(row.get("DAILY_NEED"))
+        ikco = num_parse(row.get("STOCK_IKCO"))
+        sapco = num_parse(row.get("STOCK_SAPCO"))
+        transit = num_parse(row.get("IN_TRANSIT_QTY")) or 0.0
+        customs = num_parse(row.get("IN_CUSTOMS_QTY")) or 0.0
+        need = num_parse(row.get("DAILY_NEED"))
 
-        # «داده هست یا نه» با «صفر است» یکی نیست
-        has_stock = any(not is_empty_val(row.get(f), treat_zero_as_empty=False)
-                        for f in ("STOCK_IKCO", "STOCK_SAPCO"))
-        has_need = not is_empty_val(row.get("DAILY_NEED"), treat_zero_as_empty=False)
+        has_stock = ikco is not None or sapco is not None
+        has_need = need is not None
 
         total = sum(comps.values())
-        warehouse = ikco + sapco
+        warehouse = (ikco or 0.0) + (sapco or 0.0)
 
-        if not has_stock or not has_need:
+        for _f in unreadable:
+            self.unreadable_cells[_f] = self.unreadable_cells.get(_f, 0) + 1
+
+        if unreadable or not has_stock or not has_need:
             days = wh_days = None
             band = self._band(BAND_UNKNOWN)
         elif need <= 0:
             days = wh_days = None
             band = self._band(BAND_NO_CONSUMPTION)
         else:
-            days = round(min(total / need, self.max_days), 1)
-            wh_days = round(min(warehouse / need, self.max_days), 1)
+            # موجودی منفی (اضافه‌برداشت) نباید «مقاومت منفی» بدهد؛ عددِ
+            # منفیِ روز بی‌معناست و در مرتب‌سازی هم رفتار عجیب می‌سازد.
+            days = round(min(max(total, 0.0) / need, self.max_days), 1)
+            wh_days = round(min(max(warehouse, 0.0) / need, self.max_days), 1)
             band = (self._band(BAND_STOCKOUT) if total <= 0
                     else self.band_for_days(days))
 
@@ -149,9 +167,9 @@ class CriticalityEngine:
             sort_rank=int(band.get("sort", 9)),
             action=band.get("action", ""),
             risk_score=self.scores.get(band["code"], 0.0),
-            stock_ikco=ikco, stock_sapco=sapco,
+            stock_ikco=ikco or 0.0, stock_sapco=sapco or 0.0,
             in_transit_qty=transit, in_customs_qty=customs,
-            daily_need=need, components=comps,
+            daily_need=need or 0.0, components=comps,
         )
 
     # ── هشدارهای ترکیبی بحرانی + لجستیک ──

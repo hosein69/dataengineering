@@ -38,6 +38,7 @@ from .report.extracts import write_audit_report, write_expert_extracts
 from .resolve.canonical import CanonicalEntityResolver
 from .resolve.partition import partition
 from . import health
+from .runlock import emit_outputs
 from .resolve.commercial_coverage import apply as apply_commercial_coverage
 from .resolve.commercial_coverage import kpi as commercial_kpi
 from .rulebook import get_rulebook
@@ -284,10 +285,7 @@ class Pipeline:
                              extras=self.ctx.extras,
                              mogh_lines=lines if lines is not None else pd.DataFrame())
         if build_report:
-            res.dashboard_path = self.build_report(res)
-            res.extract_paths = write_expert_extracts(res.main, SETTINGS.expert_extracts_dir)
-            write_audit_report(res.audit, os.path.join(
-                SETTINGS.OUTPUT_DIR, "AIBL_Data_Conflicts_Audit.xlsx"))
+            emit_outputs(res, self.build_report)
         log.info("🏁 خط لوله با موفقیت پایان یافت.")
         return res
 

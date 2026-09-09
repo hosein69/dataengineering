@@ -15,6 +15,7 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
+from .. import health
 from ..dataio.logging_setup import log
 from .palette import LuxuryPalette as P, NUM_FORMAT_CURRENCY
 
@@ -27,6 +28,20 @@ def _safe_name(s: str) -> str:
 
 def write_expert_extracts(df: pd.DataFrame, out_dir: str,
                           columns: List[str] | None = None) -> List[str]:
+    """پرونده اختصاصی هر کارشناس.
+
+    ## چرا فایل‌های قدیمی پاک می‌شوند
+
+    تا نسخه ۲۶٫۱۱ فایل‌های اجرای قبلی دست‌نخورده می‌ماندند. کارشناسی که
+    دیگر هیچ ردیفی ندارد — چون رفته، چون پرونده‌هایش بسته شده، یا چون کد
+    پرسنلی‌اش اصلاح شده — همچنان یک فایل در پوشه داشت که **از فایل امروز
+    قابل تشخیص نبود**. کسی آن را باز می‌کرد و روی داده هفته پیش تصمیم
+    می‌گرفت.
+
+    حالا فایل‌های اجرای این نوبت نوشته می‌شوند و بقیه فایل‌های تولیدشده
+    توسط همین تابع کنار می‌روند (به پوشه ``_archive``، نه حذف کامل — پاک
+    کردن داده کسی، تصمیم ما نیست).
+    """
     if df.empty:
         log.warning("⚠️ داده‌ای برای استخراج کارشناسان وجود ندارد.")
         return []
@@ -35,9 +50,15 @@ def write_expert_extracts(df: pd.DataFrame, out_dir: str,
     paths: List[str] = []
 
     key = "KEY_EMP" if "KEY_EMP" in df.columns else "CANONICAL_EXPERT"
+    written: set = set()
     for emp, g in df.groupby(key, dropna=False):
         expert = str(g["CANONICAL_EXPERT"].iloc[0]) if "CANONICAL_EXPERT" in g else ""
-        fname = f"{_safe_name(emp) or 'no_code'}__{_safe_name(expert)}.xlsx"
+        # «nan» به‌عنوان کد پرسنلی، اسم فایل را به nan__… تبدیل می‌کرد و
+        # کاربر نمی‌فهمید مال کیست. کد ناموجود، صریح نوشته می‌شود.
+        code = _safe_name(emp)
+        if code.lower() in ("nan", "none", "nat", ""):
+            code = "بدون_کد_پرسنلی"
+        fname = f"{code}__{_safe_name(expert)}.xlsx"
         path = os.path.join(out_dir, fname)
 
         wb = Workbook()
@@ -69,9 +90,44 @@ def write_expert_extracts(df: pd.DataFrame, out_dir: str,
                     cell.number_format = NUM_FORMAT_CURRENCY
         wb.save(path)
         paths.append(path)
+        written.add(fname)
 
-    log.info(f"📁 {len(paths)} فایل اختصاصی کارشناس در {out_dir} ساخته شد.")
+    stale = _archive_stale(out_dir, written)
+    log.info(f"📁 {len(paths)} فایل اختصاصی کارشناس در {out_dir} ساخته شد."
+             + (f" {stale} فایل اجرای قبلی به _archive منتقل شد." if stale else ""))
     return paths
+
+
+def _archive_stale(out_dir: str, keep: set) -> int:
+    """فایل کارشناسِ اجرای قبلی که این نوبت ساخته نشد ⇒ بایگانی.
+
+    حذف نمی‌شود؛ منتقل می‌شود. اگر کسی هنوز به آن نیاز داشته باشد سر جایش
+    است، ولی دیگر کنار فایل‌های امروز با ظاهر یکسان نمی‌نشیند.
+    """
+    moved = 0
+    archive = os.path.join(out_dir, "_archive")
+    try:
+        names = [f for f in os.listdir(out_dir) if f.endswith(".xlsx")]
+    except OSError:
+        return 0
+    for f in names:
+        if f in keep:
+            continue
+        try:
+            os.makedirs(archive, exist_ok=True)
+            dest = os.path.join(archive, f)
+            if os.path.exists(dest):
+                os.remove(dest)
+            os.replace(os.path.join(out_dir, f), dest)
+            moved += 1
+        except OSError as ex:
+            log.warning(f"⚠️ فایل قدیمی «{f}» بایگانی نشد: {ex}")
+    if moved:
+        health.current().find(
+            "خروجی", health.INFO,
+            f"{moved} فایل کارشناس از اجرای قبلی بایگانی شد",
+            "کارشناسی که این نوبت ردیفی نداشت؛ فایلش در _archive است.")
+    return moved
 
 
 def write_audit_report(audit_df: pd.DataFrame, path: str) -> str:

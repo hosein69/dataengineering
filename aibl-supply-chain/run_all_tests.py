@@ -30,6 +30,7 @@ SUITES = [
     ("۱۱) سازنده گزارش و صحت دانه‌ای", "tests/test_report_builder.py"),
     ("۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین", "tests/test_supply_views.py"),
     ("۱۳) نقاط کور سیستمی و فرآیندی", "tests/test_system_health.py"),
+    ("۱۴) آشوب و نقاط تاریک معماری", "tests/test_chaos.py"),
 ]
 
 

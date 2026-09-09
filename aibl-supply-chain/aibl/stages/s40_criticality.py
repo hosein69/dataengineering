@@ -11,6 +11,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
+from .. import health
 from ..dataio.logging_setup import log
 from ..engines.criticality import CriticalityEngine
 from .base import (ColumnSpec, GROUP_MAIN, PipelineContext, Stage, register)
@@ -35,6 +36,18 @@ class CriticalityStage(Stage):
     def run(self, df: pd.DataFrame, ctx: PipelineContext) -> pd.DataFrame:
         eng = CriticalityEngine(ctx.rb)
         results = [eng.evaluate(r) for r in df.to_dict("records")]
+        # سلول موجودی که عدد نیست ⇒ ردیف به «نامشخص» رفت، نه به توقف خط.
+        # این تفاوت باید دیده شود، وگرنه کاهش ناگهانی «توقف خط» بی‌توضیح می‌ماند.
+        bad = getattr(eng, "unreadable_cells", {})
+        if bad:
+            detail = "، ".join(f"{k}: {v}" for k, v in sorted(bad.items()))
+            log.warning(f"⚠️ سلول‌های غیرعددی در ستون‌های موجودی/نیاز — {detail}. "
+                        f"این ردیف‌ها «نامشخص» شدند، نه «توقف خط».")
+            health.current().find(
+                "کیفیت عدد", health.WARN,
+                f"{sum(bad.values())} سلول غیرعددی در ستون‌های موجودی/نیاز",
+                f"{detail} — این ردیف‌ها به طبقه «نامشخص» رفتند تا هشدار "
+                f"توقف خط از روی داده ناخوانا ساخته نشود.")
         if results:
             for k in results[0].as_dict():
                 df[k] = [r.as_dict()[k] for r in results]

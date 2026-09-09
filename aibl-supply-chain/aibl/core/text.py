@@ -13,7 +13,7 @@ __contract__ = 2
 
 import math
 import re
-from typing import Any
+from typing import Any, Optional
 
 # ── نگاشت ارقام فارسی و عربی به لاتین ──
 _DIGIT_MAP = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
@@ -130,17 +130,53 @@ def is_empty_val(v: Any, treat_zero_as_empty: bool = True) -> bool:
     return s.lower() in tokens
 
 
-def num_safe(v: Any) -> float:
-    """تبدیل امن به float.
+#: نماد علمی که اکسل برای اعداد بزرگ/کوچک تولید می‌کند: 4.5E+09 ، 1e-12
+_SCIENTIFIC = re.compile(r"^[+-]?(\d+(?:[.,]\d+)?)[eE]([+-]?\d+)$")
 
-    FIX-2: نسخه قبلی روی مقادیری مثل '1.234.567' (جداکننده هزارگان نقطه‌ای)
-    بی‌صدا 0.0 برمی‌گرداند. اینجا جداکننده هزارگان تشخیص داده و حذف می‌شود.
+
+def num_parse(v: Any) -> Optional[float]:
+    r"""تبدیل به float، یا ``None`` وقتی اصلاً عددی در مقدار نیست.
+
+    ## چرا این تابع کنار ``num_safe`` لازم بود
+
+    ``num_safe`` برای هر ورودی نامفهوم **صفر** برمی‌گرداند. برای بیشتر
+    ستون‌ها بی‌ضرر است، ولی برای *موجودی* فاجعه است: سلولی که «ندارد» یا
+    «N/A» در آن نوشته شده، صفر خوانده می‌شود، و صفرِ موجودی یعنی
+    **توقف خط** — یک هشدار اضطراری از روی یک سلول متنی.
+
+    «داده نداریم» و «صفر است» دو چیزند و باید دو خروجی داشته باشند.
+
+    ## باگ نماد علمی (بحرانی)
+
+    نسخه قبل با ``re.sub(r"[^\d.,]", "", s)`` حرف ``E`` و علامت توان را
+    دور می‌ریخت:
+
+        "4.5E+09"  → "4.509"    ← تعهد ۴٫۵ میلیاردی، ۴٫۵ خوانده می‌شد
+        "1.23E+15" → "1.2315"
+        "1e-12"    → "112"
+
+    عدد اشتباه، نه صفر — یعنی هیچ گاردی نمی‌گرفتش و مستقیم وارد مقاومت و
+    جمع تعهد ارزی می‌شد. اکسل این نماد را برای هر عدد بزرگ خودکار تولید
+    می‌کند، پس این حالت نادر نیست.
     """
     if is_empty_val(v, treat_zero_as_empty=False):
-        return 0.0
+        return None
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return float(v) if math.isfinite(v) else None
     try:
         s = to_latin_digits(v).strip()
+        if not s:
+            return None
         neg = s.startswith("-") or s.startswith("(")
+        # ── نماد علمی، پیش از هر پاک‌سازی دیگری ──
+        m = _SCIENTIFIC.match(s.lstrip("+-").strip("()").strip()
+                              if neg else s)
+        if m:
+            mantissa = m.group(1).replace(",", ".")
+            val = float(f"{mantissa}e{m.group(2)}")
+            val = -val if neg else val
+            return val if math.isfinite(val) else None
+
         s = re.sub(r"[^\d.,]", "", s)
         if "," in s and "." in s:
             # آخرین جداکننده = اعشار
@@ -152,11 +188,23 @@ def num_safe(v: Any) -> float:
             parts = s.split(",")
             s = "".join(parts[:-1]) + ("." + parts[-1] if len(parts[-1]) < 3 else parts[-1])
         if s in ("", ".", "-"):
-            return 0.0
+            return None
         val = float(s)
-        return -val if neg else val
+        val = -val if neg else val
+        return val if math.isfinite(val) else None
     except Exception:
-        return 0.0
+        return None
+
+
+def num_safe(v: Any) -> float:
+    """تبدیل امن به float؛ مقدار نامفهوم ⇒ ``0.0``.
+
+    برای ستون‌هایی که «نبودِ عدد» و «صفر» در آن‌ها یک معنی دارد. هرجا این
+    دو فرق می‌کنند — مثل موجودی و نیاز روزانه — از ``num_parse`` استفاده
+    کنید که ``None`` می‌دهد.
+    """
+    out = num_parse(v)
+    return 0.0 if out is None else out
 
 
 _ITEM_SUFFIX = re.compile(r"[\s\-–—]*items?\s*[\d&\s,and]*$", re.IGNORECASE)

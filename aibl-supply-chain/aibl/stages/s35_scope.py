@@ -13,11 +13,12 @@ from typing import Dict, List
 
 import pandas as pd
 
+from .. import health
 from ..dataio.logging_setup import log
 from ..resolve import part_status as ps
 from ..resolve.expert_scope import (MISSING_SOURCE, OWNER_GAP, OWNER_NAME,
-                                    OWNER_SOURCE, SCOPES, coverage,
-                                    resolve_owner, resolve_scopes)
+                                    OWNER_SOURCE, SCOPES, UNOBSERVABLE_STAGES,
+                                    coverage, resolve_owner, resolve_scopes)
 from ..resolve.org_mapper import DynamicOrgMapper
 from .base import (ColumnSpec, FMT_INT, GROUP_ANALYTIC, GROUP_DETAIL,
                    GROUP_MAIN, PipelineContext, Stage, register)
@@ -62,6 +63,16 @@ class ScopeStage(Stage):
                         f"شکاف سورس است، نه کوتاهی ردیف‌ها.")
         ctx.extras["owner_rows"] = owned
         ctx.extras["owner_gap_rows"] = gap
+
+        if UNOBSERVABLE_STAGES:
+            names = "، ".join(f"{ps.STAGE_FA.get(k, k)} ({v})"
+                              for k, v in UNOBSERVABLE_STAGES.items())
+            log.info(f"ℹ️ مرحله‌های بدون رویداد تاریخ‌دار: {names}. هیچ قطعه‌ای "
+                     f"«معطل» این مراحل گزارش نمی‌شود.")
+            health.current().find(
+                "ماشین وضعیت", health.INFO,
+                f"{len(UNOBSERVABLE_STAGES)} مرحله چرخه عمر رویداد تاریخ‌دار ندارد",
+                names + " — پوشش این مراحل در گزارش ادعا نمی‌شود.")
 
         wait = df[ps.WAITING_SCOPE].astype(str).str.strip()
         top = wait[wait.ne("")].value_counts().head(1)

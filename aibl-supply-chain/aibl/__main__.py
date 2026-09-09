@@ -35,8 +35,17 @@ def main() -> int:
         if doctor() != 0:
             print("\n⛔ اجرا متوقف شد چون محیط خطا دارد. موارد بالا را رفع کنید.")
             return 1
+        # قفل فقط در نقطه ورود CLI گرفته می‌شود، نه داخل Pipeline.run —
+        # تا فراخوانی کتابخانه‌ای و تست‌ها آزاد بمانند.
+        from .config.settings import SETTINGS
         from .pipeline import main as run
-        run()
+        from .runlock import RunLock, RunLocked
+        try:
+            with RunLock(SETTINGS.OUTPUT_DIR):
+                run()
+        except RunLocked as ex:
+            print(f"\n⛔ {ex}")
+            return 2
         return 0
     print(f"دستور ناشناخته «{cmd}». گزینه‌ها: doctor | diagnose | rules | email | studio | run")
     return 2
