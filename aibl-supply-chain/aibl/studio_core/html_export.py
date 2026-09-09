@@ -37,6 +37,14 @@ BANDS = {
 }
 BAND_ORDER = list(BANDS)
 
+#: پالت رسته‌ای نمودارها. با ``scripts/validate_palette.js`` سنجیده شده و
+#: هر شش بررسی را رد می‌کند: باند روشنایی، کف اشباع، تفکیک‌پذیری کوررنگی،
+#: کف دید عادی، و کنتراست با سطح. ترتیب **ثابت** است و هرگز چرخانده
+#: نمی‌شود؛ رسته هشتم به «سایر» می‌رود، نه به یک رنگ تازه.
+CATEGORICAL = ["#00918a", "#96690a", "#b81269", "#3358d4",
+               "#a83a12", "#8347c9", "#1a8a2e"]
+OTHER_COLOR = "#8a8a85"
+
 BRAND, BRAND_DEEP = "#0f6e6e", "#0a4f4f"
 SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
 TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
@@ -117,6 +125,52 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "AIBL",
         + "</select></label>"
         for c, lab, vals in filters)
 
+    # ── ابعاد و معیارهای قابل انتخاب برای نمودار ──
+    # بُعد = ستون کم‌کاردینالیتی که گروه‌بندی روی آن معنا دارد.
+    # معیار = «تعداد ردیف» یا هر ستون عددی. نمودار دقیقاً با همان قاعده
+    # دانه‌ای جمع می‌زند که کارت‌ها و جدول؛ پس عدد نمودار با عدد کارت
+    # می‌خواند و کاربر دو عدد متناقض نمی‌بیند.
+    dims = []
+    for c in cols:
+        try:
+            n = data[c].astype(str).str.strip().replace("", pd.NA).nunique()
+        except Exception:
+            continue
+        if 1 < n <= 60:
+            dims.append(c)
+    if band_col and band_col in cols and band_col not in dims:
+        dims.insert(0, band_col)
+    dims = dims[:12]
+
+    def _opt(val, text):
+        return f'<option value="{html.escape(str(val))}">{html.escape(str(text))}</option>'
+
+    dim_opts = "".join(_opt(c, labels.get(c, c)) for c in dims)
+    meas_opts = _opt("__count__", "تعداد ردیف") + "".join(
+        _opt(c, ("میانگین " if measures[c] == "mean" else "جمع ") + str(labels.get(c, c)))
+        for c in numeric)
+    hist_opts = "".join(_opt(c, labels.get(c, c)) for c in numeric)
+
+    charts_html = ""
+    if show_visuals and dims:
+        hist_panel = ""
+        if hist_opts:
+            hist_panel = (
+                '<div class="panel"><div class="chead"><h3>توزیع مقادیر</h3>'
+                '<div class="picks"><label>ستون<select id="hcol">' + hist_opts
+                + '</select></label></div></div><div id="hist" class="chart"></div>'
+                '<div class="note">میانگین دُم توزیع را پنهان می‌کند؛ هیستوگرام نشان '
+                'می‌دهد پرونده‌ها واقعاً کجا جمع شده‌اند. خط‌چین، میانه است.</div></div>')
+        charts_html = (
+            '<div class="panel"><div class="chead"><h3>نمودار مقایسه‌ای</h3>'
+            '<div class="picks">'
+            '<label>گروه‌بندی بر اساس<select id="cdim">' + dim_opts + '</select></label>'
+            '<label>معیار<select id="cmeas">' + meas_opts + '</select></label>'
+            '</div></div><div id="bar" class="chart"></div>'
+            '<div class="note">هر میله برچسب مستقیم دارد؛ رنگ فقط برای تفکیک است، '
+            'نه حامل عدد. با هر فیلتر، نمودار از همان داده‌ی جدول بازساخته می‌شود.'
+            '</div></div>' + hist_panel)
+
     head = "".join(f"<th>{html.escape(labels.get(c, c))}</th>" for c in cols)
 
     # شاخص‌های سربرگ — در پایتون و **دانه‌ای** محاسبه می‌شوند
@@ -176,6 +230,18 @@ border-radius:9px;background:#fff;font:inherit}}
 padding:16px;margin-top:14px}}
 .panel h3{{margin:0 0 10px;font-size:15px}}
 .mix{{display:flex;height:26px;border-radius:8px;overflow:hidden;background:#f0efec;gap:2px}}
+.chead{{display:flex;justify-content:space-between;align-items:flex-end;
+gap:14px;flex-wrap:wrap;margin-bottom:10px}}
+.chead h3{{margin:0}}
+.picks{{display:flex;gap:10px;flex-wrap:wrap}}
+.picks label{{font-size:11px}}
+.picks select{{margin-top:3px;padding:6px 8px;min-width:150px}}
+.chart{{width:100%;overflow-x:auto}}
+.chart svg{{display:block;max-width:100%;direction:ltr}}
+.chart text{{unicode-bidi:plaintext}}
+.tip{{position:fixed;pointer-events:none;background:#111;color:#fff;font-size:12px;
+padding:6px 9px;border-radius:7px;opacity:0;transition:opacity .1s;z-index:50;
+white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.24)}}
 .seg{{height:100%;min-width:2px}}
 table{{width:100%;border-collapse:collapse;font-size:12px}}
 th{{position:sticky;top:0;background:var(--deep);color:#fff;padding:9px;
@@ -202,6 +268,7 @@ font:inherit;font-weight:700;cursor:pointer}}
 <div class="toolbar"><label>جستجو<input id="q" placeholder="جستجو در همه ستون‌های نمایش‌داده‌شده"></label>{filter_html}</div>
 <div class="cards" id="cards"></div>
 {'<div class="panel"><h3>ترکیب طبقه بحرانی</h3><div class="mix" id="mix"></div><div class="note" id="mixleg"></div></div>' if (show_visuals and band_col) else ''}
+{charts_html}
 <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center">
 <h3>جدول تفصیلی</h3><span class="note" id="cnt"></span></div>
 <div style="max-height:640px;overflow:auto"><table><thead><tr>{head}</tr></thead>
@@ -216,6 +283,7 @@ const LAB={json.dumps({c: labels.get(c, c) for c in cols}, ensure_ascii=False)};
 const BAND={json.dumps(band_col or "", ensure_ascii=False)};
 const COLORS={json.dumps({b: c for b, (c, _i) in BANDS.items()}, ensure_ascii=False)};
 const ORDER={json.dumps(BAND_ORDER, ensure_ascii=False)};
+const CATS={json.dumps(CATEGORICAL, ensure_ascii=False)}, OTHER={json.dumps(OTHER_COLOR, ensure_ascii=False)};
 const q=document.getElementById('q'), sels=[...document.querySelectorAll('select[data-f]')];
 const S=(r,c)=>String(r[c]??'');
 
@@ -272,7 +340,122 @@ function render(){{
       if(c===BAND && COLORS[r[c]]) return `<td><span style="color:${{COLORS[r[c]]}};font-weight:700">${{v}}</span></td>`;
       return `<td>${{v}}</td>`;
     }}).join('')+'</tr>').join('');
+  renderCharts(a);
 }}
+
+/* ─────────────── نمودارهای داینامیک ───────────────
+   SVG خام و بدون هیچ کتابخانه بیرونی: این فایل روی شبکه داخلی و بدون
+   اینترنت باز می‌شود، پس وابستگی به CDN یعنی نمودارِ خالی. */
+const tip=document.createElement('div'); tip.className='tip'; document.body.appendChild(tip);
+const showTip=(e,t)=>{{tip.textContent=t;tip.style.opacity=1;
+  tip.style.left=Math.min(e.clientX+12,innerWidth-tip.offsetWidth-8)+'px';
+  tip.style.top=(e.clientY-34)+'px';}};
+const hideTip=()=>{{tip.style.opacity=0}};
+const SVGNS='http://www.w3.org/2000/svg';
+function el(n,at){{const x=document.createElementNS(SVGNS,n);
+  for(const k in at) x.setAttribute(k,at[k]); return x;}}
+
+/* گروه‌بندی با همان قاعده دانه‌ای جمع‌ها */
+function groupBy(a,dim,meas){{
+  const buckets=new Map();
+  for(const r of a){{ const k=(S(r,dim)||'—').trim()||'—';
+    if(!buckets.has(k)) buckets.set(k,[]); buckets.get(k).push(r); }}
+  const out=[];
+  buckets.forEach((rs,k)=>out.push({{k, v: meas==='__count__'? rs.length : gagg(rs,meas)}}));
+  out.sort((x,y)=>y.v-x.v);
+  if(out.length>7){{ const rest=out.slice(7);
+    const sum=rest.reduce((s,x)=>s+x.v,0);
+    return out.slice(0,7).concat([{{k:'سایر ('+rest.length+' مورد)',v:sum,other:true}}]); }}
+  return out;
+}}
+
+const faN=v=>(Math.round(v*100)/100).toLocaleString('fa-IR');
+
+/* میله افقی: مقایسه بزرگی بین رسته‌ها. یک محور، برچسب مستقیم روی هر میله. */
+function drawBar(box,rows,unit){{
+  box.innerHTML='';
+  if(!rows.length){{box.innerHTML='<div class="note">داده‌ای برای این ترکیب نیست.</div>';return;}}
+  const W=Math.max(box.clientWidth||900,520), rowH=34, pad=14, labW=210;
+  const H=pad*2+rows.length*rowH;
+  const max=Math.max(...rows.map(r=>Math.abs(r.v)),1);
+  const plotW=W-labW-90;
+  const svg=el('svg',{{viewBox:`0 0 ${{W}} ${{H}}`,width:W,height:H,role:'img'}});
+  rows.forEach((r,i)=>{{
+    const y=pad+i*rowH, bw=Math.max(plotW*Math.abs(r.v)/max,2);
+    const color=r.other?OTHER:CATS[i%CATS.length];
+    /* RTL: میله از راست به چپ رشد می‌کند */
+    const x=W-labW-bw;
+    const bar=el('rect',{{x,y:y+7,width:bw,height:rowH-16,rx:4,fill:color}});
+    bar.addEventListener('mousemove',e=>showTip(e,r.k+' — '+faN(r.v)+(unit?' '+unit:'')));
+    bar.addEventListener('mouseleave',hideTip);
+    svg.appendChild(bar);
+    const lab=el('text',{{x:W-labW+10,y:y+rowH/2+4,'text-anchor':'start',
+      'font-size':12,fill:'#52514e'}});
+    lab.textContent=r.k.length>24?r.k.slice(0,23)+'…':r.k;
+    svg.appendChild(lab);
+    const val=el('text',{{x:x-8,y:y+rowH/2+4,'text-anchor':'end',
+      'font-size':12,'font-weight':700,fill:'#0b0b0b'}});
+    val.textContent=faN(r.v);
+    svg.appendChild(val);
+  }});
+  box.appendChild(svg);
+}}
+
+/* هیستوگرام: توزیع، نه فقط میانگین. */
+function drawHist(box,vals){{
+  box.innerHTML='';
+  const v=vals.filter(Number.isFinite).sort((a,b)=>a-b);
+  if(v.length<3){{box.innerHTML='<div class="note">برای توزیع، دست‌کم سه مقدار عددی لازم است.</div>';return;}}
+  const lo=v[0], hi=v[v.length-1];
+  if(hi===lo){{box.innerHTML='<div class="note">همه مقادیر برابرند ('+faN(lo)+').</div>';return;}}
+  const k=Math.min(18,Math.max(6,Math.ceil(Math.sqrt(v.length))));
+  const w=(hi-lo)/k, bins=new Array(k).fill(0);
+  v.forEach(x=>{{let i=Math.floor((x-lo)/w); if(i>=k)i=k-1; if(i<0)i=0; bins[i]++;}});
+  const med=v.length%2?v[(v.length-1)/2]:(v[v.length/2-1]+v[v.length/2])/2;
+  const W=Math.max(box.clientWidth||900,520), H=240, pad=30, base=H-34;
+  const max=Math.max(...bins,1), bw=(W-pad*2)/k;
+  const svg=el('svg',{{viewBox:`0 0 ${{W}} ${{H}}`,width:W,height:H,role:'img'}});
+  /* شبکه پس‌زمینه، عمداً کم‌رنگ */
+  for(let g=0;g<=3;g++){{
+    const y=base-(base-pad)*g/3;
+    svg.appendChild(el('line',{{x1:pad,x2:W-pad,y1:y,y2:y,stroke:'#e3e3dd','stroke-width':1}}));
+  }}
+  bins.forEach((c,i)=>{{
+    const h=(base-pad)*c/max, x=pad+i*bw;
+    const rect=el('rect',{{x:x+1,y:base-h,width:Math.max(bw-2,1),height:h,rx:4,fill:CATS[0]}});
+    const a=lo+i*w, b=a+w;
+    rect.addEventListener('mousemove',e=>showTip(e,
+      faN(a)+' تا '+faN(b)+' → '+c.toLocaleString('fa-IR')+' ردیف'));
+    rect.addEventListener('mouseleave',hideTip);
+    svg.appendChild(rect);
+  }});
+  svg.appendChild(el('line',{{x1:pad,x2:W-pad,y1:base,y2:base,stroke:'#6e6e66','stroke-width':1}}));
+  const mx=pad+(W-pad*2)*(med-lo)/(hi-lo);
+  svg.appendChild(el('line',{{x1:mx,x2:mx,y1:pad-6,y2:base,stroke:'#0b0b0b',
+    'stroke-width':2,'stroke-dasharray':'5 4'}}));
+  const mt=el('text',{{x:mx,y:pad-10,'text-anchor':'middle','font-size':11,fill:'#0b0b0b'}});
+  mt.textContent='میانه '+faN(med); svg.appendChild(mt);
+  [[pad,lo],[W-pad,hi]].forEach(([x,val],i)=>{{
+    const t=el('text',{{x,y:H-12,'text-anchor':i?'end':'start','font-size':11,fill:'#6e6e66'}});
+    t.textContent=faN(val); svg.appendChild(t);
+  }});
+  box.appendChild(svg);
+}}
+
+const cdim=document.getElementById('cdim'), cmeas=document.getElementById('cmeas'),
+      hcol=document.getElementById('hcol');
+function renderCharts(a){{
+  const bar=document.getElementById('bar');
+  if(bar&&cdim&&cmeas){{
+    const m=cmeas.value;
+    drawBar(bar,groupBy(a,cdim.value,m), m==='__count__'?'ردیف':(LAB[m]||''));
+  }}
+  const hb=document.getElementById('hist');
+  if(hb&&hcol) drawHist(hb,gvals(a,hcol.value));
+}}
+[cdim,cmeas,hcol].forEach(x=>x&&x.addEventListener('change',()=>renderCharts(rows())));
+addEventListener('resize',()=>renderCharts(rows()));
+
 [q,...sels].forEach(x=>x.addEventListener('input',render));
 render();
 </script></body></html>"""

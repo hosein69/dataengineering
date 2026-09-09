@@ -172,5 +172,24 @@ def emit_outputs(res, build_report) -> None:
     res.extract_paths = write_expert_extracts(res.main, SETTINGS.expert_extracts_dir)
     audit = os.path.join(SETTINGS.OUTPUT_DIR, "AIBL_Data_Conflicts_Audit.xlsx")
     write_audit_report(res.audit, audit)
+    analysis = _analysis(res)
     write_marker(SETTINGS.OUTPUT_DIR,
-                 {"report": res.dashboard_path, "audit": audit}, VERSION)
+                 {"report": res.dashboard_path, "audit": audit,
+                  "analysis": analysis}, VERSION)
+
+
+def _analysis(res) -> str:
+    """گزارش تحلیلی — شکستش نباید بقیه مجموعه را زمین بزند."""
+    from .config.settings import SETTINGS
+    from .dataio.logging_setup import log
+    try:
+        from .analytics.report import write_analysis
+        from .studio_core.field_catalog import build_catalog, unique_labels
+        folder = os.path.dirname(res.dashboard_path) or SETTINGS.OUTPUT_DIR
+        labels = unique_labels(build_catalog(res.main))
+        return write_analysis(res.main,
+                              os.path.join(folder, "AIBL_Analysis.html"),
+                              str(SETTINGS.today), labels)
+    except Exception as ex:      # noqa: BLE001
+        log.warning(f"⚠️ گزارش تحلیلی ساخته نشد ({type(ex).__name__}: {ex}).")
+        return ""

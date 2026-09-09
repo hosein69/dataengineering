@@ -28,6 +28,7 @@ if ROOT not in sys.path:
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="AIBL Studio", page_icon="◈",
                    layout="wide", initial_sidebar_state="expanded")
@@ -202,10 +203,10 @@ st.markdown(
     "".join(band_chip(*band_of(k)) for k in BAND_ORDER) +
     '</div>', unsafe_allow_html=True)
 
-(tab_over, tab_proc, tab_supply, tab_analytics, tab_fields, tab_data,
- tab_quality, tab_export) = st.tabs(
-    ["نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "⊞ تحلیل", "🧩 سازنده گزارش",
-     "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
+(tab_over, tab_proc, tab_supply, tab_analytics, tab_evidence, tab_fields,
+ tab_data, tab_quality, tab_export) = st.tabs(
+    ["نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "⊞ تحلیل", "🔬 گزارش تحلیلی",
+     "🧩 سازنده گزارش", "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -335,6 +336,29 @@ with tab_supply:
                     key=f"dl_{kind}")
 
 
+# ══════════════════════════════════════════════════════════════════════════
+#  ۴) گزارش تحلیلی — علیت سبک و قابل استناد
+# ══════════════════════════════════════════════════════════════════════════
+@st.cache_data(show_spinner=False)
+def _analysis_html(frame: pd.DataFrame, ref: str, labels: dict) -> str:
+    from aibl.analytics.report import build_analysis_html
+    return build_analysis_html(frame, ref, labels)
+
+
+with tab_evidence:
+    panel_open("گزارش تحلیلی",
+               "نرخ تجربی با بازه اطمینان، و همان مقایسه پس از کنترل مخدوش‌کننده.")
+    st.caption("عمداً بدون یادگیری ماشین: عددی که مبنای تصمیم می‌شود باید به یک "
+               "جمله ساده تجزیه شود — «از n مورد مشابه، k مورد چنین شدند».")
+    _ev = _analysis_html(fdf, ref_date, dict(DISPLAY))
+    components.html(_ev, height=760, scrolling=True)
+    st.download_button("⬇️ دانلود گزارش تحلیلی (HTML)", _ev.encode("utf-8"),
+                       file_name="AIBL_Analysis.html", mime="text/html",
+                       key="dl_analysis")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  ۵) سازنده گزارش — دسترسی به هر ۳۶۷ فیلد
 # ══════════════════════════════════════════════════════════════════════════
 with tab_fields:
     st.markdown(
