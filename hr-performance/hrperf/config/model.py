@@ -10,9 +10,13 @@ from typing import Dict, List, Optional
 
 import yaml
 
+from ..identity.scopes import ANY, BY_KEY
 from .settings import SETTINGS
 
 MODEL_BASENAME = "model.yaml"
+
+#: حوزه‌های مجاز برای یک سنجه — مشترک، یا یکی از سه حوزه مسئولیت.
+_VALID_SCOPES = {ANY, *BY_KEY}
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,13 @@ class Metric:
     is_driver: bool = False
     formula: str = ""
     note: str = ""
+    #: حوزه مسئولیتی که این سنجه به آن تعلق دارد (``ANY`` یعنی مشترک).
+    #: کسی که حوزه‌اش این نیست، با این سنجه سنجیده نمی‌شود.
+    scope: str = "ANY"
+    #: ستون منبع در خروجی پکیج زنجیره تأمین — ردِ عدد تا سرچشمه.
+    aibl_field: str = ""
+    #: مبنای علمی وزن و تعریف؛ عددی که مرجع ندارد، قابل دفاع نیست.
+    citation: str = ""
 
     @property
     def scored(self) -> bool:
@@ -105,6 +116,10 @@ class PerformanceModel:
                 issues.append(f"جهت شاخص «{mk}» نامعتبر است: {m.direction}")
             if m.entry not in ("direct", "derived"):
                 issues.append(f"نوع ورود شاخص «{mk}» نامعتبر است: {m.entry}")
+            if m.scope not in _VALID_SCOPES:
+                issues.append(f"حوزه شاخص «{mk}» ناشناخته است: {m.scope}")
+            if m.scored and not m.citation:
+                issues.append(f"شاخص امتیازی «{mk}» مبنای علمی (citation) ندارد.")
         return issues
 
     def renormalize(self) -> "PerformanceModel":
@@ -151,7 +166,10 @@ def load_model(path: str | Path | None = None) -> PerformanceModel:
             source=m.get("source", ""),
             q_target=(float(m["q_target"]) if m.get("q_target") is not None else None),
             is_driver=bool(m.get("is_driver", False)),
-            formula=m.get("formula", ""), note=m.get("note", ""))
+            formula=m.get("formula", ""), note=m.get("note", ""),
+            scope=str(m.get("scope", ANY) or ANY),
+            aibl_field=m.get("aibl_field", ""),
+            citation=m.get("citation", ""))
 
     model = PerformanceModel(clusters, metrics, str(raw.get("model_version", "")))
     problems = model.validate()

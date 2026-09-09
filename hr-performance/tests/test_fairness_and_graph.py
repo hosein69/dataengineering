@@ -218,18 +218,19 @@ def test_model_editor() -> None:
     check("مدل اصلی دست‌نخورده می‌ماند", len(m.clusters) == n0)
 
     m3 = ed.add_metric(m2, "proc_err", "خطای رویه‌ای", "compliance", 1.0,
+                       citation="ISO 9001:2015 §8.7 — کنترل خروجی نامنطبق",
                        direction="lower", kind="count")
     check("شاخص تازه به کلاستر وصل می‌شود", "proc_err" in m3.metrics)
 
     for label, fn in (
         ("دلیل خالی", lambda: ed.add_cluster(m, "safety", "ایمنی", 0.1, "")),
         ("کلید فارسی", lambda: ed.add_cluster(m, "ایمنی", "ایمنی", 0.1, "دلیل")),
-        ("کلاستر تکراری", lambda: ed.add_cluster(m, "quality", "ک", 0.1, "دلیل")),
+        ("کلاستر تکراری", lambda: ed.add_cluster(m, "reliability", "ک", 0.1, "دلیل")),
         ("وزن بیرون از بازه", lambda: ed.add_cluster(m, "safety", "ایمنی", 3.0, "دلیل")),
         ("کلاستر ناموجود", lambda: ed.add_metric(m, "x1", "ایکس", "ghost", 1.0)),
-        ("جهت نامعتبر", lambda: ed.add_metric(m, "x2", "ایکس", "quality", 1.0,
+        ("جهت نامعتبر", lambda: ed.add_metric(m, "x2", "ایکس", "reliability", 1.0,
                                               direction="sideways")),
-        ("حذف کلاستر دارای شاخص", lambda: ed.remove_cluster(m, "quality")),
+        ("حذف کلاستر دارای شاخص", lambda: ed.remove_cluster(m, "reliability")),
     ):
         try:
             fn()

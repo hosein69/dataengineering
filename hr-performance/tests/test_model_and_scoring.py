@@ -57,7 +57,7 @@ def test_model() -> None:
     check("وزن «حجم و پیچیدگی» حداکثر ۱۰٪ است (ضدانگیزه کمّی‌کاری)",
           wl <= 0.10 + 1e-9, f"{wl*100:.1f}%")
     check("«مسئولیت مالی» امتیاز نمی‌گیرد (تخصیص است نه عملکرد)",
-          m.effective_weight("financial_responsibility") == 0.0)
+          m.effective_weight("value_at_risk") == 0.0)
 
     # ساختار نامعتبر باید رد شود
     bad = PerformanceModel(
@@ -71,7 +71,8 @@ def test_renormalize() -> None:
     print("\n── ۲) بازنرمال‌سازی پس از ویرایش کاربر ──")
     m = load_model()
     cl = dict(m.clusters)
-    cl["quality"] = Cluster("quality", cl["quality"].label, 0.9, True, "")
+    cl["reliability"] = Cluster("reliability", cl["reliability"].label,
+                            0.9, True, "")
     edited = PerformanceModel(cl, dict(m.metrics), m.model_version)
     check("ویرایش خام مجموع را از ۱ خارج می‌کند",
           abs(sum(c.weight for c in edited.clusters.values() if c.scored) - 1) > 1e-6)
@@ -79,7 +80,7 @@ def test_renormalize() -> None:
     s = sum(c.weight for c in fixed.clusters.values() if c.scored)
     check("پس از بازنرمال‌سازی مجموع دوباره ۱ می‌شود", abs(s - 1) < 1e-9, f"{s:.6f}")
     check("نسبت‌ها حفظ می‌شوند (کیفیت همچنان سنگین‌ترین)",
-          max(fixed.clusters.values(), key=lambda c: c.weight).key == "quality")
+          max(fixed.clusters.values(), key=lambda c: c.weight).key == "reliability")
 
 
 def test_shrinkage() -> None:
@@ -149,7 +150,7 @@ def test_coverage() -> None:
     m = load_model()
     keys = [x.key for x in m.scored_metrics]
     sc = pd.DataFrame(50.0, index=["full", "partial"], columns=keys)
-    qcols = [x.key for x in m.cluster_metrics("quality")]
+    qcols = [x.key for x in m.cluster_metrics("reliability")]
     sc.loc["partial", qcols] = np.nan
     r = aggregate(sc, m)
     check("فرد کامل پوشش ۱ دارد", abs(float(r.coverage["full"]) - 1) < 1e-9)
@@ -221,13 +222,14 @@ def test_contribution() -> None:
     m = load_model()
     keys = [x.key for x in m.scored_metrics]
     sc = pd.DataFrame(50.0, index=["a"], columns=keys)
-    sc.loc["a", "fpy"] = 90.0
+    probe = "conformance_score"          # یک شاخص امتیازیِ موجود در مدل
+    sc.loc["a", probe] = 90.0
     c = contribution(sc, m, "a")
     check("سهم هر شاخص محاسبه می‌شود", not c.empty)
     check("شاخص با بیشترین انحراف، بالاترین سهم را دارد",
-          str(c.iloc[0]["کلید"]) == "fpy", str(c.iloc[0]["کلید"]))
+          str(c.iloc[0]["کلید"]) == probe, str(c.iloc[0]["کلید"]))
     check("سهم شاخصِ روی میانه صفر است",
-          abs(float(c[c["کلید"] != "fpy"]["سهم"].abs().max())) < 1e-9)
+          abs(float(c[c["کلید"] != probe]["سهم"].abs().max())) < 1e-9)
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ from .causal.effects import effect_table, fair_score
 from .config.model import PerformanceModel, load_model
 from .config.settings import SETTINGS
 from .dataio import db as dbmod
-from .dataio.sources import (explain_missing, find_org_map, load_inputs,
+from .dataio.sources import (explain_missing, find_org_map, load_all,
                              read_org_map)
 from .identity import keys as keymod
 from .identity import peers as peermod
@@ -130,8 +130,10 @@ class Pipeline:
         ref_date = ref_date or str(SETTINGS.today)
 
         # ۱۰ ingest
+        self.source_people = pd.DataFrame()
         if long is None:
-            long = load_inputs(self.input_dir)
+            long, self.source_people, notes = load_all(self.input_dir)
+            warnings.extend(notes)
         # کلید هر ورودی — از سورس یا از فراخوان — با یک قاعده متعارف می‌شود،
         # وگرنه دو طرفِ اتصال دو زبان حرف می‌زنند و همه امتیازها صفر می‌شود.
         if long is not None and not long.empty and "person_key" in long.columns:
@@ -148,9 +150,11 @@ class Pipeline:
         people = people.copy()
         if people.empty or "person_key" not in people.columns:
             raise NoInputData(explain_missing(self.input_dir))
-        people["person_key"] = keymod.normalize_series(people["person_key"])
+        # شکل خام **پیش از** متعارف‌سازی برداشته می‌شود؛ برعکسش یعنی
+        # گزارش، کلید صفرچین را به‌عنوان «کد پرسنلی» نشان می‌دهد.
         if "person_code" not in people.columns:
-            people["person_code"] = people["person_key"]
+            people["person_code"] = people["person_key"].map(keymod.clean_text)
+        people["person_key"] = keymod.normalize_series(people["person_key"])
         warnings.extend(self._org_notes(len(people)))
         if long is not None and not long.empty:
             warnings.extend(keymod.notes(
@@ -171,7 +175,7 @@ class Pipeline:
 
         # ۳۵ نقش کاری — شاخصی که برای نقشِ فرد بی‌معناست کنار گذاشته می‌شود
         before = len(long)
-        long = rolemod.applicable(long, people)
+        long = rolemod.applicable(long, people, self.model)
         dropped = before - len(long)
         if dropped:
             warnings.append(
@@ -325,6 +329,7 @@ class Pipeline:
         for c in self.ORG_COLS:
             if c not in base.columns:
                 base[c] = ""
+        base = self._merge_over(base, getattr(self, "source_people", None))
 
         src = find_org_map(self.input_dir)
         org = read_org_map(src) if src else pd.DataFrame()
@@ -336,17 +341,32 @@ class Pipeline:
         org = org.copy()
         org["person_key"] = keymod.normalize_series(org["person_key"])
         org = org[org["person_key"].ne("")].drop_duplicates("person_key")
-        cols = ["person_key"] + [c for c in self.ORG_COLS if c in org.columns]
-        merged = base.merge(org[cols], on="person_key", how="left",
-                            suffixes=("", "_org"))
-        for c in self.ORG_COLS:
-            oc = f"{c}_org"
-            if oc in merged.columns:
-                fill = merged[oc].fillna("").astype(str).str.strip()
-                merged[c] = merged[c].where(fill.eq(""), fill)
-                merged = merged.drop(columns=[oc])
         self.org_matched = int(base["person_key"].isin(org["person_key"]).sum())
-        return merged
+        return self._merge_over(base, org)
+
+    def _merge_over(self, base: pd.DataFrame,
+                    extra: Optional[pd.DataFrame]) -> pd.DataFrame:
+        """ستون‌های ساختاری را از یک منبع دیگر روی افراد می‌نشاند.
+
+        مقدارِ موجود پاک نمی‌شود؛ فقط جای خالی پر می‌شود. پس نقشه سازمانی
+        (که بعد می‌آید) حرف آخر را می‌زند و AIBL جاهای نگفته را پر می‌کند.
+        """
+        if extra is None or extra.empty or "person_key" not in extra.columns:
+            return base
+        extra = extra.copy()
+        extra["person_key"] = keymod.normalize_series(extra["person_key"])
+        extra = extra[extra["person_key"].ne("")].drop_duplicates("person_key")
+        cols = [c for c in (*self.ORG_COLS, "scope") if c in extra.columns]
+        out = base.merge(extra[["person_key", *cols]], on="person_key",
+                         how="left", suffixes=("", "_x"))
+        for c in cols:
+            xc = f"{c}_x"
+            if xc not in out.columns:
+                continue
+            fill = out[xc].fillna("").astype(str).str.strip()
+            out[c] = out[c].where(fill.eq(""), fill) if c in out.columns else fill
+            out = out.drop(columns=[xc])
+        return out
 
     def _org_notes(self, n_people: int) -> List[str]:
         """پوشش نقشه سازمانی — سکوت در این‌باره، خطای بی‌صدا می‌سازد."""
@@ -369,8 +389,12 @@ class Pipeline:
         for node, cluster in dagmod.NODE_TO_CLUSTER.items():
             if cluster in result.cluster_scores.columns:
                 f[node] = result.cluster_scores[cluster]
-        if "expected_difficulty" in raw.columns:
-            f["difficulty"] = raw["expected_difficulty"]
+        # سختی: از شاخصی که مدل به‌عنوان تعدیل‌گر اعلام کرده، نه یک نام ثابت.
+        # نام سخت‌کدشده، با هر بازنویسی مدل بی‌صدا از کار می‌افتاد.
+        for m in self.model.drivers:
+            if "difficult" in m.key and m.key in raw.columns:
+                f["difficulty"] = pd.to_numeric(raw[m.key], errors="coerce")
+                break
         # تخصیص کار: کد عددی گروه همتا (نماینده اداره/مدیریت/نوع کار)
         g = people.set_index("person_key").get("peer_group")
         if g is not None:

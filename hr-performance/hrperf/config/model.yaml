@@ -1,246 +1,451 @@
 # ═══════════════════════════════════════════════════════════════════════════
-#  مدل عملکرد — دو سطحی: آیتم داخل کلاستر، سپس کلاسترها
+#  مدل عملکرد ۳٫۰ — کلاسترها از نتیجهٔ AIBL می‌آیند
 #
-#  چرا دو سطحی: در پکیج قبلی وزن‌ها تخت بودند (هر شاخص مستقیماً از ۱۰۰).
-#  کلاستر فقط یک برچسب بود، پس وزن هر کلاستر «حاصل جمع اتفاقی» اعضایش
-#  می‌شد؛ با تغییر وزن یک شاخص، سهم کل آن کلاستر هم بی‌صدا جابه‌جا می‌شد.
-#  اینجا هر دو سطح پارامتر صریح‌اند و هرکدام جداگانه به ۱ نرمال می‌شوند.
+#  تا نسخه ۲، کلاسترها از دو سورس قدیمی HR ساخته می‌شدند
+#  (document_checking و il_analysis): «کیفیت»، «سرعت»، «بازدهی».
+#  نام‌ها درست بودند ولی جنس داده، ورودیِ کار بود نه نتیجهٔ آن.
 #
-#  مبنای وزن‌های پیشنهادی (قابل تغییر در داشبورد):
-#    • SPACE framework (GitHub / Microsoft Research, 2021) — «فعالیت» به
-#      تنهایی معیار عملکرد نیست؛ حجم نباید امتیاز اصلی باشد.
-#    • DORA — سرعت و پایداری همیشه جفت سنجیده می‌شوند تا سرعت به قیمت
-#      کیفیت گرفته نشود.
-#    • Balanced Scorecard (Kaplan & Norton) — توازن کیفیت/سرعت/هزینه.
-#    • Six Sigma FPY/RTY — کیفیت بار اول، سنگین‌ترین وزن.
+#  حالا سرچشمه، خروجی پکیج زنجیره تأمین (AIBL) است: یک ردیف به‌ازای هر
+#  پرونده، با لاگ رویداد ۱۳ فعالیتی، انطباق فرآیند، طبقه بحرانی قطعه،
+#  تعهد ارزی، رسوب گمرکی، و — مهم‌تر از همه — **حوزه مسئولیت** هر مرحله.
+#
+#  ─── سه قاعدهٔ ساخت این مدل ────────────────────────────────────────────
+#
+#  ۱) هر سنجه «حوزه» دارد.  کارشناس حمل بابت تعهد ارزی سنجیده نمی‌شود و
+#     کارشناس بازرگانی بابت رسوب گمرکی. سنجه‌ای که بیرون از اختیار فرد
+#     است، سنجهٔ عملکرد نیست؛ سنجهٔ بخت است.
+#     (مبنا: expert_scope در AIBL؛ و پژوهش ۲۰۲۵ روی ادراک انصاف از
+#      ارزیابی الگوریتمی: کارکنان ویژگی‌های درون حیطهٔ اختیار خود را
+#      منصفانه، و ویژگی‌های بیرون از کنترل را ناعادلانه می‌بینند.)
+#
+#  ۲) هر سنجهٔ امتیازی باید مرجع داشته باشد (`citation`). مدل بدون مرجع
+#     ذخیره نمی‌شود — اعتبارسنجی جلویش را می‌گیرد. عددی که دربارهٔ آدم‌ها
+#     تصمیم می‌گیرد و پشتش «چون به نظرمان درست آمد» باشد، قابل دفاع نیست.
+#
+#  ۳) نتیجه‌ای که فرد در آن مؤثر است، امتیاز می‌گیرد؛ شرایطی که در آن
+#     نیست، فقط تعدیل‌گر است. حجم کار، ارزش ارزی و سختی قطعه هرگز
+#     امتیاز نمی‌گیرند — ولی در لایه علّی، انتظار را تنظیم می‌کنند.
+#
+#  ─── مبنای علمی کلاسترها ───────────────────────────────────────────────
+#
+#  • SCOR (ASCM) — Perfect Order Fulfilment (RL.1.1) و اجزای چهارگانه‌اش:
+#    به‌موقع، کامل، اسناد درست، بدون آسیب. کلاستر «اتکاپذیری» عیناً همین
+#    ساختار است، در سطح مرحله‌های هر حوزه.
+#  • Pika و همکاران، «چارچوب توسعه‌پذیر تحلیل رفتار منابع از لاگ رویداد»
+#    (BPM 2013 / TMIS 2017) — پنج منظر رفتار منبع: مهارت، بهره‌گیری،
+#    ترجیح، بهره‌وری، همکاری. کلاسترهای «انطباق»، «پاسخ‌گویی» و «همکاری»
+#    از همین منظرها آمده‌اند و از لاگ رویداد AIBL قابل استخراج‌اند.
+#  • van der Aalst — Conformance Checking: انحراف از مسیر مرجع، سنجه‌ای
+#    عینی و قابل ردیابی است، نه قضاوت. مرحله ۸۵ AIBL همین را می‌سازد.
+#  • DORA — سرعت و پایداری همیشه جفت سنجیده می‌شوند.
+#  • SPACE (GitHub/MSR 2021) — «فعالیت» به‌تنهایی معیار عملکرد نیست.
+#  • Six Sigma FPY/RTY — کیفیت بار اول، سنگین‌ترین وزن.
+#  • EEOC 1978 (قاعده چهارپنجم) — پایش اثر نامتناسب بر گروه‌ها.
+#
+#  شرح کامل و نقد هر مرجع در `RESEARCH_BASIS.md`.
 # ═══════════════════════════════════════════════════════════════════════════
-model_version: "1.0"
-updated_at: "2026-09-08"
+model_version: "3.0"
+updated_at: "2026-09-09"
 
 clusters:
-  quality:
-    label: دقت و کیفیت
-    weight: 0.40
+  reliability:
+    label: اتکاپذیری تحویل
+    weight: 0.30
     rationale: >
-      سنگین‌ترین کلاستر. خطای سند در زنجیره تأمین به توقف خط و جریمه ارزی
-      تبدیل می‌شود، پس کیفیت بار اول بالاترین ارزش سازمانی را دارد.
-  speed:
-    label: سرعت و پاسخ‌گویی
-    weight: 0.22
+      سنگین‌ترین کلاستر، چون تنها چیزی است که خط تولید واقعاً می‌بیند:
+      پرونده در مرحله‌های این حوزه، به‌موقع و کامل و با اسناد درست جلو
+      رفت یا نه. ساختارش از Perfect Order Fulfilment در SCOR گرفته شده
+      و مثل آن، «تقریباً کامل» را کامل حساب نمی‌کند.
+
+  conformance:
+    label: انطباق فرآیند
+    weight: 0.20
     rationale: >
-      همیشه جفت با کیفیت سنجیده می‌شود (اصل DORA) تا تندی به قیمت خطا
-      پاداش نگیرد.
-  efficiency:
-    label: بازدهی و تکمیل
-    weight: 0.18
-    rationale: نرخ بستن پرونده و باز نماندن کار.
-  rework:
-    label: هزینه دوباره‌کاری
+      از مسیر مرجع منحرف شدن — جا انداختن فعالیت یا انجام خارج از
+      ترتیب — سنجه‌ای عینی از لاگ رویداد است، نه قضاوت سلیقه‌ای.
+      انحراف، ریشهٔ بیشتر تأخیرهای بعدی است و برخلاف نتیجه، تقریباً
+      کامل در اختیار خودِ فرد است.
+
+  responsiveness:
+    label: پاسخ‌گویی در حوزهٔ خود
+    weight: 0.20
+    rationale: >
+      «توپ چند روز در زمین این نفر ماند؟» — قابل دفاع‌ترین سنجهٔ فردی در
+      یک فرآیند چندنفره، چون فقط زمانی شمرده می‌شود که پرونده منتظر
+      همین حوزه بوده است. جفت با اتکاپذیری خوانده می‌شود (اصل DORA) تا
+      تندی به قیمت خطا پاداش نگیرد.
+
+  stewardship:
+    label: صیانت از تعهد و اسناد
     weight: 0.15
-    rationale: اثر مالی خطا؛ فقط هزینه صریحاً منتسب، بدون دوباره‌شماری با کیفیت.
-  workload:
-    label: حجم و پیچیدگی
+    rationale: >
+      تعهد ارزی معوق و سند ناقص، هزینهٔ مستقیم و قابل انتساب می‌سازند.
+      این کلاستر عمدتاً حوزهٔ بازرگانی را می‌سنجد و برای دیگران وزن
+      مؤثری ندارد — همان قاعدهٔ «هر سنجه در حوزهٔ خودش».
+
+  data_quality:
+    label: کیفیت داده و ردیابی‌پذیری
+    weight: 0.10
+    rationale: >
+      AIBL دقیقاً می‌داند چه کسی کدام فیلد را پر نکرده. داده‌ای که ثبت
+      نشده، کارِ انجام‌نشده نیست ولی کارِ نامرئی است: نه قابل پیگیری،
+      نه قابل دفاع. وزن متوسط، چون کاملاً در اختیار فرد است و اصلاحش
+      ارزان‌ترین بهبود ممکن است.
+
+  collaboration:
+    label: همکاری و تحویل‌دهی
     weight: 0.05
     rationale: >
-      عمداً وزن کم. حجم «شرایط کار» است نه عملکرد؛ پاداش دادن به حجم،
-      انگیزه برداشتن پرونده بیشتر می‌سازد نه بهتر کار کردن. حجم در عوض
-      به‌عنوان **تعدیل‌گر انتظار** در لایه علّی استفاده می‌شود.
-  exposure:
-    label: مسئولیت مالی
+      منظر «همکاری» در چارچوب Pika. وزن عمداً کم: شمردن تعداد تحویل‌ها
+      به‌سرعت به بازی گرفته می‌شود. اینجا فقط تحویل‌دهی تمیز (بدون
+      برگشت) امتیاز می‌گیرد، نه حجم تعامل.
+
+  workload:
+    label: بار و پیچیدگی
     weight: 0.00
     scored: false
     rationale: >
-      ارزش ارزی پرونده «تخصیص» است نه «عملکرد». در پکیج قبلی با وزن ۲٫۱۳
-      امتیاز می‌گرفت در حالی که خود سند سیاست نوشته بود «کیفیت نیست».
-      اینجا فقط زمینه است و در امتیاز وارد نمی‌شود.
+      حجم و سختی، «شرایط کار» است نه عملکرد. امتیاز دادن به آن، انگیزهٔ
+      برداشتن پروندهٔ بیشتر می‌سازد نه بهتر کار کردن (SPACE, 2021).
+      این کلاستر امتیاز نمی‌گیرد و در عوض، در لایه علّی انتظار را تعدیل
+      می‌کند و در تب عدالت، چولگی بار را آشکار می‌کند.
 
-# ── شاخص‌ها ──────────────────────────────────────────────────────────────
-# kind:  quality_rate | duration | ratio | count | money
-# entry: direct (مستقیم از سورس) | derived (محاسبه‌شده از شاخص‌های دیگر)
-# role:  scored (وارد امتیاز) | context (فقط نمایش) | driver (تعدیل‌گر علّی)
+  exposure:
+    label: مسئولیت مالی و بحرانیت قطعه
+    weight: 0.00
+    scored: false
+    rationale: >
+      ارزش ارزی پرونده و بحرانی بودن قطعه، «تخصیص» است نه «عملکرد».
+      کسی که قطعات بحرانی گرفته نباید بابت بحرانی بودنشان امتیاز کم
+      بگیرد. فقط زمینه — و کنترل‌کنندهٔ اجباری در همهٔ مقایسه‌های علّی.
+
+# ── سنجه‌ها ───────────────────────────────────────────────────────────────
+# kind:   quality_rate | duration | ratio | count | money
+# entry:  direct | derived
+# role:   scored | context | driver
+# scope:  ANY | EXPERT_PURCHASING | EXPERT_COMMERCIAL | EXPERT_LOGISTICS
+# aibl_field: ستون سرچشمه در خروجی AIBL — ردِ عدد تا داده خام
 metrics:
-  # ── کیفیت ──
-  fpy:
-    label: کیفیت بار اول (Strict FPY)
-    cluster: quality
-    weight: 0.42
-    direction: higher
-    kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 20
-    source: document_checking
-  first_correction_success:
-    label: موفقیت اولین اصلاح
-    cluster: quality
-    weight: 0.24
-    direction: higher
-    kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 10
-    source: document_checking
-  ae_deferred_reject:
-    label: نسبت واقعی به انتظار (A/E)
-    cluster: quality
-    weight: 0.20
-    direction: lower
-    kind: ratio
-    entry: derived
-    role: scored
-    q_target: 20
-    source: document_checking
-    formula: actual_over_expected
-  major_error_rate:
-    label: نرخ خطای بزرگ
-    cluster: quality
-    weight: 0.14
-    direction: lower
-    kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 10
-    source: il_analysis
 
-  # ── سرعت ──
-  median_correction_hours:
-    label: میانه زمان اصلاح (ساعت)
-    cluster: speed
-    weight: 0.60
-    direction: lower
-    kind: duration
-    entry: direct
-    role: scored
-    q_target: 10
-    source: document_checking
-  under24_rate:
-    label: اصلاح زیر ۲۴ ساعت
-    cluster: speed
+  # ═══ اتکاپذیری تحویل ═══
+  perfect_flow_rate:
+    label: نرخ جریان بی‌نقص (مرحله‌های حوزه)
+    cluster: reliability
     weight: 0.40
     direction: higher
     kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 10
-    source: document_checking
-
-  # ── بازدهی ──
-  completion_rate:
-    label: نرخ تکمیل
-    cluster: efficiency
-    weight: 0.50
-    direction: higher
-    kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 20
-    source: other_units
-  open_reject_ratio:
-    label: Reject باز به کل Reject-case
-    cluster: efficiency
-    weight: 0.30
-    direction: lower
-    kind: ratio
-    entry: direct
-    role: scored
-    q_target: 10
-    source: document_checking
-  open_bill_rate:
-    label: نرخ بارنامه باز
-    cluster: efficiency
-    weight: 0.20
-    direction: lower
-    kind: ratio
-    entry: direct
-    role: scored
-    q_target: 20
-    source: other_units
-
-  # ── هزینه دوباره‌کاری ──
-  rework_loss:
-    label: هزینه خطای بزرگ (یورو)
-    cluster: rework
-    weight: 0.70
-    direction: lower
-    kind: money
-    entry: direct
-    role: scored
-    q_target: 10
-    source: il_analysis
-  rework_rate:
-    label: نرخ دوباره‌کاری
-    cluster: rework
-    weight: 0.30
-    direction: lower
-    kind: quality_rate
-    entry: direct
-    role: scored
-    q_target: 10
-    source: document_checking
-
-  # ── حجم (وزن کم، و در عین حال تعدیل‌گر علّی) ──
-  unique_cases:
-    label: پرونده‌های یکتا
-    cluster: workload
-    weight: 0.45
-    direction: higher
-    kind: count
-    entry: direct
-    role: scored
-    q_target: 20
-    source: document_checking
-    is_driver: true
-  unique_orders:
-    label: سفارش‌های یکتا
-    cluster: workload
-    weight: 0.35
-    direction: higher
-    kind: count
-    entry: direct
-    role: scored
-    q_target: 20
-    source: il_analysis
-    is_driver: true
-  expected_difficulty:
-    label: سختی مورد انتظار
-    cluster: workload
-    weight: 0.20
-    direction: higher
-    kind: ratio
     entry: derived
     role: scored
+    scope: ANY
     q_target: 20
-    source: document_checking
-    is_driver: true
-    formula: case_mix_difficulty
+    source: aibl
+    formula: perfect_flow
+    aibl_field: "STATUS_STAGE + روزهای تأخیر + نوع ترخیص + امتیاز انطباق"
+    citation: "SCOR RL.1.1 Perfect Order Fulfilment (ASCM) — همه‌یا‌هیچ، مثل خودِ استاندارد"
+    note: >
+      پرونده وقتی «بی‌نقص» است که در مرحله‌های این حوزه هر چهار شرط
+      برقرار باشد: به‌موقع، کامل، اسناد درست، بدون انحراف. مثل SCOR،
+      سه‌تا‌از‌چهار یعنی ناموفق — چون خط تولید هم سه‌چهارم قطعه نمی‌گیرد.
 
-  # ── زمینه (امتیاز نمی‌گیرد) ──
-  financial_responsibility:
-    label: ارزش ثبت سفارش (معادل یورو)
-    cluster: exposure
-    weight: 1.00
+  on_time_stage_rate:
+    label: به‌موقع بودن مرحله‌های حوزه
+    cluster: reliability
+    weight: 0.25
     direction: higher
-    kind: money
+    kind: quality_rate
     entry: direct
-    role: context
-    source: il_analysis
-    is_driver: true
-  repeat_reject_rate:
-    label: نرخ Reject تکراری
-    cluster: quality
-    weight: 0.0
+    role: scored
+    scope: ANY
+    q_target: 20
+    source: aibl
+    aibl_field: "روزهای تأخیر / مهلت قانونی رفع تعهد / STATUS_AGE_DAYS"
+    citation: "SCOR RL.2.2 Delivery Performance to Original Commit Date"
+
+  in_full_rate:
+    label: تکمیل کامل (نه ترخیص درصدی)
+    cluster: reliability
+    weight: 0.20
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: EXPERT_LOGISTICS
+    q_target: 15
+    source: aibl
+    aibl_field: "FULL_CLEAR_DATE در برابر PARTIAL_CLEAR_DATE"
+    citation: "SCOR RL.2.1 Orders Delivered In Full"
+
+  doc_accuracy_rate:
+    label: درستی و کامل بودن اسناد
+    cluster: reliability
+    weight: 0.15
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: ANY
+    q_target: 15
+    source: aibl
+    aibl_field: "SATA_NO / COT_DATE / FIN_RECEIPT_DATE / DOC_SUBMIT_DATE"
+    citation: "SCOR RL.2.3 Documentation Accuracy"
+
+  # ═══ انطباق فرآیند ═══
+  conformance_score:
+    label: امتیاز انطباق با مسیر مرجع
+    cluster: conformance
+    weight: 0.45
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: ANY
+    q_target: 20
+    source: aibl
+    aibl_field: "امتیاز انطباق (٪)"
+    citation: "van der Aalst — Conformance Checking؛ مرحله ۸۵ AIBL"
+
+  skipped_activity_rate:
+    label: نرخ فعالیت جاافتاده
+    cluster: conformance
+    weight: 0.30
     direction: lower
     kind: quality_rate
     entry: direct
-    role: context
-    source: document_checking
-    note: با «موفقیت اولین اصلاح» همپوشانی دارد؛ وزن مستقل نمی‌گیرد.
-  p75_correction_hours:
-    label: صدک۷۵ زمان اصلاح
-    cluster: speed
-    weight: 0.0
+    role: scored
+    scope: ANY
+    q_target: 15
+    source: aibl
+    aibl_field: "فعالیت‌های جاافتاده"
+    citation: "van der Aalst — انحراف نوع «skipped» در بررسی انطباق"
+
+  order_violation_rate:
+    label: نرخ نقض ترتیب فعالیت‌ها
+    cluster: conformance
+    weight: 0.25
+    direction: lower
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: ANY
+    q_target: 15
+    source: aibl
+    aibl_field: "نقض ترتیب"
+    citation: "MANDATORY_BEFORE در s85_conformance — پیش‌نیاز منطقی، نه سلیقه"
+
+  # ═══ پاسخ‌گویی در حوزهٔ خود ═══
+  ball_in_court_days:
+    label: میانه روزهایی که پرونده منتظر این نفر مانده
+    cluster: responsiveness
+    weight: 0.45
     direction: lower
     kind: duration
     entry: direct
+    role: scored
+    scope: ANY
+    q_target: 20
+    source: aibl
+    aibl_field: "WAITING_ON_WHO + STATUS_AGE_DAYS"
+    citation: "Pika و همکاران — منظر «بهره‌وری»؛ زمان انتظار منتسب به منبع"
+    note: >
+      قابل دفاع‌ترین سنجهٔ فردی این مدل: فقط وقتی شمرده می‌شود که خودِ
+      AIBL گفته باشد توپ در زمین همین حوزه است.
+
+  own_leg_median_days:
+    label: میانه زمان مرحله‌های خودِ حوزه
+    cluster: responsiveness
+    weight: 0.35
+    direction: lower
+    kind: duration
+    entry: direct
+    role: scored
+    scope: ANY
+    q_target: 20
+    source: aibl
+    aibl_field: "فاصله تاریخ‌های متوالی لاگ رویداد، محدود به مرحله‌های حوزه"
+    citation: "SCOR RS.2 Cycle Time؛ تفکیک به leg مطابق analytics/cycle.py"
+
+  aging_backlog_rate:
+    label: سهم پرونده‌های کهنه در صف این نفر
+    cluster: responsiveness
+    weight: 0.20
+    direction: lower
+    kind: ratio
+    entry: derived
+    role: scored
+    scope: ANY
+    q_target: 15
+    source: aibl
+    formula: aging_backlog
+    aibl_field: "STATUS_AGE_DAYS در برابر آستانهٔ گروه همتا"
+    citation: "Little's Law — صف طولانی، خودش علتِ کندی بعدی است"
+
+  # ═══ صیانت از تعهد و اسناد ═══
+  overdue_commitment_rate:
+    label: نرخ تعهد ارزی معوق
+    cluster: stewardship
+    weight: 0.45
+    direction: lower
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: EXPERT_COMMERCIAL
+    q_target: 15
+    source: aibl
+    aibl_field: "روزهای تأخیر > 0"
+    citation: "outcome «overdue» در aibl/analytics/drivers.py"
+
+  allocation_lag_days:
+    label: فاصله تخصیص تا خرید ارز
+    cluster: stewardship
+    weight: 0.30
+    direction: lower
+    kind: duration
+    entry: direct
+    role: scored
+    scope: EXPERT_COMMERCIAL
+    q_target: 15
+    source: aibl
+    aibl_field: "NTSW_ALLOC_DATE → BUY_DATE"
+    citation: "leg «تخصیص→خرید ارز» در analytics/cycle.py"
+
+  customs_dwell_days:
+    label: میانه روزهای رسوب گمرکی
+    cluster: stewardship
+    weight: 0.25
+    direction: lower
+    kind: duration
+    entry: direct
+    role: scored
+    scope: EXPERT_LOGISTICS
+    q_target: 15
+    source: aibl
+    aibl_field: "روزهای رسوب"
+    citation: "outcome «stuck» در drivers.py؛ افق ریسک گمرکی ۱۸۰ روز"
+
+  # ═══ کیفیت داده و ردیابی‌پذیری ═══
+  owner_field_completeness:
+    label: کامل بودن داده‌های مالک قطعه
+    cluster: data_quality
+    weight: 0.55
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: EXPERT_PURCHASING
+    q_target: 20
+    source: aibl
+    aibl_field: "PART_OWNER_DATA_GAP (شش فیلد OWNER_FIELDS)"
+    citation: "expert_scope.OWNER_FIELDS — سنجه‌ای که خودِ AIBL می‌سازد"
+    note: >
+      ردیف‌های ناقص حذف نمی‌شوند؛ شکافشان شمرده می‌شود. شکافِ سطحِ سورس
+      (نبودِ کل ستون) از این سنجه بیرون است — تقصیر فرد نیست.
+
+  status_traceability:
+    label: ردیابی‌پذیری وضعیت (کجا/کی/چه کسی)
+    cluster: data_quality
+    weight: 0.45
+    direction: higher
+    kind: quality_rate
+    entry: direct
+    role: scored
+    scope: ANY
+    q_target: 20
+    source: aibl
+    aibl_field: "STATUS_MISSING خالی و STATUS_BASIS دارای شاهد تاریخ‌دار"
+    citation: "part_status.resolve — پرونده‌ای که وضعیتش معلوم نیست، مدیریت نمی‌شود"
+
+  # ═══ همکاری و تحویل‌دهی ═══
+  clean_handover_rate:
+    label: نرخ تحویل‌دهی تمیز به حوزه بعد
+    cluster: collaboration
+    weight: 1.00
+    direction: higher
+    kind: quality_rate
+    entry: derived
+    role: scored
+    scope: ANY
+    q_target: 15
+    source: aibl
+    formula: clean_handover
+    aibl_field: "توالی STATUS_WHO_SCOPE در لاگ رویداد + نقض ترتیب"
+    citation: "Pika و همکاران — منظر «همکاری»؛ handover of work"
+    note: >
+      تحویل وقتی تمیز است که حوزهٔ بعدی مجبور به بازگشت یا تکرار فعالیت
+      نشده باشد. تعداد تحویل امتیاز ندارد — فقط کیفیتش.
+
+  # ═══ بار و پیچیدگی (امتیاز نمی‌گیرد؛ تعدیل‌گر است) ═══
+  case_load:
+    label: تعداد پرونده‌های حوزه
+    cluster: workload
+    weight: 0.40
+    direction: higher
+    kind: count
+    entry: direct
+    role: driver
+    scope: ANY
+    source: aibl
+    is_driver: true
+    aibl_field: "شمار ردیف‌های منتسب به این حوزه"
+    citation: "SPACE (GitHub/MSR 2021) — فعالیت، معیار عملکرد نیست"
+
+  distinct_parts:
+    label: تنوع قطعات
+    cluster: workload
+    weight: 0.30
+    direction: higher
+    kind: count
+    entry: direct
+    role: driver
+    scope: ANY
+    source: aibl
+    is_driver: true
+    aibl_field: "CANONICAL_PART_NO یکتا"
+    citation: "تنوع، بار شناختی می‌سازد — تعدیل‌گر انتظار"
+
+  transport_mix_difficulty:
+    label: سختی ترکیب روش حمل
+    cluster: workload
+    weight: 0.30
+    direction: higher
+    kind: ratio
+    entry: derived
+    role: driver
+    scope: ANY
+    source: aibl
+    is_driver: true
+    formula: case_mix_difficulty
+    aibl_field: "TRANSPORT_MODE / نوع پرونده"
+    citation: "case-mix adjustment — همان منطق risk adjustment در سنجش بالینی"
+
+  # ═══ زمینه (امتیاز نمی‌گیرد) ═══
+  value_at_risk:
+    label: ارزش در معرض خطر (معادل یورو)
+    cluster: exposure
+    weight: 0.50
+    direction: higher
+    kind: money
+    entry: direct
     role: context
-    source: document_checking
+    scope: ANY
+    source: aibl
+    is_driver: true
+    aibl_field: "CB_VALUE"
+    citation: "ریسک/value_at_risk در engines/risk.py — تخصیص است نه عملکرد"
+
+  part_criticality_mix:
+    label: سهم قطعات بحرانی در سبد
+    cluster: exposure
+    weight: 0.50
+    direction: higher
+    kind: ratio
+    entry: direct
+    role: context
+    scope: EXPERT_PURCHASING
+    source: aibl
+    is_driver: true
+    aibl_field: "کد طبقه بحرانی ∈ {STOCKOUT, CRITICAL}"
+    citation: "engines/criticality.py — کنترل‌کنندهٔ اجباری در مقایسه‌های علّی"
+    note: >
+      سهم قطعات بحرانی **هرگز** امتیاز نمی‌گیرد. کسی که سخت‌ترین قطعات
+      را گرفته نباید بابت سختی‌شان جریمه شود؛ ولی مقایسهٔ او با کسی که
+      قطعات ساده دارد، بدون این کنترل، مقایسه نیست.

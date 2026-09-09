@@ -34,6 +34,7 @@ from typing import Dict, List, Optional, Tuple
 
 import yaml
 
+from ..identity.scopes import ANY, BY_KEY
 from .model import (MODEL_BASENAME, Cluster, Metric, ModelError,
                     PerformanceModel, load_model)
 from .settings import SETTINGS
@@ -59,6 +60,10 @@ def model_path() -> Path:
 def _read_raw(path: Optional[Path] = None) -> dict:
     p = path or model_path()
     return yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+
+
+#: حوزه‌های مجاز برای یک شاخص
+_VALID_SCOPES = {ANY, *BY_KEY}
 
 
 def to_dict(model: PerformanceModel) -> dict:
@@ -119,10 +124,24 @@ def add_cluster(model: PerformanceModel, key: str, label: str, weight: float,
 def add_metric(model: PerformanceModel, key: str, label: str, cluster: str,
                weight: float, direction: str = "higher", kind: str = "ratio",
                role: str = "scored", entry: str = "direct",
-               source: str = "", note: str = "") -> PerformanceModel:
-    """شاخص تازه داخل یک کلاستر موجود."""
+               source: str = "", note: str = "", citation: str = "",
+               scope: str = ANY) -> PerformanceModel:
+    """شاخص تازه داخل یک کلاستر موجود.
+
+    ``citation`` برای شاخص امتیازی اجباری است — همان قاعده‌ای که برای
+    ``rationale`` کلاستر برقرار است: عددی که دربارهٔ آدم‌ها تصمیم
+    می‌گیرد و مبنایش نوشته نشده، فردا قابل دفاع نیست.
+
+    ``scope`` تعیین می‌کند این شاخص برای چه حوزه‌ای معنا دارد؛ پیش‌فرض
+    ``ANY`` یعنی مشترک میان همه.
+    """
     if not _KEY.match(key or ""):
         raise EditError("کلید شاخص باید انگلیسی و یکتا باشد.")
+    if role == "scored" and not str(citation).strip():
+        raise EditError("شاخص امتیازی باید مبنای علمی (citation) داشته باشد.")
+    if scope not in _VALID_SCOPES:
+        raise EditError(f"حوزه نامعتبر: «{scope}». مجاز: "
+                        + "، ".join(sorted(_VALID_SCOPES)))
     if key in model.metrics:
         raise EditError(f"شاخص «{key}» از قبل هست.")
     if cluster not in model.clusters:
@@ -146,7 +165,8 @@ def add_metric(model: PerformanceModel, key: str, label: str, cluster: str,
                                            "weight": m.weight / total * room})
     out.metrics[key] = Metric(key=key, label=label.strip() or key, cluster=cluster,
                               weight=w, direction=direction, kind=kind,
-                              entry=entry, role=role, source=source, note=note)
+                              entry=entry, role=role, source=source, note=note,
+                              citation=citation, scope=scope)
     return out
 
 

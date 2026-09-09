@@ -15,11 +15,12 @@ __contract__ = 1
 
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
 from ..identity import keys as keymod
+from . import aibl as aiblmod
 
 LONG_COLUMNS = ["person_key", "person_code", "metric_key", "value",
                 "sample_n", "source"]
@@ -97,6 +98,15 @@ def melt_wide(df: pd.DataFrame, source: str,
     return out[out["person_key"].ne("")]
 
 
+def is_aibl(df: pd.DataFrame) -> bool:
+    """آیا این جدول، پروندهٔ زنجیره تأمین است؟
+
+    نشانه: دست‌کم یکی از ستون‌های حوزه مسئولیت. این ستون‌ها را فقط AIBL
+    می‌سازد، پس تشخیص قطعی است و حدس نیست.
+    """
+    return any(s.key in df.columns for s in aiblmod.SCOPES)
+
+
 def read_any(path: str | Path, source: str) -> pd.DataFrame:
     """Excel یا CSV — بلند یا عریض — را می‌خواند و استاندارد می‌کند."""
     p = Path(path)
@@ -106,6 +116,8 @@ def read_any(path: str | Path, source: str) -> pd.DataFrame:
         df = pd.read_excel(p)
     else:
         df = pd.read_csv(p)
+    if is_aibl(df):
+        return aiblmod.to_long(df, source).long
     if _pick(df, "metric_key") is not None:
         return normalize_long(df, source)
     return melt_wide(df, source)
@@ -239,3 +251,46 @@ def explain_missing(chosen: str | Path) -> str:
         "نقشه سازمانی (اختیاری): organization_map.json در همان پوشه.",
     ]
     return "\n".join(lines)
+
+
+def load_all(input_dir: str | Path) -> Tuple[pd.DataFrame, pd.DataFrame, List[str]]:
+    """همه سورس‌ها + افرادی که از خود سورس شناخته می‌شوند + یادداشت‌ها.
+
+    پروندهٔ AIBL علاوه بر سنجه، **حوزه مسئولیت و نقش کاری** هر نفر را هم
+    می‌گوید. آن را دور نمی‌ریزیم: بدون حوزه، سنجهٔ تخصصی به آدم اشتباه
+    نسبت داده می‌شود.
+    """
+    d = Path(input_dir)
+    frames: List[pd.DataFrame] = []
+    peoples: List[pd.DataFrame] = []
+    notes: List[str] = []
+    if not d.is_dir():
+        return (pd.DataFrame(columns=LONG_COLUMNS), pd.DataFrame(), notes)
+
+    seen: set = set()
+    for f in sorted(d.glob("*")):
+        if (f.is_dir() or f.name.startswith("~$") or f in seen
+                or f.suffix.lower() not in (".xlsx", ".xlsm", ".xls", ".csv")):
+            continue
+        seen.add(f)
+        try:
+            raw = (pd.read_csv(f) if f.suffix.lower() == ".csv"
+                   else pd.read_excel(f))
+        except Exception as ex:                      # فایل خراب، کل اجرا را نمی‌کشد
+            notes.append(f"فایل «{f.name}» خوانده نشد: {str(ex)[:60]}")
+            continue
+        if is_aibl(raw):
+            ex_ = aiblmod.to_long(raw, f.stem)
+            frames.append(ex_.long)
+            peoples.append(ex_.people)
+            notes.extend(ex_.notes)
+        elif _pick(raw, "metric_key") is not None:
+            frames.append(normalize_long(raw, f.stem))
+        else:
+            frames.append(melt_wide(raw, f.stem))
+
+    long = (pd.concat(frames, ignore_index=True) if frames
+            else pd.DataFrame(columns=LONG_COLUMNS))
+    people = (pd.concat(peoples, ignore_index=True).drop_duplicates("person_key")
+              if peoples else pd.DataFrame())
+    return long, people, notes

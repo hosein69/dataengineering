@@ -54,11 +54,23 @@ _DIGIT_MAP = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567
 #: فاصله‌های نامرئی که کپی‌پیست از اکسل با خود می‌آورد
 _INVISIBLE = {"‌": "", "‏": "", "‎": "", "\xa0": " ", "\t": " "}
 
+#: خط‌تیره‌های یونیکد → خط‌تیره ساده. «GS‑1234» با تیرهٔ نشکن، پیش‌تر
+#: «کدمانند» شناخته نمی‌شد و کلید دیگری می‌ساخت.
+_DASHES = dict.fromkeys("‐‑‒–—―−۔", "-")
+
 #: طول متعارف کد پرسنلی — همان ۸ رقمِ پکیج زنجیره تأمین
 KEY_WIDTH = 8
 
 _LEADING = re.compile(r"^([^0-9]*)(\d+)")
-_NON_ALNUM = re.compile(r"[^A-Z0-9]")
+#: فقط نقطه‌گذاری و فاصله حذف می‌شود — حروف هر خطی (فارسی هم) می‌مانند.
+#: نسخهٔ اول ``[^A-Z0-9]`` بود و «بازرگانی ۱» را به «۱» تبدیل می‌کرد،
+#: یعنی هر نامی با همان شماره، یک نفر می‌شد.
+_NON_ALNUM = re.compile(r"[^\w]|_", re.UNICODE)
+
+#: پیشوندِ **کدمانند**: کوتاه و لاتین، مثل ``GS-`` یا ``E``.
+#: بدون این محدودیت، «بازرگانی ۱» هم یک «کد با پیشوند» شمرده می‌شد و
+#: با «ترخیص ۱» به کلید یکسان می‌رسید — یعنی دو نفر، یک نفر.
+_CODE_PREFIX = re.compile(r"^[A-Z0-9 _\-./]{0,6}$")
 
 
 def _is_nan(v: Any) -> bool:
@@ -77,15 +89,31 @@ def clean_text(v: Any) -> str:
     if _is_nan(v):
         return ""
     s = str(v).translate(_DIGIT_MAP)
-    for src, dst in _INVISIBLE.items():
+    for src, dst in {**_INVISIBLE, **_DASHES}.items():
         s = s.replace(src, dst)
     return re.sub(r"\s+", " ", s).strip().upper()
 
 
+def _code_parts(s: str) -> Optional[Tuple[str, str]]:
+    """(پیشوند، ارقام) اگر رشته «کدمانند» باشد؛ وگرنه None.
+
+    «GS-1234» کد است. «بازرگانی ۱» نام است — عددِ داخل نام، کد پرسنلی
+    نیست و نباید کلید بسازد.
+    """
+    m = _LEADING.match(s)
+    if not m or not _CODE_PREFIX.match(m.group(1)):
+        return None
+    # دنبالهٔ بعد از ارقام هم باید کوتاه باشد (مثل «1234_GS»)، نه یک نام
+    tail = s[m.end():]
+    if len(tail) > 6:
+        return None
+    return _NON_ALNUM.sub("", m.group(1)), m.group(2)
+
+
 def key_prefix(v: Any) -> str:
     """پیشوند حرفی پیش از ارقام — «GS» در ``GS-1234``؛ وگرنه رشته خالی."""
-    m = _LEADING.match(clean_text(v))
-    return _NON_ALNUM.sub("", m.group(1)) if m else ""
+    parts = _code_parts(clean_text(v))
+    return parts[0] if parts else ""
 
 
 def clean_person_key(v: Any) -> str:
@@ -95,10 +123,10 @@ def clean_person_key(v: Any) -> str:
         return ""
     if s.endswith(".0"):          # اکسل ستون را عددی خوانده
         s = s[:-2]
-    m = _LEADING.match(s)
-    if not m:                     # کلید بدون رقم — دست‌نخورده می‌ماند
-        return _NON_ALNUM.sub("", s)
-    digits = m.group(2).lstrip("0") or "0"
+    parts = _code_parts(s)
+    if parts is None:             # نام یا کلید غیرعددی — دست‌نخورده می‌ماند
+        return _NON_ALNUM.sub("", s) or s
+    digits = parts[1].lstrip("0") or "0"
     return digits.zfill(KEY_WIDTH) if len(digits) <= KEY_WIDTH else digits
 
 

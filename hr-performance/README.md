@@ -1,17 +1,24 @@
-# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۲٫۲٫۰)
+# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۳٫۰٫۰)
 
 سنجش عملکرد بر پایه **علیت**، نه صرفاً همبستگی. مدل دو سطحی است، وزن‌ها
 در داشبورد زنده تغییر می‌کنند، و خروجی هم پایگاه داده است هم Excel و
 HTML و PDF و بسته ایمیل.
 
 > ارزیابی کامل پکیج قبلی و ده ایراد آن در `ARZYABI_PACKAGE_GHABLI.md`.
+> مبنای علمی کلاسترها و مقالاتی که بررسی شد در `RESEARCH_BASIS.md`.
+
+از نسخه ۳، **کلاسترهای عملکرد از خروجی پکیج زنجیره تأمین (AIBL)** ساخته
+می‌شوند: پروندهٔ هر قطعه، لاگ رویداد، انطباق فرآیند، تعهد ارزی و رسوب
+گمرکی. هر کارشناس فقط روی **مرحله‌های حوزهٔ خودش** سنجیده می‌شود —
+کارشناس حمل بابت تعهد ارزی امتیاز نمی‌گیرد و کارشناس بازرگانی بابت رسوب
+گمرکی.
 
 ```bash
 pip install -r requirements.txt
 python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
 python -m hrperf.cli run             # اجرا روی input_files (کنار همین پکیج)
 python app/run_dashboard.py          # داشبورد
-python run_all_tests.py              # ۲۲۱ تست
+python run_all_tests.py              # ۲۴۶ تست
 ```
 
 ### پوشه ورودی کجاست؟
@@ -230,7 +237,7 @@ hrperf/
   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
   pipeline.py · cli.py
 app/         dashboard.py · run_dashboard.py · styles.py
-tests/       ۲۲۱ تست
+tests/       ۲۴۶ تست
 ```
 
 ---

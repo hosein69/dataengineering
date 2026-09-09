@@ -46,25 +46,28 @@ def _confounded(n=200, seed=3):
     difficulty = 1.0 * assignment + rng.normal(0, .4, n)
     tenure = rng.normal(0, 1, n)
     workload = 1.1 * assignment + rng.normal(0, .5, n)
-    speed = -.5 * workload + .4 * tenure + rng.normal(0, .5, n)
+    responsiveness = -.5 * workload + .4 * tenure + rng.normal(0, .5, n)
     # کیفیت مستقیماً به سختی و تخصیص وابسته است، نه به حجم
-    quality = -.9 * difficulty - .8 * assignment + .5 * tenure + rng.normal(0, .5, n)
-    rework = -.7 * quality + rng.normal(0, .5, n)
-    efficiency = .5 * speed + .5 * quality + rng.normal(0, .5, n)
+    reliability = -.9 * difficulty - .8 * assignment + .5 * tenure + rng.normal(0, .5, n)
+    stewardship = -.7 * reliability + rng.normal(0, .5, n)
+    conformance = .5 * responsiveness + .5 * reliability + rng.normal(0, .5, n)
+    data_quality = .6 * conformance + rng.normal(0, .5, n)
     return pd.DataFrame(dict(assignment=assignment, workload=workload,
-                             difficulty=difficulty, tenure=tenure, speed=speed,
-                             quality=quality, rework=rework, efficiency=efficiency))
+                             difficulty=difficulty, tenure=tenure,
+                             responsiveness=responsiveness,
+                             reliability=reliability, stewardship=stewardship,
+                             conformance=conformance, data_quality=data_quality))
 
 
 def test_dag():
     print("\n── ۱) گراف علّی ──")
     check("DAG بدون دور است", not DEFAULT_DAG.has_cycle())
-    bs = DEFAULT_DAG.backdoor_set("workload", "quality")
+    bs = DEFAULT_DAG.backdoor_set("workload", "reliability")
     check("مجموعه تعدیل از DAG استخراج می‌شود", "assignment" in bs, str(sorted(bs)))
     check("نوادگانِ درمان وارد مجموعه تعدیل نمی‌شوند",
           not (bs & DEFAULT_DAG.descendants("workload")))
-    med = DEFAULT_DAG.mediators("workload", "quality")
-    check("میانجی شناسایی می‌شود", "speed" in med, str(sorted(med)))
+    med = DEFAULT_DAG.mediators("workload", "reliability")
+    check("میانجی شناسایی می‌شود", "responsiveness" in med, str(sorted(med)))
     cyc = DAG().add("a", "b").add("b", "a")
     check("دور تشخیص داده می‌شود", cyc.has_cycle())
 
@@ -72,8 +75,8 @@ def test_dag():
 def test_confounding():
     print("\n── ۲) تفاوت همبستگی با اثر ──")
     df = _confounded()
-    e = estimate(df, DEFAULT_DAG, "difficulty", "speed")
-    check("همبستگی خام «سختی → سرعت» قوی و منفی است",
+    e = estimate(df, DEFAULT_DAG, "difficulty", "responsiveness")
+    check("همبستگی خام «سختی → پاسخ‌گویی» قوی و منفی است",
           e.raw < -0.3, f"{e.raw:.3f}")
     check("اثر تعدیل‌شده تقریباً صفر می‌شود (همبستگی مخدوش بود)",
           abs(e.adjusted) < 0.15, f"{e.adjusted:.3f}")
@@ -90,10 +93,10 @@ def test_confounding():
 def test_residual_and_fair():
     print("\n── ۳) امتیاز منصفانه ──")
     df = _confounded()
-    r = residualize(df, "quality", ["difficulty"])
+    r = residualize(df, "reliability", ["difficulty"])
     check("باقی‌مانده با تعدیل‌گر ناهمبسته می‌شود",
           abs(float(pd.concat([r, df["difficulty"]], axis=1).corr().iloc[0, 1])) < .1)
-    f = fair_score(df.assign(performance=df["quality"]), "performance",
+    f = fair_score(df.assign(performance=df["reliability"]), "performance",
                    ["workload", "difficulty", "assignment", "tenure"])
     check("انتظار محاسبه می‌شود", f["expected"].notna().any())
     check("امتیاز منصفانه در بازه ۵ تا ۹۵ می‌ماند",
@@ -131,8 +134,8 @@ def test_pipeline_and_db():
     check("امتیازها در بازه معتبرند",
           float(r.scores.performance.min()) >= 0 and float(r.scores.performance.max()) <= 100)
     check("شاخص کاملاً خالی خط لوله را نمی‌شکند",
-          "open_bill_rate" not in r.metric_scores.columns
-          or r.metric_scores["open_bill_rate"].isna().all())
+          "distinct_parts" not in r.metric_scores.columns
+          or r.metric_scores["distinct_parts"].isna().all())
     check("گروه همتا برای همه تعیین شده",
           r.people["peer_group"].notna().all())
     check("کالیبراسیون k ثبت شده", not r.calibration.empty)
@@ -428,6 +431,16 @@ def test_person_key_robustness() -> None:
           km.clean_person_key("123456789") == "123456789")
     check("قاعده با clean_employee_code پکیج زنجیره تأمین یکی است",
           km.clean_person_key("10201069_GS") == "10201069")
+    # نام با عدد، کد پرسنلی نیست — وگرنه دو نفر یکی می‌شوند
+    check("نام فارسیِ شماره‌دار، کد پرسنلی شمرده نمی‌شود",
+          km.clean_person_key("بازرگانی 1") != km.clean_person_key("ترخیص 1"),
+          f'{km.clean_person_key("بازرگانی 1")} vs {km.clean_person_key("ترخیص 1")}')
+    check("حروف فارسی در کلید نگه داشته می‌شوند",
+          "بازرگانی" in km.clean_person_key("بازرگانی 1"),
+          km.clean_person_key("بازرگانی 1"))
+    check("تیرهٔ نشکن یونیکد، کد را از کد جدا نمی‌کند",
+          km.clean_person_key("GS\u20111234") == "00001234",
+          km.clean_person_key("GS\u20111234"))
     check("شکل نمایشی، همانی است که کاربر می‌شناسد",
           km.display_code(pd.Series(["1234", "GS-1234", "1234.0"])) == "GS-1234")
 
@@ -453,13 +466,13 @@ def test_person_key_robustness() -> None:
         d.mkdir()
         codes = [10200000 + i for i in range(1, 13)]
         pd.DataFrame([{"کد پرسنلی": f"GS-{c}", "نام": f"کارمند {c}",
-                       "fpy": 0.90, "fpy_n": 40,
-                       "completion_rate": 0.85, "completion_rate_n": 40}
+                       "conformance_score": 0.90, "conformance_score_n": 40,
+                       "status_traceability": 0.85, "status_traceability_n": 40}
                       for c in codes]).to_csv(d / "a.csv", index=False,
                                               encoding="utf-8-sig")
         pd.DataFrame([{"کد پرسنلی": float(c),          # اکسل عددی خوانده
-                       "under24_rate": 0.80, "under24_rate_n": 40,
-                       "open_bill_rate": 0.05, "open_bill_rate_n": 40}
+                       "on_time_stage_rate": 0.80, "on_time_stage_rate_n": 40,
+                       "ball_in_court_days": 12, "ball_in_court_days_n": 40}
                       for c in codes]).to_csv(d / "b.csv", index=False,
                                               encoding="utf-8-sig")
         json.dump({"people": [
@@ -490,6 +503,123 @@ def test_person_key_robustness() -> None:
 
 
 
+# ═══════════ ۱۱) کلاسترها از خروجی AIBL ═══════════
+def _aibl_cases(n=240, seed=5) -> pd.DataFrame:
+    """جدولی به شکل خروجی واقعی AIBL — سه حوزه روی یک پرونده."""
+    rng = np.random.default_rng(seed)
+    stages = ["PR", "PO", "ORDER_REG", "ALLOCATION", "FX_SUPPLY",
+              "SHIPMENT", "CUSTOMS", "DOCS", "RELEASE"]
+    fa = {"PR": "کارشناس خرید", "PO": "کارشناس خرید", "RELEASE": "کارشناس خرید",
+          "ORDER_REG": "کارشناس بازرگانی", "ALLOCATION": "کارشناس بازرگانی",
+          "FX_SUPPLY": "کارشناس بازرگانی", "DOCS": "کارشناس بازرگانی",
+          "SHIPMENT": "کارشناس حمل و لجستیک", "CUSTOMS": "کارشناس حمل و لجستیک"}
+    st = rng.choice(stages, n)
+    return pd.DataFrame({
+        "MOGH_KEY_EMP": rng.choice([f"GS-1020{i:04d}" for i in range(1, 7)], n),
+        "EXPERT_PURCHASING": rng.choice([f"GS-1020{i:04d}" for i in range(1, 7)], n),
+        "EXPERT_COMMERCIAL": rng.choice([f"بازرگانی {i}" for i in range(1, 5)], n),
+        "EXPERT_LOGISTICS": rng.choice([f"ترخیص {i}" for i in range(1, 4)], n),
+        "STATUS_STAGE": st,
+        "WAITING_ON_SCOPE": [fa[x] for x in st],
+        "STATUS_AGE_DAYS": rng.integers(1, 120, n),
+        "STATUS_MISSING": rng.choice(["", "تاریخ تخلیه"], n, p=[.8, .2]),
+        "امتیاز انطباق (٪)": rng.integers(45, 100, n),
+        "فعالیت‌های جاافتاده": rng.choice(["", "تخصیص ارز"], n, p=[.8, .2]),
+        "نقض ترتیب": rng.choice(["", "ترخیص پیش از کوتاژ"], n, p=[.9, .1]),
+        "روزهای تأخیر": rng.choice([0, 0, 0, 5, 40], n),
+        "روزهای رسوب": rng.integers(0, 150, n),
+        "NTSW_ALLOC_DATE": "1404/09/10",
+        "BUY_DATE": rng.choice(["1404/09/20", "1404/10/15"], n),
+        "FULL_CLEAR_DATE": rng.choice(["", "1405/01/05"], n, p=[.35, .65]),
+        "PARTIAL_CLEAR_DATE": rng.choice(["", "1405/01/02"], n, p=[.7, .3]),
+        "SATA_NO": rng.choice(["", "S1"], n, p=[.2, .8]),
+        "COT_DATE": rng.choice(["", "1405/01/03"], n, p=[.25, .75]),
+        "FIN_RECEIPT_DATE": rng.choice(["", "1405/02/01"], n, p=[.4, .6]),
+        "CANONICAL_PART_NO": rng.choice([f"P{i}" for i in range(30)], n),
+        "کد طبقه بحرانی": rng.choice(["SAFE", "WATCH", "CRITICAL"], n, p=[.6, .25, .15]),
+        "CB_VALUE": rng.integers(5000, 900000, n),
+        "TRANSPORT_MODE": rng.choice(["دریایی", "زمینی"], n, p=[.7, .3]),
+        "PART_OWNER_DATA_GAP": rng.choice(["", "شماره بارنامه"], n, p=[.7, .3]),
+    })
+
+
+def test_aibl_clusters() -> None:
+    """سنجه‌ها از پروندهٔ زنجیره تأمین، هرکس در حوزهٔ خودش."""
+    print("\n── ۱۱) کلاسترها از خروجی AIBL ──")
+    from hrperf.config.model import load_model
+    from hrperf.core.calendar import CalendarEngine
+    from hrperf.dataio import aibl as ad
+    from hrperf.dataio.sources import is_aibl
+    from hrperf.identity import scopes
+
+    check("تاریخ شمسی با موتور تقویم خوانده می‌شود، نه pandas",
+          str(CalendarEngine.parse("1405/01/29")) == "2026-04-18",
+          str(CalendarEngine.parse("1405/01/29")))
+
+    df = _aibl_cases()
+    check("جدول AIBL از روی ستون حوزه تشخیص داده می‌شود", is_aibl(df))
+    ex = ad.to_long(df)
+    check("هر سه حوزه استخراج می‌شوند", len(ex.by_scope) == 3, str(ex.by_scope))
+    check("هیچ سنجه‌ای بی‌ستون نماند", not ex.missing, str(ex.missing))
+
+    got = ex.long.groupby("metric_key")["scope"].apply(set).to_dict()
+    only = {
+        "customs_dwell_days": "EXPERT_LOGISTICS",
+        "in_full_rate": "EXPERT_LOGISTICS",
+        "overdue_commitment_rate": "EXPERT_COMMERCIAL",
+        "allocation_lag_days": "EXPERT_COMMERCIAL",
+        "owner_field_completeness": "EXPERT_PURCHASING",
+        "part_criticality_mix": "EXPERT_PURCHASING",
+    }
+    for mk, sc in only.items():
+        check(f"«{mk}» فقط برای {scopes.BY_KEY[sc].fa} ساخته می‌شود",
+              got.get(mk) == {sc}, str(got.get(mk)))
+    check("سنجهٔ مشترک برای هر سه حوزه ساخته می‌شود",
+          len(got.get("conformance_score", set())) == 3,
+          str(got.get("conformance_score")))
+
+    # ستون نبود ⇒ سنجه ساخته نشود، نه اینکه صفر شود
+    thin = ad.to_long(df.drop(columns=["روزهای رسوب"]))
+    check("نبودِ ستون، سنجه را صفر نمی‌کند بلکه حذفش می‌کند",
+          "customs_dwell_days" not in set(thin.long["metric_key"])
+          and "customs_dwell_days" in thin.missing,
+          str(thin.missing.get("customs_dwell_days")))
+
+    # مدل: حوزه و مرجع اجباری
+    m = load_model()
+    check("همه سنجه‌های امتیازی مرجع علمی دارند",
+          all(x.citation for x in m.scored_metrics))
+    check("حوزهٔ همه سنجه‌ها معتبر است",
+          all(x.scope in ({scopes.ANY} | set(scopes.BY_KEY))
+              for x in m.metrics.values()))
+    check("سنجه‌های AIBL به ستون سرچشمه اشاره می‌کنند",
+          all(x.aibl_field for x in m.scored_metrics),
+          str([x.key for x in m.scored_metrics if not x.aibl_field]))
+
+    # خط لوله سرتاسری روی همین داده
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td) / "input_files"
+        d.mkdir()
+        df.to_csv(d / "AIBL_cases.csv", index=False, encoding="utf-8-sig")
+        r = Pipeline(input_dir=str(d)).run(persist=False, ref_date="2026-08-31")
+        check("خط لوله روی پروندهٔ AIBL اجرا می‌شود",
+              len(r.people) == 13, f"{len(r.people)} نفر")
+        cs = r.scores.cluster_scores
+        for ck in ("reliability", "conformance", "responsiveness"):
+            check(f"کلاستر «{m.clusters[ck].label}» امتیاز می‌گیرد",
+                  ck in cs.columns and cs[ck].notna().any())
+        check("امتیاز همه در بازه معتبر است",
+              bool(r.scores.performance.between(0, 100).all()))
+        check("کارشناس حمل، امتیاز «تعهد ارزی» نمی‌گیرد",
+              r.metric_scores.loc[
+                  r.people.set_index("person_key")["job_family"]
+                  .eq("کارشناس حمل و لجستیک").reindex(
+                      r.metric_scores.index).fillna(False).to_numpy(),
+                  "overdue_commitment_rate"].isna().all()
+              if "overdue_commitment_rate" in r.metric_scores.columns else True)
+
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — تست علیت، خط لوله، پایگاه داده و گزارش")
@@ -504,6 +634,7 @@ if __name__ == "__main__":
     test_email_from_hr()
     test_input_discovery()
     test_person_key_robustness()
+    test_aibl_clusters()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

@@ -20,6 +20,8 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
+from . import scopes as scopemod
+
 
 @dataclass(frozen=True)
 class JobFamily:
@@ -52,7 +54,8 @@ FAMILIES: List[JobFamily] = [
               ["completion_rate", "median_correction_hours", "open_reject_ratio",
                "major_error_rate", "rework_loss", "unique_orders"]),
     JobFamily("clearance", "کارشناس ترخیص",
-              ["ترخیص", "گمرک", "clearance", "customs", "EXPERT_CLEARANCE"],
+              ["ترخیص", "گمرک", "clearance", "customs", "EXPERT_CLEARANCE",
+               "حمل و لجستیک", "حمل", "لجستیک", "EXPERT_LOGISTICS"],
               ["fpy", "median_correction_hours", "under24_rate",
                "completion_rate", "open_bill_rate", "unique_cases",
                "rework_rate"]),
@@ -94,21 +97,52 @@ def metrics_for(job_family: Optional[str]) -> Optional[List[str]]:
     return list(f.metrics) if f else None
 
 
-def applicable(long: pd.DataFrame, people: pd.DataFrame) -> pd.DataFrame:
-    """رکوردهایی که برای نقشِ آن فرد بی‌معنا هستند را کنار می‌گذارد.
+def applicable(long: pd.DataFrame, people: pd.DataFrame,
+               model=None) -> pd.DataFrame:
+    """رکوردهایی که برای حوزهٔ آن فرد بی‌معنا هستند را کنار می‌گذارد.
 
-    بدون این فیلتر، «نرخ بارنامه باز» برای کارشناس اعتبارات هم محاسبه
-    می‌شد و امتیازی می‌ساخت که هیچ ربطی به کار او ندارد.
+    دو صافی، به این ترتیب:
+
+    **۱) حوزه مسئولیت** (اگر مدل، حوزهٔ سنجه‌ها را اعلام کرده باشد).
+    کارشناس حمل بابت «تعهد ارزی معوق» سنجیده نمی‌شود و کارشناس بازرگانی
+    بابت «رسوب گمرکی». سنجهٔ مشترک (``ANY``) برای همه می‌ماند.
+
+    **۲) نقش کاری** — صافی قدیمی، برای سنجه‌هایی که در مدلِ حوزه‌دار
+    نیستند (سورس‌های قدیمی HR). سنجه‌ای که هیچ‌کدام از دو صافی درباره‌اش
+    حرفی ندارند، **حذف نمی‌شود**: نبودِ قاعده، دلیل حذف نیست.
     """
     if long.empty or people.empty or "job_family" not in people.columns:
         return long
-    fam = (people.set_index("person_key")["job_family"]
-           .map(lambda v: classify(v) or None))
+
+    scope_of: Dict[str, Optional[str]] = {}
+    idx = people.set_index("person_key")
+    known = idx["scope"] if "scope" in idx.columns else None
+    for pk in idx.index:
+        sc = str(known.get(pk, "")).strip() if known is not None else ""
+        if not sc or sc not in scopemod.BY_KEY:
+            fam = classify(idx["job_family"].get(pk))
+            s_ = scopemod.of_family(fam) if fam else None
+            sc = s_.key if s_ else ""
+        scope_of[str(pk)] = sc or None
+
+    metric_scope: Dict[str, str] = {}
+    if model is not None:
+        metric_scope = {k: m.scope for k, m in model.metrics.items()}
+
+    fam_of = (idx["job_family"].map(lambda v: classify(v) or None)).to_dict()
     keep = []
     for pk, grp in long.groupby("person_key", sort=False):
-        allowed = metrics_for(fam.get(pk))
-        keep.append(grp if allowed is None
-                    else grp[grp["metric_key"].isin(allowed)])
+        allowed = metrics_for(fam_of.get(pk))
+        mk = grp["metric_key"].astype(str)
+        # صافی حوزه — فقط روی سنجه‌هایی که حوزه‌شان اعلام شده
+        in_scope = mk.map(
+            lambda k: scopemod.applies(metric_scope[k], scope_of.get(pk))
+            if k in metric_scope else True)
+        # صافی نقش — فقط روی سنجه‌هایی که مدل حوزه‌دار درباره‌شان ساکت است
+        by_role = mk.map(
+            lambda k: True if (k in metric_scope or allowed is None)
+            else k in allowed)
+        keep.append(grp[in_scope & by_role])
     return pd.concat(keep, ignore_index=True) if keep else long
 
 

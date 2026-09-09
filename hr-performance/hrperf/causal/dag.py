@@ -114,22 +114,24 @@ DEFAULT_DAG = (
     DAG()
     .add("assignment", "workload")          # تخصیص کار → حجم
     .add("assignment", "difficulty")        # تخصیص کار → سختی پرونده
-    .add("assignment", "quality")           # اثر مستقیم واحد/نوع کار
-    .add("tenure", "quality")               # تجربه → کیفیت
-    .add("tenure", "speed")                 # تجربه → سرعت
-    .add("workload", "speed")               # حجم → سرعت
-    .add("difficulty", "quality")           # سختی → کیفیت
-    .add("difficulty", "speed")
-    .add("speed", "quality")                # عجله → خطا (میانجی)
-    .add("quality", "rework")               # خطا → دوباره‌کاری
-    .add("speed", "efficiency")
-    .add("quality", "efficiency")
+    .add("assignment", "reliability")       # اثر مستقیم واحد/حوزه
+    .add("tenure", "conformance")           # تجربه → انطباق با مسیر مرجع
+    .add("tenure", "responsiveness")        # تجربه → پاسخ‌گویی
+    .add("workload", "responsiveness")      # حجم → کندی
+    .add("difficulty", "reliability")
+    .add("difficulty", "responsiveness")
+    .add("responsiveness", "reliability")   # عجله یا کندی → نتیجه
+    .add("conformance", "reliability")      # انحراف از مسیر → نتیجهٔ بد
+    .add("data_quality", "conformance")     # داده ناقص → انحراف دیده‌نشده
+    .add("conformance", "stewardship")
+    .add("responsiveness", "stewardship")
 )
 
-#: نگاشت گره DAG به کلاستر/شاخص مدل
+#: نگاشت گره DAG به کلاستر مدل
 NODE_TO_CLUSTER = {
-    "quality": "quality", "speed": "speed",
-    "efficiency": "efficiency", "rework": "rework",
+    "reliability": "reliability", "conformance": "conformance",
+    "responsiveness": "responsiveness", "stewardship": "stewardship",
+    "data_quality": "data_quality", "collaboration": "collaboration",
     "workload": "workload",
 }
 NODE_FA = {
@@ -137,8 +139,10 @@ NODE_FA = {
     "workload": "حجم کار",
     "difficulty": "سختی پرونده",
     "tenure": "سابقه/تجربه",
-    "speed": "سرعت",
-    "quality": "کیفیت",
-    "rework": "دوباره‌کاری",
-    "efficiency": "بازدهی",
+    "reliability": "اتکاپذیری تحویل",
+    "conformance": "انطباق فرآیند",
+    "responsiveness": "پاسخ‌گویی در حوزه",
+    "stewardship": "صیانت از تعهد و اسناد",
+    "data_quality": "کیفیت داده",
+    "collaboration": "همکاری",
 }

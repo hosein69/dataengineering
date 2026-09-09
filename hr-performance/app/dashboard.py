@@ -60,12 +60,12 @@ def load_long(ref_date: str, use_demo: bool):
     if use_demo:
         from tests.make_synthetic import build
         return build()
-    from hrperf.dataio.sources import find_org_map, load_inputs, read_org_map
-    long = load_inputs(SETTINGS.INPUT_DIR)
+    from hrperf.dataio.sources import find_org_map, load_all, read_org_map
+    long, src_people, _ = load_all(SETTINGS.INPUT_DIR)
     org = find_org_map(SETTINGS.INPUT_DIR)
     people = read_org_map(org) if org else None
-    if people is not None and people.empty:
-        people = None
+    if people is None or people.empty:
+        people = src_people if not src_people.empty else None
     return people, long
 
 
