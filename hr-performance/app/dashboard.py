@@ -20,6 +20,7 @@ if ROOT not in sys.path:
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="عملکرد منابع انسانی", page_icon="◈",
                    layout="wide", initial_sidebar_state="expanded")
@@ -209,8 +210,109 @@ st.markdown('<div style="margin:12px 0 2px">' +
 for w in RUN.warnings:
     st.info(w)
 
-t_over, t_people, t_cluster, t_causal, t_model, t_export = st.tabs(
-    ["نمای کلی", "افراد", "کلاسترها", "🕸 تحلیل علّی", "⚖ مدل و وزن", "📦 خروجی"])
+(t_over, t_people, t_cluster, t_fair, t_graph, t_causal,
+ t_model, t_export) = st.tabs(
+    ["نمای کلی", "افراد", "کلاسترها", "⚖️ عدالت و توازن بار", "🕸 گراف سازمانی",
+     "🔬 تحلیل علّی", "⚙️ مدل و وزن", "📦 خروجی"])
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  عدالت — پیش از هر رتبه‌بندی
+# ══════════════════════════════════════════════════════════════════════════
+with t_fair:
+    st.markdown("##### توزیع بار پیش از قضاوت عملکرد")
+    st.caption("رتبه‌بندی افرادی که بارِ نابرابر دارند، بدون دیدن آن نابرابری، "
+               "خودش یک اجحاف است. این تب پیش از هر امتیازی خوانده می‌شود.")
+    if not RUN.skew:
+        st.info("ستون بار کاری در این اجرا موجود نیست، پس توزیع بار سنجیده نشد.")
+    else:
+        cols = st.columns(min(len(RUN.skew), 4))
+        for box, sk in zip(cols, RUN.skew[:4]):
+            with box, st.container(border=True):
+                st.markdown(f"**{sk.group}**")
+                st.metric("ضریب جینی", "—" if sk.gini != sk.gini else f"{sk.gini:.2f}",
+                          sk.band, delta_color="off")
+                st.caption(f"{sk.n} نفر · نسبت ۹۰/۱۰: "
+                           + ("—" if sk.p90_p10 != sk.p90_p10 else f"{sk.p90_p10:.1f}")
+                           + (f" · سهم ۲۰٪ پرکار: {sk.top20:.0%}" if sk.top20 == sk.top20 else ""))
+                st.caption(sk.note)
+
+        if not RUN.load_flags.empty:
+            from hrperf.fairness.skew import rebalance_hint
+            hint = rebalance_hint(RUN.load_flags)
+            if hint:
+                st.markdown("##### پیشنهاد توازن")
+                hc = st.columns(len(hint))
+                for box, (k, v) in zip(hc, hint.items()):
+                    box.metric(k, f"{v:,}")
+                st.caption("«قابل جابه‌جایی» یعنی حداکثر باری که با انتقال از "
+                           "بیش‌بارها به کم‌بارها، هر دو طرف را به میانه نزدیک می‌کند.")
+            st.markdown("##### وضعیت بار هر فرد")
+            st.dataframe(RUN.load_flags.join(
+                RUN.leaderboard.set_index(RUN.leaderboard.index)[["نام"]]
+                if "نام" in RUN.leaderboard.columns else RUN.load_flags[[]]),
+                use_container_width=True, height=280)
+
+    lp = (RUN.fairness or {}).get("load_penalty")
+    if lp is not None:
+        st.markdown("##### آیا خودِ امتیاز به پرکارها اجحاف می‌کند؟")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("همبستگی امتیاز با بار",
+                  "—" if lp.corr != lp.corr else f"{lp.corr:+.2f}")
+        c2.metric("جابه‌جایی رتبه پس از حذف اثر بار", f"{lp.mean_rank_shift:.1%}")
+        c3.metric("داوری", lp.verdict)
+        st.caption("اگر همبستگی منفی و جابه‌جایی رتبه محسوس باشد، رتبه‌بندی فعلی "
+                   "بیشتر «چقدر کار برداشته‌ای» را می‌سنجد تا «چقدر خوب کار کرده‌ای».")
+
+    gaps = (RUN.fairness or {}).get("gaps") or {}
+    for col, gl in gaps.items():
+        shown = [g for g in gl if g.enough]
+        if not shown:
+            continue
+        st.markdown(f"##### شکاف امتیاز بر حسب «{col}»")
+        st.dataframe(pd.DataFrame([{
+            "گروه": g.group, "نفرات": g.n, "میانگین": round(g.mean, 1),
+            "بازه ۹۵٪": f"{g.lo:.1f} – {g.hi:.1f}",
+            "میانگین بقیه": round(g.others_mean, 1),
+            "نسبت": round(g.ratio, 2),
+            "پس از حذف اثر بار": (round(g.adjusted_mean, 1)
+                                  if g.adjusted_mean is not None else None),
+            "داوری": g.verdict} for g in shown]),
+            use_container_width=True, hide_index=True)
+        st.caption("«نسبت» زیر ۰٫۸ طبق قاعده چهارپنجم (EEOC 1978) قابل بررسی است. "
+                   "این شاهدِ تبعیض نیست؛ نشانه‌ای است که باید علتش را پرسید.")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  گراف سازمانی
+# ══════════════════════════════════════════════════════════════════════════
+with t_graph:
+    st.markdown("##### بار از مسیر چه کسی می‌گذرد")
+    st.caption("جدول می‌گوید هرکس چند پرونده دارد؛ گراف می‌گوید کارِ چه کسی از "
+               "مسیر چه کسی رد می‌شود. تفاوت این دو، همان‌جایی است که بار پنهان "
+               "می‌ماند.")
+    g = RUN.graph
+    if g is None or g.n == 0:
+        st.info("داده کافی برای ساخت گراف نیست.")
+    else:
+        from hrperf.graph.org import hidden_load
+        c1, c2, c3 = st.columns(3)
+        c1.metric("گره", f"{g.n:,}")
+        c2.metric("یال", f"{len(g.edges):,}")
+        c3.metric("مؤلفه مستقل", f"{len({v.component for v in g.nodes.values()}):,}")
+        st.dataframe(g.table().head(40), use_container_width=True, hide_index=True)
+        hid = hidden_load(g)
+        if hid:
+            st.markdown("##### بارِ پنهان")
+            st.caption("این افراد بارِ ثبت‌شدهٔ کمی دارند ولی روی مسیر کار دیگران‌اند. "
+                       "در ارزیابی معمول نامرئی می‌مانند و اگر نباشند، چند جریان می‌خوابد.")
+            st.dataframe(pd.DataFrame([{
+                "فرد": h.label, "بار ثبت‌شده": round(h.load, 1),
+                "رتبه بار": h.load_rank, "مرکزیت": round(h.betweenness, 3),
+                "رتبه مرکزیت": h.between_rank, "فاصله رتبه": h.gap}
+                for h in hid[:20]]), use_container_width=True, hide_index=True)
+        else:
+            st.success("هیچ «بار پنهانی» شناسایی نشد — رتبهٔ بار و رتبهٔ مرکزیت هم‌خوان‌اند.")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -403,6 +505,63 @@ with t_model:
                      "وزن مؤثر", format="%.2f%%", min_value=0, max_value=25)})
     st.metric("مجموع وزن مؤثر", f"{wdf['وزن مؤثر (٪)'].sum():.2f}%")
 
+    # ── افزودن کلاستر و شاخص تازه ──
+    st.markdown("---")
+    st.markdown("##### کلاستر تازه")
+    st.caption("مدل عملکرد یک قرارداد سازمانی است، نه ثابت مهندسی. اگر تغییرش "
+               "نیازمند ویرایش فایل باشد، در عمل هرگز تغییر نمی‌کند.")
+    from hrperf.config import editor as _ed
+    with st.form("new_cluster"):
+        f1, f2, f3 = st.columns([1, 1.4, 1])
+        ck = f1.text_input("کلید انگلیسی", placeholder="compliance")
+        cl = f2.text_input("عنوان فارسی", placeholder="انطباق و رعایت رویه")
+        cw = f3.number_input("وزن", 0.0, 1.0, 0.10, 0.01)
+        cr = st.text_area("دلیل این وزن (اجباری)",
+                          placeholder="چرا این کلاستر این‌قدر مهم است؟ "
+                                      "وزنی که دلیلش نوشته نشده، فردا قابل دفاع نیست.")
+        if st.form_submit_button("افزودن کلاستر"):
+            try:
+                nm = _ed.add_cluster(MODEL, ck.strip(), cl.strip(), float(cw), cr.strip())
+                path, backup = _ed.save(nm)
+                st.success(f"کلاستر افزوده و ذخیره شد → {path.name} "
+                           f"(پشتیبان نسخه قبل: {backup.name})")
+                st.cache_data.clear()
+                st.rerun()
+            except _ed.EditError as ex:
+                st.error(str(ex))
+
+    st.markdown("##### شاخص تازه در یک کلاستر موجود")
+    with st.form("new_metric"):
+        g1, g2, g3 = st.columns([1, 1.4, 1])
+        mk = g1.text_input("کلید شاخص", placeholder="procedure_errors")
+        ml = g2.text_input("عنوان فارسی", placeholder="خطای رویه‌ای")
+        mc = g3.selectbox("کلاستر", list(MODEL.clusters),
+                          format_func=lambda k: MODEL.clusters[k].label)
+        h1, h2, h3 = st.columns(3)
+        mw = h1.number_input("وزن در کلاستر", 0.0, 1.0, 0.20, 0.05)
+        md = h2.selectbox("جهت", _ed.DIRECTIONS,
+                          format_func=lambda d: "بیشتر بهتر" if d == "higher" else "کمتر بهتر")
+        mkind = h3.selectbox("نوع", _ed.KINDS)
+        if st.form_submit_button("افزودن شاخص"):
+            try:
+                nm = _ed.add_metric(MODEL, mk.strip(), ml.strip(), mc, float(mw),
+                                    direction=md, kind=mkind)
+                path, backup = _ed.save(nm)
+                st.success(f"شاخص افزوده شد → {path.name} (پشتیبان: {backup.name})")
+                st.cache_data.clear()
+                st.rerun()
+            except _ed.EditError as ex:
+                st.error(str(ex))
+
+    hist = _ed.history()
+    if hist:
+        with st.expander(f"تاریخچه نسخه‌های مدل ({len(hist)} نسخه)"):
+            st.dataframe(pd.DataFrame(hist, columns=["فایل", "زمان"]),
+                         use_container_width=True, hide_index=True)
+            st.caption("هر ذخیره، نسخه قبلی را کنار می‌گذارد. مقایسه دو دوره با "
+                       "دو مدل متفاوت، مقایسه نیست — و باید بشود فهمید کدام عدد "
+                       "با کدام مدل ساخته شده.")
+
     st.markdown("---")
     st.markdown("##### کالیبراسیون انقباض")
     st.caption("k از خود داده برآورد می‌شود. k بزرگ یعنی بیشترِ پراکندگی "
@@ -412,6 +571,31 @@ with t_model:
 
 # ══════════════════════════════════════════════════════════════════════════
 with t_export:
+    # ── خروجی HTML داینامیک و متحرک ──
+    st.markdown("##### خروجی داینامیک و متحرک")
+    st.caption("یک فایل HTML مستقل: فیلتر زنده، نمودار قابل انتخاب، و منحنی "
+               "لورنتس عدالت. بدون وابستگی به اینترنت — روی شبکه داخلی هم کامل "
+               "باز می‌شود.")
+    from hrperf.report.dynamic import build_dynamic_html as _dyn
+
+    _board = RUN.leaderboard.copy()
+    if not RUN.load_flags.empty and "بار" in RUN.load_flags.columns:
+        _board["بار کاری"] = RUN.load_flags["بار"].reindex(_board.index)
+    _dims = [c for c in ("مدیریت", "اداره", "نوع کار", "گروه همتا")
+             if c in _board.columns]
+    _pick = st.multiselect("ابعاد قابل فیلتر در خروجی", _dims, default=_dims[:3])
+    _html = _dyn(_board, ref_date, score_col="عملکرد", name_col="نام",
+                 load_col="بار کاری" if "بار کاری" in _board.columns else "",
+                 dims=_pick or _dims,
+                 title="عملکرد منابع انسانی")
+    e1, e2 = st.columns([1, 3])
+    e1.download_button("⬇️ دانلود HTML داینامیک", _html.encode("utf-8"),
+                       file_name=f"HRPerf_Dynamic_{ref_date}.html",
+                       mime="text/html", key="dl_dyn")
+    if e2.toggle("پیش‌نمایش زنده", value=False, key="prev_dyn"):
+        components.html(_html, height=680, scrolling=True)
+
+    st.markdown("---")
     st.markdown("##### ساخت گزارش")
     c1, c2, c3 = st.columns(3)
     with c1:

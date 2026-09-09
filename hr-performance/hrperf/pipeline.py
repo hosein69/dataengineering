@@ -66,6 +66,14 @@ class RunResult:
     warnings: List[str] = field(default_factory=list)
     #: توزیع نفرات روی نقش‌های کاری
     role_coverage: pd.DataFrame = field(default_factory=pd.DataFrame)
+    #: چولگی بار کاری، به تفکیک گروه — پیش از هر امتیازی
+    skew: List = field(default_factory=list)
+    #: وضعیت بار هر فرد نسبت به گروه همتایش
+    load_flags: pd.DataFrame = field(default_factory=pd.DataFrame)
+    #: ممیزی عدالت: آیا خودِ امتیاز به پرکارها اجحاف می‌کند
+    fairness: Dict = field(default_factory=dict)
+    #: گراف سازمانی — تمرکز بار و تک‌نقطه شکست
+    graph: object = None
 
     @property
     def leaderboard(self) -> pd.DataFrame:
@@ -221,11 +229,61 @@ class Pipeline:
                        peer_summary, pd.DataFrame(calib), self.model,
                        warnings=warnings)
         rr.role_coverage = rcov
+        self._fairness(rr, node_frame)
 
         # ۸۰ persist
         if persist:
             rr.run_id = self._persist(rr, ref_date)
         return rr
+
+    # ── عدالت و گراف ──
+    def _fairness(self, rr: "RunResult", node_frame: pd.DataFrame) -> None:
+        """توزیع بار، ممیزی اجحاف، و گراف — همه پس از امتیاز، هیچ‌کدام مؤثر بر آن.
+
+        ترتیب عمدی است: اگر این‌ها امتیاز را عوض می‌کردند، دیگر نمی‌شد
+        پرسید «آیا امتیاز منصفانه است؟» — چون خودش با فرض انصاف ساخته
+        شده بود.
+        """
+        from .fairness import audit as fair_audit
+        from .fairness import skew as skew_mod
+        from .graph import org as org_graph
+
+        board = rr.leaderboard
+        load = ("workload" if "workload" in node_frame.columns else "")
+        key = next((c for c in ("کد", "person_key") if c in board.columns), None)
+        if load and key:
+            board = board.merge(
+                node_frame[[load]].rename(columns={load: "بار کاری"}),
+                left_on=key, right_index=True, how="left")
+
+        grp = next((c for c in ("مدیریت", "management", "اداره", "department")
+                    if c in board.columns), None)
+        if "بار کاری" in board.columns:
+            rr.skew = skew_mod.by_group(board, "بار کاری", grp)
+            rr.load_flags = skew_mod.flag_individuals(board, "بار کاری", grp)
+            worst = max((s for s in rr.skew if s.enough and s.group != "کل سازمان"),
+                        key=lambda s: (s.gini if s.gini == s.gini else -1), default=None)
+            if worst is not None and worst.gini > 0.35:
+                rr.warnings.append(
+                    f"توزیع بار در «{worst.group}» چوله است (جینی {worst.gini:.2f}) — "
+                    f"مقایسه امتیاز افراد این گروه با هم، بدون توجه به بار، منصفانه نیست.")
+
+            cols = [c for c in ("مدیریت", "اداره", "نوع کار") if c in board.columns]
+            rr.fairness = fair_audit.audit(
+                board, "عملکرد", "بار کاری", cols,
+                sample_col="شواهد" if "شواهد" in board.columns else "",
+                name_col="نام" if "نام" in board.columns else "")
+            lp = rr.fairness.get("load_penalty")
+            if lp is not None and getattr(lp, "penalised", False):
+                rr.warnings.append(
+                    "امتیاز با بار کاری همبستگی منفی دارد: رتبه‌بندی فعلی تا حدی "
+                    "پرکارها را جریمه می‌کند. ستون «امتیاز تعدیل‌شده با بار» را ببینید.")
+
+        person = "نام" if "نام" in board.columns else None
+        if person and grp:
+            rr.graph = org_graph.build(
+                board, grp, person,
+                weight="بار کاری" if "بار کاری" in board.columns else None)
 
     # ── کمکی ──
     def _people_from(self, long: pd.DataFrame) -> pd.DataFrame:

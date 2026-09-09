@@ -17,7 +17,13 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 SUITES = [
     ("۱) مدل، امتیازدهی و گروه همتا", "tests/test_model_and_scoring.py"),
     ("۲) علیت، خط لوله، پایگاه داده و گزارش", "tests/test_causal_and_pipeline.py"),
+    ("۳) عدالت، گراف، ویرایش مدل و خروجی داینامیک",
+     "tests/test_fairness_and_graph.py"),
 ]
+
+
+#: سقف زمان هر مجموعه — تست تولیدی نباید بدون سقف اجرا شود.
+SUITE_TIMEOUT_S = int(os.environ.get("HRP_TEST_TIMEOUT", "600"))
 
 
 def main() -> int:
@@ -28,9 +34,16 @@ def main() -> int:
         print("\n" + "█" * 78)
         print(f"█  {label}")
         print("█" * 78)
-        out = subprocess.run([sys.executable, path], cwd=ROOT, env=env,
-                             capture_output=True, text=True,
-                             encoding="utf-8", errors="replace")
+        try:
+            out = subprocess.run([sys.executable, path], cwd=ROOT, env=env,
+                                 capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace",
+                                 timeout=SUITE_TIMEOUT_S)
+        except subprocess.TimeoutExpired:
+            print(f"\u23f1\ufe0f TIMEOUT — «{label}» پس از {SUITE_TIMEOUT_S} ثانیه "
+                  f"تمام نشد.")
+            failed.append(f"{label} (TIMEOUT)")
+            continue
         print(out.stdout)
         if out.stderr.strip():
             print(out.stderr)

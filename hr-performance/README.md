@@ -1,4 +1,4 @@
-# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۱٫۲٫۰)
+# HRPerf — داشبورد عملکرد منابع انسانی (نسخه ۲٫۰٫۰)
 
 سنجش عملکرد بر پایه **علیت**، نه صرفاً همبستگی. مدل دو سطحی است، وزن‌ها
 در داشبورد زنده تغییر می‌کنند، و خروجی هم پایگاه داده است هم Excel و
@@ -11,7 +11,7 @@ pip install -r requirements.txt
 python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
 python -m hrperf.cli run             # اجرا روی input_files
 python app/run_dashboard.py          # داشبورد
-python run_all_tests.py              # ۱۰۲ تست
+python run_all_tests.py              # ۱۸۵ تست
 ```
 
 ---
@@ -188,7 +188,7 @@ hrperf/
   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
   pipeline.py · cli.py
 app/         dashboard.py · run_dashboard.py · styles.py
-tests/       ۱۰۲ تست
+tests/       ۱۸۵ تست
 ```
 
 ---
