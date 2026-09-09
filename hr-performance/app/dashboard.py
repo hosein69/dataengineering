@@ -137,7 +137,7 @@ with st.sidebar.expander("⚖ وزن‌دهی", expanded=False):
 def current_model() -> PerformanceModel:
     clusters = {k: Cluster(c.key, c.label,
                            float(st.session_state.cluster_w.get(k, c.weight)),
-                           c.scored, c.rationale)
+                           c.scored, c.rationale, c.color)
                 for k, c in BASE_MODEL.clusters.items()}
     metrics = {k: Metric(**{**m.__dict__,
                             "weight": float(st.session_state.metric_w.get(k, m.weight))})
@@ -210,9 +210,9 @@ for w in RUN.warnings:
     st.info(w)
 
 (t_over, t_people, t_cluster, t_fair, t_graph, t_causal,
- t_model, t_export) = st.tabs(
+ t_model, t_studio, t_export) = st.tabs(
     ["نمای کلی", "افراد", "کلاسترها", "⚖️ عدالت و توازن بار", "🕸 گراف سازمانی",
-     "🔬 تحلیل علّی", "⚙️ مدل و وزن", "📦 خروجی"])
+     "🔬 تحلیل علّی", "⚙️ مدل و وزن", "🧬 استودیوی کلاستر", "📦 خروجی"])
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -566,6 +566,182 @@ with t_model:
     st.caption("k از خود داده برآورد می‌شود. k بزرگ یعنی بیشترِ پراکندگی "
                "دیده‌شده نویزِ نمونه است نه تفاوت واقعی، پس انقباض شدیدتر است.")
     st.dataframe(RUN.calibration, use_container_width=True, hide_index=True)
+
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  استودیوی کلاستر — فضای برداری، پیشنهاد موتور، جابه‌جایی، رنگ، سورس تازه
+# ══════════════════════════════════════════════════════════════════════════
+with t_studio:
+    from hrperf.config import editor as _ed
+    from hrperf.dataio import registry as _reg
+    from hrperf.model_engine import vectors as _ve
+    from hrperf.report import fluid as _fluid
+
+    st.markdown("##### کلاسترها در فضای برداری")
+    st.caption("هر شاخص یک بردار است: ستون امتیازهایش روی همه افراد. شباهت دو "
+               "شاخص یعنی همبستگی بردارهایشان. اینجا سنجیده می‌شود که آیا "
+               "عضویت‌هایی که ما تعیین کرده‌ایم، با رفتار داده می‌خواند یا نه.")
+
+    _member = {k: m.cluster for k, m in MODEL.metrics.items() if m.scored}
+    _sc = RUN.metric_scores[[c for c in RUN.metric_scores.columns if c in _member]]
+    _vec = _ve.vectors(_sc, MODEL)
+    _sim = _ve.similarity(_vec) if not _vec.empty else pd.DataFrame()
+
+    if _sim.empty:
+        st.warning("برای فضای برداری، دست‌کم دو شاخص با داده کافی لازم است.")
+    else:
+        c1, c2 = st.columns([1, 1])
+        with c1:
+            st.markdown("**انسجام هر کلاستر**")
+            st.dataframe(pd.DataFrame([
+                {"کلاستر": MODEL.clusters[c.cluster].label, "اعضا": c.n,
+                 "همبستگی درونی": None if not np.isfinite(c.mean_within) else round(c.mean_within, 2),
+                 "با بیرون": None if not np.isfinite(c.mean_between) else round(c.mean_between, 2),
+                 "داوری": c.verdict}
+                for c in _ve.cohesion(_sim, _member)]),
+                use_container_width=True, hide_index=True)
+        with c2:
+            st.markdown("**جای هر شاخص**")
+            st.dataframe(pd.DataFrame([
+                {"شاخص": MODEL.metrics[f.metric].label,
+                 "کلاستر فعلی": MODEL.clusters[f.cluster].label if f.cluster in MODEL.clusters else f.cluster,
+                 "شباهت به خودی": None if not np.isfinite(f.own) else round(f.own, 2),
+                 "نزدیک‌ترین دیگر": MODEL.clusters[f.best_other].label if f.best_other in MODEL.clusters else "—",
+                 "شباهت": None if not np.isfinite(f.best_other_sim) else round(f.best_other_sim, 2),
+                 "داوری": f.verdict}
+                for f in _ve.fit_table(_vec, _member)]),
+                use_container_width=True, hide_index=True, height=300)
+
+    # ── پیشنهاد موتور ──
+    st.markdown("---")
+    st.markdown("##### پیشنهاد موتور کلاستر")
+    st.caption("موتور کلاستر را کشف نمی‌کند؛ کلاستر یک قرارداد سازمانی است. "
+               "فقط می‌گوید داده با این قرارداد کجا نمی‌خواند — و دلیلش را "
+               "می‌گوید. اعمال هر پیشنهاد با شماست.")
+    _sugs = _ve.suggest(RUN.metric_scores, MODEL) if not _sim.empty else []
+    if not _sugs:
+        st.success("موتور پیشنهادی ندارد — مدل با دادهٔ این اجرا می‌خواند.")
+    for i, sg in enumerate(_sugs):
+        with st.container(border=True):
+            a, b = st.columns([4, 1])
+            name = MODEL.metrics[sg.metric].label if sg.metric in MODEL.metrics else sg.detail
+            a.markdown(f"**{sg.title} — {name}**")
+            if sg.metric:
+                a.caption(sg.detail)
+            a.write(sg.reason)
+            if sg.kind == "move" and sg.to_cluster:
+                if b.button("اعمال", key=f"apply_{i}", use_container_width=True):
+                    try:
+                        nm = _ed.move_metric(MODEL, sg.metric, sg.to_cluster)
+                        for d in _ed.diff(MODEL, nm):
+                            st.write("• " + d)
+                        path, backup = _ed.save(nm)
+                        st.success(f"اعمال و ذخیره شد → {path.name} (پشتیبان: {backup.name})")
+                        st.session_state.metric_w = {}
+                        st.cache_data.clear()
+                        st.rerun()
+                    except _ed.EditError as ex:
+                        st.error(str(ex))
+
+    # ── جابه‌جایی دستی و رنگ ──
+    st.markdown("---")
+    st.markdown("##### جابه‌جایی شاخص و رنگ کلاستر")
+    m1, m2 = st.columns([1.2, 1])
+    with m1:
+        with st.form("move_metric"):
+            mv = st.selectbox("شاخص", list(MODEL.metrics),
+                              format_func=lambda k: MODEL.metrics[k].label)
+            to = st.selectbox("به کلاستر", list(MODEL.clusters),
+                              format_func=lambda k: MODEL.clusters[k].label)
+            if st.form_submit_button("جابه‌جا کن"):
+                try:
+                    nm = _ed.move_metric(MODEL, mv, to)
+                    for d in _ed.diff(MODEL, nm):
+                        st.write("• " + d)
+                    path, backup = _ed.save(nm)
+                    st.success(f"ذخیره شد → {path.name} (پشتیبان: {backup.name})")
+                    st.session_state.metric_w = {}
+                    st.cache_data.clear()
+                    st.rerun()
+                except _ed.EditError as ex:
+                    st.error(str(ex))
+    with m2:
+        st.caption("رنگ کلاستر در همهٔ خروجی‌ها یکی است. اگر بین دو گزارش عوض "
+                   "شود، خواننده فکر می‌کند چیز دیگری را نگاه می‌کند.")
+        _pal = _fluid.CATEGORICAL_LIGHT
+        with st.form("colors"):
+            _picked = {}
+            for i, (k, c) in enumerate(MODEL.clusters.items()):
+                _picked[k] = st.color_picker(
+                    c.label, c.color or _pal[i % len(_pal)], key=f"col_{k}")
+            if st.form_submit_button("ذخیره رنگ‌ها"):
+                try:
+                    nm = MODEL
+                    for k, v in _picked.items():
+                        nm = _ed.set_color(nm, k, v)
+                    path, backup = _ed.save(nm, new_version=False)
+                    st.success(f"رنگ‌ها ذخیره شد → {path.name}")
+                    st.cache_data.clear()
+                    st.rerun()
+                except _ed.EditError as ex:
+                    st.error(str(ex))
+
+    # ── نقشهٔ سیال ──
+    st.markdown("---")
+    st.markdown("##### نقشهٔ سیال — دانلود و پیش‌نمایش")
+    _payload = _fluid.build_payload(RUN.metric_scores, MODEL, RUN.people)
+    _html = _fluid.render(_payload)
+    st.download_button("⬇️ دانلود نقشهٔ سیال (HTML مستقل)", _html.encode("utf-8"),
+                       file_name=f"HR_Cluster_Space_{ref_date}.html",
+                       mime="text/html", use_container_width=True)
+    with st.expander("پیش‌نمایش در همین صفحه", expanded=False):
+        st.components.v1.html(_html, height=620, scrolling=False)
+
+    # ── سورس تازه ──
+    st.markdown("---")
+    st.markdown("##### سورس تازه — بدون تغییر کد")
+    st.caption("یک ورودی در sources.yaml کافی است. نگاشت به شاخصی که در مدل "
+               "نیست پذیرفته نمی‌شود؛ وگرنه ستونی خوانده می‌شد که هیچ‌جا "
+               "امتیاز نمی‌گیرد و کسی نمی‌فهمید چرا.")
+    _specs = _reg.load()
+    if _specs:
+        st.dataframe(pd.DataFrame([
+            {"کلید": k, "عنوان": v.label, "الگوی فایل": v.match,
+             "ستون کلید فرد": v.person_key, "شاخص‌ها": len(v.metrics)}
+            for k, v in _specs.items()]), use_container_width=True, hide_index=True)
+    with st.form("new_source"):
+        s1, s2, s3 = st.columns([1, 1.3, 1])
+        sk = s1.text_input("کلید سورس", placeholder="bazresi")
+        sl = s2.text_input("عنوان", placeholder="خروجی واحد بازرسی")
+        sm = s3.text_input("الگوی نام فایل", value="*")
+        spk = st.text_input("ستون کلید فرد در فایل", value="کد پرسنلی")
+        st.caption("نگاشت ستون‌ها — هر خط:  نام ستون | کلید شاخص | ستون نمونه (اختیاری)")
+        smap = st.text_area("نگاشت", height=110,
+                            placeholder="نرخ تطابق | conformance_score | تعداد پرونده")
+        if st.form_submit_button("افزودن سورس"):
+            try:
+                mm = []
+                for line in smap.splitlines():
+                    parts = [x.strip() for x in line.split("|") if x.strip()]
+                    if len(parts) >= 2:
+                        mm.append(_reg.MetricMap(parts[0], parts[1],
+                                                 parts[2] if len(parts) > 2 else ""))
+                if not sk.strip() or not mm:
+                    raise _reg.RegistryError("کلید سورس و دست‌کم یک نگاشت لازم است.")
+                new = dict(_specs)
+                new[sk.strip()] = _reg.SourceSpec(
+                    key=sk.strip(), label=sl.strip() or sk.strip(),
+                    match=sm.strip() or "*", person_key=spk.strip(), metrics=mm)
+                bad = _reg.validate(new, MODEL)
+                if bad:
+                    raise _reg.RegistryError("\n".join(bad))
+                path = _reg.save(new)
+                st.success(f"سورس ثبت شد → {path}. فایل‌های منطبق در اجرای بعدی "
+                           f"خوانده می‌شوند.")
+                st.cache_data.clear()
+            except Exception as ex:
+                st.error(str(ex))
 
 
 # ══════════════════════════════════════════════════════════════════════════

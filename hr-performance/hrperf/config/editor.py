@@ -72,7 +72,8 @@ def to_dict(model: PerformanceModel) -> dict:
         "model_version": model.model_version,
         "updated_at": datetime.now().strftime("%Y-%m-%d"),
         "clusters": {k: {"label": c.label, "weight": round(c.weight, 6),
-                         "scored": c.scored, "rationale": c.rationale}
+                         "scored": c.scored, "rationale": c.rationale,
+                         **({"color": c.color} if c.color else {})}
                      for k, c in model.clusters.items()},
         "metrics": {k: {kk: vv for kk, vv in asdict(m).items()
                         if kk != "key" and vv not in ("", None, False)}
@@ -279,3 +280,69 @@ def diff(a: PerformanceModel, b: PerformanceModel) -> List[str]:
             lines.append(f"⚖️ وزن شاخص «{a.metrics[k].label}»: "
                          f"{a.metrics[k].weight:.2f} ← {b.metrics[k].weight:.2f}")
     return lines
+
+
+#: رنگ باید هگز شش‌رقمی باشد — رشتهٔ دلخواه، خروجی HTML را بی‌صدا خراب می‌کند.
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def set_color(model: PerformanceModel, cluster: str, color: str) -> PerformanceModel:
+    """رنگ یک کلاستر. خالی یعنی برگرد به پالت پیش‌فرض."""
+    if cluster not in model.clusters:
+        raise EditError(f"کلاستر «{cluster}» وجود ندارد.")
+    color = str(color or "").strip()
+    if color and not _HEX.match(color):
+        raise EditError(f"رنگ باید هگز شش‌رقمی باشد (مثل #0d6e66)، نه «{color}».")
+    out = _clone(model)
+    c = out.clusters[cluster]
+    out.clusters[cluster] = Cluster(c.key, c.label, c.weight, c.scored,
+                                    c.rationale, color)
+    return out
+
+
+def move_metric(model: PerformanceModel, metric: str, to_cluster: str,
+                renormalize: bool = True) -> PerformanceModel:
+    """جابه‌جایی یک شاخص بین کلاسترها.
+
+    وزن‌های **هر دو** کلاستر بازنرمال می‌شوند: مبدأ چون یک عضو کم کرده و
+    مقصد چون یکی اضافه. بدون این، هر جابه‌جایی مدل را نامعتبر می‌کرد و
+    قابلیت عملاً بی‌استفاده می‌ماند.
+
+    وزنِ خودِ شاخص در مقصد، **سهم متناسبِ یک عضو تازه** است: اگر مقصد سه
+    عضو داشته باشد، عضو چهارم یک‌چهارم می‌گیرد و بقیه به نسبت کوچک
+    می‌شوند. حدس نیست؛ قاعده‌ای است که در `diff()` دیده می‌شود.
+    """
+    if metric not in model.metrics:
+        raise EditError(f"شاخص «{metric}» وجود ندارد.")
+    if to_cluster not in model.clusters:
+        raise EditError(f"کلاستر «{to_cluster}» وجود ندارد.")
+    m = model.metrics[metric]
+    if m.cluster == to_cluster:
+        raise EditError(f"«{metric}» از قبل در همین کلاستر است.")
+    src = m.cluster
+    out = _clone(model)
+    out.metrics[metric] = Metric(**{**asdict(m), "cluster": to_cluster})
+
+    if renormalize and m.role == "scored":
+        for ck in (src, to_cluster):
+            items = {k: x for k, x in out.metrics.items()
+                     if x.cluster == ck and x.role == "scored"}
+            if not items:
+                continue
+            if ck == to_cluster:
+                share = 1.0 / len(items)
+                out.metrics[metric] = Metric(
+                    **{**asdict(out.metrics[metric]), "weight": share})
+                rest = {k: x for k, x in items.items() if k != metric}
+                tot = sum(x.weight for x in rest.values())
+                if tot > 0:
+                    for k, x in rest.items():
+                        out.metrics[k] = Metric(
+                            **{**asdict(x), "weight": x.weight / tot * (1 - share)})
+            else:
+                tot = sum(x.weight for x in items.values())
+                if tot > 0:
+                    for k, x in items.items():
+                        out.metrics[k] = Metric(
+                            **{**asdict(x), "weight": x.weight / tot})
+    return out

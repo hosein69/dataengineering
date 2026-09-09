@@ -21,6 +21,7 @@ import pandas as pd
 
 from ..identity import keys as keymod
 from . import aibl as aiblmod
+from . import registry as regmod
 
 LONG_COLUMNS = ["person_key", "person_code", "metric_key", "value",
                 "sample_n", "source"]
@@ -267,6 +268,7 @@ def load_all(input_dir: str | Path) -> Tuple[pd.DataFrame, pd.DataFrame, List[st
     if not d.is_dir():
         return (pd.DataFrame(columns=LONG_COLUMNS), pd.DataFrame(), notes)
 
+    custom = regmod.load()
     seen: set = set()
     for f in sorted(d.glob("*")):
         if (f.is_dir() or f.name.startswith("~$") or f in seen
@@ -278,6 +280,13 @@ def load_all(input_dir: str | Path) -> Tuple[pd.DataFrame, pd.DataFrame, List[st
                    else pd.read_excel(f))
         except Exception as ex:                      # فایل خراب، کل اجرا را نمی‌کشد
             notes.append(f"فایل «{f.name}» خوانده نشد: {str(ex)[:60]}")
+            continue
+        spec = next((sp for sp in custom.values() if sp.accepts(f.name)), None)
+        if spec is not None and not is_aibl(raw):
+            got, msg = regmod.read(raw, spec)
+            notes.extend(msg)
+            if not got.empty:
+                frames.append(got)
             continue
         if is_aibl(raw):
             ex_ = aiblmod.to_long(raw, f.stem)

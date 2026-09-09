@@ -26,6 +26,10 @@ class Cluster:
     weight: float
     scored: bool = True
     rationale: str = ""
+    #: رنگ کلاستر در همه خروجی‌ها. خالی یعنی «از پالت پیش‌فرض بگیر».
+    #: رنگ، بخشی از مدل است نه تنظیم نمایش: اگر بین دو گزارش عوض شود،
+    #: خواننده فکر می‌کند چیز دیگری را نگاه می‌کند.
+    color: str = ""
 
 
 @dataclass(frozen=True)
@@ -132,7 +136,8 @@ class PerformanceModel:
         clusters = {}
         for k, c in self.clusters.items():
             w = (c.weight / cw) if (c.scored and cw > 0) else 0.0
-            clusters[k] = Cluster(c.key, c.label, w, c.scored, c.rationale)
+            clusters[k] = Cluster(c.key, c.label, w, c.scored, c.rationale,
+                                  c.color)
         metrics = dict(self.metrics)
         for ck in clusters:
             items = [m for m in metrics.values() if m.cluster == ck and m.scored]
@@ -154,7 +159,8 @@ def load_model(path: str | Path | None = None) -> PerformanceModel:
     for k, c in (raw.get("clusters") or {}).items():
         clusters[k] = Cluster(
             key=k, label=c.get("label", k), weight=float(c.get("weight", 0.0)),
-            scored=bool(c.get("scored", True)), rationale=c.get("rationale", ""))
+            scored=bool(c.get("scored", True)), rationale=c.get("rationale", ""),
+            color=str(c.get("color", "") or ""))
 
     metrics = {}
     for k, m in (raw.get("metrics") or {}).items():

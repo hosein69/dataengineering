@@ -61,8 +61,25 @@ def build_dynamic_html(people: pd.DataFrame, ref_date: str,
                        title: str = "عملکرد منابع انسانی") -> str:
     """یک صفحه کامل و مستقل از داده افراد."""
     df = people.copy()
+    # جدول رتبه‌بندی ستون‌هایش فارسی است و جدول خام انگلیسی. اگر نام
+    # پیش‌فرض نبود، معادل فارسی‌اش امتحان می‌شود — وگرنه فراخوانِ درست
+    # یک صفحهٔ خالی می‌گرفت با پیام «ستون امتیاز نیست»، که گمراه‌کننده است.
+    _FA = {"performance": "عملکرد", "full_name": "نام",
+           "case_load": "بار کاری", "workload": "بار کاری"}
+    def _resolve(col: str) -> str:
+        if not col or col in df.columns:
+            return col
+        alt = _FA.get(col, "")
+        return alt if alt in df.columns else col
+    score_col, name_col, load_col = (_resolve(score_col), _resolve(name_col),
+                                     _resolve(load_col))
+    if not dims:
+        dims = [c for c in ("مدیریت", "اداره", "نوع کار", "نقش", "گروه همتا")
+                if c in df.columns]
     if score_col not in df.columns:
-        return _empty(title, ref_date, "ستون امتیاز در داده نیست.")
+        return _empty(title, ref_date,
+                      f"ستون امتیاز («{score_col}») در داده نیست. "
+                      f"ستون‌های موجود: {', '.join(map(str, df.columns[:12]))}")
 
     labels = dict(labels or {})
     labels.setdefault(score_col, "امتیاز عملکرد")

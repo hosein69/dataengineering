@@ -19,6 +19,8 @@ SUITES = [
     ("۲) علیت، خط لوله، پایگاه داده و گزارش", "tests/test_causal_and_pipeline.py"),
     ("۳) عدالت، گراف، ویرایش مدل و خروجی داینامیک",
      "tests/test_fairness_and_graph.py"),
+    ("۴) موتور کلاستر، دفترچه سورس و نقشهٔ سیال",
+     "tests/test_engine_and_studio.py"),
 ]
 
 
