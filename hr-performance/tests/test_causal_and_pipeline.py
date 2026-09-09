@@ -369,7 +369,9 @@ def test_input_discovery() -> None:
                 ensure_ascii=False), encoding="utf-8")
             org2 = read_org_map(omap)
             check("در قالب دیکشنری، کلید فرد از کد پرسنلی پر می‌شود",
-                  org2.iloc[0]["person_key"] == "E1", str(org2.iloc[0].to_dict())[:60])
+                  org2.iloc[0]["person_key"] == "00000001"
+                  and org2.iloc[0]["person_code"] == "E1",
+                  str(org2.iloc[0].to_dict())[:70])
 
             # خط لوله باید ساختار را واقعاً بنشاند
             omap.write_text(json.dumps({"people": [
@@ -380,12 +382,12 @@ def test_input_discovery() -> None:
             ppl = pipe._people_from(pd.DataFrame(
                 {"person_key": ["E1", "E2"], "metric_key": ["q", "q"],
                  "value": [0.9, 0.8], "sample_n": [10, 10], "source": ["s", "s"]}))
-            row = ppl.set_index("person_key").loc["E1"]
+            row = ppl.set_index("person_key").loc["00000001"]
             check("ساختار سازمانی روی افراد می‌نشیند (خط فرمان هم، نه فقط داشبورد)",
                   row["department"] == "اداره ترخیص" and row["full_name"] == "الف",
                   str(row.to_dict())[:70])
             check("فردِ خارج از نقشه حذف نمی‌شود",
-                  "E2" in set(ppl["person_key"]))
+                  "00000002" in set(ppl["person_key"]), str(list(ppl["person_key"])))
             check("پوشش ناقص نقشه، هشدار می‌دهد",
                   any("نقشه سازمانی" in w for w in pipe._org_notes(2)),
                   str(pipe._org_notes(2))[:60])
@@ -405,6 +407,89 @@ def test_input_discovery() -> None:
 
 
 
+# ═══════════ ۱۰) مقاومت کلید فرد (کد پرسنلی با پیشوند GS-) ═══════════
+def test_person_key_robustness() -> None:
+    """«GS-1234» و «1234» و «1234.0» یک نفرند — نه سه نفر."""
+    print("\n── ۱۰) مقاومت کد پرسنلی ──")
+    import json
+    from hrperf.identity import keys as km
+
+    forms = ["GS-1234", "1234", "1234.0", "GS\u2011\u06f1\u06f2\u06f3\u06f4",
+             "gs-01234", "  GS-1234  ", "GS_1234"]
+    got = {km.clean_person_key(f) for f in forms}
+    check("هفت شکل مختلف کد، یک کلید می‌شوند", got == {"00001234"}, str(got))
+    check("پیشوند حرفی جدا می‌شود", km.key_prefix("GS-1234") == "GS")
+    check("کد بی‌پیشوند، پیشوند خالی دارد", km.key_prefix("1234") == "")
+    check("کلید بدون رقم حذف نمی‌شود (هیچ‌کس نباید گم شود)",
+          km.clean_person_key("AHMADI") == "AHMADI")
+    check("خالی، خالی می‌ماند و به «0» تبدیل نمی‌شود",
+          km.clean_person_key(None) == "" and km.clean_person_key("  ") == "")
+    check("کد بلندتر از ۸ رقم بریده نمی‌شود",
+          km.clean_person_key("123456789") == "123456789")
+    check("قاعده با clean_employee_code پکیج زنجیره تأمین یکی است",
+          km.clean_person_key("10201069_GS") == "10201069")
+    check("شکل نمایشی، همانی است که کاربر می‌شناسد",
+          km.display_code(pd.Series(["1234", "GS-1234", "1234.0"])) == "GS-1234")
+
+    # ابهام واقعی گزارش می‌شود، ابهام قلابی نه
+    check("دو پیشوند متفاوت روی یک شماره، اعلام می‌شود",
+          set(km.collisions(["GS-1234", "IK-1234"])) == {"00001234"})
+    check("نبودِ پیشوند، «تعارض پیشوند» شمرده نمی‌شود (هشدار کاذب)",
+          km.collisions(["GS-1234", "1234", "1234.0"]) == {})
+    msg = " ".join(km.notes(["GS-1234", "1234", "IK-1234"]))
+    check("هشدار ادغام، به زبان آدمیزاد است", "یک نفر نسبت داده شد" in msg, msg[:60])
+    check("هشدار تعارض پیشوند، خطر را می‌گوید",
+          "دو پیشوند متفاوت" in msg and "اشتباه" in msg, msg[-70:])
+
+    df = km.attach(pd.DataFrame({"person_key": ["GS-1234", "1234"]}))
+    check("کلید متعارف می‌نشیند و شکل خام نگه داشته می‌شود",
+          list(df["person_key"]) == ["00001234", "00001234"]
+          and list(df["person_code"]) == ["GS-1234", "1234"],
+          str(df.to_dict("list")))
+
+    # ── سنجه واقعی: دو فایل، دو شکل کد، یک نفر ──
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td) / "input_files"
+        d.mkdir()
+        codes = [10200000 + i for i in range(1, 13)]
+        pd.DataFrame([{"کد پرسنلی": f"GS-{c}", "نام": f"کارمند {c}",
+                       "fpy": 0.90, "fpy_n": 40,
+                       "completion_rate": 0.85, "completion_rate_n": 40}
+                      for c in codes]).to_csv(d / "a.csv", index=False,
+                                              encoding="utf-8-sig")
+        pd.DataFrame([{"کد پرسنلی": float(c),          # اکسل عددی خوانده
+                       "under24_rate": 0.80, "under24_rate_n": 40,
+                       "open_bill_rate": 0.05, "open_bill_rate_n": 40}
+                      for c in codes]).to_csv(d / "b.csv", index=False,
+                                              encoding="utf-8-sig")
+        json.dump({"people": [
+            {"person_key": f"GS-{c}", "full_name": f"کارمند {c}",
+             "management": "مدیریت خرید خارجی قطعات تولیدی",
+             "department": "اداره ترخیص", "job_family": "کارشناس ترخیص"}
+            for c in codes]},
+            open(d / "organization_map.json", "w", encoding="utf-8"),
+            ensure_ascii=False)
+
+        r = Pipeline(input_dir=str(d)).run(persist=False, ref_date="2026-08-31")
+        check("دو شکل کد، یک نفر می‌شوند نه دو نفر",
+              len(r.people) == len(codes), f"{len(r.people)} به‌جای {len(codes)}")
+        lb = r.leaderboard
+        check("کد خوانا در گزارش می‌آید، نه کلید صفرچین",
+              "کد پرسنلی" in lb.columns
+              and str(lb["کد پرسنلی"].iloc[0]).startswith("GS-"),
+              str(lb["کد پرسنلی"].iloc[0]) if "کد پرسنلی" in lb.columns else "—")
+        check("شاخص هر دو فایل به یک نفر می‌چسبد (پوشش کامل‌تر)",
+              float(r.scores.coverage.min()) > 0.6,
+              f"کمینه پوشش {float(r.scores.coverage.min()):.2f}")
+        check("نقشه سازمانی با کد GS- به سورس عددی می‌چسبد",
+              (r.people["department"].astype(str).ne("")).all(),
+              str(r.people["department"].head(2).tolist()))
+        check("رکورد شبح (نیمه‌خالی) ساخته نمی‌شود",
+              not r.scores.coverage.isna().any()
+              and float(r.scores.coverage.min()) > 0)
+
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — تست علیت، خط لوله، پایگاه داده و گزارش")
@@ -418,6 +503,7 @@ if __name__ == "__main__":
     test_email_config()
     test_email_from_hr()
     test_input_discovery()
+    test_person_key_robustness()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

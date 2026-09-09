@@ -30,6 +30,7 @@ from .config.settings import SETTINGS
 from .dataio import db as dbmod
 from .dataio.sources import (explain_missing, find_org_map, load_inputs,
                              read_org_map)
+from .identity import keys as keymod
 from .identity import peers as peermod
 from .identity import roles as rolemod
 from .metrics.derive import apply_derived
@@ -44,7 +45,8 @@ class NoInputData(RuntimeError):
 
 #: نام فارسی ستون‌های جدول عملکرد (خروجی‌ها همه فارسی‌اند)
 LEADERBOARD_FA = {
-    "person_key": "کد", "full_name": "نام", "management": "مدیریت",
+    "person_key": "کد", "person_code": "کد پرسنلی",
+    "full_name": "نام", "management": "مدیریت",
     "department": "اداره", "job_family": "نوع کار", "role": "نقش",
     "peer_group": "گروه همتا",
 }
@@ -87,8 +89,8 @@ class RunResult:
             "شواهد": self.scores.evidence.round(2),
             "اطمینان": self.scores.confidence.round(2),
         })
-        for c in ("full_name", "management", "department", "job_family",
-                  "role", "peer_group"):
+        for c in ("person_code", "full_name", "management", "department",
+                  "job_family", "role", "peer_group"):
             if c in p.columns:
                 out[c] = p[c]
         out.index.name = "person_key"
@@ -130,6 +132,13 @@ class Pipeline:
         # ۱۰ ingest
         if long is None:
             long = load_inputs(self.input_dir)
+        # کلید هر ورودی — از سورس یا از فراخوان — با یک قاعده متعارف می‌شود،
+        # وگرنه دو طرفِ اتصال دو زبان حرف می‌زنند و همه امتیازها صفر می‌شود.
+        if long is not None and not long.empty and "person_key" in long.columns:
+            long = long.copy()
+            if "person_code" not in long.columns:
+                long["person_code"] = long["person_key"].map(keymod.clean_text)
+            long["person_key"] = keymod.normalize_series(long["person_key"])
         if long.empty:
             warnings.append("هیچ رکورد شاخصی از سورس‌ها خوانده نشد.")
 
@@ -139,8 +148,14 @@ class Pipeline:
         people = people.copy()
         if people.empty or "person_key" not in people.columns:
             raise NoInputData(explain_missing(self.input_dir))
-        people["person_key"] = people["person_key"].astype(str).str.strip()
+        people["person_key"] = keymod.normalize_series(people["person_key"])
+        if "person_code" not in people.columns:
+            people["person_code"] = people["person_key"]
         warnings.extend(self._org_notes(len(people)))
+        if long is not None and not long.empty:
+            warnings.extend(keymod.notes(
+                long["person_code"] if "person_code" in long.columns
+                else long["person_key"]))
 
         # ۳۰ peers
         peer = peermod.assign(people)
@@ -286,7 +301,7 @@ class Pipeline:
 
     # ── کمکی ──
     ORG_COLS = ("full_name", "management", "department", "job_family", "role",
-                "manager", "head", "vice")
+                "manager", "head", "vice", "person_code")
 
     def _people_from(self, long: pd.DataFrame) -> pd.DataFrame:
         """افراد را از رکوردها می‌سازد و ساختار سازمانی را رویشان می‌نشاند.
@@ -295,8 +310,18 @@ class Pipeline:
         و کارشناس ترخیص با کارشناس اعتبارات مقایسه می‌شود — همان چیزی که
         این پکیج برای جلوگیری از آن ساخته شده.
         """
-        keys = sorted(long["person_key"].astype(str).unique()) if not long.empty else []
-        base = pd.DataFrame({"person_key": keys, "full_name": keys})
+        if long.empty:
+            keys, codes = [], []
+        else:
+            norm = keymod.normalize_series(long["person_key"])
+            raw = (long["person_code"] if "person_code" in long.columns
+                   else long["person_key"])
+            grp = pd.DataFrame({"k": norm, "r": raw}).groupby("k")["r"]
+            code = grp.apply(keymod.display_code)
+            keys = sorted(code.index.astype(str))
+            codes = [code.get(k, k) for k in keys]
+        base = pd.DataFrame({"person_key": keys, "person_code": codes,
+                             "full_name": codes})
         for c in self.ORG_COLS:
             if c not in base.columns:
                 base[c] = ""
@@ -309,7 +334,7 @@ class Pipeline:
             return base
 
         org = org.copy()
-        org["person_key"] = org["person_key"].astype(str).str.strip()
+        org["person_key"] = keymod.normalize_series(org["person_key"])
         org = org[org["person_key"].ne("")].drop_duplicates("person_key")
         cols = ["person_key"] + [c for c in self.ORG_COLS if c in org.columns]
         merged = base.merge(org[cols], on="person_key", how="left",

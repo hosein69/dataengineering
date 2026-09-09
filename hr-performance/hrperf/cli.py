@@ -67,7 +67,7 @@ def main(argv=None) -> int:
         print(f"   ⚠️ {w}")
     lb = r.leaderboard
     print("\nده نفر برتر (درون گروه همتای خودشان):")
-    cols = [c for c in ["کد", "نام", "اداره", "نوع کار", "عملکرد",
+    cols = [c for c in ["کد پرسنلی", "نام", "اداره", "نوع کار", "عملکرد",
                         "رتبه در گروه", "اطمینان"] if c in lb.columns]
     print(lb[cols].head(10).to_string(index=False))
 

@@ -19,7 +19,10 @@ from typing import Dict, Iterable, List, Optional
 
 import pandas as pd
 
-LONG_COLUMNS = ["person_key", "metric_key", "value", "sample_n", "source"]
+from ..identity import keys as keymod
+
+LONG_COLUMNS = ["person_key", "person_code", "metric_key", "value",
+                "sample_n", "source"]
 
 #: نام‌های محتمل هر ستون در فایل‌های ورودی (تحمل نویز نام‌گذاری)
 ALIASES: Dict[str, List[str]] = {
@@ -49,11 +52,13 @@ def normalize_long(df: pd.DataFrame, source: str) -> pd.DataFrame:
         src = _pick(df, col)
         out[col] = df[src] if src else None
     out["source"] = source
-    out["person_key"] = out["person_key"].astype(str).str.strip()
+    # کلید متعارف (اتصال) و شکل خام (نمایش) — «GS-1234» و «1234» یک نفرند.
+    out = keymod.attach(out)
     out["metric_key"] = out["metric_key"].astype(str).str.strip()
     out["value"] = pd.to_numeric(out["value"], errors="coerce")
     out["sample_n"] = pd.to_numeric(out["sample_n"], errors="coerce")
-    return out.dropna(subset=["person_key", "metric_key"])
+    out = out.dropna(subset=["person_key", "metric_key"])
+    return out[out["person_key"].ne("")]
 
 
 def melt_wide(df: pd.DataFrame, source: str,
@@ -78,7 +83,8 @@ def melt_wide(df: pd.DataFrame, source: str,
     for c in cols:
         n_col = f"{c}{sample_suffix}"
         rows.append(pd.DataFrame({
-            "person_key": df[pk].astype(str).str.strip(),
+            "person_key": df[pk].map(keymod.clean_person_key),
+            "person_code": df[pk].map(keymod.clean_text),
             "metric_key": str(c),
             "value": pd.to_numeric(df[c], errors="coerce"),
             "sample_n": (pd.to_numeric(df[n_col], errors="coerce")
@@ -87,7 +93,8 @@ def melt_wide(df: pd.DataFrame, source: str,
         }))
     if not rows:
         return pd.DataFrame(columns=LONG_COLUMNS)
-    return pd.concat(rows, ignore_index=True).dropna(subset=["value"])
+    out = pd.concat(rows, ignore_index=True).dropna(subset=["value"])
+    return out[out["person_key"].ne("")]
 
 
 def read_any(path: str | Path, source: str) -> pd.DataFrame:
@@ -137,7 +144,8 @@ def read_org_map(path: str | Path) -> pd.DataFrame:
         blank = key.eq("") | key.str.lower().isin(("nan", "none"))
         if blank.any():
             key = key.mask(blank, df[alt].astype(str).str.strip())
-    df["person_key"] = key
+    df["person_code"] = key.map(keymod.clean_text)
+    df["person_key"] = key.map(keymod.clean_person_key)
     return df
 
 

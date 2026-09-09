@@ -42,7 +42,7 @@ def build_html(leaderboard: pd.DataFrame, *, ref_date: str, title: str,
                max_rows: int = 500, show_visuals: bool = True) -> str:
     sections = sections or ["summary", "leaderboard"]
     lb = leaderboard.copy()
-    cols = [c for c in ["کد", "نام", "مدیریت", "اداره", "نوع کار", "نقش",
+    cols = [c for c in ["کد پرسنلی", "نام", "مدیریت", "اداره", "نوع کار", "نقش",
                         "عملکرد", "امتیاز منصفانه", "رتبه در گروه",
                         "نفرات گروه", "پوشش", "اطمینان"]
             if c in lb.columns]
