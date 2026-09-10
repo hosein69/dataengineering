@@ -298,6 +298,44 @@ def test_brand_identity() -> None:
         check(f"برند قدیمی حذف شد: {gone[:34]}", gone not in studio)
     check("سربرگ از ماژول برند می‌خواند", "_BRAND.LOCKUP_FULL" in studio)
 
+    # لایهٔ عمق: همان فام، انتهای تیره — نه رنگ تازه
+    import colorsys
+
+    def hue(x):
+        x = x.lstrip("#")
+        r, g, bl = (int(x[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        return colorsys.rgb_to_hls(r, g, bl)[0] * 360
+
+    def light(x):
+        x = x.lstrip("#")
+        r, g, bl = (int(x[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        return colorsys.rgb_to_hls(r, g, bl)[1] * 100
+
+    dh = abs(hue(b.DEEP) - hue(b.GREEN))
+    check("زمینهٔ عمیق همان فام سبز سازمانی است (≤ ۱۰ درجه)", dh <= 10,
+          f"{dh:.1f}°")
+    check("سبز متن روی کاغذ هم‌فام استاندارد است (≤ ۵ درجه)",
+          abs(hue(b.GREEN_INK) - hue(b.GREEN)) <= 5,
+          f"{abs(hue(b.GREEN_INK) - hue(b.GREEN)):.1f}°")
+    check("چیزی که عوض شد روشنایی بود، نه فام",
+          light(b.DEEP) < light(b.GREEN) - 10,
+          f"{light(b.DEEP):.1f}٪ در برابر {light(b.GREEN):.1f}٪")
+    check("کاغذ گرم هم‌فام طلاست — به همین دلیل کنار هم می‌نشینند",
+          abs(hue(b.PAPER) - hue(b.GOLD)) <= 3,
+          f"{abs(hue(b.PAPER) - hue(b.GOLD)):.1f}°")
+    check("متن بدنه روی کاغذ عاجی ≥ ۷:۱",
+          contrast(b.INK_DEEP, b.PAPER) >= 7.0,
+          f"{contrast(b.INK_DEEP, b.PAPER):.2f}:1")
+    check("کم‌رنگ‌ترین متن مجاز روی کاغذ ≥ ۴٫۵:۱",
+          contrast(b.INK_FAINT, b.PAPER) >= 4.5,
+          f"{contrast(b.INK_FAINT, b.PAPER):.2f}:1")
+    check("طلا وقتی متن است ≥ ۴٫۵:۱ (طلای روشن فقط برای خط مو)",
+          contrast(b.GOLD_INK, b.PAPER) >= 4.5,
+          f"{contrast(b.GOLD_INK, b.PAPER):.2f}:1")
+    check("سفید روی زمینهٔ عمیق ≥ ۷:۱",
+          contrast("#FFFFFF", b.DEEP) >= 7.0,
+          f"{contrast('#FFFFFF', b.DEEP):.2f}:1")
+
     # پالت استاندارد سازمان، نه یک انتخاب تازه
     check("سبز سازمانی", b.GREEN == "#00784B")
     check("سرمه‌ای سازمانی", b.NAVY == "#0A3A69")
