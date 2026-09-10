@@ -139,6 +139,16 @@ def cmd_validate(args) -> int:
         print(f"  ORION-X composite IC on the held-out half:  {res.information_coefficient:+.4f}")
         for n in res.notes:
             print(f"  {n}")
+        # A short sample cannot support an IC measurement, and the engine going
+        # quiet for that reason means something different from the engine
+        # judging the signal worthless. Say which it is.
+        n_train = int(first.orionx_diagnostics["evaluations"] / max(args.assets, 1))
+        if n_train < 2000:
+            from .alpha import shrink_ic
+            factor = shrink_ic(0.03, float(n_train), cfg.assumed_ic) / 0.03
+            print(f"  NOTE: only ~{n_train} independent training observations, so the IC estimate is "
+                  f"shrunk to {factor:.0%} of its raw value. A no-trade here reflects the sample "
+                  f"length, not a verdict on the signal.")
         print(f"\n  {'strategy':22}{'trades':>8}{'SR/yr':>8}{'DSR':>8}{'PSR':>8}{'maxDD':>8}{'total':>9}")
         for k, v in sorted(res.per_strategy.items(), key=lambda kv: -kv[1].sharpe_annual):
             flag = "  <-- ORION-X" if k.startswith("ORION") else ""
@@ -212,7 +222,9 @@ def main(argv: list[str] | None = None) -> int:
     s.set_defaults(func=cmd_signal)
 
     v = sub.add_parser("validate", help="walk-forward against the peer panel")
-    v.add_argument("--hours", type=int, default=4400)
+    v.add_argument("--hours", type=int, default=4400,
+                   help="length of the generated history; the IC estimate needs well over "
+                        "20,000 hours before shrinkage stops dominating it")
     v.add_argument("--assets", type=int, default=12)
     v.add_argument("--horizon", type=float, default=7.0)
     v.add_argument("--seed", type=int, default=20260910)

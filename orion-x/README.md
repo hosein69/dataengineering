@@ -235,6 +235,13 @@ observations, inflating every one of them by up to `sqrt(12)`. Aggregating each
 timestamp into one portfolio return took the best peer's deflated Sharpe from
 0.896 to 0.135 -- from "apparently skilled" to "indistinguishable from noise".
 
+One caveat the null test itself surfaces: `reversal_4h` reaches a deflated
+Sharpe of 0.70 on the null generator. That is the martingale-plus-leverage
+autocorrelation described above being weakly visible at a four-hour horizon. It
+stays below the 0.90 bar, and it is a property of the generator rather than of
+any real market, but it is the reason the null market is described here as
+having no *exploitable* predictability rather than none at all.
+
 The engine is scored against eleven published peers -- time-series momentum
 (Moskowitz, Ooi & Pedersen 2012), short-horizon reversal, Donchian breakout,
 dual moving-average crossover, RSI(2), Bollinger reversion, funding carry, OFI
