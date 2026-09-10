@@ -293,7 +293,7 @@ def test_dispatch() -> None:
           {p.name for p in d} == {"الف", "ب"}, str(sorted(p.name for p in d)))
     check("برچسب انتخابگر، نشانی را نشان نمی‌دهد",
           all("@" not in p.label for p in d), str([p.label for p in d]))
-    check("نشانی نقاب‌دار است", all("*" in p.masked for p in d),
+    check("نشانی نقاب‌دار است", all("•" in p.masked for p in d),
           str([p.masked for p in d]))
     check("نشانی واقعی فقط در لحظهٔ ارسال درمی‌آید",
           dp.addresses(d) == ["a@x.invalid", "b@x.invalid"], str(dp.addresses(d)))

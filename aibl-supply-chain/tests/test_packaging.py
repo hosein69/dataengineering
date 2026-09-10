@@ -222,6 +222,96 @@ def test_send_actually_sends() -> None:
           'st.button("🛠 ساخت پیش‌نمایش"' not in studio)
 
 
+def test_hr_recipients_resolve() -> None:
+    print("\n── ۷) گیرندگان باید از سورس HR پیدا شوند ──")
+    import pandas as pd
+    from aibl.report import dispatch as dp
+
+    src = io.open(os.path.join(ROOT, "aibl/stages/s30_org.py"), encoding="utf-8").read()
+    check("مرحلهٔ سازمانی، جدول HR را منتشر می‌کند",
+          'ctx.extras["hr"]' in src,
+          "بدون این، تب ارسال هیچ گیرنده‌ای نمی‌بیند")
+
+    # همان شکل واقعیِ خروجی adapter — نه یک شکل ساختگی
+    hr = pd.DataFrame({
+        "HR_FULL_NAME": ["علی رضایی", "مریم احمدی", "سارا کریمی"],
+        "HR_FIRST_NAME": ["علی", "مریم", "سارا"],
+        "HR_LAST_NAME": ["رضایی", "احمدی", "کریمی"],
+        "HR_EMAIL": ["a@x.invalid", "m@x.invalid", None],
+        "HR_OFFICE": ["اداره راهبری"] * 3,
+        "HR_POST": ["کارشناس/کارمند"] * 3,
+        "HR_STATUS": ["فعال", "فعال", "غیرفعال"],
+        "KEY_EMP": ["10201069", "10201070", "10201071"]})
+
+    d = dp.directory(hr)
+    check("گیرنده از HR واقعی پیدا می‌شود", len(d) == 2, f"{len(d)} نفر")
+    check("نام از HR_FULL_NAME خوانده می‌شود، نه «—»",
+          all(p.name != "—" for p in d), str([p.name for p in d]))
+    check("برچسب، اداره و پست را دارد",
+          all("اداره راهبری" in p.label for p in d))
+    check("برچسب هنوز نشانی ندارد", all("@" not in p.label for p in d))
+
+    # هدر واقعی لزوماً «Email» نیست
+    for header in ("ایمیل", "پست الکترونیک", "E-Mail", "Email Address"):
+        alt = hr.rename(columns={"HR_EMAIL": header})
+        check(f"ستون «{header}» شناخته می‌شود",
+              dp.find_email_column(alt) == header)
+
+    # و اگر هیچ نامی نخواند، از روی محتوا
+    weird = hr.rename(columns={"HR_EMAIL": "ستون بی‌نام ۷"})
+    check("ستون ناشناس از روی محتوا پیدا می‌شود",
+          dp.find_email_column(weird) == "ستون بی‌نام ۷")
+    check("و همان‌قدر گیرنده می‌دهد", len(dp.directory(weird)) == 2)
+    check("سورس بدون هیچ نشانی، خطا نمی‌دهد",
+          dp.directory(hr.drop(columns=["HR_EMAIL"])) == [])
+
+
+def test_send_button_always_present() -> None:
+    print("\n── ۸) دکمهٔ ارسال باید دیده شود ──")
+    studio = io.open(os.path.join(ROOT, "app/studio.py"), encoding="utf-8").read()
+    check("دکمهٔ ارسال به‌جای پنهان‌شدن، غیرفعال می‌شود",
+          "disabled=not ready" in studio,
+          "کنترل نامرئی یعنی «این قابلیت وجود ندارد»")
+    check("دلیل غیرفعال‌بودن به کاربر گفته می‌شود",
+          "گیرنده انتخاب نشده" in studio)
+    check("تب ارسال جدول HR را از extras می‌گیرد",
+          'extras.get("hr")' in studio)
+
+
+def test_brand_identity() -> None:
+    print("\n── ۹) هویت سازمانی روی سطح‌های دیده‌شده ──")
+    from aibl.report import brand as b
+
+    check("نام سازمان IKCO است", b.COMPANY == "IKCO")
+    check("واحد، Global Sourcing با کد GS است",
+          b.UNIT == "Global Sourcing" and b.UNIT_SHORT == "GS")
+    check("معاونت، Governance and Integration با کد GI است",
+          b.DIVISION == "Governance and Integration" and b.DIVISION_SHORT == "GI")
+    check("تیم، Data Analytics and KPI است", b.TEAM == "Data Analytics and KPI")
+    check("موضوع ایمیل با نام سازمان شروع می‌شود",
+          b.subject("1405/06/19").startswith("IKCO GS"), b.subject("1405/06/19"))
+    check("پیشوند نام فایل سازمانی است", b.FILE_PREFIX == "IKCO_GS")
+
+    studio = io.open(os.path.join(ROOT, "app/studio.py"), encoding="utf-8").read()
+    for gone in ('page_title="AIBL Studio"', '### ◈ AIBL Studio',
+                 'value=f"AIBL — گزارش زنجیره تأمین'):
+        check(f"برند قدیمی حذف شد: {gone[:34]}", gone not in studio)
+    check("سربرگ از ماژول برند می‌خواند", "_BRAND.LOCKUP_FULL" in studio)
+
+    # پالت استاندارد سازمان، نه یک انتخاب تازه
+    check("سبز سازمانی", b.GREEN == "#00784B")
+    check("سرمه‌ای سازمانی", b.NAVY == "#0A3A69")
+    check("کهربایی سازمانی", b.ORANGE == "#E88400")
+    check("سفید روی سبز سازمانی ≥ ۴٫۵:۱",
+          contrast("#FFFFFF", b.GREEN) >= 4.5,
+          f"{contrast('#FFFFFF', b.GREEN):.2f}:1")
+    check("سفید روی سرمه‌ای ≥ ۴٫۵:۱",
+          contrast("#FFFFFF", b.NAVY) >= 4.5,
+          f"{contrast('#FFFFFF', b.NAVY):.2f}:1")
+    check("متن بدنه روی پس‌زمینهٔ سازمانی ≥ ۷:۱",
+          contrast(b.INK, b.PAGE) >= 7.0, f"{contrast(b.INK, b.PAGE):.2f}:1")
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("AIBL — بسته‌بندی، کف خوانایی و ارسال")
@@ -232,6 +322,9 @@ if __name__ == "__main__":
     test_measured_contrast()
     test_charts_never_inherit_theme()
     test_send_actually_sends()
+    test_hr_recipients_resolve()
+    test_send_button_always_present()
+    test_brand_identity()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

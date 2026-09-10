@@ -59,7 +59,7 @@ def test_directory() -> None:
           str([p.label for p in d]))
     check("برچسب، اداره و پست را نشان می‌دهد",
           any("اداره ترخیص" in p.label and "کارشناس" in p.label for p in d))
-    check("نشانی نقاب‌دار است", all("*" in p.masked for p in d),
+    check("نشانی نقاب‌دار است", all("•" in p.masked for p in d),
           str([p.masked for p in d]))
     check("نشانی واقعی فقط با addresses() بیرون می‌آید",
           dp.addresses(d) == ["a@x.invalid", "b@x.invalid"], str(dp.addresses(d)))

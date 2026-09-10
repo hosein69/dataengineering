@@ -35,6 +35,15 @@ class OrgStage(Stage):
         matched = sum(1 for p in rows if p["match_type"] != "پیش‌فرض")
         log.info(f"🏢 تطبیق سازمانی: {matched} از {len(rows)} ردیف به HR وصل شد.")
         ctx.extras["org_matched"] = matched
+
+        # جدول پرسنلی را منتشر می‌کنیم. تا امروز این مرحله HR را می‌خواند،
+        # از آن سلسله‌مراتب می‌ساخت و بعد دورش می‌ریخت؛ هیچ مصرف‌کنندهٔ
+        # دیگری به آن دسترسی نداشت. نتیجه: تب «ارسال گزارش» هیچ‌وقت
+        # گیرنده‌ای پیدا نمی‌کرد، چون `extras["hr"]` اصلاً وجود نداشت —
+        # نه اینکه ستون ایمیل نبود.
+        hr = ctx.sheet("hr")
+        if hr is not None and not hr.empty:
+            ctx.extras["hr"] = hr
         return df
 
     def columns(self) -> List[ColumnSpec]:

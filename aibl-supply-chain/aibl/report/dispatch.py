@@ -53,8 +53,14 @@ from __future__ import annotations
 
 __contract__ = 1
 
-#: ستون‌های محتملِ نشانی در سورس HR
-EMAIL_COLUMNS = ("HR_EMAIL", "Email", "email", "EMAIL")
+#: ستون‌های محتملِ نشانی در سورس HR — هم نام استانداردشدهٔ adapter و هم
+#: هدرهای خامی که فایل واقعی ممکن است داشته باشد.
+EMAIL_COLUMNS = (
+    "HR_EMAIL", "Email", "email", "EMAIL", "E-Mail", "e-mail", "E_MAIL",
+    "Email Address", "EmailAddress", "Mail", "mail",
+    "ایمیل", "ایمیل سازمانی", "پست الکترونیک", "پست الکترونیکی",
+    "نشانی الکترونیکی", "آدرس ایمیل", "رایانامه",
+)
 
 import html as _h
 import os
@@ -108,7 +114,43 @@ class Person:
             return "—"
         user, _, dom = a.partition("@")
         head = user[:2] if len(user) > 3 else user[:1]
-        return f"{head}{'*' * max(len(user) - len(head), 1)}@{dom}"
+        # نقاب با «•» نه «*». در markdown استریملیت، `**` علامت پررنگ است و
+        # ستاره‌ها بی‌صدا حذف می‌شدند: «a.******@x» روی صفحه «a.@x» می‌شد
+        # و کاربر فکر می‌کرد نشانی خراب است.
+        return f"{head}{'•' * max(len(user) - len(head), 1)}@{dom}"
+
+
+def find_email_column(hr) -> Optional[str]:
+    """ستون نشانی را پیدا می‌کند — اول از روی نام، بعد از روی **محتوا**.
+
+    فایل واقعی HR لزوماً هدرش «Email» نیست؛ می‌تواند «ایمیل»، «پست
+    الکترونیک» یا هر نامِ دیگری باشد. اگر هیچ نامی نخواند، ستون‌ها را
+    می‌گردیم و هر ستونی که مقدارهایش شکل نشانی دارند را برمی‌داریم.
+    اینطور «ستون هست ولی اسمش را بلد نیستیم» دیگر به «گیرنده‌ای نیست»
+    ترجمه نمی‌شود.
+    """
+    if hr is None or getattr(hr, "empty", True):
+        return None
+    cols = list(hr.columns)
+    for cand in EMAIL_COLUMNS:
+        if cand in cols:
+            return cand
+    norm = {str(c).strip().lower().replace(" ", "").replace("_", ""): c for c in cols}
+    for cand in EMAIL_COLUMNS:
+        key = cand.strip().lower().replace(" ", "").replace("_", "")
+        if key in norm:
+            return norm[key]
+    # آخرین راه: تشخیص از روی محتوا
+    best, best_hits = None, 0
+    for c in cols:
+        try:
+            vals = hr[c].dropna().astype(str).head(200)
+        except Exception:
+            continue
+        hits = sum(1 for v in vals if _EMAIL_RE.match(v.strip()))
+        if hits > best_hits:
+            best, best_hits = c, hits
+    return best if best_hits else None
 
 
 def directory(hr) -> List[Person]:
@@ -119,7 +161,7 @@ def directory(hr) -> List[Person]:
     """
     if hr is None or getattr(hr, "empty", True):
         return []
-    col = next((c for c in EMAIL_COLUMNS if c in hr.columns), None)
+    col = find_email_column(hr)
     if col is None:
         return []
 
@@ -138,9 +180,15 @@ def directory(hr) -> List[Person]:
         status = pick(row, "HR_STATUS", "status")
         if status and ("غیرفعال" in status or "فعال" not in status):
             continue
+        # adapter ستون‌ها را HR_FULL_NAME / HR_FIRST_NAME / HR_LAST_NAME
+        # می‌سازد — «HR_NAME» هرگز وجود نداشته و همیشه «—» می‌داد.
+        name = pick(row, "HR_FULL_NAME", "HR_NAME", "name", "نام")
+        if not name:
+            first, last = pick(row, "HR_FIRST_NAME"), pick(row, "HR_LAST_NAME")
+            name = " ".join(x for x in (first, last) if x)
         out.append(Person(
-            uid=pick(row, "HR_KEY_EMP", "KEY_EMP", "HR_CODE") or addr,
-            name=pick(row, "HR_NAME", "name", "نام") or "—",
+            uid=pick(row, "KEY_EMP", "HR_KEY_EMP", "HR_CODE") or addr,
+            name=name or "—",
             unit=pick(row, "HR_OFFICE", "HR_DEPT", "ORG_DEPT") or "",
             role=pick(row, "HR_POST", "post") or "",
             _address=addr.lower()))

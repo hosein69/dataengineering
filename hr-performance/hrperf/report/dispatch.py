@@ -100,7 +100,10 @@ class Person:
             return "—"
         user, _, dom = a.partition("@")
         head = user[:2] if len(user) > 3 else user[:1]
-        return f"{head}{'*' * max(len(user) - len(head), 1)}@{dom}"
+        # نقاب با «•» نه «*». در markdown استریملیت، `**` علامت پررنگ است و
+        # ستاره‌ها بی‌صدا حذف می‌شدند: «a.******@x» روی صفحه «a.@x» می‌شد
+        # و کاربر فکر می‌کرد نشانی خراب است.
+        return f"{head}{'•' * max(len(user) - len(head), 1)}@{dom}"
 
 
 def directory(people) -> List[Person]:

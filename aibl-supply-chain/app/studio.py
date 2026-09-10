@@ -30,7 +30,11 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AIBL Studio", page_icon="◈",
+# هویت سازمانی پیش از set_page_config لازم است — عنوان پنجره از آن
+# می‌آید و set_page_config باید نخستین فراخوانی st باشد.
+from aibl.report import brand as _BRAND  # noqa: E402
+
+st.set_page_config(page_title=f"{_BRAND.PRODUCT} · {_BRAND.LOCKUP}", page_icon="◈",
                    layout="wide", initial_sidebar_state="expanded")
 
 from app import analytics, motion, process_view
@@ -90,7 +94,8 @@ def fnum(x, nd: int = 0) -> str:
 
 
 # ── نوار کناری ────────────────────────────────────────────────────────────
-st.sidebar.markdown("### ◈ AIBL Studio")
+st.sidebar.markdown(f"### ◈ {_BRAND.PRODUCT_SHORT}")
+st.sidebar.caption(_BRAND.LOCKUP_FULL)
 st.sidebar.caption("تحلیل و گزارش‌سازی زنجیره تأمین")
 
 _default_ref = os.environ.get("AIBL_TODAY") or str(date.today())
@@ -175,8 +180,9 @@ commit = fnum(pd.to_numeric(fdf.get("مانده تعهد"), errors="coerce").sum
 
 # ── هدر زنده ──────────────────────────────────────────────────────────────
 motion.hero(
-    "AIBL Studio",
-    f"تاریخ مرجع {ref_date} · {len(fdf):,} پرونده · {len(ALL_COLUMNS):,} فیلد قابل گزارش",
+    _BRAND.PRODUCT,
+    f"{_BRAND.LOCKUP_FULL}  ·  تاریخ مرجع {ref_date}  ·  {len(fdf):,} پرونده"
+    f"  ·  {len(ALL_COLUMNS):,} فیلد قابل گزارش",
     [["توقف خط", str(band_count("STOCKOUT")), STATUS["stockout"]],
      ["بحرانی", str(band_count("CRITICAL")), STATUS["critical"]],
      ["بارنامه بحرانی", str(uniq_where("BL_CRITICAL", "CANONICAL_BL")), STATUS["serious"]],
@@ -355,7 +361,7 @@ with tab_evidence:
     _ev = _analysis_html(fdf, ref_date, dict(DISPLAY))
     components.html(_ev, height=760, scrolling=True)
     st.download_button("⬇️ دانلود گزارش تحلیلی (HTML)", _ev.encode("utf-8"),
-                       file_name="AIBL_Analysis.html", mime="text/html",
+                       file_name=f"{_BRAND.FILE_PREFIX}_Analysis.html", mime="text/html",
                        key="dl_analysis")
 
 
@@ -452,7 +458,7 @@ with tab_data:
         st.dataframe(view, use_container_width=True, height=560, hide_index=True)
         st.download_button(
             "⬇ دانلود CSV این نما", view.to_csv(index=False).encode("utf-8-sig"),
-            file_name=f"AIBL_{ref_date}.csv", mime="text/csv")
+            file_name=f"{_BRAND.FILE_PREFIX}_{ref_date}.csv", mime="text/csv")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -541,7 +547,7 @@ with tab_export:
             st.markdown("**دامنه**")
             rows_cap = st.number_input("حداکثر ردیف", 100, 100000,
                                        int(T.max_rows), 100)
-            stem = st.text_input("نام فایل", f"AIBL {T.title}")
+            stem = st.text_input("نام فایل", f"{_BRAND.FILE_PREFIX} {T.title}")
         st.caption(f"فیلدهای انتخابی: **{len(sel_cols):,}** — از تب «سازنده گزارش» "
                    f"تغییرشان دهید.")
 
@@ -577,9 +583,9 @@ with tab_export:
                                   str(Path(official_excel).parent)))
                    / ref_date / "reports")
         spec = ReportSpec(template=pick, fields=sel_cols, ref_date=ref_date,
-                          title=f"AIBL — {T.title}", formats=formats,
+                          title=f"{_BRAND.LOCKUP} — {T.title}", formats=formats,
                           visuals=want_vis, tables=want_tab,
-                          max_rows=int(rows_cap), file_stem=stem.strip() or f"AIBL {T.title}")
+                          max_rows=int(rows_cap), file_stem=stem.strip() or f"{_BRAND.FILE_PREFIX} {T.title}")
         with st.spinner("در حال ساخت گزارش…"):
             try:
                 res = build_report(fdf, extras, spec, DISPLAY, out_dir)
@@ -622,8 +628,8 @@ with tab_export:
                                mime=("application/vnd.openxmlformats-officedocument"
                                      ".spreadsheetml.sheet"))
 
-st.caption("AIBL Studio — لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
-           "منطق کسب‌وکار در موتور AIBL باقی می‌ماند.")
+st.caption(f"{_BRAND.LOCKUP_FULL} — لایه نمایش و خروجی روی همان "
+           "Pipeline/Rulebook موجود؛ منطق کسب‌وکار در موتور باقی می‌ماند.")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -713,7 +719,7 @@ with tab_send:
 
     with st.container(border=True):
         panel_open("۳ · متن ایمیل")
-        subj = st.text_input("موضوع", value=f"AIBL — گزارش زنجیره تأمین {ref_date}")
+        subj = st.text_input("موضوع", value=_BRAND.subject(ref_date))
         note = st.text_area(
             "یادداشت پایانی", height=70,
             value="یک متریال بحرانی، کل پرونده را بحرانی می‌کند؛ علت آن در "
@@ -765,18 +771,27 @@ with tab_send:
         mail_html = st.session_state.get("aibl_mail", "")
         files = [_P(f) for f in st.session_state.get("aibl_files", [])]
 
-        if not to_addr:
-            st.info("برای ارسال، دست‌کم یک گیرنده در بخش ۲ انتخاب یا وارد کنید.")
-        else:
+        # دکمهٔ ارسال **همیشه** دیده می‌شود. قبلاً وقتی گیرنده‌ای نبود کل
+        # بلوک پنهان می‌شد و کاربر نتیجه می‌گرفت که «این برنامه دکمهٔ ارسال
+        # ندارد و فقط پیش‌نمایش می‌دهد». کنترلِ غیرفعالِ دلیل‌دار، بهتر از
+        # کنترلِ نامرئی است.
+        ready = bool(to_addr)
+        if not ready:
+            st.info("دکمهٔ ارسال تا وقتی گیرنده‌ای نباشد غیرفعال است — "
+                    "در بخش ۲ از فهرست HR انتخاب کنید یا نشانی را دستی بنویسید.")
+        if True:
             s1, s2 = st.columns([2, 1])
-            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده", type="primary",
-                         use_container_width=True):
+            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده" if ready
+                         else "🚀 ارسال (گیرنده انتخاب نشده)",
+                         type="primary", use_container_width=True,
+                         disabled=not ready):
                 try:
                     st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
                                         files, send_now=True).summary)
                 except Exception as ex:
                     st.error(str(ex))
             if s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
+                         disabled=not ready,
                          help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
                 try:
                     st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
@@ -785,9 +800,10 @@ with tab_send:
                     st.error(str(ex))
             st.download_button(
                 "⬇️ پروندهٔ .eml (سیستمی که اتلوک ندارد)",
-                _dp.eml(subj, mail_html, to_addr, cc_addr, files),
-                file_name=f"AIBL_{ref_date}.eml", mime="message/rfc822",
-                use_container_width=True)
+                _dp.eml(subj, mail_html, to_addr or ["-"], cc_addr, files),
+                file_name=f"{_BRAND.FILE_PREFIX}_{ref_date}.eml",
+                mime="message/rfc822", use_container_width=True,
+                disabled=not ready)
             st.caption(f"{len(files)} پیوست همراه می‌رود. ارسال برگشت‌ناپذیر است.")
 
         with st.expander("پیش‌نمایش متن ایمیل", expanded=False):
