@@ -253,6 +253,11 @@ class EngineConfig:
     assumed_ic: float = 0.03
     max_abs_ic: float = 0.08               # refuse to believe a larger IC
     ic_shrink_on_uncertainty: float = 0.5
+    # How far to move block weights from their priors toward the measured-IC
+    # optimum. 1.0 trusts the measurement completely; 0.0 ignores it. The
+    # measurement is a correlation estimated from a few hundred overlapping
+    # observations, so it deserves weight but not the whole vote.
+    ic_weight_confidence: float = 0.7
 
     # --- sizing -------------------------------------------------------------
     kelly_fraction: float = 0.25           # quarter Kelly

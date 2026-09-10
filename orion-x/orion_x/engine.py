@@ -316,6 +316,8 @@ def decide(
     previous_regime: str | None = None,
     measured_ic: float | None = None,
     composite_dispersion: float | None = None,
+    block_ics: dict[str, float] | None = None,
+    block_correlation: tuple[list[str], np.ndarray] | None = None,
     funding_history: np.ndarray | None = None,
     portfolio_equity: float = 1_000_000.0,
     enforce_point_in_time: bool = True,
@@ -385,7 +387,11 @@ def decide(
     epen, event_notes = event_risk(asset, events, now, config.horizon_hours)
     warnings.extend(event_notes)
 
-    composite, contributions, combine_notes = combine_blocks(blocks, config)
+    composite, contributions, combine_notes = combine_blocks(blocks, config, block_ics, block_correlation)
+    if block_ics:
+        combine_notes.append(
+            "block weights set by measured information coefficients rather than priors"
+        )
     reasons.extend(combine_notes)
 
     # The regime does not vote on direction; it scales conviction. A long thesis
@@ -625,7 +631,7 @@ def decide(
     )
 
     # ---------------- local sensitivity ------------------------------------
-    sensitivity = _sensitivity(asset, blocks, config)
+    sensitivity = _sensitivity(asset, blocks, config, block_ics, block_correlation)
 
     score = 50.0 * (1.0 + composite)
 
@@ -704,7 +710,13 @@ def decide(
     )
 
 
-def _sensitivity(asset: AssetSnapshot, blocks: dict[str, Block], config: EngineConfig) -> dict[str, float]:
+def _sensitivity(
+    asset: AssetSnapshot,
+    blocks: dict[str, Block],
+    config: EngineConfig,
+    block_ics: dict[str, float] | None = None,
+    block_correlation: tuple[list[str], np.ndarray] | None = None,
+) -> dict[str, float]:
     """d(composite) / d(block score), published so the decision is auditable.
 
     A reviewer can read straight off the card which evidence the trade rests on
@@ -712,15 +724,15 @@ def _sensitivity(asset: AssetSnapshot, blocks: dict[str, Block], config: EngineC
     weights: reliability scaling and the agreement adjustment both change the
     effective ones.
     """
-    base, _, _ = combine_blocks(blocks, config)
+    base, _, _ = combine_blocks(blocks, config, block_ics, block_correlation)
     out: dict[str, float] = {}
     h = 1e-4
     for name, blk in blocks.items():
         bumped = dict(blocks)
         bumped[name] = Block(clamp(blk.score + h, -1.0, 1.0), blk.reliability, blk.diagnostics, [])
-        up, _, _ = combine_blocks(bumped, config)
+        up, _, _ = combine_blocks(bumped, config, block_ics, block_correlation)
         bumped[name] = Block(clamp(blk.score - h, -1.0, 1.0), blk.reliability, blk.diagnostics, [])
-        dn, _, _ = combine_blocks(bumped, config)
+        dn, _, _ = combine_blocks(bumped, config, block_ics, block_correlation)
         out[name] = round((up - dn) / (2 * h), 4)
     out["_base"] = round(base, 5)
     return out

@@ -23,6 +23,7 @@ import numpy as np
 
 from ..contracts import AssetSnapshot, EngineConfig, MarketSnapshot, PriceHistory
 from ..costs import CostModel, estimate_costs
+from ..alpha import shrink_ic
 from ..engine import decide
 from ..graph import build_graph_context
 from .metrics import PerformanceReport, summarize
@@ -40,7 +41,10 @@ class WalkForwardResult:
     trade_counts: dict[str, int]
     orionx_diagnostics: dict[str, float]
     information_coefficient: float
+    raw_information_coefficient: float
     composite_dispersion: float
+    block_ics: dict[str, float]
+    block_correlation: tuple[list[str], np.ndarray] | None
     calibration: dict[str, float]
     reliability_rows: list[dict] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -129,10 +133,11 @@ def _build_snapshots(path: MarketPath, sym: str, i: int, config: EngineConfig):
     return market, asset
 
 
-def _realized(path: MarketPath, sym: str, entry_i: int, side: float, tp: float, sl: float, horizon: int) -> tuple[float, float]:
+def _realized(path: MarketPath, sym: str, entry_i: int, side: float, tp: float, sl: float, horizon: int) -> tuple[float, float, int]:
     """Realized triple-barrier return, entering at the *next* bar.
 
-    Returns (return, holding hours). Entering at `entry_i + 1` is not a detail:
+    Returns (return, holding hours, outcome) where outcome is +1 if the profit
+    barrier was touched first, -1 if the stop was, and 0 on a timeout. Entering at `entry_i + 1` is not a detail:
     entering at the decision bar's own close assumes execution at a price that
     was only known once the bar completed, which is the single most common way
     a backtest manufactures alpha.
@@ -140,7 +145,7 @@ def _realized(path: MarketPath, sym: str, entry_i: int, side: float, tp: float, 
     p = path.assets[sym]["price"]
     start = entry_i + 1
     if start >= p.size - 1 or side == 0:
-        return 0.0, 0.0
+        return 0.0, 0.0, 0
     entry = float(p[start])
     end = min(start + horizon, p.size - 1)
     up = entry * (1.0 + side * tp)
@@ -154,10 +159,10 @@ def _realized(path: MarketPath, sym: str, entry_i: int, side: float, tp: float, 
         # books +sl, which credits losses as wins and reverses the entire
         # short book's P&L.
         if (side > 0 and px >= up) or (side < 0 and px <= up):
-            return tp, float(k - start)
+            return tp, float(k - start), 1
         if (side > 0 and px <= dn) or (side < 0 and px >= dn):
-            return -sl, float(k - start)
-    return side * (float(p[end]) / entry - 1.0), float(end - start)
+            return -sl, float(k - start), -1
+    return side * (float(p[end]) / entry - 1.0), float(end - start), 0
 
 
 def run_walk_forward(
@@ -170,6 +175,8 @@ def run_walk_forward(
     portfolio_equity: float = 1_000_000.0,
     measured_ic: float | None = None,
     composite_dispersion: float | None = None,
+    block_ics: dict[str, float] | None = None,
+    block_correlation: tuple[list[str], np.ndarray] | None = None,
     progress: bool = False,
 ) -> WalkForwardResult:
     """Run ORION-X and every peer over the same path with the same costs."""
@@ -197,6 +204,7 @@ def run_walk_forward(
     peer_by_time: dict[str, dict[int, float]] = {k: {} for k in PEERS}
     orion_returns: list[float] = []
     orion_scores: list[float] = []
+    block_history: dict[str, list[float]] = {}
     orion_forward: list[float] = []
     orion_prob_tp: list[float] = []
     orion_hit: list[float] = []
@@ -223,6 +231,7 @@ def run_walk_forward(
                 graph=graph, previous_regime=prev_regime, measured_ic=measured_ic,
                 portfolio_equity=portfolio_equity,
                 composite_dispersion=composite_dispersion,
+                block_ics=block_ics, block_correlation=block_correlation,
                 horizon_diagnostics=False,
             )
             prev_regime = card.regime
@@ -233,6 +242,8 @@ def run_walk_forward(
             fwd = float(np.sum(path.assets[sym]["log_return"][i + 1 : i + 1 + horizon]))
             orion_scores.append(card.composite)
             orion_forward.append(fwd)
+            for bname, bscore in card.blocks.items():
+                block_history.setdefault(bname, []).append(bscore)
 
             if card.decision == "NO_TRADE":
                 no_trade += 1
@@ -242,7 +253,7 @@ def run_walk_forward(
                 continue
 
             side = 1.0 if card.decision == "LONG" else -1.0
-            gross, hold = _realized(path, sym, i, side, card.plan.tp_distance, card.plan.sl_distance, horizon)
+            gross, hold, outcome = _realized(path, sym, i, side, card.plan.tp_distance, card.plan.sl_distance, horizon)
             notional = card.size["fraction"] * portfolio_equity
             c = estimate_costs(
                 side=int(side), notional=notional,
@@ -255,8 +266,15 @@ def run_walk_forward(
             net = gross - c.total
             orion_returns.append(net * card.size["fraction"])
             orion_by_time[i] = orion_by_time.get(i, 0.0) + net * card.size["fraction"] / len(symbols)
+            # Calibration compares P(the profit barrier is touched first) with
+            # whether that barrier was in fact touched first. Scoring it against
+            # "did the trade make money" measures a different event entirely:
+            # with the optimiser's wide geometry most trades time out at a small
+            # profit, so a forecast of P(target) = 0.08 gets compared to a 50%
+            # win rate and the model is declared badly calibrated when it is
+            # simply being asked a different question.
             orion_prob_tp.append(card.probabilities["take_profit"])
-            orion_hit.append(1.0 if gross > 0 else 0.0)
+            orion_hit.append(1.0 if outcome == 1 else 0.0)
 
         # Peers trade the same grid with a fixed, comparable barrier geometry so
         # that any difference is attributable to the signal, not to the stops.
@@ -269,7 +287,7 @@ def run_walk_forward(
                 s = peer_side(name, ctx, i)
                 if s == 0:
                     continue
-                gross, hold = _realized(path, sym, i, float(np.sign(s)), tp, sl, horizon)
+                gross, hold, _ = _realized(path, sym, i, float(np.sign(s)), tp, sl, horizon)
                 c = estimate_costs(
                     side=int(np.sign(s)), notional=0.02 * portfolio_equity,
                     hourly_volume=float(d["hourly_volume"][i]),
@@ -308,7 +326,37 @@ def run_walk_forward(
 
     scores = np.array(orion_scores)
     fwds = np.array(orion_forward)
-    ic = float(np.corrcoef(scores, fwds)[0, 1]) if scores.size > 8 and scores.std() > 1e-12 else 0.0
+    ic_raw = float(np.corrcoef(scores, fwds)[0, 1]) if scores.size > 8 and scores.std() > 1e-12 else 0.0
+    ic = shrink_ic(ic_raw, float(len(decision_points)), config.assumed_ic)
+
+    # Per-block information coefficients, measured on every evaluation rather
+    # than only on the trades: conditioning on the engine's own gate would
+    # measure the gate, not the signal.
+    #
+    # The effective sample size is the number of decision *times*, not the
+    # number of asset-observations. Twelve assets sharing one BTC factor supply
+    # roughly one independent observation per timestamp, so using the raw count
+    # would understate the standard error by sqrt(12) and make every block look
+    # significant.
+    n_effective = float(len(decision_points))
+    measured_block_ics: dict[str, float] = {}
+    raw_block_ics: dict[str, float] = {}
+    for bname, series_vals in block_history.items():
+        arr = np.asarray(series_vals, dtype=float)
+        if arr.size == fwds.size and arr.size > 30 and arr.std() > 1e-9:
+            raw = float(np.corrcoef(arr, fwds)[0, 1])
+            raw_block_ics[bname] = raw
+            measured_block_ics[bname] = shrink_ic(raw, n_effective, config.assumed_ic)
+    block_names = sorted(measured_block_ics)
+    block_corr = None
+    if len(block_names) >= 2:
+        mat = np.column_stack([np.asarray(block_history[b], dtype=float) for b in block_names])
+        keep = mat.std(axis=0) > 1e-9
+        if keep.sum() >= 2:
+            names_kept = [b for b, k in zip(block_names, keep) if k]
+            c = np.nan_to_num(np.corrcoef(mat[:, keep], rowvar=False), nan=0.0)
+            np.fill_diagonal(c, 1.0)
+            block_corr = (names_kept, c)
 
     calib: dict[str, float] = {}
     rows: list[dict] = []
@@ -336,7 +384,10 @@ def run_walk_forward(
             "mean_size": float(np.mean([abs(r) for r in orion_returns])) if orion_returns else 0.0,
         },
         information_coefficient=ic,
+        raw_information_coefficient=ic_raw,
         composite_dispersion=float(scores.std(ddof=1)) if scores.size > 2 else 0.0,
+        block_ics=measured_block_ics,
+        block_correlation=block_corr,
         calibration=calib,
         reliability_rows=rows,
         notes=notes,
@@ -377,11 +428,13 @@ def run_two_pass_validation(
         start_frac=train_frac, end_frac=1.0,
         measured_ic=train.information_coefficient,
         composite_dispersion=train.composite_dispersion or None,
+        block_ics=train.block_ics or None,
+        block_correlation=train.block_correlation,
     )
     test.notes.insert(
         0,
         f"IC and dispersion estimated on the first {train_frac:.0%} of the sample "
-        f"(IC {train.information_coefficient:+.4f}, dispersion {train.composite_dispersion:.4f}) "
-        f"and applied out of sample to the remainder",
+        f"(IC {train.raw_information_coefficient:+.4f} raw -> {train.information_coefficient:+.4f} shrunk, dispersion {train.composite_dispersion:.4f}, "
+        f"{len(train.block_ics)} block ICs) and applied out of sample to the remainder",
     )
     return train, test

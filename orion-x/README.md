@@ -73,6 +73,54 @@ longer holding period, it is waiting for a better signal.
 This is why the engine gates almost everything. It is not conservatism; it is
 the same arithmetic v4 never performed.
 
+### The second bind: measuring an IC costs years
+
+The walk-forward exposed a failure the barrier mathematics could not have
+caught. With fixed prior weights, one informative evidence block averaged with
+six uninformative ones produced a composite whose out-of-sample IC was 0.023
+against a planted ceiling of 0.037 -- and the engine could not tell a market
+with a planted signal from one with none. The combination rule was the
+bottleneck, not the model.
+
+Weighting blocks by `Sigma^-1 IC` instead of by priors (Grinold & Kahn ch. 11)
+fixed the extraction: on three and a half years of history the composite now
+recovers an IC of 0.030 against a ceiling of 0.032, and the held-out half
+confirms it at 0.032.
+
+But measuring an IC is itself a statistical problem, and the first attempt at
+it walked straight into the trap the harness exists to detect. Unshrunk block
+ICs measured on a training half gave a training composite IC of +0.115 and an
+out-of-sample IC of -0.024 -- worse than using no measurement at all. The
+standard error is the reason. Twelve assets sharing one BTC factor supply
+roughly one independent observation per timestamp, so the effective sample size
+is the number of decision times, and a few hundred of those give a standard
+error near 0.10. A "measured" IC of 0.13 was one standard error from zero.
+
+Under an empirical-Bayes prior of `true IC ~ N(0, 0.03^2)` -- which is not a
+formality but the literature's actual estimate of what survives out of sample --
+the posterior mean is `IC_raw * tau^2 / (tau^2 + se^2)`:
+
+```
+   decisions   years    se     shrink    0.030 becomes
+        200      0.3   0.071    x0.15       0.0045
+       1200      1.6   0.029    x0.52       0.0157
+       4400      6.0   0.015    x0.80       0.0240
+```
+
+Combine that with the viability condition `IC |z| > h`: at `h = 0.04` and a
+two-sigma view you need a believed IC above 0.02, which needs a standard error
+below about 0.03, which needs **something like six years of independent
+observations**. And a short-horizon crypto signal is unlikely to survive six
+years unchanged.
+
+This is the bind, stated precisely. It is not an argument that the strategy is
+impossible; it is an argument about which lever moves it. Grinold's fundamental
+law says `IR = IC sqrt(breadth)`, and breadth is the only term here that can be
+increased quickly. Ten assets sharing one market factor have a breadth near two,
+not ten -- which is exactly what `effective_number_of_bets` measures and reports
+on every card. More genuinely independent bets, not a longer horizon and not
+more features, is what this arithmetic asks for.
+
 ## What changed from v4, and why
 
 ### Errors of arithmetic
@@ -194,6 +242,67 @@ dual moving-average crossover, RSI(2), Bollinger reversion, funding carry, OFI
 flip -- through the same cost model, with the same barrier geometry, judged by
 the deflated Sharpe ratio (Bailey & Lopez de Prado 2014), which corrects for
 having tried twelve things.
+
+## What the validation actually found
+
+Three and a half years of hourly history, ten assets, a 24-hour horizon,
+parameters estimated on the first half and applied to the second. `h` is the
+edge hurdle as a fraction of horizon volatility.
+
+```
+market   hurdle h  trades   SR/yr    DSR   maxDD   total   rank among 12
+null        0.040       0    0.00  0.500    0.0%   0.00%
+alpha       0.040       0    0.00  0.500    0.0%   0.00%
+null        0.020       0    0.00  0.500    0.0%   0.00%
+alpha       0.020      18   +0.49  0.130    0.1%   0.12%       1st
+null        0.010       0    0.00  0.500    0.0%   0.00%
+alpha       0.010      74   +1.65  0.686    0.2%   0.73%       1st
+```
+
+The row that matters is the pairing. **At every hurdle the engine takes zero
+trades in the null market**, and where a signal exists it trades and finishes
+ahead of all eleven peers:
+
+```
+ORION_X_v5           +1.65   DSR 0.686
+funding_carry        +0.25   DSR 0.088
+rsi2_reversion       +0.21   DSR 0.080
+vol_breakout         -0.54
+donchian_96h         -1.13
+buy_and_hold         -1.25
+random_coinflip      -1.34
+ofi_microstructure   -1.87
+reversal_4h          -2.14
+ma_cross_24_200      -3.26
+tsmom_7d             -3.55
+```
+
+Two things must be said plainly about that table.
+
+**A deflated Sharpe of 0.686 on 74 trades is not evidence of skill.** It is
+below the 0.90 bar this repository sets for itself, and 74 trades is a small
+sample by any standard. What the result establishes is discrimination -- silence
+where there is nothing, activity where there is something -- not profitability.
+
+**The hurdle is a choice, and it is the thing doing the work.** At `h = 0.04`
+the engine never trades even against a real signal, because the shrunk IC of
+0.016 needs `|z| > 2.5` to clear it. Lowering the hurdle to 0.01 trades the same
+information at a lower risk-adjusted bar. Neither setting is right in the
+abstract; what matters is that the trade-off is one line in `EngineConfig`, is
+reported on every card, and is not hidden inside a 0-100 score.
+
+Execution costs turned out not to be the binding constraint at a 24-hour
+horizon. Running the same test at retail (4.5 bps), VIP (1.8 bps) and
+maker-heavy (0.5 bps) fee tiers changed nothing: all three took zero trades at
+`h = 0.04`. Confidence in the IC estimate is what binds, and cheaper execution
+does not buy confidence.
+
+The probability forecasts are well calibrated where they can be checked --
+forecast 0.017 against an observed 0.014 for the profit barrier, with a
+reliability term of 0.0000. Resolution is 0.0, though: the barrier optimiser
+converges on similar geometries, so `P(target)` barely varies across trades and
+the forecast has no discriminating power between them even though its level is
+right.
 
 ## Layout
 

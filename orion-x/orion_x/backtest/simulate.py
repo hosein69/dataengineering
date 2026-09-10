@@ -25,6 +25,17 @@ Stylized facts reproduced:
       range repeatedly estimated for crypto (Chu et al. 2017; Gkillas & Katsiampa 2018).
     * Leverage effect: negative shocks raise next-period variance more than
       positive ones (Black 1976; Glosten, Jagannathan & Runkle 1993).
+
+A consequence worth stating, because it looks like a leak and is not one: "null"
+here means *no exploitable predictability*, not zero autocorrelation. Making the
+price an arithmetic martingale requires a drift of -var[t+1]/2, and under the
+leverage effect var[t+1] depends asymmetrically on the sign of r[t]. The two
+together produce a small positive autocorrelation in log returns -- around
++0.03 at lag 1 on these parameters -- which is a theorem about arithmetic
+martingales with asymmetric volatility, not an artefact that can be removed
+without breaking the martingale property. It is far too small to survive the
+cost model at any horizon this engine trades, which the peer results confirm:
+every momentum rule in the panel loses money on this generator.
     * A dominant common factor: most altcoin variance is BTC beta.
     * Intraday seasonality in both volume and volatility.
     * Spread inversely related to volume; depth proportional to volume.
@@ -108,6 +119,8 @@ def simulate_market(
     n_assets: int = 14,
     seed: int = 20260910,
     alpha_strength: float = 0.0,
+    alpha_halflife_hours: float = 8.0,
+    horizon_for_truth: int = 24,
     start: datetime | None = None,
 ) -> MarketPath:
     """Generate a full market history.
@@ -115,9 +128,14 @@ def simulate_market(
     Args:
         n_hours: length of the history (4400h ~ six months of hourly bars).
         n_assets: number of tradeable alt assets.
-        alpha_strength: 0 for a null market; ~1.0 injects an OFI -> next-hour
-            idiosyncratic return relation with an information coefficient near
-            0.05.
+        alpha_strength: 0 for a null market; ~1.0 injects an OFI -> forward
+            idiosyncratic return relation.
+        alpha_halflife_hours: decay half-life of the planted signal's effect on
+            the drift. The signal is only tradeable over horizons comparable to
+            this.
+        horizon_for_truth: horizon in hours over which the planted IC is
+            reported, so the ceiling quoted in `truth` is the one a strategy
+            trading that horizon could actually reach.
     """
     rng = np.random.default_rng(seed)
     start = start or datetime(2026, 3, 1, tzinfo=timezone.utc)
@@ -161,10 +179,27 @@ def simulate_market(
         ofi_noise = rng.standard_normal(n_hours)
 
         if alpha_strength > 0:
-            lead = np.empty(n_hours)
-            lead[0] = 0.0
-            lead[1:] = planted[:-1]
-            idio = idio + alpha_strength * 0.055 * lead * np.std(idio)
+            # The planted signal drives a *decaying* drift rather than a single
+            # next-hour return. A signal that is exhausted one bar after it
+            # appears is not a model of anything tradeable: it cannot be acted
+            # on at any horizon longer than a bar, and correlating it with a
+            # 24-hour forward return dilutes it by sqrt(24) whatever the engine
+            # does. Real short-horizon alpha decays with a half-life measured in
+            # hours, which is what `alpha_halflife_hours` reproduces.
+            phi = 0.5 ** (1.0 / max(alpha_halflife_hours, 1e-6))
+            drift = np.zeros(n_hours)
+            for t in range(1, n_hours):
+                drift[t] = phi * drift[t - 1] + planted[t - 1]
+            # Scale so the predictable component is a fixed fraction of
+            # idiosyncratic volatility regardless of the half-life. An AR(1)
+            # driven by unit noise has variance 1 / (1 - phi^2), so without the
+            # sqrt(1 - phi^2) factor the injected signal's strength would move
+            # with the decay rate and the two knobs would be confounded.
+            predictable_fraction = 0.06 * alpha_strength
+            drift *= predictable_fraction * math.sqrt(1.0 - phi * phi) * np.std(idio) / max(np.std(drift), 1e-12) * (
+                1.0 / math.sqrt(1.0 - phi * phi)
+            )
+            idio = idio + drift
         ofi = 0.62 * planted + 0.78 * ofi_noise
 
         r = beta * btc_r + idio
@@ -213,9 +248,15 @@ def simulate_market(
     if alpha_strength > 0:
         # Report the realized IC of the planted relation so the walk-forward
         # result can be compared to the ceiling rather than to zero.
-        ics = []
+        h = max(int(horizon_for_truth), 1)
+        ics_1h, ics_h = [], []
         for sym, d in assets.items():
-            x, y = d["ofi"][:-1], d["idio_return"][1:]
-            ics.append(float(np.corrcoef(x, y)[0, 1]))
-        truth["planted_ic"] = float(np.mean(ics))
+            ics_1h.append(float(np.corrcoef(d["ofi"][:-1], d["idio_return"][1:])[0, 1]))
+            fwd = np.convolve(d["idio_return"], np.ones(h), mode="full")[h - 1 :][: d["ofi"].size]
+            n = d["ofi"].size - h
+            ics_h.append(float(np.corrcoef(d["ofi"][:n], fwd[1 : n + 1])[0, 1]))
+        truth["planted_ic_1h"] = float(np.mean(ics_1h))
+        truth["planted_ic"] = float(np.mean(ics_h))
+        truth["alpha_halflife_hours"] = float(alpha_halflife_hours)
+        truth["horizon_for_truth"] = float(h)
     return MarketPath(timestamps, btc_price, btc_r, eth_price, eth_r, assets, truth)

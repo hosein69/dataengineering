@@ -69,19 +69,57 @@ def test_deflated_sharpe_punishes_selection():
 
 def test_null_market_gives_no_strategy_a_real_edge():
     """The generator must be unpredictable. If this fails, nothing else in the
-    validation means anything."""
-    mp = simulate_market(n_hours=3000, n_assets=6, alpha_strength=0.0, seed=3)
-    for sym, d in mp.assets.items():
-        r = d["log_return"]
-        for name, x in (("own lag", r[:-1]), ("ofi", d["ofi"][:-1]), ("funding", d["funding"][:-1])):
-            c = float(np.corrcoef(x, r[1:])[0, 1])
-            t = abs(c) * math.sqrt(r.size - 1)
-            assert t < 3.5, f"{sym}: {name} predicts next-hour return (t={t:.2f})"
+    validation means anything.
+
+    The test is on the *mean* predictive correlation across the panel, not on
+    each series. With fat tails and volatility clustering the sampling standard
+    deviation of a single autocorrelation estimate is roughly twice the
+    textbook 1/sqrt(n), so per-series thresholds either flake or are set so wide
+    they detect nothing. Pooling across series is both the correct test and a
+    small illustration of the same point the harness makes about t-statistics
+    on financial data.
+    """
+    corrs = {"own lag": [], "ofi": [], "funding": []}
+    for seed in (3, 4, 5):
+        mp = simulate_market(n_hours=3000, n_assets=6, alpha_strength=0.0, seed=seed)
+        for d in mp.assets.values():
+            r = d["log_return"]
+            corrs["own lag"].append(float(np.corrcoef(r[:-1], r[1:])[0, 1]))
+            corrs["ofi"].append(float(np.corrcoef(d["ofi"][:-1], r[1:])[0, 1]))
+            corrs["funding"].append(float(np.corrcoef(d["funding"][:-1], r[1:])[0, 1]))
+    # Exogenous predictors must be indistinguishable from noise.
+    for name in ("ofi", "funding"):
+        a = np.asarray(corrs[name])
+        t = a.mean() / (a.std(ddof=1) / math.sqrt(a.size))
+        assert abs(t) < 3.0, f"{name} predicts the next-hour return across the panel (t={t:.2f})"
+
+    # The return's own lag is a different case and is checked on magnitude
+    # rather than significance. Making the price an arithmetic martingale
+    # requires a drift of -var[t+1]/2, and under the leverage effect var[t+1]
+    # depends asymmetrically on the sign of r[t]; the two together imply a small
+    # positive autocorrelation. That is a property of arithmetic martingales
+    # with asymmetric volatility, not a leak, and it cannot be removed without
+    # breaking the martingale property. What matters is that it stays far below
+    # anything the cost model would let a strategy reach.
+    own = np.asarray(corrs["own lag"])
+    assert abs(own.mean()) < 0.05, f"lag-1 autocorrelation is economically large ({own.mean():+.4f})"
 
 
 def test_planted_alpha_is_actually_present():
-    mp = simulate_market(n_hours=3000, n_assets=6, alpha_strength=1.0, seed=3)
-    assert 0.02 < mp.truth["planted_ic"] < 0.10
+    mp = simulate_market(n_hours=8000, n_assets=6, alpha_strength=1.0, seed=3)
+    assert 0.015 < mp.truth["planted_ic"] < 0.10
+
+
+def test_planted_alpha_decays_and_the_horizon_matters():
+    """A signal with a longer half-life is weaker at one hour and stronger over
+    a day. A planted signal that is exhausted after one bar is untradeable at
+    any horizon this engine operates on, so it cannot test anything."""
+    short = simulate_market(n_hours=8000, n_assets=6, alpha_strength=1.0,
+                            alpha_halflife_hours=4.0, horizon_for_truth=24, seed=4)
+    long_ = simulate_market(n_hours=8000, n_assets=6, alpha_strength=1.0,
+                            alpha_halflife_hours=16.0, horizon_for_truth=24, seed=4)
+    assert short.truth["planted_ic_1h"] > long_.truth["planted_ic_1h"]
+    assert long_.truth["planted_ic"] > short.truth["planted_ic"]
 
 
 def test_prices_are_arithmetic_martingales():
@@ -129,3 +167,44 @@ def test_marchenko_pastur_clips_pure_noise():
     denoised, share = marchenko_pastur_denoise(corr, 150)
     assert share < 0.35
     assert np.allclose(np.diag(denoised), 1.0, atol=1e-8)
+
+
+def test_ic_shrinkage_kills_a_noisy_measurement():
+    """A correlation measured on a couple of hundred effective observations has
+    a standard error near 0.07; a raw 0.13 must not survive as a 0.13."""
+    from orion_x.alpha import shrink_ic
+
+    assert abs(shrink_ic(0.13, 235, 0.03)) < 0.03
+    # With enough independent observations the measurement is believed.
+    assert shrink_ic(0.04, 20_000, 0.03) > 0.03
+    # And shrinkage is monotone in sample size.
+    assert shrink_ic(0.05, 200, 0.03) < shrink_ic(0.05, 2000, 0.03) < shrink_ic(0.05, 20_000, 0.03)
+
+
+def test_ic_weights_concentrate_on_the_informative_block():
+    """Fixed prior weights average one informative signal with six noise ones
+    and dilute its IC roughly in proportion to its weight."""
+    from orion_x.alpha import optimal_block_weights
+
+    w = optimal_block_weights({
+        "flow": 0.037, "momentum": 0.002, "carry": -0.01,
+        "fundamental": 0.001, "psychology": 0.0, "relative": 0.003, "catalyst": 0.0,
+    })
+    assert w["flow"] > 0.5
+    assert sum(w.values()) == pytest.approx(1.0)
+
+
+def test_ic_weights_never_hand_everything_to_one_block():
+    from orion_x.alpha import optimal_block_weights
+
+    w = optimal_block_weights({"flow": 0.20, "momentum": 0.001, "carry": 0.001})
+    assert max(w.values()) <= 0.70 + 1e-9
+
+
+def test_negative_measured_ic_gets_no_weight_rather_than_a_flipped_sign():
+    """A sign that only shows up out of sample is far more likely to be noise
+    than a discovery."""
+    from orion_x.alpha import optimal_block_weights
+
+    w = optimal_block_weights({"flow": 0.03, "psychology": -0.09})
+    assert "psychology" not in w
