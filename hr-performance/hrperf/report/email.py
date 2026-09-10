@@ -24,6 +24,8 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+from . import aqua
+
 RECIPIENTS_ENV = "HRP_EMAIL_TO"
 RECIPIENTS_FILE_ENV = "HRP_RECIPIENTS_FILE"
 RECIPIENTS_BASENAME = "recipients.yaml"
@@ -153,23 +155,23 @@ def build_email_html(title: str, ref_date: str, summary_rows: List[tuple],
     """HTML ساده و سازگار با Outlook — بدون CSS خارجی، بدون JS."""
     import html as _h
     cards = "".join(
-        f'<td style="padding:10px 14px;background:#f3f7fb;border:1px solid #e3e3dd;'
+        f'<td style="padding:10px 14px;background:{aqua.LIGHT["highlight"]};border:1px solid {aqua.LIGHT["border-soft"]};'
         f'border-radius:10px;text-align:center">'
-        f'<div style="font-size:20px;font-weight:700;color:#0d366b">{_h.escape(str(v))}</div>'
-        f'<div style="font-size:11px;color:#52514e">{_h.escape(str(k))}</div></td>'
+        f'<div style="font-size:20px;font-weight:700;color:{aqua.LIGHT["header"]}">{_h.escape(str(v))}</div>'
+        f'<div style="font-size:11px;color:{aqua.LIGHT["text-2"]}">{_h.escape(str(k))}</div></td>'
         f'<td style="width:10px"></td>'
         for k, v in summary_rows)
     return f"""<html><body dir="rtl" style="font-family:'IRANSans Light',Tahoma,Arial;
-background:#fcfcfb;color:#0b0b0b;margin:0;padding:18px">
+background:{aqua.LIGHT["surface"]};color:{aqua.LIGHT["text"]};margin:0;padding:18px">
 <div style="max-width:900px;margin:auto">
-<div style="background:linear-gradient(120deg,#0d366b,#1c5cab);color:#fff;
+<div style="background:linear-gradient(120deg,{aqua.LIGHT["header"]},{aqua.LIGHT["brand-strong"]});color:#fff;
 padding:18px 22px;border-radius:14px">
 <div style="font-size:20px;font-weight:700">{_h.escape(title)}</div>
 <div style="font-size:12px;opacity:.9;margin-top:5px">تاریخ مرجع {_h.escape(ref_date)}</div>
 </div>
 <table style="margin-top:14px;border-collapse:separate"><tr>{cards}</tr></table>
-<p style="font-size:12px;color:#52514e;line-height:2">{_h.escape(body_note)}</p>
-<p style="font-size:11px;color:#7a7a73">رتبه‌ها فقط درون گروه همتا
+<p style="font-size:12px;color:{aqua.LIGHT["text-2"]};line-height:2">{_h.escape(body_note)}</p>
+<p style="font-size:11px;color:{aqua.LIGHT["text-3"]}">رتبه‌ها فقط درون گروه همتا
 (مدیریت + اداره + نوع کار) معنا دارند. جزئیات در فایل‌های پیوست است.</p>
 </div></body></html>"""
 

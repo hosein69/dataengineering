@@ -10,8 +10,9 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
-from .theme import (BANDS, BORDER, BRAND, BRAND_DEEP, FONT_STACK, RAISED,
-                    SURFACE, TEXT, TEXT2, TEXT3, band_of)
+from .theme import (BANDS, BORDER, BRAND, BRAND_DEEP, CARD, FONT_STACK,
+                    HIGHLIGHT, RAISED, SURFACE, TEXT, TEXT2, TEXT3,
+                    band_of)
 
 
 def _rows(df: pd.DataFrame, cols: List[str], limit: int) -> str:
@@ -122,7 +123,7 @@ table{{width:100%;border-collapse:collapse;font-size:12px}}
 th{{position:sticky;top:0;background:{BRAND_DEEP};color:#fff;padding:9px;
 white-space:nowrap;text-align:right}}
 td{{padding:7px 9px;border-bottom:1px solid {BORDER};white-space:nowrap}}
-tr:hover td{{background:#f3f7fb}}
+tr:hover td{{background:{HIGHLIGHT}}}
 button{{border:0;border-radius:10px;padding:10px 16px;background:#fff;
 color:{BRAND_DEEP};font:inherit;font-weight:700;cursor:pointer}}
 .note{{font-size:11px;color:{TEXT3};margin-top:8px;line-height:1.8}}
@@ -149,7 +150,7 @@ header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </div><script>
 const DATA={records}, COLS={json.dumps(cols, ensure_ascii=False)};
 const BANDS={json.dumps([[f,c,i,l] for f,c,i,l in BANDS], ensure_ascii=False)};
-function band(v){{for(const[f,c,i,l]of BANDS){{if(v>=f)return[c,i,l];}}return['#8a8a85','?','نامشخص'];}}
+function band(v){{for(const[f,c,i,l]of BANDS){{if(v>=f)return[c,i,l];}}return['{TEXT3}','?','نامشخص'];}}
 const q=document.getElementById('q'),f1=document.getElementById('f1'),f2=document.getElementById('f2');
 function uniq(k){{return [...new Set(DATA.map(r=>String(r[k]??'')).filter(Boolean))].sort();}}
 if(COLS.includes('مدیریت')) uniq('مدیریت').forEach(v=>f1.add(new Option(v,v)));

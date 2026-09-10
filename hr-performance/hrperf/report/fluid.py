@@ -38,14 +38,14 @@ import numpy as np
 import pandas as pd
 
 from ..config.model import PerformanceModel
+from . import aqua
 from ..model_engine import vectors as ve
 
-#: پالت مرجع اعتبارسنجی‌شده — ترتیب ثابت، هرگز چرخانده نمی‌شود.
-CATEGORICAL_LIGHT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-                     "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-CATEGORICAL_DARK = ["#3987e5", "#d95926", "#199e70", "#c98500",
-                    "#d55181", "#008300", "#9085e9", "#e66767"]
-OTHER_LIGHT, OTHER_DARK = "#6e6e66", "#8a8a85"
+#: پالت آکوا — همان تعریفی که اکسل و HTML و داشبورد از آن می‌خوانند.
+#: ترتیب ثابت، هرگز چرخانده نمی‌شود.
+CATEGORICAL_LIGHT = aqua.CATEGORICAL_LIGHT
+CATEGORICAL_DARK = aqua.CATEGORICAL_DARK
+OTHER_LIGHT, OTHER_DARK = aqua.OTHER_LIGHT, aqua.OTHER_DARK
 
 
 def _cluster_colors(model: PerformanceModel) -> Dict[str, Dict[str, str]]:
@@ -126,7 +126,9 @@ def write(payload: Dict, path: str | Path, title: str = "نقشهٔ سیال م�
 
 def render(payload: Dict, title: str = "نقشهٔ سیال مدل عملکرد") -> str:
     data = json.dumps(payload, ensure_ascii=False)
-    return _TEMPLATE.replace("__DATA__", data).replace("__TITLE__", title)
+    return (_TEMPLATE.replace("__DATA__", data).replace("__TITLE__", title)
+            .replace("__AQUA_LIGHT__", aqua.css_vars(False))
+            .replace("__AQUA_DARK__", aqua.css_vars(True)))
 
 
 _TEMPLATE = r"""<!doctype html>
@@ -136,22 +138,18 @@ _TEMPLATE = r"""<!doctype html>
 <style>
 :root{
   color-scheme: light;
-  --surface:#fcfcfb; --raised:#ffffff; --border:#e4e4de;
-  --text:#0b0b0b; --text2:#52514e; --text3:#6e6e66;
-  --good:#0ca30c; --warn:#fab219; --bad:#c93c37;
+__AQUA_LIGHT__
 }
 :root[data-theme="dark"], :root.dark{
   color-scheme: dark;
-  --surface:#1a1a19; --raised:#232322; --border:#3a3a37;
-  --text:#ffffff; --text2:#c3c2b7; --text3:#9a9a90;
-  --good:#3fbf3f; --warn:#d9a441; --bad:#e66767;
+__AQUA_DARK__
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--surface);color:var(--text);
-  font:14px/1.7 "Vazirmatn","IRANSans",Tahoma,system-ui,sans-serif}
+  font:14px/1.7 var(--font,"Vazirmatn","IRANSans",Tahoma,system-ui,sans-serif)}
 header{padding:18px 22px 10px;border-bottom:1px solid var(--border)}
 h1{margin:0 0 4px;font-size:19px;font-weight:700}
-.sub{color:var(--text2);font-size:12.5px}
+.sub{color:var(--text-2);font-size:12.5px}
 .wrap{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:calc(100vh - 74px)}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}}
 #stage{position:relative;overflow:hidden}
@@ -162,9 +160,9 @@ aside{border-inline-start:1px solid var(--border);background:var(--raised);
   padding:10px 22px;border-bottom:1px solid var(--border);background:var(--raised)}
 button,select{font:inherit;color:var(--text);background:var(--surface);
   border:1px solid var(--border);border-radius:8px;padding:5px 11px;cursor:pointer}
-button:hover{border-color:var(--text3)}
+button:hover{border-color:var(--text-3)}
 button[aria-pressed="true"]{background:var(--text);color:var(--surface);border-color:var(--text)}
-h2{font-size:13px;margin:16px 0 8px;color:var(--text2);font-weight:700;
+h2{font-size:13px;margin:16px 0 8px;color:var(--text-2);font-weight:700;
   letter-spacing:.02em;text-transform:none}
 .legend{display:flex;flex-direction:column;gap:6px}
 .lg{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;
@@ -174,24 +172,24 @@ h2{font-size:13px;margin:16px 0 8px;color:var(--text2);font-weight:700;
 .sw{width:13px;height:13px;border-radius:4px;flex:0 0 auto;
   box-shadow:0 0 0 2px var(--raised)}
 .lg input[type=color]{width:22px;height:20px;padding:0;border:none;background:none;cursor:pointer}
-.lg .w{margin-inline-start:auto;color:var(--text3);font-size:11.5px;
+.lg .w{margin-inline-start:auto;color:var(--text-3);font-size:11.5px;
   font-variant-numeric:tabular-nums}
 .card{border:1px solid var(--border);border-radius:10px;padding:9px 11px;
   margin-bottom:8px;background:var(--surface)}
-.card .k{font-size:11px;color:var(--text3)}
+.card .k{font-size:11px;color:var(--text-3)}
 .card .t{font-weight:700;font-size:12.5px;margin:2px 0 4px}
-.card .r{font-size:12px;color:var(--text2);line-height:1.65}
+.card .r{font-size:12px;color:var(--text-2);line-height:1.65}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{text-align:right;padding:5px 6px;border-bottom:1px solid var(--border)}
-th{color:var(--text3);font-weight:600}
+th{color:var(--text-3);font-weight:600}
 td.num{font-variant-numeric:tabular-nums}
 .tip{position:absolute;pointer-events:none;background:var(--raised);
   border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;
   box-shadow:0 6px 20px rgba(0,0,0,.14);max-width:270px;opacity:0;transition:opacity .12s}
 .tip b{display:block;margin-bottom:3px}
-.tip .m{color:var(--text2)}
+.tip .m{color:var(--text-2)}
 .hidden{display:none !important}
-.note{font-size:11.5px;color:var(--text3);margin-top:10px;line-height:1.65}
+.note{font-size:11.5px;color:var(--text-3);margin-top:10px;line-height:1.65}
 @media (prefers-reduced-motion: reduce){ canvas{transition:none} }
 </style></head><body>
 <header>
@@ -202,7 +200,7 @@ td.num{font-variant-numeric:tabular-nums}
   <button id="btnPlay" aria-pressed="true">⏸ توقف حرکت</button>
   <button id="btnTable" aria-pressed="false">نمای جدولی</button>
   <button id="btnTheme">🌗 تم</button>
-  <label style="font-size:12.5px;color:var(--text2)">
+  <label style="font-size:12.5px;color:var(--text-2)">
     کشش هم‌بستگی
     <input id="pull" type="range" min="0" max="100" value="55" style="vertical-align:middle">
   </label>
@@ -410,7 +408,7 @@ for(const s of D.suggestions.slice(0,6)){
 const coh = document.getElementById("coh");
 for(const c of D.cohesion){
   const el = document.createElement("div"); el.className="card";
-  const v = c.verdict, cls = v==="منسجم"? "good" : (v.startsWith("تک")? "warn":"bad");
+  const v = c.verdict, cls = v==="منسجم"? "good" : (v.startsWith("تک")? "warning":"critical");
   el.innerHTML = `<div class="t">${D.clusters[c.cluster]?.label||c.cluster}</div>
     <div class="r">درونی ${c.within??"—"} · بیرونی ${c.between??"—"} ·
     <span style="color:var(--${cls})">${v}</span></div>`;

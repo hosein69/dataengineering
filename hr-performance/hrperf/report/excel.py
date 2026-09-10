@@ -12,14 +12,25 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from . import aqua
 from .theme import BANDS, band_of
 
-FONT = "IRANSans Light"
-HEADER_FILL = "0D366B"
+FONT = aqua.FONT_XLSX
+_T = aqua.xlsx_theme(False)
+HEADER_FILL = _T["header"]        # سبز ایرانی بسیار تیره — هدر جدول
+BAND_FILL = _T["border-soft"]     # نوار جداکننده
+ROW_FILL = _T["raised"]
+ZEBRA_FILL = _T["surface"]        # سطر یک‌درمیان، از پس‌زمینهٔ همان سیستم
+BODY_INK = _T["text"]
 
 
 def _style(ws) -> None:
-    thin = Side(style="thin", color="E3E3DD")
+    """قالب‌بندی برگه با همان توکن‌های آکوا که HTML و داشبورد می‌پوشند.
+
+    سطر یک‌درمیان با پس‌زمینهٔ اصلی سیستم رنگ می‌شود، نه خاکستری: فایل
+    اکسل و صفحهٔ HTML باید کنار هم مثل یک محصول دیده شوند.
+    """
+    thin = Side(style="thin", color=_T["border-soft"])
     ws.freeze_panes = "A2"
     if ws.max_row > 1:
         ws.auto_filter.ref = ws.dimensions
@@ -29,10 +40,13 @@ def _style(ws) -> None:
         cell.alignment = Alignment(horizontal="center", vertical="center",
                                    wrap_text=True)
         cell.border = Border(bottom=thin)
-    for row in ws.iter_rows(min_row=2):
+    for i, row in enumerate(ws.iter_rows(min_row=2)):
         for c in row:
-            c.font = Font(name=FONT, size=9, color="111917")
+            c.font = Font(name=FONT, size=9, color=BODY_INK)
             c.alignment = Alignment(vertical="center")
+            c.border = Border(bottom=Side(style="thin", color=_T["border-soft"]))
+            if i % 2:
+                c.fill = PatternFill("solid", fgColor=ZEBRA_FILL)
     for col in ws.columns:
         letter = get_column_letter(col[0].column)
         width = max([len(str(c.value or "")) for c in col[:60]] + [9])

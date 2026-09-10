@@ -41,12 +41,15 @@ from openpyxl.utils import get_column_letter
 
 from ..dataio.logging_setup import log
 from ..rulebook import get_rulebook
+from . import aqua
 from .palette import LuxuryPalette as P
 
 SHEET_CHARTS = "۱۱. نمودارهای تحلیلی"
 
 #: پالت نمودارها — هم‌خانواده با تم گزارش، با کنتراست کافی برای چاپ سیاه‌وسفید
-SERIES_COLORS = ["406057", "7FB3A3", "C88B3A", "922B21", "5B7C99", "8E7CC3"]
+#: رنگ سری‌ها — همان طیف آکوا که HTML و داشبورد به‌کار می‌برند،
+#: بدون «#» چون قالب نمودار اکسل همین را می‌خواهد.
+SERIES_COLORS = [c.lstrip("#") for c in aqua.CATEGORICAL_LIGHT]
 
 #: چیدمان: (ردیف، ستون) لنگر هر نمودار روی شیت
 _ANCHORS = ["B2", "M2", "B23", "M23", "B44", "M44", "B65"]

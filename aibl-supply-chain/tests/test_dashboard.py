@@ -214,7 +214,7 @@ def test_scorecard_group_criticality() -> None:
         vals = list(ws.iter_rows(min_row=2, max_row=2, min_col=7, max_col=8, values_only=True))[0]
         check("کارنامه بارنامه بحرانی را از کل BL حساب می‌کند، نه اولین ردیف", vals == (1, 1), str(vals))
         check("فونت کارنامه IRANSans Light است", ws["A2"].font.name == "IRANSans Light", ws["A2"].font.name)
-        check("عدد بحرانی با رنگ قرمز نمایش داده می‌شود", ws["H2"].font.color.rgb in {"00C0392B", "FFC0392B"}, str(ws["H2"].font.color.rgb))
+        check("عدد بحرانی با رنگ قرمز نمایش داده می‌شود", ws["H2"].font.color.rgb in {"00B3261E", "FFB3261E"}, str(ws["H2"].font.color.rgb))
 
 
 

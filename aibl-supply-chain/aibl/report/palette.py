@@ -1,39 +1,54 @@
 # -*- coding: utf-8 -*-
-"""پالت لوکس سبز/نعنایی — طبق §۱۵ بدون هیچ تغییری حفظ شده است."""
+"""پالت — همه از نظام «آکوا» (`report/aqua.py`) می‌آید.
+
+نام‌های عمومی این کلاس دست‌نخورده مانده‌اند تا هیچ مصرف‌کننده‌ای نشکند؛
+فقط مقدارها از یک منبع واحد می‌آیند. پیش از این، اکسل AIBL یک سبز داشت،
+HRPerf سبزی دیگر، و HTML سبز سوم — سه فایل کنار هم، سه محصول به‌نظر
+می‌رسیدند.
+
+رنگ‌های وضعیت هم از آکوا می‌آیند و همان‌هایی‌اند که در HTML و داشبورد
+به‌کار می‌روند؛ همه با کنتراست سنجیده‌شده روی سطح واقعیِ خودشان.
+"""
 from __future__ import annotations
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-FONT_BODY = "IRANSans Light"
-FONT_TITLE = "IRANSans Light"
+from . import aqua
+
+FONT_BODY = aqua.FONT_XLSX
+FONT_TITLE = aqua.FONT_XLSX
+
+_T = aqua.xlsx_theme(False)
+_S = aqua.xlsx_theme(False)
 
 
 class LuxuryPalette:
-    GREEN_L1 = "95C3B6"
-    GREEN_L2 = "A0C9BD"
-    GREEN_L3 = "ABCFC5"
-    GREEN_L4 = "B6D5CC"
+    #: چهار پلهٔ سطح — از روشن به تیره، برای سطرهای تودرتو
+    GREEN_L1 = aqua.IRANIAN["200"].lstrip("#")
+    GREEN_L2 = aqua.TEAL["300"].lstrip("#")
+    GREEN_L3 = aqua.TEAL["100"].lstrip("#")
+    GREEN_L4 = aqua.TEAL["50"].lstrip("#")
 
-    AMBER_HEADER = "406057"
-    AMBER_FILL = "C0DCD4"
-    CRITICAL_FILL = "FADBD8"
+    AMBER_HEADER = aqua.IRANIAN["900"].lstrip("#")   # هدر جدول
+    AMBER_FILL = aqua.AMBER["50"].lstrip("#")        # هایلایت گرم
+    CRITICAL_FILL = "F7DEDC"
 
-    TEXT_DARK = "111917"
-    TEXT_MUTED = "406057"
-    TEXT_LIGHT = "F4F9F7"
+    TEXT_DARK = aqua.INK.lstrip("#")
+    TEXT_MUTED = aqua.TEAL["700"].lstrip("#")
+    TEXT_LIGHT = "F4FBF7"
 
-    STATUS_CRITICAL = "C0392B"
-    STATUS_WARNING = "F39C12"
-    STATUS_WATCH = "F1C40F"
-    STATUS_GOOD = "27AE60"
-    STATUS_INACTIVE = "95A5A6"
-    STATUS_CRITICAL_FILL = "FADBD8"
-    STATUS_WARNING_FILL = "FDEBD0"
-    STATUS_WATCH_FILL = "FCF3CF"
-    STATUS_GOOD_FILL = "D5F5E3"
-    STATUS_INACTIVE_FILL = "EAEDED"
+    STATUS_CRITICAL = _S["critical"]
+    STATUS_WARNING = _S["serious"]
+    STATUS_WATCH = _S["warning"]
+    STATUS_GOOD = _S["good"]
+    STATUS_INACTIVE = aqua.OTHER_LIGHT.lstrip("#")
+    STATUS_CRITICAL_FILL = "F7DEDC"
+    STATUS_WARNING_FILL = "FBE7D8"
+    STATUS_WATCH_FILL = aqua.AMBER["50"].lstrip("#")
+    STATUS_GOOD_FILL = "DDEFDE"
+    STATUS_INACTIVE_FILL = "E6EDE9"
 
-    BORDER_LIGHT = "A0C9BD"
+    BORDER_LIGHT = aqua.TEAL["500"].lstrip("#")
 
     @classmethod
     def font_header(cls, level: int = 1) -> Font:

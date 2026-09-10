@@ -41,13 +41,16 @@ BAND_ORDER = list(BANDS)
 #: هر شش بررسی را رد می‌کند: باند روشنایی، کف اشباع، تفکیک‌پذیری کوررنگی،
 #: کف دید عادی، و کنتراست با سطح. ترتیب **ثابت** است و هرگز چرخانده
 #: نمی‌شود؛ رسته هشتم به «سایر» می‌رود، نه به یک رنگ تازه.
-CATEGORICAL = ["#00918a", "#96690a", "#b81269", "#3358d4",
-               "#a83a12", "#8347c9", "#1a8a2e"]
-OTHER_COLOR = "#8a8a85"
+from ..report import aqua
 
-BRAND, BRAND_DEEP = "#0f6e6e", "#0a4f4f"
-SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
-TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
+CATEGORICAL = aqua.CATEGORICAL_LIGHT
+OTHER_COLOR = aqua.OTHER_LIGHT
+
+BRAND, BRAND_DEEP = aqua.LIGHT["brand-strong"], aqua.LIGHT["header"]
+SURFACE, RAISED, BORDER = (aqua.LIGHT["surface"], aqua.LIGHT["raised"],
+                           aqua.LIGHT["border"])
+TEXT, TEXT2, TEXT3 = aqua.LIGHT["text"], aqua.LIGHT["text-2"], aqua.LIGHT["text-3"]
+CARD, HIGHLIGHT = aqua.LIGHT["card"], aqua.LIGHT["highlight"]
 
 
 def _measure_cols(df: pd.DataFrame, cols: List[str]) -> Dict[str, str]:
@@ -221,7 +224,7 @@ gap:12px;background:var(--raised);padding:14px;border:1px solid var(--border);
 border-radius:14px;margin:14px 0;position:sticky;top:8px;z-index:5}}
 label{{font-size:12px;color:var(--t2)}}
 input,select{{width:100%;margin-top:5px;padding:9px;border:1px solid var(--border);
-border-radius:9px;background:#fff;font:inherit}}
+border-radius:9px;background:{RAISED};color:{TEXT};font:inherit}}
 .cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:14px 0}}
 .card{{background:var(--raised);border:1px solid var(--border);border-radius:14px;padding:14px}}
 .card .l{{font-size:12px;color:var(--t2)}} .card b{{display:block;font-size:24px;margin-top:4px}}
@@ -229,7 +232,7 @@ border-radius:9px;background:#fff;font:inherit}}
 .panel{{background:var(--raised);border:1px solid var(--border);border-radius:14px;
 padding:16px;margin-top:14px}}
 .panel h3{{margin:0 0 10px;font-size:15px}}
-.mix{{display:flex;height:26px;border-radius:8px;overflow:hidden;background:#f0efec;gap:2px}}
+.mix{{display:flex;height:26px;border-radius:8px;overflow:hidden;background:{CARD};gap:2px}}
 .chead{{display:flex;justify-content:space-between;align-items:flex-end;
 gap:14px;flex-wrap:wrap;margin-bottom:10px}}
 .chead h3{{margin:0}}
@@ -239,7 +242,7 @@ gap:14px;flex-wrap:wrap;margin-bottom:10px}}
 .chart{{width:100%;overflow-x:auto}}
 .chart svg{{display:block;max-width:100%;direction:ltr}}
 .chart text{{unicode-bidi:plaintext}}
-.tip{{position:fixed;pointer-events:none;background:#111;color:#fff;font-size:12px;
+.tip{{position:fixed;pointer-events:none;background:{TEXT};color:{SURFACE};font-size:12px;
 padding:6px 9px;border-radius:7px;opacity:0;transition:opacity .1s;z-index:50;
 white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.24)}}
 .seg{{height:100%;min-width:2px}}
@@ -247,8 +250,8 @@ table{{width:100%;border-collapse:collapse;font-size:12px}}
 th{{position:sticky;top:0;background:var(--deep);color:#fff;padding:9px;
 white-space:nowrap;text-align:right}}
 td{{padding:7px 9px;border-bottom:1px solid var(--border);white-space:nowrap}}
-tr:hover td{{background:#f4faf8}}
-button{{border:0;border-radius:10px;padding:10px 16px;background:#fff;color:var(--deep);
+tr:hover td{{background:{HIGHLIGHT}}}
+button{{border:0;border-radius:10px;padding:10px 16px;background:{RAISED};color:var(--deep);
 font:inherit;font-weight:700;cursor:pointer}}
 .note{{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.8}}
 @media print{{

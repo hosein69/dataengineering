@@ -173,7 +173,8 @@ def test_reports(r):
         check("HTML راست‌به‌چپ و فارسی است",
               'dir="rtl"' in res.html and 'lang="fa"' in res.html)
         check("دکمه چاپ/PDF دارد", "window.print()" in res.html)
-        check("پالت اعتبارسنجی‌شده استفاده شده", "#0ca30c" in res.html)
+        check("پالت آکوای اعتبارسنجی‌شده استفاده شده",
+              "#E1F2E9" in res.html and "#007D6E" in res.html, "سطح و برند آکوا")
 
 
 def test_email_config():

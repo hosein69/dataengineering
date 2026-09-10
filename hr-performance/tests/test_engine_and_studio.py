@@ -260,8 +260,10 @@ def test_fluid_html() -> None:
     check("نمای جدولی دارد (هویت فقط با رنگ نیست)", 'id="tableView"' in html)
     check("انتخاب رنگ در خودِ صفحه هست", 'type="color"' in html)
     check("تم روشن و تاریک، هر دو تعریف شده",
-          'data-theme="dark"' in html and "--surface:#fcfcfb" in html)
-    check("پالت اعتبارسنجی‌شده به‌کار رفته", "#2a78d6" in html and "#3987e5" in html)
+          'data-theme="dark"' in html and "--surface:#E1F2E9" in html
+          and "--surface:#0C1F1A" in html)
+    check("پالت آکوای اعتبارسنجی‌شده به‌کار رفته",
+          "#008E82" in html and "#22A797" in html)
     check("برچسب مستقیم خوشه کشیده می‌شود", "fillText" in html)
 
     with tempfile.TemporaryDirectory() as td:

@@ -1,36 +1,45 @@
 # -*- coding: utf-8 -*-
-"""توکن‌های طراحی و پالت — همان پالت اعتبارسنجی‌شده پلتفرم AIBL.
+"""توکن‌های طراحی — همه از نظام «آکوا» (`report/aqua.py`) می‌آیند.
 
-پالت وضعیت ثابت است و همیشه با **آیکن + برچسب** می‌آید؛ رنگ به‌تنهایی
-هرگز حامل معنا نیست. رده‌های عملکرد پنج‌تایی‌اند و روی همان چهار نقش
-وضعیت به‌علاوه یک پله تیره‌تر ساخته شده‌اند.
+این فایل دیگر رنگی تعریف نمی‌کند؛ فقط نام‌های قدیمی را به توکن‌های
+آکوا وصل می‌کند تا مصرف‌کننده‌های موجود (اکسل، HTML، داشبورد) بدون
+تغییر کار کنند. **یک** منبع رنگ وجود دارد، نه چهار تا.
+
+پالت وضعیت رزرو است و همیشه با **آیکن + برچسب** می‌آید؛ رنگ به‌تنهایی
+هرگز حامل معنا نیست.
 """
 from __future__ import annotations
 
-SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
-TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
-BRAND, BRAND_DEEP = "#1c5cab", "#0d366b"      # آبی — هویت منابع انسانی
+from . import aqua
 
+_L = aqua.tokens(False)
+
+SURFACE, RAISED, BORDER = _L["surface"], _L["raised"], _L["border"]
+TEXT, TEXT2, TEXT3 = _L["text"], _L["text-2"], _L["text-3"]
+BRAND, BRAND_DEEP = _L["brand-strong"], _L["header"]
+CARD, HIGHLIGHT, ACCENT, CTA = _L["card"], _L["highlight"], _L["accent"], _L["cta"]
+
+_S = aqua.status(False)
 STATUS = {
-    "critical": "#a32828", "poor": "#d03b3b", "watch": "#ec835a",
-    "fair": "#fab219", "good": "#0ca30c", "neutral": "#8a8a85",
+    "critical": _S["critical"], "poor": _S["critical"], "watch": _S["serious"],
+    "fair": _S["warning"], "good": _S["good"], "neutral": aqua.OTHER_LIGHT,
 }
 
-#: رده عملکرد: (کف امتیاز، رنگ، آیکن، برچسب)
+#: رده عملکرد: (کف امتیاز، رنگ، آیکن، برچسب) — مرزها همان
+#: ``aqua.SCORE_BANDS`` است تا جدول و نمودار یک داستان بگویند.
 BANDS = [
-    (75.0, STATUS["good"], "▲", "بسیار خوب"),
-    (60.0, "#5fa832", "△", "خوب"),
-    (45.0, STATUS["fair"], "◆", "مورد انتظار"),
-    (32.0, STATUS["watch"], "▽", "نیازمند بهبود"),
-    (0.0, STATUS["poor"], "▼", "بحرانی"),
+    (75.0, _S["good"], "▲", "برجسته"),
+    (60.0, _S["warning"], "△", "مطلوب"),
+    (45.0, _S["serious"], "◆", "قابل بهبود"),
+    (0.0, _S["critical"], "▼", "نیازمند اقدام"),
 ]
 
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-          "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
-SEQUENTIAL = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
-              "#256abf", "#184f95", "#0d366b"]
+SERIES = aqua.categorical(False)
+#: طیف پیوسته — یک هیو، روشن به تیره (قاعدهٔ طیف ترتیبی)
+SEQUENTIAL = ["#D7F0E7", "#A9DFD1", "#7CCDBB", "#4DBEA8",
+              "#00A693", "#007D6E", "#005349"]
 
-FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn',Tahoma,Arial,sans-serif"
+FONT_STACK = aqua.FONT_STACK
 
 
 def band_of(score) -> tuple:

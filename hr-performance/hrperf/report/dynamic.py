@@ -28,18 +28,20 @@ import pandas as pd
 from ..fairness.skew import gini, lorenz
 
 #: پالت رسته‌ای اعتبارسنجی‌شده (همان پالت AIBL؛ هر شش بررسی را رد می‌کند).
-CATEGORICAL = ["#00918a", "#96690a", "#b81269", "#3358d4",
-               "#a83a12", "#8347c9", "#1a8a2e"]
-OTHER = "#8a8a85"
-BRAND, DEEP = "#0d6e66", "#0a4f4a"
-SURFACE, RAISED, BORDER = "#fbfbfa", "#ffffff", "#e4e4de"
-TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
+from . import aqua
+
+CATEGORICAL = aqua.categorical(False)
+OTHER = aqua.OTHER_LIGHT
+BRAND, DEEP = aqua.LIGHT["brand-strong"], aqua.LIGHT["header"]
+SURFACE, RAISED, BORDER = (aqua.LIGHT["surface"], aqua.LIGHT["raised"],
+                           aqua.LIGHT["border"])
+TEXT, TEXT2, TEXT3 = aqua.LIGHT["text"], aqua.LIGHT["text-2"], aqua.LIGHT["text-3"]
 
 #: طیف امتیاز — ترتیبی، تک‌خانواده، از کم به زیاد.
-SCORE_BANDS = [(0, 45, "#a32828", "نیازمند اقدام"),
-               (45, 60, "#d9822b", "قابل بهبود"),
-               (60, 75, "#c9a227", "مطلوب"),
-               (75, 101, "#0ca30c", "برجسته")]
+#: طبقه‌های امتیاز — مرز و رنگ از نظام آکوا، تا جدول و نمودار و اکسل
+#: یک داستان بگویند.
+SCORE_BANDS = [(lo, hi, aqua.STATUS_LIGHT[key], label)
+               for lo, hi, key, label in aqua.SCORE_BANDS]
 
 _E = html.escape
 
