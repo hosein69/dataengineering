@@ -24,11 +24,17 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 TREES = ["hrperf", "app", "tests", ".streamlit"]
-FILES = ["README.md", "requirements.txt", "run_all_tests.py", "make_package.py"]
+FILES = ["README.md", "INSTALL_MAC.md", "requirements.txt", "run_all_tests.py",
+         "make_package.py", "run_mac.command"]
 SKIP_DIRS = {"__pycache__", ".git", ".pytest_cache", ".ruff_cache", ".venv"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".zip", ".log"}
 
+#: باید با بیت اجرا داخل بسته بروند
+EXECUTABLE = ["run_mac.command"]
+
 REQUIRED = [
+    "run_mac.command",         # بدون این، مک راه‌اندازی ندارد
+    "INSTALL_MAC.md",
     ".streamlit/config.toml",   # نبودنش تم را به مرورگر می‌سپارد → متن نامرئی
     "app/dashboard.py", "app/styles.py",
     "hrperf/pipeline.py", "hrperf/report/aqua.py", "hrperf/report/theme.py",
@@ -79,6 +85,18 @@ def build(version: str) -> Path:
     if missing:
         target.unlink(missing_ok=True)
         raise SystemExit("بسته ناقص بود و ساخته نشد. غایب: " + "، ".join(missing))
+
+    # مک بدون بیت اجرا، راه‌انداز را اصلاً باز نمی‌کند: دوبار کلیک هیچ
+    # نمی‌کند و کاربر نتیجه می‌گیرد بسته خراب است. همان درسِ
+    # ‏`.streamlit/config.toml`‏ — چیزی که تست‌های درختِ کد نمی‌بینند،
+    # اینجا روی خودِ بسته سنجیده می‌شود.
+    with zipfile.ZipFile(target) as z:
+        for name in EXECUTABLE:
+            mode = (z.getinfo(name).external_attr >> 16) & 0o777
+            if not mode & 0o111:
+                target.unlink(missing_ok=True)
+                raise SystemExit(
+                    f"{name} بدون بیت اجرا بسته‌بندی شد؛ روی مک کار نمی‌کند.")
     print(f"✅ {target.name} — {len(inside)} پرونده، "
           f"{target.stat().st_size / 1024:,.0f} کیلوبایت")
     print(f"   بازرسی: هر {len(REQUIRED)} پروندهٔ الزامی داخل بسته هست.")

@@ -31,15 +31,20 @@ sys.path.insert(0, str(ROOT))
 TREES = ["aibl", "app", "tests", ".streamlit"]
 
 #: پرونده‌های تکیِ ریشه
-FILES = ["README.md", "INSTALL.md", "requirements.txt", "run_all_tests.py",
-         "make_package.py", "recipients.example.yaml"]
+FILES = ["README.md", "INSTALL.md", "INSTALL_MAC.md", "requirements.txt", "run_all_tests.py",
+         "make_package.py", "recipients.example.yaml", "run_mac.command"]
 
 #: هرچه با این‌ها بخواند، داخل بسته نمی‌رود
 SKIP_DIRS = {"__pycache__", ".git", ".pytest_cache", ".ruff_cache", ".venv"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".zip", ".log"}
 
 #: بدون این‌ها بسته معیوب است — بازرسی پس از ساخت روی همین‌هاست
+#: باید با بیت اجرا داخل بسته بروند
+EXECUTABLE = ["run_mac.command"]
+
 REQUIRED = [
+    "run_mac.command",         # بدون این، مک راه‌اندازی ندارد
+    "INSTALL_MAC.md",
     ".streamlit/config.toml",   # نبودنش تم را به مرورگر می‌سپارد → متن نامرئی
     "app/studio.py", "app/styles.py", "app/theme.py",
     "aibl/pipeline.py", "aibl/report/aqua.py", "aibl/report/dispatch.py",
@@ -97,6 +102,18 @@ def build(version: str) -> Path:
     if missing:
         target.unlink(missing_ok=True)
         raise SystemExit("بسته ناقص بود و ساخته نشد. غایب: " + "، ".join(missing))
+
+    # مک بدون بیت اجرا، راه‌انداز را اصلاً باز نمی‌کند: دوبار کلیک هیچ
+    # نمی‌کند و کاربر نتیجه می‌گیرد بسته خراب است. همان درسِ
+    # ‏`.streamlit/config.toml`‏ — چیزی که تست‌های درختِ کد نمی‌بینند،
+    # اینجا روی خودِ بسته سنجیده می‌شود.
+    with zipfile.ZipFile(target) as z:
+        for name in EXECUTABLE:
+            mode = (z.getinfo(name).external_attr >> 16) & 0o777
+            if not mode & 0o111:
+                target.unlink(missing_ok=True)
+                raise SystemExit(
+                    f"{name} بدون بیت اجرا بسته‌بندی شد؛ روی مک کار نمی‌کند.")
 
     size = target.stat().st_size / 1024
     print(f"✅ {target.name} — {len(inside)} پرونده، {size:,.0f} کیلوبایت")

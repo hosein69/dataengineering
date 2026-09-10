@@ -997,27 +997,35 @@ with t_send:
         if not to_addr:
             st.info("برای ارسال، دست‌کم یک گیرنده در بخش ۲ انتخاب یا وارد کنید.")
         else:
+            # برچسب دکمه از بسترِ همین سیستم می‌آید، نه از آرزوی ما:
+            # روی مک COM اتلوک نیست، پس دکمه‌ای به نام «ارسال» که فقط
+            # پنجره باز کند، به کاربر دروغ می‌گوید.
+            act, act_help = _dp.action_label()
+            direct = _dp.can_send_directly()
             s1, s2 = st.columns([2, 1])
-            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده", type="primary",
-                         use_container_width=True):
+            if s1.button(f"🚀 {act} به {len(to_addr)} گیرنده", type="primary",
+                         use_container_width=True, help=act_help):
                 try:
                     r = _dp.send(subj, st.session_state.mail_body,
-                                 to_addr, cc_addr, files, send_now=True)
+                                 to_addr, cc_addr, files, send_now=direct)
                     st.success(r.summary)
                 except Exception as ex:
                     st.error(str(ex))
-            if s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
-                         help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
+            if direct and s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
+                                    help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
                 try:
                     r = _dp.send(subj, st.session_state.mail_body,
                                  to_addr, cc_addr, files, send_now=False)
                     st.success(r.summary)
                 except Exception as ex:
                     st.error(str(ex))
+            if not direct:
+                s2.caption("فرستادنِ نهایی یک کلیک در کلاینت خودتان است.")
             st.download_button(
                 "⬇️ دریافت پروندهٔ .eml (روی سیستم بدون اتلوک)",
                 _dp.eml(subj, st.session_state.mail_body,
                         to_addr, cc_addr, files),
                 file_name=f"HR_{ref_date}.eml", mime="message/rfc822",
                 use_container_width=True)
-            st.caption("ارسال، عملی برگشت‌ناپذیر است.")
+            st.caption("ارسال، عملی برگشت‌ناپذیر است." if direct else
+                       "پیام باز می‌شود؛ تا خودتان نفرستید، نرفته است.")

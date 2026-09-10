@@ -12,10 +12,32 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Optional
 
-_NET = r"\\ikco.com\data-share\Global Sourcing"
-
 #: ویندوز است یا نه — پیش‌فرض‌های مسیر به همین وابسته‌اند.
 _IS_WINDOWS = sys.platform.startswith("win")
+_IS_MAC = sys.platform == "darwin"
+
+#: ریشهٔ اشتراک سازمانی.
+#:
+#: روی ویندوز مسیر UNC است. مک همان اشتراک SMB را زیر ``/Volumes`` سوار
+#: می‌کند، پس رشتهٔ UNC آنجا اصلاً وجود ندارد؛ اگر همان را نگه داریم، هر
+#: هفت سورس «پیدا نشد» می‌دهند و کاربر فکر می‌کند داده‌ها رفته‌اند.
+#: نام نقطهٔ اتصال روی هر مک فرق می‌کند، پس ``AIBL_NET`` بالاترین حرف
+#: را می‌زند و بقیهٔ مسیرها از همین یکی ساخته می‌شوند.
+_NET = os.environ.get(
+    "AIBL_NET",
+    "/Volumes/data-share/Global Sourcing" if _IS_MAC
+    else r"\\ikco.com\data-share\Global Sourcing")
+
+
+def _net(*parts: str) -> str:
+    r"""زیرمسیرِ اشتراک، با جداکنندهٔ همین سیستم‌عامل.
+
+    پیش از این مسیرها با ``\`` به هم چسبانده می‌شدند. روی مک ``\`` یک
+    کاراکتر معمولیِ نام فایل است، نه جداکننده — یعنی کل مسیر یک نامِ
+    واحدِ بی‌معنا می‌شد.
+    """
+    sep = "\\" if _IS_WINDOWS else "/"
+    return sep.join((_NET.rstrip("\\/"),) + parts)
 
 
 def _env(key: str, default: str) -> str:
@@ -39,14 +61,14 @@ def _local_default(win_path: str, posix_leaf: str) -> str:
 @dataclass(frozen=True)
 class Settings:
     # ── ریشه‌های شبکه ──
-    FOREIGN_DIR: str = field(default_factory=lambda: _env("AIBL_FOREIGN", rf"{_NET}\03-Data\01-Foreign"))
-    BLS_TOTAL_DIR: str = field(default_factory=lambda: _env("AIBL_BLS", rf"{_NET}\03-Data\01-Foreign\BLs TOTAL"))
-    CLEARANCE_DIR: str = field(default_factory=lambda: _env("AIBL_CLEARANCE", rf"{_NET}\03-Data\01-Foreign\BLs TOTAL\Clearance"))
-    HR_DIR: str = field(default_factory=lambda: _env("AIBL_HR", rf"{_NET}\11-Governance & Integration\03-Reports\01-HR"))
+    FOREIGN_DIR: str = field(default_factory=lambda: _env("AIBL_FOREIGN", _net("03-Data", "01-Foreign")))
+    BLS_TOTAL_DIR: str = field(default_factory=lambda: _env("AIBL_BLS", _net("03-Data", "01-Foreign", "BLs TOTAL")))
+    CLEARANCE_DIR: str = field(default_factory=lambda: _env("AIBL_CLEARANCE", _net("03-Data", "01-Foreign", "BLs TOTAL", "Clearance")))
+    HR_DIR: str = field(default_factory=lambda: _env("AIBL_HR", _net("11-Governance & Integration", "03-Reports", "01-HR")))
     # مسیر واقعی فایل مقاومت (تأییدشده در HEADERS_MAP) — نه پوشه اسماعیلی
-    GS_COMBINE_OUT_DIR: str = field(default_factory=lambda: _env("AIBL_GS_COMBINE", rf"{_NET}\11-Governance & Integration\DataTeam\Data_Ware_House\GS_Combine\OUTPUT"))
-    ESMAEILI_DIR: str = field(default_factory=lambda: _env("AIBL_ESMAEILI", rf"{_NET}\11-Governance & Integration\25-H.Esmaeili"))
-    MOHAMADI_DIR: str = field(default_factory=lambda: _env("AIBL_MOHAMADI", rf"{_NET}\11-Governance & Integration\26-M.Mohamadi"))
+    GS_COMBINE_OUT_DIR: str = field(default_factory=lambda: _env("AIBL_GS_COMBINE", _net("11-Governance & Integration", "DataTeam", "Data_Ware_House", "GS_Combine", "OUTPUT")))
+    ESMAEILI_DIR: str = field(default_factory=lambda: _env("AIBL_ESMAEILI", _net("11-Governance & Integration", "25-H.Esmaeili")))
+    MOHAMADI_DIR: str = field(default_factory=lambda: _env("AIBL_MOHAMADI", _net("11-Governance & Integration", "26-M.Mohamadi")))
 
     # ── خروجی و لاگ ──
     OUTPUT_DIR: str = field(default_factory=lambda: _env("AIBL_OUTPUT", _local_default(r"D:\of\blstotal\output", "output")))

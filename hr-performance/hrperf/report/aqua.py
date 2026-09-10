@@ -197,7 +197,7 @@ TYPE_SCALE = {
 #: را داشت، خروجی با فونتی غیر از فونت سازمانی رندر می‌شد — کاربر گزارش
 #: داد «فونت ایران‌سنس ندارد». نام‌های مختلف نصب (IRANSansWeb، IRAN Sans،
 #: IRANSansX) در CSS رابط به همین خانواده گره خورده‌اند.
-FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn','Segoe UI',Tahoma,system-ui,sans-serif"
+FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn','SF Arabic','Segoe UI',Tahoma,'Geeza Pro',system-ui,sans-serif"
 #: خانوادهٔ فونت اکسل و نمودارها — همان فونت سازمانی موجود.
 #: عمداً عوض نشد: انتخاب فونت، تصمیم رنگ نیست و تغییرش هر خروجی
 #: چاپ‌شدهٔ قبلی را با نسخهٔ تازه ناهم‌خوان می‌کرد.

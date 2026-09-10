@@ -182,9 +182,139 @@ def test_send_actually_sends() -> None:
 
     dash = io.open(os.path.join(ROOT, "app/dashboard.py"), encoding="utf-8").read()
     check("تب ارسال ورود دستی نشانی دارد", "parse_addresses" in dash)
-    check("ارسال دکمهٔ اصلی است", "🚀 ارسال به" in dash)
+    # برچسب دیگر هاردکد نیست — روی مک «ارسال» دروغ می‌شد. آنچه باید
+    # قفل بماند این است که دکمه **اصلی** است و متنش از بستر می‌آید.
+    check("ارسال دکمهٔ اصلی است", 'type="primary"' in dash
+          and "action_label()" in dash and "🚀 {act} به" in dash)
     check("ارسال دیگر به ستون ایمیلِ جدول پرسنلی گره نخورده",
           "if people_dir and to_sel:" not in dash)
+
+
+# ═════════════════ مک: بستر ارسال، مسیر داده و راه‌انداز ═════════════════
+def test_cross_platform():
+    """محیط کار به مک منتقل شد. سه چیز آنجا فرق می‌کند و هر سه اینجا قفل است.
+
+    ۱. **ارسال.** «ارسال با یک کلیک» از COM اتلوکِ ویندوز می‌آمد. مک آن
+       را ندارد. راهِ غلط این بود که دکمه همان «ارسال» بماند و بی‌صدا به
+       «باز کردن» تنزل کند — دقیقاً همان شکایتی که یک بار روی ویندوز
+       شنیدیم («ایمیل ذخیره می‌کند به‌جای فرستادن»).
+    ۲. **مسیر داده.** مسیر UNC روی مک وجود ندارد؛ اشتراک زیر /Volumes
+       سوار می‌شود و جداکننده «/» است نه «\\».
+    ۳. **راه‌انداز.** بدون بیتِ اجرا، دوبار کلیک روی مک هیچ نمی‌کند.
+    """
+    print("\n── مک: بستر ارسال، مسیر داده و راه‌انداز " + "─" * 26)
+    import tempfile
+    from unittest import mock
+    from hrperf.report import dispatch as _dp
+    from hrperf.report.alborz import FONT_STACK as _AL_FONT
+
+    # ── ۱) بستر از سیستم‌عامل خوانده می‌شود، نه از آرزو ──
+    for plat, want, direct in [("win32", _dp.OUTLOOK_COM, True),
+                               ("darwin", _dp.MAC_OPEN, False),
+                               ("linux", _dp.EML_ONLY, False)]:
+        with mock.patch.object(_dp._sys, "platform", plat):
+            check(f"بستر روی {plat} = {want}", _dp.backend() == want,
+                  _dp.backend())
+            check(f"ارسال مستقیم روی {plat}: {'بله' if direct else 'نه'}",
+                  _dp.can_send_directly() is direct)
+            label = _dp.action_label()[0]
+            check(f"برچسب دکمه روی {plat} صادق است",
+                  ("ارسال" == label) is direct, label)
+
+    # ── ۲) روی مک، send_now دروغ نمی‌گوید ──
+    with mock.patch.object(_dp._sys, "platform", "darwin"):
+        try:
+            _dp.send("موضوع", "<p>متن</p>", ["a@example.com"], send_now=True)
+            check("send_now روی مک صریحاً خطا می‌دهد", False, "خطایی نداد")
+        except RuntimeError as ex:
+            check("send_now روی مک صریحاً خطا می‌دهد", "مک" in str(ex))
+            check("خطا راهِ جایگزین را می‌گوید", "باز کردن" in str(ex))
+
+    # ── ۳) روی مک، «باز کردن» واقعاً پیام کامل را می‌سازد ──
+    with tempfile.TemporaryDirectory() as tmp:
+        env = {"HRP_HOME": tmp}
+        calls = []
+
+        def fake_call(cmd, **kw):
+            calls.append(cmd)
+            return 0
+
+        with mock.patch.object(_dp._sys, "platform", "darwin"), \
+             mock.patch.dict(os.environ, env), \
+             mock.patch.object(_dp._sp, "call", fake_call):
+            res = _dp.send("موضوع", "<p>متن گزارش</p>",
+                           ["yek@example.com", "do@example.com"],
+                           ["cc@example.com"], send_now=False)
+
+        check("پیام در کلاینت باز شد", res.displayed and not res.sent)
+        check("شمارش گیرنده درست است", res.to_count == 2 and res.cc_count == 1,
+              f"{res.to_count} + {res.cc_count}")
+        check("فرمانِ باز کردن، open مکِ است",
+              bool(calls) and calls[0][0] == "open", str(calls[:1]))
+
+        spool = os.path.join(tmp, "outbox")
+        emls = [f for f in os.listdir(spool)] if os.path.isdir(spool) else []
+        check("پیام روی دیسک ساخته شد", len(emls) == 1, str(emls))
+        if emls:
+            path = os.path.join(spool, emls[0])
+            check("نام پرونده هیچ نشانی‌ای ندارد", "@" not in emls[0], emls[0])
+            check("پوشهٔ صندوق ۷۰۰ است",
+                  (os.stat(spool).st_mode & 0o777) == 0o700,
+                  oct(os.stat(spool).st_mode & 0o777))
+            check("پروندهٔ پیام ۶۰۰ است",
+                  (os.stat(path).st_mode & 0o777) == 0o600,
+                  oct(os.stat(path).st_mode & 0o777))
+            raw = io.open(path, encoding="utf-8", errors="replace").read()
+            check("بدنهٔ HTML داخل پیام هست", "متن گزارش" in raw)
+            check("گیرنده‌ها داخل پیام هستند", "yek@example.com" in raw)
+
+        # ── ۴) خلاصه هرگز نشانی نشان نمی‌دهد ──
+        check("خلاصه هیچ نشانی‌ای فاش نمی‌کند",
+              "@" not in res.summary, res.summary)
+
+    # ── ۵) پاکسازی صندوق: نشانی‌ها روی دیسک تلنبار نمی‌شوند ──
+    with tempfile.TemporaryDirectory() as tmp:
+        d = os.path.join(tmp, "outbox")
+        os.makedirs(d)
+        old = os.path.join(d, "dispatch-19700101-000000-1.eml")
+        io.open(old, "w").write("x")
+        os.utime(old, (0, 0))
+        keep = os.path.join(d, "dispatch-new.eml")
+        io.open(keep, "w").write("x")
+        _dp._prune_spool(__import__("pathlib").Path(d))
+        check("پیام کهنه (>۷ روز) پاک شد", not os.path.exists(old))
+        check("پیام تازه دست‌نخورده ماند", os.path.exists(keep))
+
+    # ── ۶) رابط، برچسب را از بستر می‌گیرد نه هاردکد ──
+    ui = io.open(os.path.join(ROOT, "app/dashboard.py"), encoding="utf-8").read()
+    check("رابط برچسب دکمه را از بستر می‌گیرد", "action_label()" in ui)
+    check("رابط send_now را از بستر می‌گیرد", "send_now=direct" in ui)
+    check("رابط دیگر «ارسال» را هاردکد نمی‌کند",
+          '🚀 ارسال به' not in ui)
+
+    # ── ۷) راه‌انداز مک ──
+    launcher = os.path.join(ROOT, "run_mac.command")
+    check("راه‌انداز مک وجود دارد", os.path.exists(launcher))
+    if os.path.exists(launcher):
+        check("بیت اجرا دارد", bool(os.stat(launcher).st_mode & 0o111),
+              oct(os.stat(launcher).st_mode & 0o777))
+        txt = io.open(launcher, encoding="utf-8").read()
+        check("shebang دارد", txt.startswith("#!/bin/bash"))
+        check("نسخهٔ پایتون را می‌سنجد", "3, 11" in txt or "(3, 11)" in txt)
+    mk = io.open(os.path.join(ROOT, "make_package.py"), encoding="utf-8").read()
+    check("راه‌انداز مک بسته‌بندی می‌شود", '"run_mac.command"' in mk)
+    check("بسته‌بندی بیت اجرا را بازرسی می‌کند", "EXECUTABLE" in mk)
+    check("راهنمای مک بسته‌بندی می‌شود", '"INSTALL_MAC.md"' in mk)
+    check("راهنمای مک وجود دارد",
+          os.path.exists(os.path.join(ROOT, "INSTALL_MAC.md")))
+
+    # ── ۸) فونت: زنجیره روی مک هم به فارسیِ خوانا می‌رسد ──
+    check("زنجیرهٔ فونت، جانشین مک دارد", "SF Arabic" in _AL_FONT,
+          _AL_FONT[:60])
+    css = io.open(os.path.join(ROOT, "app/styles.py"), encoding="utf-8").read()
+    check("نام PostScript مکِ ایران‌سنس هم پوشش دارد",
+          "IRANSansX-Light" in css)
+
 
 
 if __name__ == "__main__":
@@ -197,6 +327,7 @@ if __name__ == "__main__":
     test_font_and_contrast()
     test_charts_never_inherit_theme()
     test_send_actually_sends()
+    test_cross_platform()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

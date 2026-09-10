@@ -779,32 +779,43 @@ with tab_send:
         if not ready:
             st.info("دکمهٔ ارسال تا وقتی گیرنده‌ای نباشد غیرفعال است — "
                     "در بخش ۲ از فهرست HR انتخاب کنید یا نشانی را دستی بنویسید.")
+        # برچسب دکمه از بسترِ همین سیستم می‌آید، نه از آرزوی ما.
+        # روی مک، COM اتلوک وجود ندارد؛ دکمه‌ای به نام «ارسال» که فقط
+        # پنجره باز کند، همان اشتباهی است که یک بار روی ویندوز شد.
+        act, act_help = _dp.action_label()
+        direct = _dp.can_send_directly()
         if True:
             s1, s2 = st.columns([2, 1])
-            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده" if ready
-                         else "🚀 ارسال (گیرنده انتخاب نشده)",
+            if s1.button(f"🚀 {act} به {len(to_addr)} گیرنده" if ready
+                         else f"🚀 {act} (گیرنده انتخاب نشده)",
                          type="primary", use_container_width=True,
-                         disabled=not ready):
+                         help=act_help, disabled=not ready):
                 try:
                     st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
-                                        files, send_now=True).summary)
+                                        files, send_now=direct).summary)
                 except Exception as ex:
                     st.error(str(ex))
-            if s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
-                         disabled=not ready,
-                         help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
+            if direct and s2.button("پیش‌نمایش در اتلوک",
+                                    use_container_width=True,
+                                    disabled=not ready,
+                                    help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
                 try:
                     st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
                                         files, send_now=False).summary)
                 except Exception as ex:
                     st.error(str(ex))
+            if not direct:
+                s2.caption("روی این سیستم، فرستادنِ نهایی یک کلیک در "
+                           "کلاینت ایمیل خودتان است.")
             st.download_button(
                 "⬇️ پروندهٔ .eml (سیستمی که اتلوک ندارد)",
                 _dp.eml(subj, mail_html, to_addr or ["-"], cc_addr, files),
                 file_name=f"{_BRAND.FILE_PREFIX}_{ref_date}.eml",
                 mime="message/rfc822", use_container_width=True,
                 disabled=not ready)
-            st.caption(f"{len(files)} پیوست همراه می‌رود. ارسال برگشت‌ناپذیر است.")
+            st.caption(f"{len(files)} پیوست همراه می‌رود. "
+                       + ("ارسال برگشت‌ناپذیر است." if direct else
+                          "پیام باز می‌شود؛ تا خودتان نفرستید، نرفته است."))
 
         with st.expander("پیش‌نمایش متن ایمیل", expanded=False):
             if mail_html:

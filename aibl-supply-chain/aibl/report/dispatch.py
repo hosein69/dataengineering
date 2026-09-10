@@ -62,9 +62,13 @@ EMAIL_COLUMNS = (
     "نشانی الکترونیکی", "آدرس ایمیل", "رایانامه",
 )
 
+import datetime as _dt
 import html as _h
 import os
 import re
+import subprocess as _sp
+import sys as _sys
+import time as _time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -428,6 +432,101 @@ def outlook_body(title: str, ref_date: str,
 </td></tr></table></body></html>"""
 
 
+# ═══════════════════ بسترِ ارسال ═══════════════════
+#: چه چیزی روی این سیستم ممکن است.
+#:
+#: مسیر «ارسال با یک کلیک» از COM اتلوکِ **ویندوز** می‌آید. اتلوک مک چنین
+#: رابطی ندارد و «اتلوک جدید» حتی AppleScript قدیمی را هم برداشته. پس
+#: به‌جای ادعای پشتیبانی، همان چیزی را می‌گوییم که واقعاً هست: روی مک
+#: پیام با همهٔ پیوست‌ها در کلاینت ایمیل **باز** می‌شود و فرستادنش یک
+#: کلیکِ خودِ کاربر است.
+OUTLOOK_COM = "outlook-com"      #: ویندوز + اتلوک کلاسیک + pywin32
+MAC_OPEN = "mac-open"            #: مک — پیام در کلاینت پیش‌فرض باز می‌شود
+EML_ONLY = "eml-only"            #: بقیه — فقط دانلود پروندهٔ .eml
+
+
+def backend() -> str:
+    """بسترِ ارسالِ همین سیستم."""
+    if _sys.platform.startswith("win"):
+        return OUTLOOK_COM
+    if _sys.platform == "darwin":
+        return MAC_OPEN
+    return EML_ONLY
+
+
+def can_send_directly() -> bool:
+    """آیا «ارسال» روی این سیستم واقعاً یعنی فرستادن؟"""
+    return backend() == OUTLOOK_COM
+
+
+def action_label() -> Tuple[str, str]:
+    """(برچسب دکمهٔ اصلی، توضیحش) — متناسب با همین سیستم.
+
+    رابط نباید روی مک دکمهٔ «ارسال» نشان بدهد و بعد فقط پنجره باز کند؛
+    یک بار همین اتفاق روی ویندوز افتاد (ذخیره به‌جای ارسال) و کاربر
+    درست نتیجه گرفت که برنامه کاری را که گفته انجام نمی‌دهد.
+    """
+    if can_send_directly():
+        return ("ارسال", "پیام فرستاده می‌شود؛ این کار برگشت‌ناپذیر است.")
+    if backend() == MAC_OPEN:
+        return ("باز کردن در کلاینت ایمیل",
+                "همان پیام با همین پیوست‌ها در اتلوک/Mail باز می‌شود؛ "
+                "فرستادنش با خود شماست.")
+    return ("دانلود پروندهٔ .eml",
+            "روی این سیستم کلاینتی برای باز کردن مستقیم نیست.")
+
+
+#: پیام‌های ساخته‌شده روی مک اینجا می‌نشینند تا کلاینت بازشان کند.
+#: نشانی گیرنده داخل همین پرونده است، پس پوشه ۷۰۰ است، پرونده ۶۰۰، و
+#: هر چه از 7 روز گذشته باشد پاک می‌شود — سیاههٔ نشانی‌ها روی دیسک
+#: تلنبار نمی‌شود. نام پرونده هیچ نشانی‌ای ندارد.
+SPOOL_TTL_DAYS = 7
+
+
+def spool_dir() -> Path:
+    d = Path(os.environ.get("AIBL_HOME") or (Path.home() / ".aibl")) / "outbox"
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(d, 0o700)
+    except OSError:
+        pass
+    return d
+
+
+def _prune_spool(d: Path) -> None:
+    cutoff = _time.time() - SPOOL_TTL_DAYS * 86400
+    for p in d.glob("dispatch-*.eml"):
+        try:
+            if p.stat().st_mtime < cutoff:
+                p.unlink()
+        except OSError:
+            pass
+
+
+def _open_in_client(subject: str, body_html: str, to: Sequence[str],
+                    cc: Sequence[str], files: Sequence[Path],
+                    res: "Dispatch") -> "Dispatch":
+    """پیام را می‌سازد و به کلاینت ایمیلِ مک می‌سپارد."""
+    d = spool_dir()
+    _prune_spool(d)
+    stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    path = d / f"dispatch-{stamp}-{os.getpid()}.eml"
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(eml(subject, body_html, to, cc, files))
+    for app in ("Microsoft Outlook", "Mail"):
+        rc = _sp.call(["open", "-a", app, str(path)],
+                      stdout=_sp.DEVNULL, stderr=_sp.DEVNULL)
+        if rc == 0:
+            res.displayed = True
+            res.note = f"در «{app}» باز شد — فرستادنش با شماست."
+            return res
+    _sp.check_call(["open", str(path)])
+    res.displayed = True
+    res.note = "در کلاینت ایمیل پیش‌فرض باز شد — فرستادنش با شماست."
+    return res
+
+
 # ═══════════════════ ارسال ═══════════════════
 @dataclass
 class Dispatch:
@@ -441,11 +540,12 @@ class Dispatch:
 
     @property
     def summary(self) -> str:
-        state = "ارسال شد" if self.sent else ("در اتلوک باز شد" if self.displayed
+        state = "ارسال شد" if self.sent else ("در کلاینت ایمیل باز شد" if self.displayed
                                               else "آماده شد")
         return (f"{state} — {self.to_count} گیرنده"
                 + (f" و {self.cc_count} رونوشت" if self.cc_count else "")
-                + (f" · {len(self.attachments)} پیوست" if self.attachments else ""))
+                + (f" · {len(self.attachments)} پیوست" if self.attachments else "")
+                + (f" · {self.note}" if self.note else ""))
 
 
 def send(subject: str, body_html: str,
@@ -454,8 +554,13 @@ def send(subject: str, body_html: str,
     """ایمیل را در اتلوک می‌سازد و در صورت درخواست می‌فرستد.
 
     ``send_now=True`` پیام را می‌فرستد و **هیچ پیش‌نویسی نمی‌سازد**.
-    ``send_now=False`` پنجرهٔ اتلوک را باز می‌کند تا کاربر پیش از فرستادن
-    ببیند. هیچ‌کدام از این دو مسیر، پیام را در «پیش‌نویس» رها نمی‌کند.
+    ``send_now=False`` پیام را در کلاینت باز می‌کند تا کاربر پیش از
+    فرستادن ببیند. هیچ‌کدام از این دو، پیام را در «پیش‌نویس» رها نمی‌کند.
+
+    ``send_now=True`` فقط روی بستر :data:`OUTLOOK_COM` معنا دارد
+    (ویندوز + اتلوک کلاسیک). روی مک صریحاً خطا می‌دهد به‌جای اینکه
+    بی‌صدا به «باز کردن» تنزل کند؛ رابط باید با :func:`action_label`
+    از اول برچسبِ درست را نشان بدهد.
     """
     to = [t for t in to if t]
     if not to:
@@ -463,12 +568,26 @@ def send(subject: str, body_html: str,
     files = [Path(a) for a in attachments if Path(a).exists()]
     res = Dispatch(to_count=len(to), cc_count=len([c for c in cc if c]),
                    attachments=[f.name for f in files])
+    kind = backend()
+    if kind == MAC_OPEN:
+        if send_now:
+            raise RuntimeError(
+                "روی مک، «ارسال» خودکار ممکن نیست: آن مسیر از COM اتلوکِ "
+                "ویندوز می‌آید و اتلوک مک چنین رابطی ندارد. با گزینهٔ "
+                "«باز کردن در کلاینت ایمیل» همان پیام با همین پیوست‌ها "
+                "باز می‌شود و فرستادنش یک کلیک خودتان است.")
+        return _open_in_client(subject, body_html, to, cc, files, res)
+    if kind == EML_ONLY:
+        raise RuntimeError(
+            "روی این سیستم‌عامل کلاینتی برای ارسال مستقیم نیست. "
+            "پروندهٔ .eml را دانلود کنید و با کلاینت خودتان بازش کنید.")
     try:
         import win32com.client as win32
     except ImportError as ex:
         raise RuntimeError(
-            "ارسال از داخل پلتفرم فقط روی ویندوز با Classic Outlook و "
-            "pywin32 کار می‌کند. روی این سیستم، فایل‌ها را دستی پیوست کنید."
+            "ارسال از داخل پلتفرم به اتلوک کلاسیکِ ویندوز و pywin32 نیاز "
+            "دارد. روی این ویندوز pywin32 نصب نیست: "
+            "`pip install pywin32`. تا آن‌وقت پروندهٔ .eml راهِ ارسال است."
         ) from ex
     outlook = win32.Dispatch("Outlook.Application")
     mail = outlook.CreateItem(0)

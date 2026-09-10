@@ -100,7 +100,7 @@ SPACE = [0, 6, 10, 16, 22, 28, 34, 44, 54]
 
 # ═══════════════════ تایپوگرافی ═══════════════════
 #: ایران‌سنس اول. Vazirmatn جایگزین آزادِ در دسترس در فیگما و لینوکس است.
-FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn','Segoe UI',Tahoma,system-ui,sans-serif"
+FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn','SF Arabic','Segoe UI',Tahoma,'Geeza Pro',system-ui,sans-serif"
 FONT_XLSX = "IRANSans Light"
 TYPE_SCALE = {
     "display": 44, "title": 26, "section": 23, "lead": 19,

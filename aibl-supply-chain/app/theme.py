@@ -81,7 +81,10 @@ SERIES: List[str] = list(_aqua.CATEGORICAL_LIGHT)
 SEQUENTIAL: List[str] = ["#D7F0E7", "#A9DFD1", "#7CCDBB",
                          "#4DBEA8", "#00A693", "#007D6E", "#005349"]
 
-FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn',Tahoma,Arial,sans-serif"
+#: از «نظام طراحی البرز» — رابط و گزارش نباید دو پشتهٔ فونت داشته باشند.
+#: نسخهٔ محلیِ قبلی 'SF Arabic' و 'Geeza Pro' را نداشت و روی مکِ بدون
+#: ایران‌سنس، فارسیِ رابط با قلمِ جانشینِ سیستم رندر می‌شد.
+FONT_STACK = _AL.FONT_STACK
 
 
 # ── تم Streamlit — یک منبع، دو مصرف‌کننده ─────────────────────────────────

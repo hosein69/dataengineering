@@ -15,15 +15,21 @@ from hrperf.report.theme import (BORDER, BRAND, BRAND_DEEP, FONT_STACK, RAISED,
 
 def css() -> str:
     return f"""<style>
-/* نام‌های مختلف نصبِ ایران‌سنس روی ویندوز به یک خانواده گره می‌خورند؛
-   اگر هیچ‌کدام نبود، مرورگر بی‌صدا به گزینهٔ بعدی زنجیره می‌رود. */
+/* نام‌های مختلف نصبِ ایران‌سنس را به یک خانواده گره می‌زنیم؛ اگر هیچ‌کدام
+   نبود، مرورگر بی‌صدا به گزینهٔ بعدی زنجیره می‌رود. نام‌های خط‌تیره‌دار
+   (PostScript) برای مک‌اند: Font Book فایل را با همان نام ثبت می‌کند،
+   نه با نامِ کاملی که ویندوز نشان می‌دهد. */
 @font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:400;
   src: local('IRANSans'), local('IRANSansWeb'), local('IRAN Sans'),
-       local('IRANSansX'), local('IRANSans Regular'); }}
+       local('IRANSansX'), local('IRANSans Regular'), local('IRANSansWeb(FaNum)'),
+       local('IRANSansX-Regular'), local('IRANSansWeb-Regular'); }}
 @font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:700;
-  src: local('IRANSans Bold'), local('IRANSansWeb Bold'), local('IRANSansX Bold'); }}
+  src: local('IRANSans Bold'), local('IRANSansWeb Bold'), local('IRANSansX Bold'),
+       local('IRAN Sans Bold'), local('IRANSansX-Bold'), local('IRANSansWeb-Bold'); }}
 @font-face {{ font-family:'IRANSans Light'; font-style:normal; font-weight:300;
-  src: local('IRANSans Light'), local('IRANSansWeb Light'), local('IRANSansX Light'); }}
+  src: local('IRANSans Light'), local('IRANSansWeb Light'),
+       local('IRANSansX Light'), local('IRAN Sans Light'),
+       local('IRANSansX-Light'), local('IRANSansWeb-Light'); }}
 
 :root{{color-scheme:light;
 --brand:{BRAND};--deep:{BRAND_DEEP};--surface:{SURFACE};--raised:{RAISED};

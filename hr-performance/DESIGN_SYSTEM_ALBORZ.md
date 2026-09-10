@@ -82,11 +82,17 @@
 
 ### تایپوگرافی
 ```
-'IRANSans Light','IRANSans','Vazirmatn','Segoe UI',Tahoma,system-ui
+'IRANSans Light','IRANSans','Vazirmatn','SF Arabic','Segoe UI',
+Tahoma,'Geeza Pro',system-ui,sans-serif
 display 44 · title 26 · section 23 · lead 19 · body 13.5 · caption 12
 ```
 ایران‌سنس **اول**. Vazirmatn جایگزین آزادِ در دسترس در فیگما و لینوکس
 است؛ ایران‌سنس فونت گوگل نیست و در فیگما باید Local Font نصب شود.
+
+`SF Arabic` و `Geeza Pro` جانشین‌های **مک**اند: روی مکی که ایران‌سنس
+نصب نیست، بدون این‌ها فارسی به قلمِ عمومیِ سیستم می‌افتاد. `local()`های
+داخل CSS هم نام‌های ویندوزی و هم نام‌های PostScript مک را می‌گیرند
+(`IRANSansX-Light` و…) — Font Book فونت را با آن نام ثبت می‌کند.
 
 ---
 
