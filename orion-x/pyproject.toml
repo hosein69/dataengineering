@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orion-x"
+version = "5.0.0"
+description = "Regime-gated, cost-aware crypto decision engine with exact triple-barrier first-passage probabilities"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+orion-x = "orion_x.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["orion_x*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,22 @@
+[package]
+name = "orion-x"
+version = "5.0.0"
+edition = "2021"
+license = "MIT"
+description = "ORION-X v5 core: triple-barrier first-passage, cost model and growth-optimal sizing"
+repository = "https://github.com/hosein69/dataengineering"
+
+[lib]
+name = "orion_x"
+path = "src/lib.rs"
+
+[[bin]]
+name = "orion-x"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
