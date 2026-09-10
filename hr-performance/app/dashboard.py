@@ -210,9 +210,10 @@ for w in RUN.warnings:
     st.info(w)
 
 (t_over, t_people, t_cluster, t_fair, t_graph, t_causal,
- t_model, t_studio, t_export) = st.tabs(
+ t_model, t_studio, t_export, t_send) = st.tabs(
     ["نمای کلی", "افراد", "کلاسترها", "⚖️ عدالت و توازن بار", "🕸 گراف سازمانی",
-     "🔬 تحلیل علّی", "⚙️ مدل و وزن", "🧬 استودیوی کلاستر", "📦 خروجی"])
+     "🔬 تحلیل علّی", "⚙️ مدل و وزن", "🧬 استودیوی کلاستر", "📦 خروجی",
+     "✉️ ارسال گزارش"])
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -835,3 +836,165 @@ with t_export:
             st.error(f"ثبت ناموفق بود: {ex}")
 
 st.caption("رتبه‌ها فقط درون گروه همتا (مدیریت + اداره + نوع کار) معنا دارند.")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  ارسال گزارش در لحظه — پیوست دلخواه، گیرندهٔ دلخواه
+# ══════════════════════════════════════════════════════════════════════════
+with t_send:
+    import tempfile as _tf
+    from hrperf.report import dispatch as _dp
+    from hrperf.report import fluid as _fl
+    from hrperf.report.builder import ReportSpec as _Spec
+    from hrperf.report.builder import build as _build
+
+    st.markdown("##### ۱) کدام گزارش‌ها پیوست شوند؟")
+    st.caption("هر مورد در لحظه ساخته می‌شود — نه از اجرای قبلی.")
+    picks = {}
+    cols = st.columns(4)
+    for i, (key, (label, ext, why)) in enumerate(_dp.ARTIFACTS.items()):
+        if key == "pdf":
+            continue
+        with cols[i % 4]:
+            picks[key] = st.checkbox(label, value=key in ("excel", "dynamic"),
+                                     key=f"pick_{key}", help=why)
+
+    st.markdown("##### ۲) گیرندگان")
+    people_dir = _dp.directory(RUN.people)
+    if not people_dir:
+        st.warning("در جدول پرسنلی این اجرا، ستون ایمیل با نشانی معتبر نبود. "
+                   "برای انتخاب گیرنده، ستون `email` را به نقشه سازمانی اضافه "
+                   "کنید — یا فهرست را از `HRP_EMAIL_TO` بدهید.")
+        st.caption("نشانی‌ها هیچ‌جا لاگ یا ذخیره نمی‌شوند؛ فقط تعدادشان گزارش می‌شود.")
+    else:
+        by_label = {p.label: p for p in people_dir}
+        c1, c2 = st.columns(2)
+        to_sel = c1.multiselect("گیرندگان (To)", list(by_label),
+                                help="نام و اداره نمایش داده می‌شود، نه نشانی")
+        cc_sel = c2.multiselect("رونوشت (Cc)", list(by_label))
+        chosen_to = [by_label[x] for x in to_sel]
+        chosen_cc = [by_label[x] for x in cc_sel if x not in to_sel]
+        if chosen_to or chosen_cc:
+            st.caption("نشانی‌های نقاب‌دار برای تأیید: "
+                       + "، ".join(p.masked for p in chosen_to + chosen_cc))
+
+    st.markdown("##### ۳) متن ایمیل")
+    subj = st.text_input("موضوع",
+                         value=f"عملکرد منابع انسانی — {ref_date}")
+    note = st.text_area(
+        "یادداشت پایانی",
+        value="رتبه‌ها فقط درون گروه همتا معنا دارند. جزئیات هر امتیاز در "
+              "فایل‌های پیوست است.", height=70)
+
+    with st.expander("چرا متن ایمیل داینامیک نیست؟", expanded=False):
+        st.markdown(
+            "**هیچ کلاینت ایمیلی جاوااسکریپت را اجرا نمی‌کند** — نه اتلوک "
+            "کلاسیک، نه اتلوک جدید، نه وب‌میل. این تصمیم امنیتی است: ایمیل از "
+            "فرستندهٔ ناشناس می‌آید و اجرای کد او روی دستگاه گیرنده خودش یک "
+            "آسیب‌پذیری است. پس نمودار زنده، فیلتر و مرتب‌سازی در بدنهٔ ایمیل "
+            "ممکن نیست.\n\n"
+            "**اتلوک کلاسیک** بدنه را با موتور Word رندر می‌کند: بدون flexbox، "
+            "بدون grid، بدون `background-image`. پشتیبانی مایکروسافت از آن "
+            "مهر ۱۴۰۵ (اکتبر ۲۰۲۶) تمام می‌شود. **اتلوک جدید** موتور Chromium "
+            "دارد و CSS مدرن را می‌فهمد، ولی باز هم جاوااسکریپت نه.\n\n"
+            "**راه‌حل ما:** بدنهٔ ایمیل جدول‌محور و امن روی هر دو موتور — با "
+            "کاشی KPI، ردیف‌های صدر جدول و تراشهٔ وضعیت؛ به‌علاوهٔ یک بلوک "
+            "`@media` که فقط اتلوک جدید می‌بیند (حالت تاریک و چیدمان موبایل). "
+            "گزارش داینامیک **پیوست** می‌شود و در مرورگر کاملاً زنده است.")
+
+    st.markdown("##### ۴) ساخت و ارسال")
+    b1, b2 = st.columns([1, 1])
+    make = b1.button("🛠 ساخت پیش‌نمایش و پیوست‌ها", use_container_width=True)
+    if make:
+        out = Path(_tf.mkdtemp(prefix="hrp_send_"))
+        files, names = [], []
+        want = [k for k, v in picks.items() if v]
+        if "excel" in want or "html" in want:
+            fmts = [f for f in ("excel", "html") if f in want]
+            res = _build(RUN, _Spec(template="executive", ref_date=ref_date,
+                                    title=f"عملکرد منابع انسانی — {ref_date}",
+                                    formats=fmts, file_stem="HR_گزارش"), out)
+            for f in fmts:
+                if res.files.get(f):
+                    files.append(Path(res.files[f]))
+        if "dynamic" in want:
+            lb = LB.copy()
+            if "case_load" in RUN.metric_raw.columns:
+                lb["بار کاری"] = RUN.metric_raw["case_load"].reindex(
+                    lb[lb.columns[0]]).to_numpy()
+            from hrperf.report.dynamic import write_dynamic as _wd
+            files.append(Path(_wd(lb, out / "HR_داشبورد_داینامیک.html",
+                                  ref_date=ref_date)))
+        if "fluid" in want:
+            files.append(_fl.write(
+                _fl.build_payload(RUN.metric_scores, MODEL, RUN.people),
+                out / "HR_نقشه_سیال.html"))
+        names = [f.name for f in files]
+
+        bands = {k: 0 for _f, _c, _i, l in BANDS for k in [l]}
+        for v in RUN.scores.performance.dropna():
+            _c, _i, lab = band_of(v)
+            bands[lab] = bands.get(lab, 0) + 1
+        from hrperf.report import aqua as _aq
+        kpis = [("نفرات", f"{len(RUN.people):,}", _aq.LIGHT["text"]),
+                ("میانه عملکرد",
+                 f"{float(RUN.scores.performance.median()):.1f}",
+                 _aq.LIGHT["brand-strong"])]
+        for lab, cnt in list(bands.items())[:2]:
+            col, _i, _l = band_of(80 if "برجسته" in lab else 30)
+            kpis.append((lab, f"{cnt:,}", col))
+
+        top = LB.head(6)
+        code_col = "کد پرسنلی" if "کد پرسنلی" in top.columns else top.columns[0]
+        rows = []
+        for _, r in top.iterrows():
+            col, icon, lab = band_of(r.get("عملکرد"))
+            rows.append([str(r.get(code_col, "")), str(r.get("نام", "")),
+                         str(r.get("اداره", "")),
+                         f"{float(r.get('عملکرد', 0)):.1f}",
+                         _dp._chip(lab, col, icon)])
+        body = _dp.outlook_body(
+            subj, ref_date, kpis=kpis,
+            headers=["کد پرسنلی", "نام", "اداره", "عملکرد", "وضعیت"],
+            rows=rows, note=note, attachments=names)
+
+        st.session_state.mail_body = body
+        st.session_state.mail_files = [str(f) for f in files]
+        st.success(f"{len(files)} پیوست ساخته شد.")
+
+    if st.session_state.get("mail_body"):
+        st.markdown("**پیش‌نمایش بدنهٔ ایمیل** — همان چیزی که در اتلوک دیده می‌شود")
+        st.components.v1.html(st.session_state.mail_body, height=520, scrolling=True)
+        files = [Path(f) for f in st.session_state.get("mail_files", [])]
+        for f in files:
+            if f.exists():
+                st.download_button(f"⬇️ {f.name}", f.read_bytes(),
+                                   file_name=f.name, key=f"dl_{f.name}")
+        if people_dir and to_sel:
+            s1, s2 = st.columns(2)
+            if s1.button("📨 باز کردن در اتلوک (بدون ارسال)",
+                         use_container_width=True):
+                try:
+                    r = _dp.send(subj, st.session_state.mail_body,
+                                 _dp.addresses(chosen_to),
+                                 _dp.addresses(chosen_cc), files, send_now=False)
+                    st.success(r.summary)
+                except Exception as ex:
+                    st.error(str(ex))
+            if s2.button("🚀 ارسال همین حالا", type="primary",
+                         use_container_width=True):
+                try:
+                    r = _dp.send(subj, st.session_state.mail_body,
+                                 _dp.addresses(chosen_to),
+                                 _dp.addresses(chosen_cc), files, send_now=True)
+                    st.success(r.summary)
+                except Exception as ex:
+                    st.error(str(ex))
+            st.download_button(
+                "⬇️ دریافت پروندهٔ .eml (روی سیستم بدون اتلوک)",
+                _dp.eml(subj, st.session_state.mail_body,
+                        _dp.addresses(chosen_to), _dp.addresses(chosen_cc), files),
+                file_name=f"HR_{ref_date}.eml", mime="message/rfc822",
+                use_container_width=True)
+            st.caption("ارسال، عملی برگشت‌ناپذیر است — پیش‌فرض «باز کردن در "
+                       "اتلوک» است تا پیش از فرستادن ببینید.")

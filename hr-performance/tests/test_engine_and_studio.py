@@ -276,6 +276,70 @@ def test_fluid_html() -> None:
           fluid.build_payload(df, m2)["clusters"]["A"]["light"] == "#123456")
 
 
+def test_dispatch() -> None:
+    """ارسال گزارش: پیوست دلخواه، گیرندهٔ دلخواه، بدنهٔ امن روی موتور Word."""
+    print("\n── ۶) ارسال گزارش ──")
+    from hrperf.report import dispatch as dp
+
+    ppl = pd.DataFrame({
+        "person_key": ["1", "2", "3", "4"],
+        "full_name": ["الف", "ب", "ج", "د"],
+        "department": ["اداره ترخیص", "اداره اعتبارات", "اداره ترخیص", "اداره ترخیص"],
+        "role": ["کارشناس", "رئیس", "کارشناس", "کارشناس"],
+        "active": [1, 1, 0, 1],
+        "email": ["a@x.invalid", "b@x.invalid", "c@x.invalid", "بدون‌نشانی"]})
+    d = dp.directory(ppl)
+    check("فقط افراد فعالِ دارای نشانی معتبر می‌آیند",
+          {p.name for p in d} == {"الف", "ب"}, str(sorted(p.name for p in d)))
+    check("برچسب انتخابگر، نشانی را نشان نمی‌دهد",
+          all("@" not in p.label for p in d), str([p.label for p in d]))
+    check("نشانی نقاب‌دار است", all("*" in p.masked for p in d),
+          str([p.masked for p in d]))
+    check("نشانی واقعی فقط در لحظهٔ ارسال درمی‌آید",
+          dp.addresses(d) == ["a@x.invalid", "b@x.invalid"], str(dp.addresses(d)))
+    check("جدول بدون ستون ایمیل، فهرست خالی می‌دهد",
+          dp.directory(ppl.drop(columns=["email"])) == [])
+
+    body = dp.outlook_body(
+        "آزمون", "1405/06/09",
+        kpis=[("نفرات", "۶۱", "#14332C"), ("بحرانی", "۵", "#B3261E")],
+        headers=["کد", "نام", "عملکرد"],
+        rows=[["E1", "الف", "۷۵٫۴"], ["E2", "ب", "۵۱٫۲"]],
+        note="یادداشت", attachments=["a.xlsx"], live_url="https://x.invalid/r")
+
+    low = body.lower()
+    for token in ("<script", "flex", "display:grid", "<svg", "position:absolute"):
+        check(f"بدنه بدون «{token}» است", token not in low)
+    check("چیدمان جدول‌محور است", body.count("<table") >= 5, str(body.count("<table")))
+    check("CSS درون‌خطی است", 'style="' in body)
+    check("VML برای دکمه هست (گوشهٔ گرد روی اتلوک کلاسیک)",
+          "v:roundrect" in body and "mso" in body)
+    check("ارتقای تدریجی فقط در @media است",
+          "prefers-color-scheme" in body and "@media" in body)
+    check("راست‌به‌چپ و فارسی", 'dir="rtl"' in body and 'lang="fa"' in body)
+    check("پالت آکوا به‌کار رفته", "#005349" in body and "#E1F2E9" in body)
+    check("توضیح صادقانه دربارهٔ نبودِ داینامیک هست", "جاوااسکریپت" in body)
+    check("تراشهٔ وضعیت با آیکن می‌آید، نه فقط رنگ",
+          "▲" in dp._chip("برجسته", "#2E7D32", "▲"))
+
+    with tempfile.TemporaryDirectory() as td:
+        f = Path(td) / "a.xlsx"
+        f.write_bytes(b"x")
+        raw = dp.eml("موضوع", body, ["a@x.invalid"], ["b@x.invalid"], [f])
+        check("پروندهٔ eml ساخته می‌شود", b"Subject" in raw)
+        check("eml رونوشت و پیوست دارد", b"Cc:" in raw and b"a.xlsx" in raw)
+
+    r = dp.Dispatch(to_count=3, cc_count=2, attachments=["a.xlsx"])
+    check("خلاصهٔ ارسال فقط تعداد می‌گوید، نه نشانی",
+          "3 گیرنده" in r.summary and "@" not in r.summary, r.summary)
+    try:
+        dp.send("x", body, [])
+        check("ارسال بدون گیرنده رد می‌شود", False, "اجازه داد!")
+    except Exception as ex:
+        check("ارسال بدون گیرنده رد می‌شود", "گیرنده" in str(ex),
+              str(ex)[:40] + "…")
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — تست موتور کلاستر، دفترچه سورس و نقشهٔ سیال")
@@ -285,6 +349,7 @@ if __name__ == "__main__":
     test_editor_moves_and_colors()
     test_registry()
     test_fluid_html()
+    test_dispatch()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:
