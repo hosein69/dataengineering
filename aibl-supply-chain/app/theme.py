@@ -22,30 +22,35 @@ from __future__ import annotations
 from typing import Dict
 
 # ── سطوح و متن ────────────────────────────────────────────────────────────
-SURFACE = "#fcfcfb"
-SURFACE_RAISED = "#ffffff"
-SURFACE_SUNKEN = "#f4f4f1"
-BORDER = "#e3e3dd"
-BORDER_STRONG = "#cfcfc6"
-TEXT = "#0b0b0b"
-TEXT_SECONDARY = "#52514e"
-TEXT_MUTED = "#6e6e66"
+from aibl.report import aqua as _aqua
 
-# ── هویت AIBL ─────────────────────────────────────────────────────────────
-BRAND = "#0f6e6e"
-BRAND_DEEP = "#0a4f4f"
-BRAND_SOFT = "#e6f2f1"
-ACCENT = "#2a78d6"
+_L = _aqua.LIGHT
+
+SURFACE = _L["surface"]
+SURFACE_RAISED = _L["raised"]
+SURFACE_SUNKEN = _L["card"]
+BORDER = _L["border-soft"]
+BORDER_STRONG = _L["border"]
+TEXT = _L["text"]
+TEXT_SECONDARY = _L["text-2"]
+TEXT_MUTED = _L["text-3"]
+
+# ── هویت AIBL — از نظام آکوا ──────────────────────────────────────────────
+BRAND = _L["brand-strong"]
+BRAND_DEEP = _L["header"]
+BRAND_SOFT = _L["sunken"]
+ACCENT = _L["accent"]
 
 # ── پالت وضعیت (ثابت — هرگز به‌عنوان رنگ سری استفاده نشود) ────────────────
+#: «توقف خط» یک پله تیره‌تر از «بحرانی» است تا بدترین حالت، بدترین دیده شود.
 STATUS: Dict[str, str] = {
-    "stockout": "#a32828",   # پله تیره‌تر خانواده critical
-    "critical": "#d03b3b",
-    "serious":  "#ec835a",
-    "warning":  "#fab219",
-    "good":     "#0ca30c",
-    "neutral":  "#8a8a85",
-    "unknown":  "#b5b5ae",
+    "stockout": "#8F1E17",
+    "critical": _aqua.STATUS_LIGHT["critical"],
+    "serious":  _aqua.STATUS_LIGHT["serious"],
+    "warning":  _aqua.STATUS_LIGHT["warning"],
+    "good":     _aqua.STATUS_LIGHT["good"],
+    "neutral":  _aqua.OTHER_LIGHT,
+    "unknown":  "#8FA79A",
 }
 
 #: کد طبقه → (رنگ، آیکن، برچسب فارسی). آیکن و برچسب اجباری‌اند:
@@ -69,12 +74,11 @@ BAND_ORDER_FA = [BANDS[k][2] for k in BAND_ORDER]
 
 # ── پالت دسته‌ای (ترتیب ثابت، هرگز چرخشی) ─────────────────────────────────
 # ترتیب مرجع اعتبارسنجی‌شده؛ سه اسلات اول برای نمودارهای all-pairs امن‌اند.
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-          "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+SERIES: List[str] = list(_aqua.CATEGORICAL_LIGHT)
 
 #: تک‌هیو ترتیبی برای بزرگی پیوسته (روشن → تیره)
-SEQUENTIAL = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
-              "#256abf", "#184f95", "#0d366b"]
+SEQUENTIAL: List[str] = ["#D7F0E7", "#A9DFD1", "#7CCDBB",
+                         "#4DBEA8", "#00A693", "#007D6E", "#005349"]
 
 FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn',Tahoma,Arial,sans-serif"
 

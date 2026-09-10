@@ -204,9 +204,10 @@ st.markdown(
     '</div>', unsafe_allow_html=True)
 
 (tab_over, tab_proc, tab_supply, tab_analytics, tab_evidence, tab_fields,
- tab_data, tab_quality, tab_export) = st.tabs(
+ tab_data, tab_quality, tab_export, tab_send) = st.tabs(
     ["نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "⊞ تحلیل", "🔬 گزارش تحلیلی",
-     "🧩 سازنده گزارش", "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
+     "🧩 سازنده گزارش", "▦ داده", "◍ کیفیت داده", "📦 خروجی",
+     "✉️ ارسال گزارش"])
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -622,3 +623,148 @@ with tab_export:
 
 st.caption("AIBL Studio — لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
            "منطق کسب‌وکار در موتور AIBL باقی می‌ماند.")
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  ارسال گزارش در لحظه — پیوست دلخواه، گیرندهٔ دلخواه
+# ══════════════════════════════════════════════════════════════════════════
+with tab_send:
+    from pathlib import Path as _P
+
+    from aibl.config.settings import SETTINGS as _CFG
+    from aibl.report import dispatch as _dp
+
+    with st.container(border=True):
+        panel_open("۱ · کدام گزارش‌ها پیوست شوند؟",
+                   "فایل‌های همین اجرا — نه اجرای دیروز.")
+        out_root = _P(_CFG.OUTPUT_DIR)
+        avail = {}
+        if official_excel and _P(official_excel).exists():
+            avail["dashboard"] = _P(official_excel)
+        audit = out_root / "AIBL_Data_Conflicts_Audit.xlsx"
+        if audit.exists():
+            avail["audit"] = audit
+        for k in ("AIBL_Analysis.html", "AIBL_تحلیل.html"):
+            if (out_root / k).exists():
+                avail["analysis"] = out_root / k
+                break
+        for kind, path in (st.session_state.get("report_files") or {}).items():
+            if _P(path).exists():
+                avail["report_html" if kind == "html" else "report"] = _P(path)
+
+        picks = {}
+        cols = st.columns(3)
+        for i, (key, (label, _ext, why)) in enumerate(_dp.ARTIFACTS.items()):
+            with cols[i % 3]:
+                here = key in avail
+                picks[key] = st.checkbox(
+                    label, value=here and key in ("dashboard", "analysis"),
+                    disabled=not here, key=f"aibl_pick_{key}",
+                    help=why if here else f"{why} — هنوز ساخته نشده")
+        missing = [_dp.ARTIFACTS[k][0] for k in _dp.ARTIFACTS if k not in avail]
+        if missing:
+            st.caption("ساخته‌نشده: " + "، ".join(missing)
+                       + " — از تب «سازنده گزارش» بسازید تا اینجا قابل انتخاب شود.")
+
+    with st.container(border=True):
+        panel_open("۲ · گیرندگان",
+                   "نشانی‌ها هیچ‌جا لاگ یا ذخیره نمی‌شوند؛ فقط تعدادشان.")
+        hr = extras.get("hr")
+        people_dir = _dp.directory(hr) if hr is not None else []
+        chosen_to, chosen_cc = [], []
+        if not people_dir:
+            st.warning("سورس HR با ستون Email در این اجرا نبود. برای انتخاب "
+                       "گیرنده، سورس HR را وصل کنید — یا فهرست را از "
+                       "`AIBL_EMAIL_TO` بدهید.")
+        else:
+            by_label = {p.label: p for p in people_dir}
+            c1, c2 = st.columns(2)
+            to_sel = c1.multiselect("گیرندگان (To)", list(by_label))
+            cc_sel = c2.multiselect("رونوشت (Cc)", list(by_label))
+            chosen_to = [by_label[x] for x in to_sel]
+            chosen_cc = [by_label[x] for x in cc_sel if x not in to_sel]
+            if chosen_to or chosen_cc:
+                st.caption("نشانی نقاب‌دار برای تأیید: "
+                           + "، ".join(p.masked for p in chosen_to + chosen_cc))
+
+    with st.container(border=True):
+        panel_open("۳ · متن ایمیل")
+        subj = st.text_input("موضوع", value=f"AIBL — گزارش زنجیره تأمین {ref_date}")
+        note = st.text_area(
+            "یادداشت پایانی", height=70,
+            value="یک متریال بحرانی، کل پرونده را بحرانی می‌کند؛ علت آن در "
+                  "فایل پیوست تا سطح متریال قابل مشاهده است.")
+        with st.expander("چرا متن ایمیل داینامیک نیست؟"):
+            st.markdown(
+                "**هیچ کلاینت ایمیلی جاوااسکریپت را اجرا نمی‌کند** — نه اتلوک "
+                "کلاسیک، نه اتلوک جدید، نه وب‌میل. اجرای کد فرستندهٔ ناشناس "
+                "روی دستگاه گیرنده، خودش یک آسیب‌پذیری است.\n\n"
+                "**اتلوک کلاسیک** بدنه را با موتور Word رندر می‌کند (بدون "
+                "flexbox، بدون grid) و پشتیبانی‌اش مهر ۱۴۰۵ تمام می‌شود. "
+                "**اتلوک جدید** موتور Chromium دارد ولی باز هم جاوااسکریپت نه.\n\n"
+                "**راه‌حل:** بدنهٔ جدول‌محور و امن روی هر دو موتور، به‌علاوهٔ "
+                "گزارش داینامیک به‌عنوان **پیوست** که در مرورگر زنده است.")
+
+    with st.container(border=True):
+        panel_open("۴ · ساخت و ارسال")
+        if st.button("🛠 ساخت پیش‌نمایش", use_container_width=True):
+            files = [avail[k] for k, v in picks.items() if v and k in avail]
+            crit = int((fdf[CODE_COL].astype(str).isin(["STOCKOUT", "CRITICAL"])).sum()) \
+                if CODE_COL in fdf.columns else 0
+            from app.theme import STATUS as _ST, TEXT as _TX, BRAND as _BR
+            kpis = [("پرونده", f"{len(fdf):,}", _TX),
+                    ("بحرانی", f"{crit:,}", _ST["critical"])]
+            if RES_COL in fdf.columns:
+                med = pd.to_numeric(fdf[RES_COL], errors="coerce").median()
+                if pd.notna(med):
+                    kpis.append(("میانه مقاومت (روز)", f"{med:.0f}", _BR))
+            cols_show = [c for c in ("CANONICAL_PART_NO", "CANONICAL_BL",
+                                     "STATUS_WHERE", "WAITING_ON_SCOPE")
+                         if c in fdf.columns][:4]
+            rows = []
+            for _, r in fdf.head(6).iterrows():
+                row = [str(r.get(c, "")) for c in cols_show]
+                if CODE_COL in fdf.columns:
+                    col, icon, lab = band_of(str(r.get(CODE_COL, "")))[:3]
+                    row.append(_dp._chip(lab, col, icon))
+                rows.append(row)
+            heads = [DISPLAY.get(c, c) for c in cols_show] + (["وضعیت"] if rows and
+                     len(rows[0]) > len(cols_show) else [])
+            body = _dp.outlook_body(subj, ref_date, kpis=kpis, headers=heads,
+                                    rows=rows, note=note,
+                                    attachments=[f.name for f in files])
+            st.session_state.aibl_mail = body
+            st.session_state.aibl_files = [str(f) for f in files]
+            st.success(f"{len(files)} پیوست آماده شد.")
+
+        if st.session_state.get("aibl_mail"):
+            st.components.v1.html(st.session_state.aibl_mail, height=480,
+                                  scrolling=True)
+            files = [_P(f) for f in st.session_state.get("aibl_files", [])]
+            if people_dir and chosen_to:
+                s1, s2 = st.columns(2)
+                if s1.button("📨 باز کردن در اتلوک", use_container_width=True):
+                    try:
+                        st.success(_dp.send(subj, st.session_state.aibl_mail,
+                                            _dp.addresses(chosen_to),
+                                            _dp.addresses(chosen_cc), files,
+                                            send_now=False).summary)
+                    except Exception as ex:
+                        st.error(str(ex))
+                if s2.button("🚀 ارسال همین حالا", type="primary",
+                             use_container_width=True):
+                    try:
+                        st.success(_dp.send(subj, st.session_state.aibl_mail,
+                                            _dp.addresses(chosen_to),
+                                            _dp.addresses(chosen_cc), files,
+                                            send_now=True).summary)
+                    except Exception as ex:
+                        st.error(str(ex))
+                st.download_button(
+                    "⬇️ پروندهٔ .eml (سیستم بدون اتلوک)",
+                    _dp.eml(subj, st.session_state.aibl_mail,
+                            _dp.addresses(chosen_to), _dp.addresses(chosen_cc),
+                            files),
+                    file_name=f"AIBL_{ref_date}.eml", mime="message/rfc822",
+                    use_container_width=True)
+                st.caption("ارسال برگشت‌ناپذیر است — پیش‌فرض «باز کردن» است.")
