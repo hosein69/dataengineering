@@ -192,8 +192,14 @@ def test_report_html() -> None:
                   "VanderWeele", "Wilson"):
         check(f"بخش «{probe}» در گزارش هست", probe in h)
     check("هشدار «علت اثبات نشده» صریح آمده", "ثابت نمی‌کند" in h)
-    check("بدون وابستگی به اینترنت است (هیچ src بیرونی)",
-          "http://" not in h and "https://" not in h.replace("http://www.w3.org", ""))
+    # آنچه اهمیت دارد، **گرفتنِ چیزی از شبکه** است، نه هر رشته‌ای که
+    # شبیه نشانی باشد. فضای‌نام SVG یک شناسه است و هرگز واکشی نمی‌شود؛
+    # نسخهٔ قبلی همان را «وابستگی» می‌شمرد. حالا خودِ واکشی را می‌سنجیم.
+    import re as _re
+    fetches = _re.findall(r'(?:src|href)\s*=\s*["\']https?://|url\(\s*["\']?https?://'
+                          r'|@import\s+["\']?https?://', h)
+    check("بدون وابستگی به اینترنت است (هیچ واکشی بیرونی)",
+          not fetches, str(fetches[:3]))
     check("سند راست‌به‌چپ و فارسی است", 'dir="rtl"' in h and 'lang="fa"' in h)
 
     empty = build_analysis_html(pd.DataFrame({"x": [1, 2, 3]}), "2026-09-09")

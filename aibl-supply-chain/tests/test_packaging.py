@@ -53,6 +53,12 @@ def _lum(rgb):
     return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
 
 
+def _hue(h):
+    """فام، برای اثباتِ اینکه رنگ سازمانی عوض نشده — فقط اشباعش."""
+    import colorsys
+    r, g, b = (v / 255 for v in _rgb(h))
+    return colorsys.rgb_to_hls(r, g, b)[0] * 360
+
 def contrast(fg, bg):
     a, b = _lum(_rgb(fg)), _lum(_rgb(bg))
     hi, lo = max(a, b), min(a, b)
@@ -359,8 +365,36 @@ def test_alborz_design_system() -> None:
     check("نام و نسخه اعلام شده", A.NAME_EN == "Alborz Design System" and A.VERSION,
           f"{A.NAME_EN} {A.VERSION}")
     check("زمینه گرادیان است، نه رنگ تخت", len(A.PAGE_STOPS) >= 3)
-    check("سربرگ طیف آکواست", [c for _, c in A.HEADER_STOPS] ==
-          [A.AQUA_900, A.AQUA_700, A.AQUA_500])
+    # سربرگ گرادیان است، پس «یک رنگ» ندارد و باید روی **هر توقف**
+    # سنجیده شود. نسخهٔ ۱٫۰ فقط ادعا می‌کرد طیفش آکواست و همین از
+    # نظر پنهان ماند که انتهای روشنِ آن طیف (#00A693) سفید را ۳٫۰۵
+    # و متن ثانویه را ۲٫۷۹ می‌داد — هر دو زیر کف.
+    check("سربرگ گرادیان چندتوقفی است", len(A.HEADER_STOPS) >= 3,
+          f"{len(A.HEADER_STOPS)} توقف")
+    for _pos, stop in A.HEADER_STOPS:
+        check(f"سفید روی توقف {stop} ≥ ۴٫۵:۱", contrast(A.ON_AQUA, stop) >= 4.5,
+              f"{contrast(A.ON_AQUA, stop):.2f}:1")
+        check(f"متن ثانویه روی توقف {stop} ≥ ۴٫۵:۱",
+              contrast(A.ON_AQUA_2, stop) >= 4.5,
+              f"{contrast(A.ON_AQUA_2, stop):.2f}:1")
+    check("پاصفحه هم متن خوانا دارد",
+          contrast(A.ON_FOOTER, A.FOOTER) >= 4.5,
+          f"{contrast(A.ON_FOOTER, A.FOOTER):.2f}:1")
+
+    # لایهٔ ۲۰۲۶: تقسیم کارِ پنج رنگِ فرستاده، اندازه‌گیری‌شده نه سلیقه‌ای.
+    # TEAL/JADE فقط زیر متن سفید می‌نشینند و ICE/MIST/FOG فقط زیر متن تیره.
+    for name, c in (("TEAL", A.TEAL), ("JADE", A.JADE)):
+        check(f"سفید روی {name} ≥ ۴٫۵:۱", contrast(A.ON_TEAL, c) >= 4.5,
+              f"{contrast(A.ON_TEAL, c):.2f}:1")
+    for name, c in (("ICE", A.ICE), ("MIST", A.MIST), ("FOG", A.FOG)):
+        check(f"مرکب روی {name} ≥ ۴٫۵:۱", contrast(A.INK, c) >= 4.5,
+              f"{contrast(A.INK, c):.2f}:1")
+    for name, c in (("TEAL_INK", A.TEAL_INK), ("JADE_INK", A.JADE_INK)):
+        check(f"{name} روی نوار روشن ≥ ۴٫۵:۱", contrast(c, A.BAND) >= 4.5,
+              f"{contrast(c, A.BAND):.2f}:1")
+    check("فام لایهٔ ۲۰۲۶ همان خانوادهٔ سازمانی است",
+          abs(_hue(A.TEAL) - _hue(A.AQUA_700)) < 12,
+          f"{abs(_hue(A.TEAL) - _hue(A.AQUA_700)):.1f}°")
     check("عمق دو لایه دارد، نه حاشیهٔ خاکستری",
           A.shadow_css().count("rgba") == 2, A.shadow_css()[:46] + "…")
     check("ایران‌سنس اول زنجیرهٔ فونت است",

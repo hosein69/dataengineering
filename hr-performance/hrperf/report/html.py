@@ -10,6 +10,8 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
+from . import alborz as _AL
+from . import paykan as _pk
 from .theme import (BANDS, BORDER, BRAND, BRAND_DEEP, CARD, FONT_STACK,
                     HIGHLIGHT, RAISED, SURFACE, TEXT, TEXT2, TEXT3,
                     band_of)
@@ -96,9 +98,16 @@ def build_html(leaderboard: pd.DataFrame, *, ref_date: str, title: str,
 *{{box-sizing:border-box}}
 body{{margin:0;background:{SURFACE};color:{TEXT};font-family:{FONT_STACK};direction:rtl}}
 .shell{{max-width:1500px;margin:auto;padding:22px}}
-header{{background:linear-gradient(120deg,{BRAND_DEEP},{BRAND});border-radius:18px;
+header{{background:{_AL.header_gradient_css()};border-radius:18px;
 padding:22px 26px;color:#fff;display:flex;justify-content:space-between;
 align-items:center;gap:18px;flex-wrap:wrap}}
+/* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
+   عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
+header{{position:relative;overflow:hidden}}
+header>*{{position:relative;z-index:1}}
+.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+     pointer-events:none}}
+@media print{{.pk{{display:none}}}}
 h1{{margin:0;font-size:26px}} .sub{{opacity:.88;font-size:13px;margin-top:6px}}
 .stats{{display:flex;gap:12px;flex-wrap:wrap}}
 .stat{{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
@@ -131,7 +140,9 @@ color:{BRAND_DEEP};font:inherit;font-weight:700;cursor:pointer}}
 header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .panel{{break-inside:avoid}} th{{position:static}}}}
 </style></head><body><div class="shell">
-<header><div><h1>{html.escape(title)}</h1>
+<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<div><h1>{html.escape(title)}</h1>
+
 <div class="sub">{html.escape(template_title)} · تاریخ مرجع {html.escape(ref_date)} · {n:,} نفر</div></div>
 <div class="stats">{stat_html}</div>
 <button onclick="window.print()">چاپ / ذخیره PDF</button></header>

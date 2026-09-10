@@ -29,25 +29,36 @@ from ..fairness.skew import gini, lorenz
 
 #: پالت رسته‌ای اعتبارسنجی‌شده (همان پالت AIBL؛ هر شش بررسی را رد می‌کند).
 from . import aqua
+from . import alborz as _AL
+from . import paykan as _pk
 
 CATEGORICAL = aqua.categorical(False)
 OTHER = aqua.OTHER_LIGHT
 BRAND, DEEP = aqua.LIGHT["brand-strong"], aqua.LIGHT["header"]
-SURFACE, RAISED, BORDER = (aqua.LIGHT["surface"], aqua.LIGHT["raised"],
-                           aqua.LIGHT["border"])
+# سطحِ گزارش از «البرز» می‌آید. پیش از این سطحِ سبزِ روشنِ پیش‌آکوا
+# (#E1F2E9) بود و همان یک پله روشنایی، تراشه‌های وضعیت را زیر کف
+# می‌برد. رابط قبلاً به البرز رفته بود؛ گزارش جا مانده بود.
+SURFACE, RAISED, BORDER = _AL.PAGE, _AL.CARD, _AL.HAIRLINE
 TEXT, TEXT2, TEXT3 = aqua.LIGHT["text"], aqua.LIGHT["text-2"], aqua.LIGHT["text-3"]
 
 #: طیف امتیاز — ترتیبی، تک‌خانواده، از کم به زیاد.
 #: طبقه‌های امتیاز — مرز و رنگ از نظام آکوا، تا جدول و نمودار و اکسل
 #: یک داستان بگویند.
-SCORE_BANDS = [(lo, hi, aqua.STATUS_LIGHT[key], label)
+#: (کف، سقف، رنگِ نقطه، رنگِ **متن**، برچسب)
+#:
+#: رنگ نقطه و رنگ متن یکی نیستند و نباید باشند. تراشه، متن را روی ته‌رنگ
+#: ۱۰٪ همان رنگ می‌نشاند؛ رنگ خام آنجا کنتراست کافی نمی‌دهد. بازرسیِ
+#: مرورگر همین را گرفت: «برجسته» ۴٫۴۱ و «قابل بهبود» ۴٫۳۰ — هر دو زیر کف
+#: ۴٫۵ برای متن ۱۲ پیکسلی. ``STATUS_ON_TINT`` دقیقاً برای همین هست.
+SCORE_BANDS = [(lo, hi, aqua.STATUS_LIGHT[key],
+                _AL.STATUS_ON_TINT.get(key, _AL.INK), label)
                for lo, hi, key, label in aqua.SCORE_BANDS]
 
 _E = html.escape
 
 
 def _band_color(v: float) -> str:
-    for lo, hi, c, _ in SCORE_BANDS:
+    for lo, hi, c, _ink, _ in SCORE_BANDS:
         if lo <= v < hi:
             return c
     return OTHER
@@ -119,8 +130,9 @@ def build_dynamic_html(people: pd.DataFrame, ref_date: str,
                  + "".join(f'<option value="{_E(c)}">میانگین {_E(labels.get(c, c))}</option>'
                            for c in numeric))
     band_legend = "".join(
-        f'<span class="bd" style="--c:{c}"><i></i>{_E(lab)} ({lo}–{hi if hi<101 else 100})</span>'
-        for lo, hi, c, lab in SCORE_BANDS)
+        f'<span class="bd" style="--c:{c};--ct:{ink}"><i></i>{_E(lab)} '
+        f'({lo}–{hi if hi<101 else 100})</span>'
+        for lo, hi, c, ink, lab in SCORE_BANDS)
 
     g = gini(df[load_col]) if load_col and load_col in df.columns else float("nan")
     gini_txt = ("—" if g != g else
@@ -134,9 +146,16 @@ def build_dynamic_html(people: pd.DataFrame, ref_date: str,
 body{{margin:0;background:{SURFACE};color:{TEXT};direction:rtl;
 font-family:'IRANSans Light',IRANSans,Vazirmatn,Tahoma,Arial,sans-serif}}
 .shell{{max-width:1400px;margin:auto;padding:20px}}
-header{{background:linear-gradient(120deg,{DEEP},{BRAND});color:#fff;
+header{{background:{_AL.header_gradient_css()};color:{_AL.ON_AQUA};
 border-radius:18px;padding:22px 26px;display:flex;justify-content:space-between;
 align-items:center;gap:18px;flex-wrap:wrap;position:relative;overflow:hidden}}
+/* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
+   عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
+header{{position:relative;overflow:hidden}}
+header>*{{position:relative;z-index:1}}
+.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+     pointer-events:none}}
+@media print{{.pk{{display:none}}}}
 header::after{{content:"";position:absolute;inset:-40% -10% auto auto;width:420px;
 height:420px;border-radius:50%;background:radial-gradient(circle,#ffffff22,transparent 70%);
 animation:drift 18s ease-in-out infinite}}
@@ -149,7 +168,7 @@ padding:9px 14px;min-width:104px;text-align:center}}
 .legend{{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0 4px}}
 .bd{{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
 border:1px solid color-mix(in srgb,var(--c) 40%,transparent);border-radius:999px;
-padding:2px 10px;color:var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}}
+padding:2px 10px;color:var(--ct);background:color-mix(in srgb,var(--c) 10%,transparent)}}
 .bd i{{width:8px;height:8px;border-radius:50%;background:var(--c)}}
 .bar-tools{{display:grid;grid-template-columns:2fr repeat(auto-fit,minmax(140px,1fr));
 gap:11px;background:{RAISED};border:1px solid {BORDER};border-radius:14px;
@@ -189,7 +208,9 @@ font:inherit;font-weight:700;cursor:pointer}}
 body{{background:#fff}} .panel{{break-inside:avoid}}
 header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}}}
 </style></head><body><div class="shell">
-<header><div><h1>{_E(title)}</h1>
+<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<div><h1>{_E(title)}</h1>
+
 <div class="sub">تاریخ مرجع {_E(ref_date)} · {len(df):,} نفر</div></div>
 <div class="kpis">
   <div class="kpi"><b id="kn">—</b><span>نفرات</span></div>
@@ -227,7 +248,7 @@ const DATA={records}, DIMS={json.dumps(list(dims), ensure_ascii=False)},
       LOAD={json.dumps(load_col, ensure_ascii=False)},
       CATS={json.dumps(CATEGORICAL, ensure_ascii=False)},
       OTHER={json.dumps(OTHER, ensure_ascii=False)},
-      BANDS={json.dumps([[a,b,c,d] for a,b,c,d in SCORE_BANDS], ensure_ascii=False)},
+      BANDS={json.dumps([[a,b,c,d] for a,b,c,_i,d in SCORE_BANDS], ensure_ascii=False)},
       LZ={json.dumps(lz, ensure_ascii=False)},
       LAB={json.dumps(labels, ensure_ascii=False)};
 const S=(r,c)=>String(r[c]??''), N=(r,c)=>parseFloat(r[c]);

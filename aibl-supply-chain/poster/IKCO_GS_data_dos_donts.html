@@ -1,0 +1,208 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
+<title>بکن و نکنِ داده — IKCO Global Sourcing</title>
+<style>
+ @font-face { font-family:'IRANSans'; src: local('IRANSans'), local('IRANSansWeb'),
+   local('IRANSansX'), local('IRANSansX-Regular'); }
+ *{box-sizing:border-box}
+ body{margin:0;background:#F1F1F0;font-family:'IRANSans Light','IRANSans','Vazirmatn','SF Arabic','Segoe UI',Tahoma,'Geeza Pro',system-ui,sans-serif;color:#22282B}
+ .sheet{width:900px;margin:0 auto;background:#FBFBFA;overflow:hidden;
+        box-shadow:0 2px 8px -2px rgba(33,40,43,0.07), 0 14px 30px -8px rgba(33,40,43,0.05)}
+
+ /* ── سربرگ: نوار تمام‌عرضِ طیف‌دار، با پیکان به‌عنوان قهرمان ── */
+ .head{background:linear-gradient(135deg, #133434 0%, #1C4D4B 55%, #23625F 100%);color:#FFFFFF;
+        padding:30px 44px 0;position:relative}
+ .kicker{font-size:12px;letter-spacing:.14em;color:#CFE8E6;
+          text-transform:uppercase}
+ h1{font-size:44px;line-height:1.18;margin:8px 0 14px;font-weight:800}
+ .sub{display:inline-block;border:1.6px solid #CFE8E6;color:#FFFFFF;
+       padding:7px 16px;font-size:16px;letter-spacing:.02em}
+ .car{display:block;width:600px;margin:18px auto -26px;
+       filter:drop-shadow(0 16px 22px rgba(0,0,0,.28))}
+
+ /* ── مقدمه: دو قابِ سفید و یک پیکان ── */
+ .intro{padding:44px 44px 26px;text-align:center;background:#FBFBFA}
+ .flow{display:flex;align-items:center;justify-content:center;gap:16px;
+        margin-bottom:16px}
+ .box{border:1.6px solid #2E7F7F;padding:8px 18px;min-width:190px;
+       box-shadow:5px 5px 0 #7BBFC9}
+ .box .lbl{font-size:11px;color:#276C6C;letter-spacing:.06em}
+ .box .val{font-size:19px;font-weight:800;color:#22282B}
+ .arrow{font-size:22px;color:#276C6C}
+ .intro p{max-width:640px;margin:0 auto;font-size:15px;line-height:2;
+           color:#5A666B}
+
+ /* ── نوار: دو ستون و ستون فقرات ── */
+ .band{background:#DCE2E2;padding:26px 40px 34px;position:relative}
+ .heads{display:flex;align-items:center;justify-content:center;gap:18px;
+         margin-bottom:8px}
+ .col-h{background:#FFFFFF;border:1.6px solid #2E7F7F;padding:6px 30px;
+         font-size:20px;font-weight:800;box-shadow:5px 5px 0 #7BBFC9}
+ .col-h.no{border-color:#B3541E;box-shadow:5px 5px 0 #EFD6C6;
+            color:#9E4A1A}
+ .col-h.yes{color:#276C6C}
+ .dot{width:34px;height:34px;border:1.6px solid #92A7A7;background:#FFFFFF;
+       display:grid;place-items:center;color:#5A666B;font-size:15px}
+ .spine{position:absolute;top:44px;bottom:0;left:50%;width:1.6px;
+         background:#92A7A7;transform:translateX(-50%)}
+ .row{display:grid;grid-template-columns:1fr 34px 1fr;align-items:start;
+       gap:0;margin-top:22px}
+ .cell{padding:0 22px}
+ .cell.do{text-align:right}
+ .cell.dont{text-align:right;padding-top:74px}
+ .node{position:relative;top:96px;height:1.6px;background:#92A7A7}
+ .art{display:block;margin-bottom:12px}
+ .cell.do .art{margin-right:6px}
+ .pill{display:inline-block;background:#FFFFFF;border:1.6px solid #2E7F7F;
+        padding:7px 14px;font-size:15.5px;font-weight:800;line-height:1.5;
+        box-shadow:4px 4px 0 #7BBFC9;color:#276C6C}
+ .dont-pill{border-color:#B3541E;box-shadow:4px 4px 0 #EFD6C6;
+             color:#9E4A1A}
+ .cell p{font-size:13.5px;line-height:2.05;color:#5A666B;margin:12px 0 0}
+ .cell b{color:#22282B}
+
+ /* ── شش ستونِ مالکیت ── */
+ .own-wrap{padding:30px 44px 34px;background:#FBFBFA}
+ .sec-h{text-align:center;margin-bottom:6px}
+ .sec-h .t{display:inline-block;background:#FFFFFF;border:1.6px solid #2E7F7F;
+            padding:6px 26px;font-size:19px;font-weight:800;
+            box-shadow:5px 5px 0 #7BBFC9;color:#276C6C}
+ .sec-h .s{font-size:13px;color:#646D71;margin-top:16px}
+ .owns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}
+ .own{background:#E9EEEE;border-right:3px solid #2E7F7F;padding:12px 14px;
+       font-size:14px;font-weight:700;color:#22282B;display:flex;
+       align-items:center;gap:10px}
+ .own-n{width:22px;height:22px;background:#2E7F7F;color:#FFFFFF;
+         font-size:12px;display:grid;place-items:center;flex:0 0 auto}
+
+ /* ── سیزده فعالیت ── */
+ .stage-wrap{background:#DCE2E2;padding:26px 44px 30px;text-align:center}
+ .stgs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;
+        margin-top:18px}
+ .stg{background:#FFFFFF;border:1px solid #C6D2D2;padding:6px 11px;
+       font-size:12px;color:#5A666B}
+ .blind{margin-top:16px;display:inline-block;background:#F6EFDD;
+         border-right:3px solid #8A5A00;padding:9px 14px;font-size:12.5px;
+         color:#8A5A00;text-align:right;line-height:1.9}
+
+ /* ── پاصفحهٔ تیره ── */
+ .foot{background:#133434;color:#FFFFFF;padding:26px 44px;
+        display:flex;align-items:center;justify-content:space-between;gap:20px}
+ .foot .org{font-size:17px;font-weight:800;line-height:1.7}
+ .foot .org span{display:block;font-size:12px;font-weight:400;
+                  color:#CFE8E6;letter-spacing:.03em}
+ .foot .tag{font-size:11.5px;color:#CFE8E6;letter-spacing:.06em;
+             text-align:left}
+</style></head><body><div class="sheet">
+
+ <div class="head">
+   <div class="kicker">IKCO — Global Sourcing (GS) · Governance and Integration (GI)</div>
+   <h1>بکن و نکنِ داده<br>در زنجیرهٔ تأمین</h1>
+   <div class="sub">داده‌ای که شما می‌نویسید، تصمیمی است که فردا گرفته می‌شود</div>
+   <div class="car"><svg viewBox="0 84 440 148" width="600" height="202" role="img" aria-label="پیکان">
+<defs><path id="hero-b" d="M 22 126 L 146 122 L 168 84 L 268 84 L 292 122 L 400 126 L 408 137 L 408 184 L 344 194 C 344 133 284 133 284 194 L 128 194 C 128 133 58 133 58 194 L 24 186 Z"/>
+<clipPath id="hero-c"><use href="#hero-b"/></clipPath></defs>
+<g transform="translate(8,8)">
+<use href="#hero-b" fill="#2E7F7F"/>
+<rect x="0" y="172" width="440" height="40" fill="#23625F" opacity=".45" clip-path="url(#hero-c)"/>
+<path fill="#23625F" d="M 168 84 L 268 84 L 270 90 L 171 90 Z"/>
+<path fill="#CFE8E6" d="M 177 91 L 224 90 L 224 118 L 156 118 Z"/>
+<path fill="#CFE8E6" d="M 232 90 L 267 90 L 283 118 L 232 118 Z"/>
+<path fill="#1C4D4B" d="M 156 118 L 177 91 L 185 91 L 170 118 Z"/>
+<path stroke="#CFE8E6" stroke-width="2.2" fill="none" opacity=".9" d="M 146 124 L 398 128"/>
+<path stroke="#1C4D4B" stroke-width="1.5" fill="none" opacity=".8" d="M 152 125 L 152 182 M 228 124 L 228 188 M 292 126 L 292 182"/>
+<rect x="186" y="134" width="16" height="4" rx="2" fill="#CFE8E6"/>
+<rect x="248" y="135" width="16" height="4" rx="2" fill="#CFE8E6"/>
+<path fill="#133434" d="M 23 131 L 52 130 L 52 152 L 23 153 Z"/>
+<circle cx="33" cy="141" r="6.5" fill="#CFE8E6"/>
+<rect x="393" y="132" width="14" height="12" rx="2" fill="#CFE8E6"/>
+<rect x="17" y="159" width="52" height="8" rx="4" fill="#92A7A7"/>
+<rect x="356" y="159" width="52" height="8" rx="4" fill="#92A7A7"/>
+<g><circle cx="93" cy="184" r="28" fill="#133434"/><circle cx="93" cy="184" r="14.5" fill="#92A7A7"/><circle cx="93" cy="184" r="5" fill="#CFE8E6"/></g>
+<g><circle cx="314" cy="184" r="28" fill="#133434"/><circle cx="314" cy="184" r="14.5" fill="#92A7A7"/><circle cx="314" cy="184" r="5" fill="#CFE8E6"/></g>
+</g></svg></div>
+ </div>
+
+ <div class="intro">
+   <div class="flow">
+     <div class="box"><div class="lbl">از</div><div class="val">ثبت درخواست خرید</div></div>
+     <div class="arrow">←</div>
+     <div class="box"><div class="lbl">تا</div><div class="val">ترخیص کامل</div></div>
+   </div>
+   <p>میان این دو، <b>۱۳ رویداد</b> ثبت می‌شود و
+      <b>۶ ستون</b> هست که هیچ سامانه‌ای پرشان نمی‌کند —
+      مالکشان شمایید. این شش راهنما از خطاهای واقعیِ همین ستون‌ها آمده،
+      نه از توصیهٔ کلی.</p>
+ </div>
+
+ <div class="band">
+   <div class="spine"></div>
+   <div class="heads">
+     <div class="col-h yes">بکن</div>
+     <div class="dot">↓</div>
+     <div class="col-h no">نکن</div>
+   </div>
+   
+<div class="row">
+  <div class="cell do"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="46" y="12" width="76" height="92" rx="6"/>
+ <path d="M60 34h48M60 50h48M60 66h30"/>
+ <circle cx="118" cy="84" r="16" fill="#7BBFC9" stroke="#276C6C"/>
+ <path d="M111 84l5 5 9-10"/></g></svg><div class="pill do-pill">✓ شمارهٔ درخواست خرید را همان روز بزن</div><p>«ثبت درخواست خرید» یکی از دو مرحله‌ای است که <b>هیچ سورسی آن را نمی‌بیند</b>. تنها ردِ آن، ستونی است که شما پر می‌کنید. تا آن خانه خالی است، طول عمر پرونده از روز اول شمرده نمی‌شود.</p></div>
+  <div class="node"></div>
+  <div class="cell dont"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="40" y="22" width="88" height="72" rx="6"/>
+ <path d="M40 44h88M60 22v-10M108 22v-10"/>
+ <path d="M76 62c0-7 6-11 10-9 5 2 5 9 0 12-3 2-4 4-4 7" stroke-width="2.6"/>
+ <path d="M82 86v.5" stroke-width="3.4"/></g></svg><div class="pill dont-pill">✕ تاریخ را از حافظه ننویس</div><p>تاریخ، طولِ مرحله را می‌سازد و طولِ مرحله، رتبهٔ بحرانی را. یک تاریخِ حدسی فقط یک خانه را خراب نمی‌کند؛ رتبهٔ همهٔ قطعاتِ آن تأمین‌کننده را جابه‌جا می‌کند.</p></div>
+</div>
+<div class="row">
+  <div class="cell do"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M22 82h124l-14 18H36z" fill="#7BBFC9" stroke="#276C6C"/>
+ <path d="M40 82V60h36v22M84 82V50h30v32"/>
+ <path d="M48 60h20M92 62h14"/>
+ <path d="M14 104c8 0 8-6 16-6s8 6 16 6 8-6 16-6 8 6 16 6 8-6 16-6 8 6 16 6 8-6 16-6"/></g></svg><div class="pill do-pill">✓ شمارهٔ بارنامه را در سورس خرید بنویس</div><p>این تنها بندی است که سفارش را به محموله گره می‌زند. بدون آن، خرید و حمل دو پروندهٔ بی‌ربط می‌مانند و هیچ‌کس نمی‌فهمد این بار، بارِ کدام سفارش است.</p></div>
+  <div class="node"></div>
+  <div class="cell dont"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="26" y="20" width="116" height="72" rx="5"/>
+ <path d="M26 42h116M64 20v72M104 20v72"/>
+ <rect x="66" y="44" width="36" height="20" fill="#F6EFDD" stroke="#8A5A00"/>
+ <path d="M76 50l16 8M92 50l-16 8" stroke="#8A5A00"/></g></svg><div class="pill dont-pill">✕ خانهٔ خالی را با صفر یا خط تیره پر نکن</div><p>سامانه بین «نمی‌دانم» و «صفر» فرق می‌گذارد: اولی نقطهٔ کور است و علامت می‌خورد، دومی یک <b>عددِ واقعی</b>. خط تیره، نقطهٔ کور را پنهان می‌کند — همان چیزی که باید دیده شود.</p></div>
+</div>
+<div class="row">
+  <div class="cell do"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="34" y="18" width="100" height="26" rx="5"/>
+ <path d="M112 27l6 7 6-7"/>
+ <rect x="34" y="52" width="100" height="18" rx="4" fill="#7BBFC9" stroke="#276C6C"/>
+ <rect x="34" y="76" width="100" height="18" rx="4"/>
+ <path d="M46 61h40M46 85h56"/></g></svg><div class="pill do-pill">✓ کد تأمین‌کننده را انتخاب کن، تایپ نکن</div><p>یک کد تایپ‌شده با یک فاصلهٔ اضافه، یک تأمین‌کنندهٔ تازه می‌سازد. آن‌وقت کارنامهٔ یک شرکت بین دو نام تکه‌تکه می‌شود و هیچ‌کدام واقعیت را نشان نمی‌دهد.</p></div>
+  <div class="node"></div>
+  <div class="cell dont"><svg class="art" viewBox="0 0 168 112" width="168" height="112" aria-hidden="true"><g fill="none" stroke="#276C6C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M24 92a60 60 0 0 1 120 0" stroke-width="2.4"/>
+ <path d="M84 92l34-30" stroke-width="3"/>
+ <circle cx="84" cy="92" r="5" fill="#276C6C"/>
+ <path d="M34 74l6-6M134 74l-6-6M84 34v8"/></g></svg><div class="pill dont-pill">✕ منتظر گزارش ماهانه نمان</div><p>گزارش ماه، عکسِ گذشته است. آنچه امروز پر می‌کنید، همین امروز در داشبورد دیده می‌شود. تصمیمی که یک ماه دیر بگیرید، دیگر تصمیم نیست؛ گزارشِ خسارت است.</p></div>
+</div>
+ </div>
+
+ <div class="own-wrap">
+   <div class="sec-h"><div class="t">شش ستونی که مالکشان شمایید</div>
+     <div class="s">هیچ‌کدام از سورس‌ها این‌ها را نمی‌سازند. هر خانهٔ خالی،
+        یک نقطهٔ کور در پروندهٔ همان قطعه است.</div></div>
+   <div class="owns"><div class="own"><span class="own-n">۱</span>شماره درخواست خرید</div><div class="own"><span class="own-n">۲</span>تاریخ ابلاغ سفارش</div><div class="own"><span class="own-n">۳</span>کد تأمین‌کننده</div><div class="own"><span class="own-n">۴</span>ارزش PI</div><div class="own"><span class="own-n">۵</span>شماره بارنامه در سورس خرید</div><div class="own"><span class="own-n">۶</span>مقدار ترخیص‌شده</div></div>
+ </div>
+
+ <div class="stage-wrap">
+   <div class="sec-h"><div class="t">۱۳ رویدادی که پرونده را می‌سازند</div></div>
+   <div class="stgs"><span class="stg">ابلاغ سفارش به تأمین‌کننده</span><span class="stg">ایجاد تعهد ارزی</span><span class="stg">تخصیص ارز</span><span class="stg">خرید ارز</span><span class="stg">صدور بارنامه (حمل)</span><span class="stg">ورود محموله</span><span class="stg">تخلیه محموله</span><span class="stg">ارائه اسناد به بانک</span><span class="stg">ثبت کوتاژ گمرکی</span><span class="stg">صدور کد ساتا</span><span class="stg">ترخیص درصدی</span><span class="stg">ترخیص کامل</span><span class="stg">ثبت رسید مالی</span></div>
+   <div class="blind">دو مرحله را <b>هیچ سورسی نمی‌بیند</b> (PR · SETTLEMENT) —
+      این‌ها فقط از دستِ شما ثبت می‌شوند.</div>
+ </div>
+
+ <div class="foot">
+   <svg viewBox="0 0 440 236" width="84" height="45" role="img" aria-label="پیکان"><g transform="translate(8,8)"><path fill="#CFE8E6" d="M 22 126 L 146 122 L 168 84 L 268 84 L 292 122 L 400 126 L 408 137 L 408 184 L 344 194 C 344 133 284 133 284 194 L 128 194 C 128 133 58 133 58 194 L 24 186 Z"/><circle cx="93" cy="184" r="26" fill="#CFE8E6"/><circle cx="314" cy="184" r="26" fill="#CFE8E6"/></g></svg>
+   <div class="org">IKCO · Global Sourcing (GS)
+     <span>Governance and Integration (GI) · Data Analytics and KPI</span></div>
+   <div class="tag">Inspiring Knowledge, Creating Opportunities</div>
+ </div>
+
+</div></body></html>

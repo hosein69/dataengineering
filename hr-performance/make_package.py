@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 TREES = ["hrperf", "app", "tests", ".streamlit"]
 FILES = ["README.md", "INSTALL_MAC.md", "requirements.txt", "run_all_tests.py",
-         "make_package.py", "run_mac.command"]
+         "make_package.py", "run_mac.command", "DESIGN_SYSTEM_ALBORZ.md"]
 SKIP_DIRS = {"__pycache__", ".git", ".pytest_cache", ".ruff_cache", ".venv"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".zip", ".log"}
 
@@ -36,6 +36,8 @@ REQUIRED = [
     "run_mac.command",         # بدون این، مک راه‌اندازی ندارد
     "INSTALL_MAC.md",
     ".streamlit/config.toml",   # نبودنش تم را به مرورگر می‌سپارد → متن نامرئی
+    "hrperf/report/alborz.py", "hrperf/report/paykan.py",
+    "DESIGN_SYSTEM_ALBORZ.md",
     "app/dashboard.py", "app/styles.py",
     "hrperf/pipeline.py", "hrperf/report/aqua.py", "hrperf/report/theme.py",
     "hrperf/report/dispatch.py", "run_all_tests.py", "requirements.txt",

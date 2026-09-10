@@ -21,11 +21,25 @@ from ..dataio.logging_setup import log
 from .cycle import Leg, bottleneck, legs, what_if
 from .drivers import Finding, OutcomeReport, analyse_all
 from .evidence import MIN_N
+from ..report import alborz as _AL
+from ..report import brand as _B
+from ..report import paykan as _pk
 
 BRAND, DEEP = "#0f6e6e", "#0a4f4f"
 SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
 TEXT, TEXT2, TEXT3 = "#0b0b0b", "#52514e", "#6e6e66"
-POS, NEG, NEUTRAL = "#a32828", "#0ca30c", "#8a8a85"
+# سه رنگِ جهتِ تغییر — از پالت وضعیتِ البرز، نه رنگ محلی.
+#
+# نسخهٔ قبل این‌ها را همین‌جا تعریف می‌کرد و بازرسیِ مرورگر رد کرد:
+#
+#     #0ca30c روی سفید → ۳٫۳۵    (متن ۱۲٫۵ پیکسلی، کف ۴٫۵)
+#     #8a8a85 روی سفید → ۳٫۴۷
+#
+# یعنی خودِ عددهای «بهبود» — چیزی که خواننده دنبالش می‌گردد — کم‌رنگ‌ترین
+# چیز صفحه بودند. حالا از توکن می‌آیند: ۶٫۵۴ و ۵٫۱۳ و ۵٫۹۲.
+POS = _AL.STATUS["critical"]        #: بدتر شده
+NEG = _AL.STATUS["good"]            #: بهتر شده
+NEUTRAL = _AL.INK_2                 #: بی‌تغییر
 
 _E = html.escape
 
@@ -131,7 +145,10 @@ def _cycle_block(items: List[Leg], wi) -> str:
 
 def build_analysis_html(df: pd.DataFrame, ref_date: str,
                         labels: Optional[Dict[str, str]] = None,
-                        title: str = "گزارش تحلیلی AIBL") -> str:
+                        title: str = "") -> str:
+    # عنوان پیش‌فرض از هویت سازمانی می‌آید. «AIBL» نام داخلی
+    # پکیج پایتون است و روی سندی که به مدیر می‌رسد جایی ندارد.
+    title = title or f"{_B.PRODUCT} — گزارش تحلیلی"
     """گزارش تحلیلی کامل به‌صورت یک رشته HTML."""
     labels = labels or {}
     reports = analyse_all(df, labels=labels)
@@ -164,8 +181,15 @@ def build_analysis_html(df: pd.DataFrame, ref_date: str,
 body{{margin:0;background:{SURFACE};color:{TEXT};direction:rtl;
 font-family:'IRANSans Light',IRANSans,Vazirmatn,Tahoma,Arial,sans-serif}}
 .shell{{max-width:1280px;margin:auto;padding:22px}}
-header{{background:linear-gradient(120deg,{DEEP},{BRAND});color:#fff;
+header{{background:{_AL.header_gradient_css()};color:{_AL.ON_AQUA};
 border-radius:18px;padding:24px 26px}}
+/* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
+   عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
+header{{position:relative;overflow:hidden}}
+header>*{{position:relative;z-index:1}}
+.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+     pointer-events:none}}
+@media print{{.pk{{display:none}}}}
 h1{{margin:0;font-size:25px}} .sub{{opacity:.9;font-size:13px;margin-top:6px}}
 .head-note{{margin-top:12px;background:rgba(255,255,255,.14);border-radius:10px;
 padding:10px 14px;font-size:13px;line-height:1.9}}
@@ -191,7 +215,7 @@ overflow:hidden;min-width:120px}}
 .rv{{font-size:11px;color:{TEXT2};margin-top:3px;white-space:nowrap}}
 .badge{{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;
 font-weight:700;white-space:nowrap}}
-.badge.robust{{background:#0ca30c1a;color:#0a7a0a;border:1px solid #0ca30c55}}
+.badge.robust{{background:#E7F1E7;color:{_AL.STATUS_ON_TINT["good"]};border:1px solid #BBD8BC}}
 .badge.weak{{background:#fab2191a;color:#8a6100;border:1px solid #fab21955}}
 .badge.flat{{background:#8a8a851a;color:{TEXT3};border:1px solid #8a8a8555}}
 .note{{font-size:11.5px;color:{TEXT3};line-height:1.95;margin-top:9px}}
@@ -205,7 +229,9 @@ font:inherit;font-weight:700;cursor:pointer;margin-top:14px}}
 .panel{{break-inside:avoid}} header{{-webkit-print-color-adjust:exact;
 print-color-adjust:exact}}}}
 </style></head><body><div class="shell">
-<header><h1>{_E(title)}</h1>
+<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<h1>{_E(title)}</h1>
+
 <div class="sub">تاریخ مرجع {_E(ref_date)} · {len(df):,} ردیف · حداقل نمونه برای هر یافته: {MIN_N}</div>
 {f'<div class="head-note">{headline}</div>' if headline else ''}
 <button onclick="window.print()">چاپ / ذخیره PDF</button></header>

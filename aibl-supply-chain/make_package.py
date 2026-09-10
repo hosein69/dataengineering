@@ -28,11 +28,12 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
 #: پوشه‌هایی که کامل داخل بسته می‌روند
-TREES = ["aibl", "app", "tests", ".streamlit"]
+TREES = ["aibl", "app", "tests", ".streamlit", "poster"]
 
 #: پرونده‌های تکیِ ریشه
-FILES = ["README.md", "INSTALL.md", "INSTALL_MAC.md", "requirements.txt", "run_all_tests.py",
-         "make_package.py", "recipients.example.yaml", "run_mac.command"]
+FILES = ["README.md", "INSTALL.md", "INSTALL_MAC.md", "requirements.txt",
+         "run_all_tests.py", "make_package.py", "recipients.example.yaml",
+         "run_mac.command", "DESIGN_SYSTEM_ALBORZ.md"]
 
 #: هرچه با این‌ها بخواند، داخل بسته نمی‌رود
 SKIP_DIRS = {"__pycache__", ".git", ".pytest_cache", ".ruff_cache", ".venv"}
@@ -46,6 +47,8 @@ REQUIRED = [
     "run_mac.command",         # بدون این، مک راه‌اندازی ندارد
     "INSTALL_MAC.md",
     ".streamlit/config.toml",   # نبودنش تم را به مرورگر می‌سپارد → متن نامرئی
+    "aibl/report/alborz.py", "aibl/report/paykan.py",
+    "poster/make_poster.py", "DESIGN_SYSTEM_ALBORZ.md",
     "app/studio.py", "app/styles.py", "app/theme.py",
     "aibl/pipeline.py", "aibl/report/aqua.py", "aibl/report/dispatch.py",
     "run_all_tests.py", "requirements.txt",

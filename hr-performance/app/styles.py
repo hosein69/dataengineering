@@ -33,7 +33,12 @@ def css() -> str:
 
 :root{{color-scheme:light;
 --brand:{BRAND};--deep:{BRAND_DEEP};--surface:{SURFACE};--raised:{RAISED};
---border:{BORDER};--text:{TEXT};--t2:{TEXT2};--t3:{TEXT3}}}
+--border:{BORDER};--text:{TEXT};--t2:{TEXT2};--t3:{TEXT3};
+/* لایهٔ ۲۰۲۶ — نوار روشن، ستون فقرات و تیلِ متنی.
+   همه از alborz می‌آیند؛ اینجا فقط نام CSS می‌گیرند. */
+--band:{_AL.BAND};--band-alt:{_AL.BAND_ALT};--spine:{_AL.SPINE};
+--rule:{_AL.RULE};--teal:{_AL.TEAL};--teal-ink:{_AL.TEAL_INK};
+--ice:{_AL.ICE};--fog:{_AL.FOG}}}
 /* `body *` تنها انتخابگری است که پرتال‌های baseweb (منو و پاپ‌آور، که
    بیرون از `.stApp` رندر می‌شوند) را هم می‌گیرد. */
 html,body,body *{{font-family:{FONT_STACK}!important}}

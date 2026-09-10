@@ -21,6 +21,8 @@ import json
 import streamlit.components.v1 as components
 
 from .theme import BRAND, BRAND_DEEP, FONT_STACK, TEXT, TEXT_SECONDARY
+from aibl.report import alborz as _AL
+from aibl.report import paykan as _pk
 
 
 def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
@@ -33,6 +35,10 @@ def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
     components.html(f"""
 <div id="wrap">
   <canvas id="c"></canvas>
+  <div id="car">{_pk.svg(288, uid="hero", ground=False, crop=True, inline=True,
+                         body=_AL.TEAL_MID, glass=_AL.TEAL_EDGE,
+                         shade=_AL.TEAL_DEEP, chrome=_AL.TEAL_EDGE,
+                         tyre=_AL.TEAL_DEEP)}</div>
   <div id="ov">
     <div id="txt"><h1 id="t"></h1><p id="s"></p></div>
     <div id="stats"></div>
@@ -42,21 +48,29 @@ def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
   *{{box-sizing:border-box}}
   html,body{{margin:0;padding:0;background:transparent;overflow:hidden}}
   #wrap{{position:relative;width:100%;height:{height}px;border-radius:20px;
-    overflow:hidden;background:linear-gradient(120deg,{BRAND_DEEP},{BRAND} 55%,#12908c);
+    overflow:hidden;background:{_AL.header_gradient_css()};
     direction:rtl;font-family:{FONT_STACK}}}
   #c{{position:absolute;inset:0;width:100%;height:100%;display:block}}
+  /* پیکان لایهٔ زمینه است، نه تزیین: هم‌فامِ سربرگ و کم‌جان، تا
+     متن رویش بخواند. اگر پررنگ بود، با عنوان رقابت می‌کرد. */
+  /* گوشهٔ پایین-راست، زیرِ زیرعنوان: تنها ناحیه‌ای که نه با عنوان
+     برخورد می‌کند نه با کارت‌های آمار. سمت چپ امتحان شد و کارت‌ها
+     روی خودرو افتادند. */
+  #car{{position:absolute;right:22px;bottom:-12px;width:288px;opacity:.55;
+    pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.22))}}
+  #car svg{{width:100%;height:auto;display:block}}
   #ov{{position:absolute;inset:0;display:flex;align-items:center;
     justify-content:space-between;padding:26px 34px;pointer-events:none}}
-  #t{{margin:0;font-size:34px;font-weight:700;color:#fff;letter-spacing:-.5px;
+  #t{{margin:0;font-size:34px;font-weight:700;color:{_AL.ON_TEAL};letter-spacing:-.5px;
     text-shadow:0 2px 18px rgba(0,0,0,.28)}}
-  #s{{margin:8px 0 0;font-size:14px;color:rgba(255,255,255,.86)}}
+  #s{{margin:8px 0 0;font-size:14px;color:{_AL.ON_TEAL_2}}}
   #stats{{display:flex;gap:14px}}
   .st{{background:rgba(255,255,255,.13);backdrop-filter:blur(9px);
     -webkit-backdrop-filter:blur(9px);border:1px solid rgba(255,255,255,.22);
     border-radius:14px;padding:12px 16px;min-width:104px;text-align:center;
     transition:transform .45s cubic-bezier(.2,.8,.2,1),background .45s}}
-  .st .v{{font-size:24px;font-weight:700;color:#fff;line-height:1.15}}
-  .st .l{{font-size:11px;color:rgba(255,255,255,.82);margin-top:3px}}
+  .st .v{{font-size:24px;font-weight:700;color:{_AL.ON_TEAL};line-height:1.15}}
+  .st .l{{font-size:11px;color:{_AL.ON_TEAL_2};margin-top:3px}}
   .st .d{{width:22px;height:3px;border-radius:2px;margin:7px auto 0}}
   @media (prefers-reduced-motion:reduce){{ .st{{transition:none}} }}
 </style>

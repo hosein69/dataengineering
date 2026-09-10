@@ -44,6 +44,11 @@ def css() -> str:
   --surface:{SURFACE}; --raised:{SURFACE_RAISED}; --sunken:{SURFACE_SUNKEN};
   --border:{BORDER}; --border-strong:{BORDER_STRONG};
   --text:{TEXT}; --text-2:{TEXT_SECONDARY}; --text-3:{TEXT_MUTED};
+  /* لایهٔ ۲۰۲۶ — نوار روشن، ستون فقرات و تیلِ متنی.
+     همه از alborz می‌آیند؛ اینجا فقط نام CSS می‌گیرند. */
+  --band:{_AL.BAND}; --band-alt:{_AL.BAND_ALT}; --spine:{_AL.SPINE};
+  --rule:{_AL.RULE}; --teal:{_AL.TEAL}; --teal-ink:{_AL.TEAL_INK};
+  --ice:{_AL.ICE}; --fog:{_AL.FOG};
 }}
 html, body, [class*="css"], .stApp {{
   font-family:{FONT_STACK} !important; direction:rtl;

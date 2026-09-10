@@ -42,6 +42,8 @@ BAND_ORDER = list(BANDS)
 #: کف دید عادی، و کنتراست با سطح. ترتیب **ثابت** است و هرگز چرخانده
 #: نمی‌شود؛ رسته هشتم به «سایر» می‌رود، نه به یک رنگ تازه.
 from ..report import aqua
+from ..report import alborz as _AL
+from ..report import paykan as _pk
 
 CATEGORICAL = aqua.CATEGORICAL_LIGHT
 OTHER_COLOR = aqua.OTHER_LIGHT
@@ -206,9 +208,16 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "AIBL",
 body{{margin:0;background:var(--surface);color:var(--text);
 font-family:'IRANSans Light',IRANSans,Vazirmatn,Tahoma,Arial,sans-serif;direction:rtl}}
 .shell{{max-width:1500px;margin:auto;padding:22px}}
-header{{background:linear-gradient(120deg,var(--deep),var(--brand));border-radius:18px;
+header{{background:{_AL.header_gradient_css()};border-radius:18px;
 padding:22px 26px;color:#fff;display:flex;justify-content:space-between;
 align-items:center;gap:18px;flex-wrap:wrap}}
+/* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
+   عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
+header{{position:relative;overflow:hidden}}
+header>*{{position:relative;z-index:1}}
+.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+     pointer-events:none}}
+@media print{{.pk{{display:none}}}}
 h1{{margin:0;font-size:26px}} .sub{{opacity:.88;font-size:13px;margin-top:6px}}
 .stats{{display:flex;gap:12px;flex-wrap:wrap}}
 .stat{{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);
@@ -262,6 +271,7 @@ font:inherit;font-weight:700;cursor:pointer}}
 }}
 </style></head><body><div class="shell">
 <header>
+<div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
   <div><h1>{html.escape(title)}</h1>
   <div class="sub">{html.escape(template_title)}{' · ' if template_title else ''}تاریخ مرجع {html.escape(ref_date)}{' · ' + html.escape(subtitle) if subtitle else ''}</div></div>
   <div class="stats">{stat_html}</div>

@@ -24,6 +24,7 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
+from . import alborz as _AL
 from . import aqua
 
 RECIPIENTS_ENV = "HRP_EMAIL_TO"
@@ -164,10 +165,11 @@ def build_email_html(title: str, ref_date: str, summary_rows: List[tuple],
     return f"""<html><body dir="rtl" style="font-family:'IRANSans Light',Tahoma,Arial;
 background:{aqua.LIGHT["surface"]};color:{aqua.LIGHT["text"]};margin:0;padding:18px">
 <div style="max-width:900px;margin:auto">
-<div style="background:linear-gradient(120deg,{aqua.LIGHT["header"]},{aqua.LIGHT["brand-strong"]});color:#fff;
+<div bgcolor="{_AL.TEAL_DEEP}" style="background-color:{_AL.TEAL_DEEP};
+background:{_AL.header_gradient_css()};color:{_AL.ON_TEAL};
 padding:18px 22px;border-radius:14px">
 <div style="font-size:20px;font-weight:700">{_h.escape(title)}</div>
-<div style="font-size:12px;opacity:.9;margin-top:5px">تاریخ مرجع {_h.escape(ref_date)}</div>
+<div style="font-size:12px;color:{_AL.ON_TEAL_2};margin-top:5px">تاریخ مرجع {_h.escape(ref_date)}</div>
 </div>
 <table style="margin-top:14px;border-collapse:separate"><tr>{cards}</tr></table>
 <p style="font-size:12px;color:{aqua.LIGHT["text-2"]};line-height:2">{_h.escape(body_note)}</p>

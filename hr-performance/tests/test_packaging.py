@@ -142,6 +142,32 @@ def test_font_and_contrast() -> None:
         cr = contrast(ink, _over(color, 0.10, SURFACE))
         check(f"برچسب «{label}» روی تراشه ≥ ۴٫۵:۱", cr >= 4.5, f"{cr:.2f}:1")
 
+    # سربرگ گرادیان است، پس «یک رنگ» ندارد و باید روی **هر توقف** سنجیده
+    # شود. نسخهٔ ۱٫۰ فقط ادعا می‌کرد طیفش آکواست؛ همین از نظر پنهان نگه
+    # داشت که انتهای روشنِ آن طیف (#00A693) سفید را ۳٫۰۵ و متن ثانویه را
+    # ۲٫۷۹ می‌داد — هر دو زیر کف. حالا خودِ توقف‌ها سنجیده می‌شوند.
+    from hrperf.report import alborz as A
+    check("سربرگ گرادیان چندتوقفی است", len(A.HEADER_STOPS) >= 3,
+          f"{len(A.HEADER_STOPS)} توقف")
+    for _pos, stop in A.HEADER_STOPS:
+        check(f"سفید روی توقف {stop} ≥ ۴٫۵:۱", contrast(A.ON_AQUA, stop) >= 4.5,
+              f"{contrast(A.ON_AQUA, stop):.2f}:1")
+        check(f"متن ثانویه روی توقف {stop} ≥ ۴٫۵:۱",
+              contrast(A.ON_AQUA_2, stop) >= 4.5,
+              f"{contrast(A.ON_AQUA_2, stop):.2f}:1")
+
+    # لایهٔ ۲۰۲۶: تقسیم کارِ پنج رنگ، اندازه‌گیری‌شده نه سلیقه‌ای.
+    # TEAL/JADE فقط زیر متن سفید، و ICE/MIST/FOG فقط زیر متن تیره.
+    for name, c in (("TEAL", A.TEAL), ("JADE", A.JADE)):
+        check(f"سفید روی {name} ≥ ۴٫۵:۱", contrast(A.ON_TEAL, c) >= 4.5,
+              f"{contrast(A.ON_TEAL, c):.2f}:1")
+    for name, c in (("ICE", A.ICE), ("MIST", A.MIST), ("FOG", A.FOG)):
+        check(f"مرکب روی {name} ≥ ۴٫۵:۱", contrast(A.INK, c) >= 4.5,
+              f"{contrast(A.INK, c):.2f}:1")
+    for name, c in (("TEAL_INK", A.TEAL_INK), ("JADE_INK", A.JADE_INK)):
+        check(f"{name} روی نوار روشن ≥ ۴٫۵:۱", contrast(c, A.BAND) >= 4.5,
+              f"{contrast(c, A.BAND):.2f}:1")
+
 
 def test_charts_never_inherit_theme() -> None:
     print("\n── ۵) نمودار نباید تم مرورگر را به ارث ببرد ──")
