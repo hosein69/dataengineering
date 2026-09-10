@@ -23,40 +23,36 @@ import re
 from typing import Dict, List
 
 # ── سطوح و متن ────────────────────────────────────────────────────────────
+from aibl.report import alborz as _AL
 from aibl.report import aqua as _aqua
 
 _L = _aqua.LIGHT
 
-SURFACE = _L["surface"]
-SURFACE_RAISED = _L["raised"]
-SURFACE_SUNKEN = _L["card"]
-BORDER = _L["border-soft"]
-BORDER_STRONG = _L["border"]
-TEXT = _L["text"]
-TEXT_SECONDARY = _L["text-2"]
-TEXT_MUTED = _L["text-3"]
+# سطح‌ها و مرکب از «نظام طراحی البرز» می‌آیند — منبع واحد.
+# پیش از این از پالت آکوا می‌آمدند و زمینهٔ رابط سبز روشن بود؛ آکوا حالا
+# فقط سربرگ و سطح‌های تیره را رنگ می‌کند، نه بدنه را.
+SURFACE = _AL.PAGE
+SURFACE_RAISED = _AL.CARD
+SURFACE_SUNKEN = _AL.SUNKEN
+BORDER = _AL.HAIRLINE
+BORDER_STRONG = "#D2D2CE"
+TEXT = _AL.INK
+TEXT_SECONDARY = _AL.INK_2
+TEXT_MUTED = _AL.INK_3
 
 # ── هویت AIBL — از نظام آکوا ──────────────────────────────────────────────
-BRAND = _L["brand-strong"]
-BRAND_DEEP = _L["header"]
-BRAND_SOFT = _L["sunken"]
-ACCENT = _L["accent"]
+BRAND = _AL.AQUA_700
+BRAND_DEEP = _AL.AQUA_900
+BRAND_SOFT = "#E4F1EC"
+ACCENT = _AL.STRAW
 
 # ── پالت وضعیت (ثابت — هرگز به‌عنوان رنگ سری استفاده نشود) ────────────────
 #: «توقف خط» یک پله تیره‌تر از «بحرانی» است تا بدترین حالت، بدترین دیده شود.
-STATUS: Dict[str, str] = {
-    "stockout": "#8F1E17",
-    "critical": _aqua.STATUS_LIGHT["critical"],
-    "serious":  _aqua.STATUS_LIGHT["serious"],
-    "warning":  _aqua.STATUS_LIGHT["warning"],
-    "good":     _aqua.STATUS_LIGHT["good"],
-    "neutral":  _aqua.OTHER_LIGHT,
-    "unknown":  "#8FA79A",
-}
+STATUS: Dict[str, str] = dict(_AL.STATUS)
 
 #: رنگ متن برچسب روی تراشه — تیره‌ترشدهٔ همان وضعیت، محاسبه‌شده در آکوا.
 #: نقطهٔ رنگی تراشه رنگ خام را نگه می‌دارد؛ فقط متن تیره می‌شود.
-STATUS_TEXT: Dict[str, str] = dict(_aqua.STATUS_ON_TINT_LIGHT)
+STATUS_TEXT: Dict[str, str] = dict(_AL.STATUS_ON_TINT)
 
 #: کد طبقه → (رنگ، آیکن، برچسب فارسی). آیکن و برچسب اجباری‌اند:
 #: رنگ وضعیت هرگز به‌تنهایی حامل معنا نیست.

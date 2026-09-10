@@ -10,13 +10,16 @@
 """
 from __future__ import annotations
 
+from . import alborz as _AL
 from . import aqua
 
 _L = aqua.tokens(False)
 
-SURFACE, RAISED, BORDER = _L["surface"], _L["raised"], _L["border"]
-TEXT, TEXT2, TEXT3 = _L["text"], _L["text-2"], _L["text-3"]
-BRAND, BRAND_DEEP = _L["brand-strong"], _L["header"]
+# سطح‌ها و مرکب از «نظام طراحی البرز» — منبع واحد هر دو پکیج.
+# آکوا فقط سربرگ و سطح‌های تیره را رنگ می‌کند، نه بدنه را.
+SURFACE, RAISED, BORDER = _AL.PAGE, _AL.CARD, _AL.HAIRLINE
+TEXT, TEXT2, TEXT3 = _AL.INK, _AL.INK_2, _AL.INK_3
+BRAND, BRAND_DEEP = _AL.AQUA_700, _AL.AQUA_900
 CARD, HIGHLIGHT, ACCENT, CTA = _L["card"], _L["highlight"], _L["accent"], _L["cta"]
 
 _S = aqua.status(False)

@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+from aibl.report import alborz as _AL
 from .theme import (ACCENT, BORDER, BORDER_STRONG, BRAND, BRAND_DEEP, BRAND_SOFT,
                     FONT_STACK, SURFACE, SURFACE_RAISED, SURFACE_SUNKEN, TEXT,
                     TEXT_MUTED, TEXT_SECONDARY)
@@ -190,6 +191,36 @@ small, .stCaption {{ color: var(--text-2) !important; }}
 [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {{
   color: var(--text) !important; }}
 .stAlert, .stAlert * {{ color: var(--text) !important; }}
+
+/* ══════════════════════════════════════════════════════════════════════
+   نظام طراحی البرز — زمینه، عمق و کارت
+   ══════════════════════════════════════════════════════════════════════
+   رابط و پوستر و گزارش باید یک چیز به‌نظر برسند. مقدارها از
+   `aibl/report/alborz.py` می‌آیند؛ اینجا فقط مصرف می‌شوند. */
+.stApp {{
+  background: {_AL.page_gradient_css()} !important;
+}}
+[data-testid="stMainBlockContainer"] {{ max-width:1500px; }}
+
+/* کارت: بدون حاشیهٔ خاکستری. عمق از دو لایه سایه و لبهٔ سفید داخلی. */
+.panel, [data-testid="stVerticalBlockBorderWrapper"] > div > div[data-testid="stVerticalBlock"] {{
+  border-radius:{_AL.RADIUS['panel']}px;
+}}
+.panel {{
+  background:{_AL.CARD} !important;
+  border:1px solid {_AL.CARD_EDGE} !important;
+  box-shadow:{_AL.shadow_css()} !important;
+}}
+.panel:hover {{ box-shadow:{_AL.shadow_css()} !important; }}
+.kpi {{
+  background:{_AL.CARD} !important;
+  border:1px solid {_AL.CARD_EDGE} !important;
+  border-radius:{_AL.RADIUS['sm']+4}px !important;
+  box-shadow:{_AL.shadow_css()} !important;
+}}
+div[data-testid="stDataFrame"] {{
+  border-radius:{_AL.RADIUS['sm']}px; border:1px solid {_AL.HAIRLINE};
+}}
 
 /* ══════════════════════════════════════════════════════════════════════
    کف خوانایی — رابط نباید به تم Streamlit وابسته باشد

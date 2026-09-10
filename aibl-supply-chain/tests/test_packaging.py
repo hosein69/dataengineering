@@ -59,7 +59,7 @@ def contrast(fg, bg):
     return (hi + 0.05) / (lo + 0.05)
 
 
-def _over(fg, alpha, bg):
+def _over(fg, alpha, bg):  # noqa: D401
     f, b = _rgb(fg), _rgb(bg)
     return "#%02X%02X%02X" % tuple(
         round(f[i] * alpha + b[i] * (1 - alpha)) for i in range(3))
@@ -350,6 +350,64 @@ def test_brand_identity() -> None:
           contrast(b.INK, b.PAGE) >= 7.0, f"{contrast(b.INK, b.PAGE):.2f}:1")
 
 
+def test_alborz_design_system() -> None:
+    print("\n── ۱۰) نظام طراحی البرز ──")
+    from aibl.report import alborz as A
+
+    check("نام و نسخه اعلام شده", A.NAME_EN == "Alborz Design System" and A.VERSION,
+          f"{A.NAME_EN} {A.VERSION}")
+    check("زمینه گرادیان است، نه رنگ تخت", len(A.PAGE_STOPS) >= 3)
+    check("سربرگ طیف آکواست", [c for _, c in A.HEADER_STOPS] ==
+          [A.AQUA_900, A.AQUA_700, A.AQUA_500])
+    check("عمق دو لایه دارد، نه حاشیهٔ خاکستری",
+          A.shadow_css().count("rgba") == 2, A.shadow_css()[:46] + "…")
+    check("ایران‌سنس اول زنجیرهٔ فونت است",
+          A.FONT_STACK.strip().startswith("'IRANSans"))
+
+    # کنتراست هر متن روی سطح خودش — اندازه‌گیری، نه ادعا
+    pairs = [("متن بدنه روی کارت", A.INK, A.CARD, 7.0),
+             ("متن ثانویه روی کارت", A.INK_2, A.CARD, 4.5),
+             ("کم‌رنگ‌ترین متن روی کارت", A.INK_3, A.CARD, 4.5),
+             ("کاهی وقتی متن است", A.STRAW_INK, A.CARD, 4.5),
+             ("متن بدنه روی زمینه", A.INK, A.PAGE, 7.0),
+             ("سفید روی آکوای تیره", "#FFFFFF", A.AQUA_900, 7.0),
+             ("سفید روی آکوای روشن", "#FFFFFF", A.AQUA_500, 3.0),
+             ("متن روشن روی پاورقی", A.ON_FOOTER, A.FOOTER, 4.5),
+             ("کهربایی ناحیهٔ کور", A.AMBER_BLIND, A.BLIND_BG, 4.5)]
+    worst = 99.0
+    for name, fg, bg, need in pairs:
+        cr = contrast(fg, bg)
+        worst = min(worst, cr / need)
+        check(f"{name} ≥ {need}:۱", cr >= need, f"{cr:.2f}:1")
+    check("هیچ جفتی زیر حدش نیست", worst >= 1.0)
+
+    # رنگ وضعیت رزرو است و متنش جدا محاسبه شده
+    check("هفت وضعیت تعریف شده", len(A.STATUS) == 7, str(sorted(A.STATUS)))
+    check("برای هر وضعیت، رنگ متن روی ته‌رنگ هست",
+          set(A.STATUS_ON_TINT) == set(A.STATUS))
+    for key, raw in A.STATUS.items():
+        tint = _over(raw, 0.10, A.PAGE)
+        cr = contrast(A.STATUS_ON_TINT[key], tint)
+        check(f"برچسب «{key}» روی ته‌رنگ ≥ ۴٫۵:۱", cr >= 4.5, f"{cr:.2f}:1")
+
+    # هر دو پکیج باید یک نظام داشته باشند
+    here = io.open(os.path.join(ROOT, "aibl/report/alborz.py"), encoding="utf-8").read()
+    twin = os.path.join(os.path.dirname(ROOT), "hr-performance/hrperf/report/alborz.py")
+    if os.path.exists(twin):
+        other = io.open(twin, encoding="utf-8").read()
+        def vals(src):
+            import re as _re
+            return _re.findall(r'"#[0-9A-Fa-f]{6}"', src)
+        check("پالت البرز در هر دو پکیج یکی است", vals(here) == vals(other),
+              f"{len(vals(here))} مقدار")
+
+    # پلتفرم واقعاً از آن می‌خواند
+    css = io.open(os.path.join(ROOT, "app/styles.py"), encoding="utf-8").read()
+    check("رابط از ماژول البرز می‌خواند", "alborz as _AL" in css)
+    check("زمینهٔ رابط، گرادیان البرز است", "page_gradient_css()" in css)
+    check("کارت‌های رابط، عمق البرز دارند", "shadow_css()" in css)
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("AIBL — بسته‌بندی، کف خوانایی و ارسال")
@@ -363,6 +421,7 @@ if __name__ == "__main__":
     test_hr_recipients_resolve()
     test_send_button_always_present()
     test_brand_identity()
+    test_alborz_design_system()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

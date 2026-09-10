@@ -8,6 +8,7 @@
 """
 from __future__ import annotations
 
+from hrperf.report import alborz as _AL
 from hrperf.report.theme import (BORDER, BRAND, BRAND_DEEP, FONT_STACK, RAISED,
                                  SURFACE, TEXT, TEXT2, TEXT3)
 
@@ -144,6 +145,25 @@ small, .stCaption {{ color: var(--t2) !important; }}
 [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * {{
   color: var(--text) !important; }}
 .stAlert, .stAlert * {{ color: var(--text) !important; }}
+
+/* ══════════════════════════════════════════════════════════════════════
+   نظام طراحی البرز — زمینه، عمق و کارت
+   ══════════════════════════════════════════════════════════════════════
+   همان نظامی که پوستر و گزارش‌ها از آن می‌خوانند. مقدارها در
+   `hrperf/report/alborz.py` است؛ اینجا فقط مصرف می‌شود. */
+.stApp {{ background:{_AL.page_gradient_css()} !important; }}
+.panel {{
+  background:{_AL.CARD} !important;
+  border:1px solid {_AL.CARD_EDGE} !important;
+  border-radius:{_AL.RADIUS['panel']}px !important;
+  box-shadow:{_AL.shadow_css()} !important;
+}}
+.kpi {{
+  background:{_AL.CARD} !important;
+  border:1px solid {_AL.CARD_EDGE} !important;
+  border-radius:{_AL.RADIUS['sm']+4}px !important;
+  box-shadow:{_AL.shadow_css()} !important;
+}}
 
 /* ══════════════════════════════════════════════════════════════════════
    کف خوانایی — رابط نباید به تم Streamlit وابسته باشد

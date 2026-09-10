@@ -173,8 +173,15 @@ def test_reports(r):
         check("HTML راست‌به‌چپ و فارسی است",
               'dir="rtl"' in res.html and 'lang="fa"' in res.html)
         check("دکمه چاپ/PDF دارد", "window.print()" in res.html)
-        check("پالت آکوای اعتبارسنجی‌شده استفاده شده",
-              "#E1F2E9" in res.html and "#007D6E" in res.html, "سطح و برند آکوا")
+        # نظام البرز: بدنه روی زمینهٔ طوسی-کاهی می‌نشیند و آکوا فقط
+        # سربرگ و سطح‌های تیره را رنگ می‌کند.
+        from hrperf.report import alborz as _AL
+        check("زمینهٔ گزارش از نظام البرز است",
+              _AL.PAGE in res.html or _AL.CARD in res.html,
+              f"{_AL.PAGE} / {_AL.CARD}")
+        check("سربرگ گزارش طیف آکوا دارد",
+              _AL.AQUA_700 in res.html or _AL.AQUA_900 in res.html,
+              f"{_AL.AQUA_700} / {_AL.AQUA_900}")
 
 
 def test_email_config():

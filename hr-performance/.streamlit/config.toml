@@ -4,9 +4,9 @@
 base = "light"
 font = "sans serif"
 primaryColor = "#007D6E"
-backgroundColor = "#E1F2E9"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#14332C"
+backgroundColor = "#F1F1F0"
+secondaryBackgroundColor = "#FBFBFA"
+textColor = "#22282B"
 
 [server]
 headless = true
