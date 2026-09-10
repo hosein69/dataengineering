@@ -19,7 +19,8 @@
 """
 from __future__ import annotations
 
-from typing import Dict
+import re
+from typing import Dict, List
 
 # ── سطوح و متن ────────────────────────────────────────────────────────────
 from aibl.report import aqua as _aqua
@@ -53,6 +54,10 @@ STATUS: Dict[str, str] = {
     "unknown":  "#8FA79A",
 }
 
+#: رنگ متن برچسب روی تراشه — تیره‌ترشدهٔ همان وضعیت، محاسبه‌شده در آکوا.
+#: نقطهٔ رنگی تراشه رنگ خام را نگه می‌دارد؛ فقط متن تیره می‌شود.
+STATUS_TEXT: Dict[str, str] = dict(_aqua.STATUS_ON_TINT_LIGHT)
+
 #: کد طبقه → (رنگ، آیکن، برچسب فارسی). آیکن و برچسب اجباری‌اند:
 #: رنگ وضعیت هرگز به‌تنهایی حامل معنا نیست.
 BANDS: Dict[str, tuple] = {
@@ -83,6 +88,47 @@ SEQUENTIAL: List[str] = ["#D7F0E7", "#A9DFD1", "#7CCDBB",
 FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn',Tahoma,Arial,sans-serif"
 
 
+# ── تم Streamlit — یک منبع، دو مصرف‌کننده ─────────────────────────────────
+#: تم داخلی Streamlit (ویجت‌ها، جدول، نوار کناری) از CSS ما خوانده نمی‌شود؛
+#: Streamlit آن را از پیکربندی خودش می‌گیرد. اگر آن پیکربندی نباشد،
+#: Streamlit از حالت روشن/تاریکِ **مرورگر** پیروی می‌کند و روی ویندوزِ
+#: تاریک متن را سفید می‌کند — سفید روی پس‌زمینه سبز روشن ما یعنی متن
+#: نامرئی. این یک بار در تولید اتفاق افتاد و کل رابط را از کار انداخت.
+#:
+#: پس مقدارها اینجا تعریف می‌شوند و دو جا مصرف: ``.streamlit/config.toml``
+#: (که ``make_package.py`` می‌سازد و می‌بندد) و متغیرهای محیطی راه‌انداز.
+#: داشتن هر دو عمدی است: اگر یکی نبود، آن دیگری تم را نگه می‌دارد.
+STREAMLIT_THEME: Dict[str, str] = {
+    "base": "light",
+    "font": "sans serif",
+    "primaryColor": BRAND,
+    "backgroundColor": SURFACE,
+    "secondaryBackgroundColor": SURFACE_RAISED,
+    "textColor": TEXT,
+}
+
+
+def theme_env() -> Dict[str, str]:
+    """همان تم، به شکل متغیر محیطی — اولویتش از فایل پیکربندی بالاتر است."""
+    out = {}
+    for key, val in STREAMLIT_THEME.items():
+        snake = re.sub(r"(?<!^)(?=[A-Z])", "_", key).upper()
+        out[f"STREAMLIT_THEME_{snake}"] = val
+    return out
+
+
+def config_toml() -> str:
+    """متن ``.streamlit/config.toml`` از روی همین تم."""
+    lines = ["# ساخته‌شده از app/theme.py — دستی ویرایش نکنید.",
+             "# نبودِ این فایل یعنی تم از مرورگر می‌آید و متن نامرئی می‌شود.",
+             "[theme]"]
+    for key, val in STREAMLIT_THEME.items():
+        lines.append(f'{key} = "{val}"')
+    lines += ["", "[server]", "headless = true",
+              "", "[browser]", "gatherUsageStats = false", ""]
+    return "\n".join(lines)
+
+
 def band_of(value) -> tuple:
     """(رنگ، آیکن، برچسب) برای یک کد یا برچسب طبقه بحرانی."""
     s = str(value).strip()
@@ -93,8 +139,52 @@ def band_of(value) -> tuple:
     return (STATUS["unknown"], "?", s or "نامشخص")
 
 
+def band_text_color(value) -> str:
+    """رنگ **متن** برچسب طبقه — نه رنگ خود طبقه.
+
+    رنگ وضعیت روی ته‌رنگ ۱۰٪ خودش، برای متن ۱۲ پیکسلی کنتراست کافی
+    نمی‌دهد (اندازه‌گیری: ۲٫۰۶ تا ۴٫۴۱). این نسخهٔ تیره‌شده ≥۴٫۶:۱ است.
+    """
+    color = band_of(value)[0]
+    for key, raw in STATUS.items():
+        if raw == color:
+            return STATUS_TEXT.get(key, TEXT)
+    return TEXT
+
+
 def band_color(value) -> str:
     return band_of(value)[0]
+
+
+def finalize(fig):
+    """رنگ‌های نمودار را روی خودِ ``layout`` می‌نشاند، نه روی قالب.
+
+    ``go.Figure`` — برخلاف ``plotly.express`` — قالب پیش‌فرض را هنگام
+    ساخت نمی‌گیرد. وقتی Streamlit شکل را برای مرورگر سریال می‌کند، هیچ
+    قالبی همراهش نیست و سمت مرورگر تم Streamlit روی آن می‌نشیند: بوم
+    ``#0E1117`` و ناحیهٔ رسم ``#262730`` — نمودار مشکی داخل کارت سفید،
+    با برچسب‌های تیرهٔ نادیدنی.
+
+    مقدارِ صریح روی ``layout`` از هر قالبی بالاتر است، پس این تابع
+    مستقل از نسخهٔ Streamlit و مستقل از آرگومان ``theme`` کار می‌کند.
+    """
+    fig.update_layout(
+        paper_bgcolor=SURFACE_RAISED, plot_bgcolor=SURFACE_RAISED,
+        font=dict(family=FONT_STACK, size=12, color=TEXT),
+        colorway=SERIES, separators="\u066b\u066c",
+        hoverlabel=dict(bgcolor=SURFACE_RAISED, bordercolor=BORDER_STRONG,
+                        font=dict(family=FONT_STACK, size=12, color=TEXT)),
+    )
+    ax = dict(gridcolor=BORDER, linecolor=BORDER_STRONG, tickcolor=BORDER_STRONG,
+              tickfont=dict(color=TEXT_SECONDARY),
+              title=dict(font=dict(color=TEXT_SECONDARY)), automargin=True)
+    fig.update_xaxes(**ax)
+    fig.update_yaxes(**ax)
+    if fig.layout.title is not None:
+        fig.update_layout(title=dict(font=dict(color=TEXT)))
+    if fig.layout.legend is not None:
+        fig.update_layout(legend=dict(font=dict(color=TEXT_SECONDARY)))
+    return fig
 
 
 def plotly_template() -> dict:
@@ -111,8 +201,11 @@ def plotly_template() -> dict:
     return dict(
         layout=dict(
             font=dict(family=FONT_STACK, size=12, color=TEXT),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
+            # صریح، نه شفاف: با شفاف، بومِ نمودار رنگ تم Streamlit را
+            # می‌گرفت و در حالت تاریکِ مرورگر، مشکی می‌شد — نمودار مشکی
+            # داخل کارت سفید، با برچسب‌های مشکیِ نادیدنی.
+            paper_bgcolor=SURFACE_RAISED,
+            plot_bgcolor=SURFACE_RAISED,
             colorway=SERIES,
             xaxis=axis, yaxis=axis,
             margin=dict(t=52, r=24, b=44, l=24),

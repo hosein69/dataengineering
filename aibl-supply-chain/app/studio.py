@@ -36,6 +36,7 @@ st.set_page_config(page_title="AIBL Studio", page_icon="◈",
 from app import analytics, motion, process_view
 from app.styles import band_chip, css, kpi_card
 from app.theme import (BAND_ORDER, BANDS, SEQUENTIAL, SERIES, STATUS, TEXT_SECONDARY,
+                       band_text_color, finalize,
                        band_of, plotly_template)
 from aibl.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOverwrite,
                                             build_custom_excel)
@@ -200,7 +201,7 @@ st.markdown('<div class="kpi-row">' + "".join(kpi_card(*c) for c in cards) + "</
 
 st.markdown(
     '<div style="margin:12px 0 2px">' +
-    "".join(band_chip(*band_of(k)) for k in BAND_ORDER) +
+    "".join(band_chip(*band_of(k), text=band_text_color(k)) for k in BAND_ORDER) +
     '</div>', unsafe_allow_html=True)
 
 (tab_over, tab_proc, tab_supply, tab_analytics, tab_evidence, tab_fields,
@@ -234,7 +235,7 @@ with tab_over:
                 fig.update_layout(height=340, showlegend=False,
                                   yaxis_title="تعداد پرونده", xaxis_title=None,
                                   uniformtext=dict(minsize=10, mode="show"))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
         else:
             st.info("ستون طبقه بحرانی در این اجرا موجود نیست.")
 
@@ -258,7 +259,7 @@ with tab_over:
                 fig.update_layout(height=340, showlegend=False,
                                   xaxis_title="مقاومت (روز)", yaxis_title=None,
                                   yaxis=dict(autorange="reversed"))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
             else:
                 st.info("مقاومت عددی برای این فیلتر محاسبه نشده است.")
 
@@ -275,7 +276,7 @@ with tab_over:
                 hovertemplate="%{y}<br>%{x:,} پرونده<extra></extra>"))
             fig.update_layout(height=320, showlegend=False, xaxis_title="پرونده",
                               yaxis_title=None, yaxis=dict(autorange="reversed"))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
     with c4, st.container(border=True):
         panel_open("گلوگاه فرآیند", "از لاگ رویداد (استاندارد Celonis).")
@@ -672,20 +673,43 @@ with tab_send:
         hr = extras.get("hr")
         people_dir = _dp.directory(hr) if hr is not None else []
         chosen_to, chosen_cc = [], []
-        if not people_dir:
-            st.warning("سورس HR با ستون Email در این اجرا نبود. برای انتخاب "
-                       "گیرنده، سورس HR را وصل کنید — یا فهرست را از "
-                       "`AIBL_EMAIL_TO` بدهید.")
-        else:
+        if people_dir:
             by_label = {p.label: p for p in people_dir}
             c1, c2 = st.columns(2)
-            to_sel = c1.multiselect("گیرندگان (To)", list(by_label))
-            cc_sel = c2.multiselect("رونوشت (Cc)", list(by_label))
+            to_sel = c1.multiselect("گیرندگان (To) — از سورس HR", list(by_label))
+            cc_sel = c2.multiselect("رونوشت (Cc) — از سورس HR", list(by_label))
             chosen_to = [by_label[x] for x in to_sel]
             chosen_cc = [by_label[x] for x in cc_sel if x not in to_sel]
             if chosen_to or chosen_cc:
                 st.caption("نشانی نقاب‌دار برای تأیید: "
                            + "، ".join(p.masked for p in chosen_to + chosen_cc))
+        else:
+            st.info("سورس HR با ستون Email در این اجرا نبود — نشانی‌ها را "
+                    "پایین دستی وارد کنید.")
+
+        # ── ورود دستی ───────────────────────────────────────────────────
+        # قبلاً فقط انتخابگرِ HR بود؛ اگر آن سورس ستون Email نداشت،
+        # هیچ راهی برای فرستادن نمی‌ماند — کاربر نام‌ها را داشت و جایی
+        # برای واردکردنشان نبود.
+        m1, m2 = st.columns(2)
+        raw_to = m1.text_area(
+            "یا نشانی‌ها را دستی بنویسید (To)", height=76, key="aibl_raw_to",
+            placeholder="name@example.com؛ name2@example.com",
+            help="جداکننده: کاما، نقطه‌ویرگول، فاصله یا خط جدید.")
+        raw_cc = m2.text_area(
+            "دستی (Cc)", height=76, key="aibl_raw_cc", placeholder="—")
+        typed_to, bad_to = _dp.parse_addresses(raw_to)
+        typed_cc, bad_cc = _dp.parse_addresses(raw_cc)
+        if bad_to or bad_cc:
+            st.warning("این‌ها نشانی معتبر نیستند و نادیده گرفته می‌شوند: "
+                       + "، ".join(bad_to + bad_cc))
+
+        to_addr = sorted(set(_dp.addresses(chosen_to)) | set(typed_to))
+        cc_addr = sorted((set(_dp.addresses(chosen_cc)) | set(typed_cc)) - set(to_addr))
+        if to_addr:
+            st.success(f"{len(to_addr)} گیرنده"
+                       + (f" و {len(cc_addr)} رونوشت" if cc_addr else "")
+                       + " آمادهٔ ارسال است.")
 
     with st.container(border=True):
         panel_open("۳ · متن ایمیل")
@@ -706,65 +730,66 @@ with tab_send:
                 "گزارش داینامیک به‌عنوان **پیوست** که در مرورگر زنده است.")
 
     with st.container(border=True):
-        panel_open("۴ · ساخت و ارسال")
-        if st.button("🛠 ساخت پیش‌نمایش", use_container_width=True):
-            files = [avail[k] for k, v in picks.items() if v and k in avail]
-            crit = int((fdf[CODE_COL].astype(str).isin(["STOCKOUT", "CRITICAL"])).sum()) \
-                if CODE_COL in fdf.columns else 0
-            from app.theme import STATUS as _ST, TEXT as _TX, BRAND as _BR
-            kpis = [("پرونده", f"{len(fdf):,}", _TX),
-                    ("بحرانی", f"{crit:,}", _ST["critical"])]
-            if RES_COL in fdf.columns:
-                med = pd.to_numeric(fdf[RES_COL], errors="coerce").median()
-                if pd.notna(med):
-                    kpis.append(("میانه مقاومت (روز)", f"{med:.0f}", _BR))
-            cols_show = [c for c in ("CANONICAL_PART_NO", "CANONICAL_BL",
-                                     "STATUS_WHERE", "WAITING_ON_SCOPE")
-                         if c in fdf.columns][:4]
-            rows = []
-            for _, r in fdf.head(6).iterrows():
-                row = [str(r.get(c, "")) for c in cols_show]
-                if CODE_COL in fdf.columns:
-                    col, icon, lab = band_of(str(r.get(CODE_COL, "")))[:3]
-                    row.append(_dp._chip(lab, col, icon))
-                rows.append(row)
-            heads = [DISPLAY.get(c, c) for c in cols_show] + (["وضعیت"] if rows and
-                     len(rows[0]) > len(cols_show) else [])
-            body = _dp.outlook_body(subj, ref_date, kpis=kpis, headers=heads,
-                                    rows=rows, note=note,
-                                    attachments=[f.name for f in files])
-            st.session_state.aibl_mail = body
-            st.session_state.aibl_files = [str(f) for f in files]
-            st.success(f"{len(files)} پیوست آماده شد.")
+        panel_open("۴ · ارسال",
+                   "پیش‌نمایش خودش ساخته می‌شود؛ دکمهٔ جداگانه‌ای لازم نیست.")
+        # بدنه در هر رندر ساخته می‌شود. قبلاً پشت دکمهٔ «ساخت پیش‌نمایش»
+        # بود و تا کاربر آن را نمی‌زد، هیچ دکمهٔ ارسالی ظاهر نمی‌شد.
+        files = [avail[k] for k, v in picks.items() if v and k in avail]
+        crit = int((fdf[CODE_COL].astype(str).isin(["STOCKOUT", "CRITICAL"])).sum()) \
+            if CODE_COL in fdf.columns else 0
+        from app.theme import STATUS as _ST, TEXT as _TX, BRAND as _BR
+        kpis = [("پرونده", f"{len(fdf):,}", _TX),
+                ("بحرانی", f"{crit:,}", _ST["critical"])]
+        if RES_COL in fdf.columns:
+            med = pd.to_numeric(fdf[RES_COL], errors="coerce").median()
+            if pd.notna(med):
+                kpis.append(("میانه مقاومت (روز)", f"{med:.0f}", _BR))
+        cols_show = [c for c in ("CANONICAL_PART_NO", "CANONICAL_BL",
+                                 "STATUS_WHERE", "WAITING_ON_SCOPE")
+                     if c in fdf.columns][:4]
+        rows = []
+        for _, r in fdf.head(6).iterrows():
+            row = [str(r.get(c, "")) for c in cols_show]
+            if CODE_COL in fdf.columns:
+                col, icon, lab = band_of(str(r.get(CODE_COL, "")))[:3]
+                row.append(_dp._chip(lab, col, icon))
+            rows.append(row)
+        heads = [DISPLAY.get(c, c) for c in cols_show] + (["وضعیت"] if rows and
+                 len(rows[0]) > len(cols_show) else [])
+        body = _dp.outlook_body(subj, ref_date, kpis=kpis, headers=heads,
+                                rows=rows, note=note,
+                                attachments=[f.name for f in files])
+        st.session_state.aibl_mail = body
+        st.session_state.aibl_files = [str(f) for f in files]
 
-        if st.session_state.get("aibl_mail"):
-            st.components.v1.html(st.session_state.aibl_mail, height=480,
-                                  scrolling=True)
-            files = [_P(f) for f in st.session_state.get("aibl_files", [])]
-            if people_dir and chosen_to:
-                s1, s2 = st.columns(2)
-                if s1.button("📨 باز کردن در اتلوک", use_container_width=True):
-                    try:
-                        st.success(_dp.send(subj, st.session_state.aibl_mail,
-                                            _dp.addresses(chosen_to),
-                                            _dp.addresses(chosen_cc), files,
-                                            send_now=False).summary)
-                    except Exception as ex:
-                        st.error(str(ex))
-                if s2.button("🚀 ارسال همین حالا", type="primary",
-                             use_container_width=True):
-                    try:
-                        st.success(_dp.send(subj, st.session_state.aibl_mail,
-                                            _dp.addresses(chosen_to),
-                                            _dp.addresses(chosen_cc), files,
-                                            send_now=True).summary)
-                    except Exception as ex:
-                        st.error(str(ex))
-                st.download_button(
-                    "⬇️ پروندهٔ .eml (سیستم بدون اتلوک)",
-                    _dp.eml(subj, st.session_state.aibl_mail,
-                            _dp.addresses(chosen_to), _dp.addresses(chosen_cc),
-                            files),
-                    file_name=f"AIBL_{ref_date}.eml", mime="message/rfc822",
-                    use_container_width=True)
-                st.caption("ارسال برگشت‌ناپذیر است — پیش‌فرض «باز کردن» است.")
+        mail_html = st.session_state.get("aibl_mail", "")
+        files = [_P(f) for f in st.session_state.get("aibl_files", [])]
+
+        if not to_addr:
+            st.info("برای ارسال، دست‌کم یک گیرنده در بخش ۲ انتخاب یا وارد کنید.")
+        else:
+            s1, s2 = st.columns([2, 1])
+            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده", type="primary",
+                         use_container_width=True):
+                try:
+                    st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
+                                        files, send_now=True).summary)
+                except Exception as ex:
+                    st.error(str(ex))
+            if s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
+                         help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
+                try:
+                    st.success(_dp.send(subj, mail_html, to_addr, cc_addr,
+                                        files, send_now=False).summary)
+                except Exception as ex:
+                    st.error(str(ex))
+            st.download_button(
+                "⬇️ پروندهٔ .eml (سیستمی که اتلوک ندارد)",
+                _dp.eml(subj, mail_html, to_addr, cc_addr, files),
+                file_name=f"AIBL_{ref_date}.eml", mime="message/rfc822",
+                use_container_width=True)
+            st.caption(f"{len(files)} پیوست همراه می‌رود. ارسال برگشت‌ناپذیر است.")
+
+        with st.expander("پیش‌نمایش متن ایمیل", expanded=False):
+            if mail_html:
+                st.components.v1.html(mail_html, height=480, scrolling=True)

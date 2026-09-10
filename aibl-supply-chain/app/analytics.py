@@ -15,7 +15,7 @@ from typing import Callable, Dict, List
 import pandas as pd
 import streamlit as st
 
-from .theme import SEQUENTIAL, SERIES, STATUS
+from .theme import SEQUENTIAL, SERIES, STATUS, finalize
 
 try:
     import plotly.graph_objects as go
@@ -117,7 +117,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
                               yaxis=dict(autorange="reversed", automargin=False,
                                          tickfont=dict(size=11)),
                               margin=dict(t=16, r=24, b=54, l=300))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
         elif HAS_PLOTLY:
             ser = piv.iloc[:, 0]
             fig = go.Figure(go.Bar(
@@ -132,7 +132,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
                               yaxis=dict(autorange="reversed", automargin=False,
                                          tickfont=dict(size=11)),
                               margin=dict(t=16, r=24, b=44, l=330))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
         show = piv.reset_index().rename(columns={row_dim: fmt(row_dim),
                                                  "_r": fmt(row_dim)})
@@ -167,7 +167,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
             fig.update_layout(height=300, showlegend=False, bargap=0.06,
                               xaxis_title=fmt(mcol), yaxis_title="تعداد ردیف",
                               margin=dict(t=30, r=24, b=44, l=24))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
         q = v.quantile([0, .25, .5, .75, 1.0])
         st.caption(f"کمینه {q[0]:,.1f} · چارک۱ {q[.25]:,.1f} · میانه {q[.5]:,.1f} · "
                    f"چارک۳ {q[.75]:,.1f} · بیشینه {q[1.0]:,.1f} · "

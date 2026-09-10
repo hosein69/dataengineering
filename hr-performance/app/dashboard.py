@@ -31,7 +31,8 @@ from hrperf.config.settings import SETTINGS
 from hrperf.pipeline import Pipeline
 from hrperf.report import templates as tpl
 from hrperf.report.builder import ReportSpec, build as build_report
-from hrperf.report.theme import BANDS, SEQUENTIAL, SERIES, band_of, plotly_template
+from hrperf.report.theme import (BANDS, SEQUENTIAL, SERIES, band_of,
+                                 band_text_color, finalize, plotly_template)
 from hrperf.score.aggregate import contribution
 
 try:
@@ -203,7 +204,7 @@ for _f, color, icon, label in BANDS:
 st.markdown('<div class="kpi-row">' + "".join(kpi_card(*c) for c in cards[:8]) + "</div>",
             unsafe_allow_html=True)
 st.markdown('<div style="margin:12px 0 2px">' +
-            "".join(band_chip(c, i, l) for _f, c, i, l in BANDS) + "</div>",
+            "".join(band_chip(c, i, l, text=band_text_color(f)) for f, c, i, l in BANDS) + "</div>",
             unsafe_allow_html=True)
 
 for w in RUN.warnings:
@@ -333,7 +334,7 @@ with t_over:
                 hovertemplate="%{x}<br>%{y:,} نفر<extra></extra>"))
             fig.update_layout(height=330, showlegend=False, yaxis_title="نفر",
                               xaxis_title=None)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
     with c2, st.container(border=True):
         st.markdown("##### میانه عملکرد به تفکیک اداره")
@@ -351,7 +352,7 @@ with t_over:
                               xaxis=dict(range=[0, max(60.0, float(g.max()) * 1.25)]),
                               yaxis=dict(autorange="reversed", automargin=False),
                               margin=dict(t=16, r=24, b=44, l=200))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
     with st.container(border=True):
         st.markdown("##### نقش‌های کاری")
@@ -414,7 +415,7 @@ with t_people:
                                   xaxis_title="سهم در امتیاز (واحد امتیاز)",
                                   yaxis=dict(automargin=False),
                                   margin=dict(t=16, r=24, b=44, l=230))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
             st.dataframe(contrib, use_container_width=True, hide_index=True)
 
 
@@ -440,7 +441,7 @@ with t_cluster:
                           xaxis=dict(range=[0, max(60.0, float(med.max()) * 1.25)]),
                           yaxis=dict(autorange="reversed", automargin=False),
                           margin=dict(t=16, r=24, b=44, l=190))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -468,7 +469,7 @@ with t_causal:
                                   xaxis_title="اندازه اثر",
                                   yaxis=dict(autorange="reversed", automargin=False),
                                   margin=dict(t=40, r=24, b=44, l=250))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
         st.caption("⚠️ با داده مشاهده‌ای نمی‌توان علیت را اثبات کرد. این اعداد "
                    "«اثر تعدیل‌شده تحت فرض‌های DAG اعلام‌شده» هستند. ستون "
                    "E-value می‌گوید یک مخدوش‌کننده اندازه‌گیری‌نشده چقدر باید "
@@ -860,12 +861,12 @@ with t_send:
                                      key=f"pick_{key}", help=why)
 
     st.markdown("##### ۲) گیرندگان")
+    st.caption("نشانی‌ها هیچ‌جا لاگ یا ذخیره نمی‌شوند؛ فقط تعدادشان گزارش می‌شود.")
     people_dir = _dp.directory(RUN.people)
+    chosen_to, chosen_cc = [], []
     if not people_dir:
-        st.warning("در جدول پرسنلی این اجرا، ستون ایمیل با نشانی معتبر نبود. "
-                   "برای انتخاب گیرنده، ستون `email` را به نقشه سازمانی اضافه "
-                   "کنید — یا فهرست را از `HRP_EMAIL_TO` بدهید.")
-        st.caption("نشانی‌ها هیچ‌جا لاگ یا ذخیره نمی‌شوند؛ فقط تعدادشان گزارش می‌شود.")
+        st.info("در جدول پرسنلی این اجرا، ستون ایمیل با نشانی معتبر نبود — "
+                "نشانی‌ها را پایین دستی وارد کنید.")
     else:
         by_label = {p.label: p for p in people_dir}
         c1, c2 = st.columns(2)
@@ -877,6 +878,29 @@ with t_send:
         if chosen_to or chosen_cc:
             st.caption("نشانی‌های نقاب‌دار برای تأیید: "
                        + "، ".join(p.masked for p in chosen_to + chosen_cc))
+
+    # ── ورود دستی ───────────────────────────────────────────────────────
+    # قبلاً فقط انتخابگرِ جدول پرسنلی بود؛ اگر آن جدول ستون ایمیل نداشت،
+    # هیچ راهی برای فرستادن نمی‌ماند — کاربر نام‌ها را داشت و جایی برای
+    # واردکردنشان نبود.
+    m1, m2 = st.columns(2)
+    raw_to = m1.text_area("یا نشانی‌ها را دستی بنویسید (To)", height=76,
+                          key="hrp_raw_to",
+                          placeholder="name@example.com؛ name2@example.com",
+                          help="جداکننده: کاما، نقطه‌ویرگول، فاصله یا خط جدید.")
+    raw_cc = m2.text_area("دستی (Cc)", height=76, key="hrp_raw_cc",
+                          placeholder="—")
+    typed_to, bad_to = _dp.parse_addresses(raw_to)
+    typed_cc, bad_cc = _dp.parse_addresses(raw_cc)
+    if bad_to or bad_cc:
+        st.warning("این‌ها نشانی معتبر نیستند و نادیده گرفته می‌شوند: "
+                   + "، ".join(bad_to + bad_cc))
+    to_addr = sorted(set(_dp.addresses(chosen_to)) | set(typed_to))
+    cc_addr = sorted((set(_dp.addresses(chosen_cc)) | set(typed_cc)) - set(to_addr))
+    if to_addr:
+        st.success(f"{len(to_addr)} گیرنده"
+                   + (f" و {len(cc_addr)} رونوشت" if cc_addr else "")
+                   + " آمادهٔ ارسال است.")
 
     st.markdown("##### ۳) متن ایمیل")
     subj = st.text_input("موضوع",
@@ -970,31 +994,30 @@ with t_send:
             if f.exists():
                 st.download_button(f"⬇️ {f.name}", f.read_bytes(),
                                    file_name=f.name, key=f"dl_{f.name}")
-        if people_dir and to_sel:
-            s1, s2 = st.columns(2)
-            if s1.button("📨 باز کردن در اتلوک (بدون ارسال)",
+        if not to_addr:
+            st.info("برای ارسال، دست‌کم یک گیرنده در بخش ۲ انتخاب یا وارد کنید.")
+        else:
+            s1, s2 = st.columns([2, 1])
+            if s1.button(f"🚀 ارسال به {len(to_addr)} گیرنده", type="primary",
                          use_container_width=True):
                 try:
                     r = _dp.send(subj, st.session_state.mail_body,
-                                 _dp.addresses(chosen_to),
-                                 _dp.addresses(chosen_cc), files, send_now=False)
+                                 to_addr, cc_addr, files, send_now=True)
                     st.success(r.summary)
                 except Exception as ex:
                     st.error(str(ex))
-            if s2.button("🚀 ارسال همین حالا", type="primary",
-                         use_container_width=True):
+            if s2.button("پیش‌نمایش در اتلوک", use_container_width=True,
+                         help="پنجرهٔ اتلوک باز می‌شود؛ ارسال با خود شماست."):
                 try:
                     r = _dp.send(subj, st.session_state.mail_body,
-                                 _dp.addresses(chosen_to),
-                                 _dp.addresses(chosen_cc), files, send_now=True)
+                                 to_addr, cc_addr, files, send_now=False)
                     st.success(r.summary)
                 except Exception as ex:
                     st.error(str(ex))
             st.download_button(
                 "⬇️ دریافت پروندهٔ .eml (روی سیستم بدون اتلوک)",
                 _dp.eml(subj, st.session_state.mail_body,
-                        _dp.addresses(chosen_to), _dp.addresses(chosen_cc), files),
+                        to_addr, cc_addr, files),
                 file_name=f"HR_{ref_date}.eml", mime="message/rfc822",
                 use_container_width=True)
-            st.caption("ارسال، عملی برگشت‌ناپذیر است — پیش‌فرض «باز کردن در "
-                       "اتلوک» است تا پیش از فرستادن ببینید.")
+            st.caption("ارسال، عملی برگشت‌ناپذیر است.")

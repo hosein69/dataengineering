@@ -30,7 +30,12 @@ def main() -> int:
         print("Streamlit نصب نیست:\n    pip install -r requirements.txt")
         return 1
     port = args.port or free_port()
-    env = dict(os.environ, PYTHONPATH=ROOT, PYTHONUTF8="1")
+    # تم را صریح می‌فرستیم. متغیر محیطی از فایل پیکربندی اولویت بیشتری
+    # دارد، پس حتی اگر `.streamlit/config.toml` نبود، رابط روشن و خوانا
+    # بالا می‌آید — همان خرابی‌ای که در AIBL ۲۶٫۱۵٫۰ رخ داد.
+    sys.path.insert(0, ROOT)
+    from hrperf.report.theme import theme_env
+    env = dict(os.environ, PYTHONPATH=ROOT, PYTHONUTF8="1", **theme_env())
     print(f"داشبورد: http://localhost:{port}")
     return subprocess.call(
         [sys.executable, "-m", "streamlit", "run",

@@ -16,7 +16,25 @@ from .theme import (ACCENT, BORDER, BORDER_STRONG, BRAND, BRAND_DEEP, BRAND_SOFT
 
 def css() -> str:
     return f"""<style>
+/* ── فونت: نام‌های نصبِ ایران‌سنس روی ویندوز یکسان نیست ──────────────
+   بسته به اینکه فونت از کجا نصب شده، نامش می‌تواند «IRANSans»،
+   «IRANSansWeb»، «IRAN Sans» یا «IRANSansX» باشد. این چند نام به یک
+   خانواده گره می‌خورند تا هر کدام نصب بود، همان استفاده شود؛ اگر هیچ‌کدام
+   نبود، مرورگر بی‌صدا به گزینهٔ بعدی زنجیره می‌رود. */
+@font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:400;
+  src: local('IRANSans'), local('IRANSansWeb'), local('IRAN Sans'),
+       local('IRANSansX'), local('IRANSans Regular'), local('IRANSansWeb(FaNum)'); }}
+@font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:700;
+  src: local('IRANSans Bold'), local('IRANSansWeb Bold'), local('IRANSansX Bold'),
+       local('IRAN Sans Bold'); }}
+@font-face {{ font-family:'IRANSans Light'; font-style:normal; font-weight:300;
+  src: local('IRANSans Light'), local('IRANSansWeb Light'),
+       local('IRANSansX Light'), local('IRAN Sans Light'); }}
+
 :root {{
+  /* رابط همیشه روشن است. بدون این، کنترل‌های خود مرورگر (نوار پیمایش،
+     فلش عدد، تقویم) در ویندوزِ تاریک، تیره رندر می‌شوند. */
+  color-scheme: light;
   --brand:{BRAND}; --brand-deep:{BRAND_DEEP}; --accent:{ACCENT};
   --surface:{SURFACE}; --raised:{SURFACE_RAISED}; --sunken:{SURFACE_SUNKEN};
   --border:{BORDER}; --border-strong:{BORDER_STRONG};
@@ -106,8 +124,10 @@ div[data-testid="stDataFrame"] {{ border-radius:12px; overflow:hidden;
    Streamlit (اسلایدر، تب، جدول، دکمه) روی فونت پیش‌فرض «Source Sans»
    می‌ماندند — اندازه‌گیری: ۱۶۵ عنصر با فونت اشتباه. انتخابگر عام لازم
    است چون کلاس‌های Streamlit هش‌شده و ناپایدارند. */
-html, body, .stApp, .stApp *, [data-testid] , [data-testid] * ,
-[class*="st-"], [class*="st-"] * {{
+/* منوها و پاپ‌آورهای baseweb بیرون از `.stApp` و مستقیم زیر `body`
+   رندر می‌شوند؛ انتخابگرهای قبلی به آن‌ها نمی‌رسید و روی «Source Sans»
+   می‌ماندند. `body *` تنها انتخابگری است که پرتال‌ها را هم می‌گیرد. */
+html, body, body * {{
   font-family: {FONT_STACK} !important;
 }}
 /* استثنا: کد و عدد تک‌فاصله */
@@ -125,7 +145,10 @@ code, pre, kbd, samp, [data-testid="stCode"] * {{
 }}
 /* مقدارِ اسلایدر روی نوارِ رنگی می‌نشیند، پس باید سفید باشد نه تیره
    (تیره روی برند ۲٫۹۷ می‌داد؛ سفید ۶٫۶۳). */
-[data-testid="stSliderThumbValue"] {{
+[data-testid="stSliderThumbValue"],
+[data-testid="stSliderThumbValue"] * {{
+  /* عدد داخل یک فرزند است، نه روی خود عنصر؛ بدون `*` رنگ متن عمومی
+     روی آن می‌نشیند و تیره روی نوار برند ۲٫۷:۱ می‌دهد. */
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,.45);
 }}
@@ -168,6 +191,106 @@ small, .stCaption {{ color: var(--text-2) !important; }}
   color: var(--text) !important; }}
 .stAlert, .stAlert * {{ color: var(--text) !important; }}
 
+/* ══════════════════════════════════════════════════════════════════════
+   کف خوانایی — رابط نباید به تم Streamlit وابسته باشد
+   ══════════════════════════════════════════════════════════════════════
+   این بخش عمداً **آخر** فایل است تا در برابری خاص‌بودن (specificity)
+   برنده شود.
+
+   چه اتفاقی افتاد: `.streamlit/config.toml` در بسته‌بندی جا افتاد. بدون
+   آن، Streamlit تم پیش‌فرضش را می‌گذارد و آن تم از `prefers-color-scheme`
+   مرورگر پیروی می‌کند. روی ویندوزِ حالت‌تاریک، Streamlit متن را
+   `#FAFAFA` کرد در حالی که CSS ما پس‌زمینه را سبز روشن آکوا کرده بود:
+   نوار کناری، برچسب فیلترها و تراشه‌ها **نامرئی** شدند — نه حذف، فقط
+   دیده‌نشدنی؛ و کاربر فکر کرد امکانات از بین رفته‌اند.
+
+   حالا سه لایه هست و هر کدام به‌تنهایی کافی است: پیکربندی بسته‌بندی‌شده،
+   متغیر محیطیِ راه‌انداز، و همین CSS. */
+
+/* سطح و متن پایه */
+html, body, .stApp, [data-testid="stAppViewContainer"],
+[data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
+  background-color: var(--surface);
+  color: var(--text);
+}}
+/* هر چیزی که رنگ متن صریح نگرفته، رنگ متن آکوا می‌گیرد. بدون
+   !important تا رنگ‌های درون‌خطی (تراشهٔ طبقه، KPI) دست‌نخورده بمانند. */
+.stApp, .stApp p, .stApp span, .stApp li, .stApp td, .stApp th,
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+.stApp summary, .stApp strong, .stApp em {{ color: var(--text); }}
+
+/* نوار کناری — جایی که فاجعه بیشترین اثر را داشت */
+[data-testid="stSidebar"],
+[data-testid="stSidebarContent"],
+[data-testid="stSidebarUserContent"] {{
+  background: linear-gradient(180deg, var(--raised), var(--sunken)) !important;
+}}
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] li,
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3, [data-testid="stSidebar"] summary {{
+  color: var(--text);
+}}
+
+/* ورودی‌ها، انتخابگرها و منوهای شناور (پرتال، بیرون از .stApp) */
+[data-baseweb="input"], [data-baseweb="base-input"], [data-baseweb="textarea"],
+[data-baseweb="select"] > div, [data-baseweb="popover"] [role="listbox"],
+[data-baseweb="menu"], [data-baseweb="calendar"], [role="option"],
+input, textarea, select {{
+  background-color: var(--raised) !important;
+  color: var(--text) !important;
+}}
+[data-baseweb="menu"] li, [role="option"], [role="option"] * {{
+  color: var(--text) !important;
+}}
+[role="option"]:hover, [role="option"][aria-selected="true"] {{
+  background-color: var(--sunken) !important;
+}}
+::placeholder {{ color: var(--text-3) !important; opacity:1; }}
+
+/* پوستهٔ ورودی‌ها. در این نسخهٔ Streamlit، ویجت‌های baseweb دیگر
+   `data-baseweb` روی خودشان ندارند و عنصری که واقعاً رنگ می‌گیرد هیچ
+   شناسه‌ای ندارد — فقط از روی جایگاهش زیر `data-testid` والد پیدا
+   می‌شود. اندازه‌گیری‌شده روی DOM زنده، نه حدس. */
+[data-testid="stMultiSelect"] > div > div,
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stTextInput"] > div > div,
+[data-testid="stNumberInput"] > div > div,
+[data-testid="stDateInput"] > div > div,
+[data-testid="stTextArea"] > div > div {{
+  background-color: var(--raised) !important;
+  border-color: var(--border) !important;
+}}
+/* تراشهٔ انتخاب‌شده: پیش‌فرض Streamlit قرمز `#FF4B4B` است — نه رنگ
+   برند، و با متن تیره کنتراست ضعیفی می‌دهد. */
+[data-testid="stMultiSelectTagsContainer"] > span > span {{
+  background-color: var(--brand) !important;
+}}
+[data-testid="stMultiSelectTagsContainer"] > span > span,
+[data-testid="stMultiSelectTagsContainer"] > span > span * {{
+  color: #ffffff !important;
+}}
+
+/* نوار ابزار بالای صفحه (منوی سه‌نقطه و Deploy) */
+[data-testid="stToolbar"], [data-testid="stToolbar"] * ,
+[data-testid="stMainMenu"], [data-testid="stMainMenu"] * {{
+  color: var(--text-2) !important;
+}}
+
+/* جدول داده — شبکه، سرستون و سلول را خودش نقاشی می‌کند */
+[data-testid="stDataFrame"], [data-testid="stDataFrame"] * {{
+  color: var(--text);
+}}
+[data-testid="stDataFrame"] {{ background: var(--raised); }}
+
+/* expander و کانتینرهای حاشیه‌دار */
+[data-testid="stExpander"], [data-testid="stExpanderDetails"],
+[data-testid="stVerticalBlockBorderWrapper"] > div > [data-testid="stVerticalBlock"] {{
+  background-color: transparent;
+}}
+[data-testid="stExpander"] details {{
+  background: var(--raised); border-color: var(--border); }}
+
 /* ── احترام به کاهش حرکت ── */
 @media (prefers-reduced-motion: reduce) {{
   .kpi, .kpi::after, .panel, .band, .stButton>button, .fill > i {{
@@ -184,7 +307,14 @@ def kpi_card(label: str, value: str, sub: str, color: str, icon: str = "") -> st
             f'<div class="bar" style="background:{color}"></div></div>')
 
 
-def band_chip(color: str, icon: str, label: str) -> str:
-    return (f'<span class="band" style="background:{color}1a;color:{color};'
+def band_chip(color: str, icon: str, label: str, text: str = "") -> str:
+    """تراشهٔ طبقه — نقطه رنگ خام، متن رنگ تیره‌شدهٔ خوانا.
+
+    پس‌زمینهٔ تراشه، همان رنگ وضعیت با ۱۰٪ شفافیت است. متن با رنگ خام
+    روی آن ته‌رنگ ۲٫۰۶ تا ۴٫۴۱ کنتراست می‌داد — زیر حد. ``text`` رنگ
+    تیره‌شدهٔ محاسبه‌شده است؛ اگر داده نشود، رفتار قبلی حفظ می‌شود.
+    """
+    ink = text or color
+    return (f'<span class="band" style="background:{color}1a;color:{ink};'
             f'border-color:{color}44"><span class="g" style="background:{color}">'
             f'</span>{icon} {label}</span>')

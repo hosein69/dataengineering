@@ -1,13 +1,12 @@
-# پیکربندی تم — راه رسمی Streamlit برای فونت و رنگ.
-# بدون این فایل، ویجت‌های داخلی (اسلایدر، تب، جدول) فونت پیش‌فرض
-# «Source Sans» را نگه می‌دارند و CSS سفارشی به آن‌ها نمی‌رسد.
+# ساخته‌شده از hrperf/report/theme.py — دستی ویرایش نکنید.
+# نبودِ این فایل یعنی تم از مرورگر می‌آید و متن نامرئی می‌شود.
 [theme]
 base = "light"
 font = "sans serif"
-primaryColor = "#1c5cab"            # آبی برند — نه قرمز پیش‌فرض
-backgroundColor = "#fcfcfb"
-secondaryBackgroundColor = "#f1f4f8"
-textColor = "#0b0b0b"
+primaryColor = "#007D6E"
+backgroundColor = "#E1F2E9"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#14332C"
 
 [server]
 headless = true

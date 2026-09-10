@@ -33,6 +33,7 @@ SUITES = [
     ("۱۴) آشوب و نقاط تاریک معماری", "tests/test_chaos.py"),
     ("۱۵) گزارش تحلیلی و نمودار داینامیک", "tests/test_analytics.py"),
     ("۱۶) ارسال گزارش و بدنهٔ ایمیل", "tests/test_dispatch.py"),
+    ("۱۷) بسته‌بندی، کف خوانایی و ارسال", "tests/test_packaging.py"),
 ]
 
 

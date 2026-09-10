@@ -36,7 +36,12 @@ def main() -> int:
         return 1
 
     port = args.port or free_port()
-    env = dict(os.environ, PYTHONPATH=ROOT, PYTHONUTF8="1")
+    # تم را صریح می‌فرستیم. متغیر محیطی از فایل پیکربندی اولویت بیشتری
+    # دارد، پس حتی اگر `.streamlit/config.toml` نبود یا پاک شد، رابط
+    # روشن و خوانا بالا می‌آید.
+    sys.path.insert(0, ROOT)
+    from app.theme import theme_env
+    env = dict(os.environ, PYTHONPATH=ROOT, PYTHONUTF8="1", **theme_env())
     print(f"داشبورد روی http://localhost:{port} بالا می‌آید…")
     return subprocess.call(
         [sys.executable, "-m", "streamlit", "run",

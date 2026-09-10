@@ -44,6 +44,7 @@ except Exception:                                     # pragma: no cover
     _HAS_PLOTLY = False
 
 # منطق خالص در ui_kit است تا بدون Streamlit هم قابل تست باشد
+from app.theme import finalize  # noqa: E402
 from app.ui_kit import (AQUA, AQUA_DEEP, AQUA_SOFT, AMBER, BAND_COLORS,  # noqa: E402
                         GREEN, GREEN_SOFT, GREY, GREY_BG, RED, WHITE,
                         band_count as _band_count, card_html, detail_columns,
@@ -369,7 +370,7 @@ if _HAS_PLOTLY:
                               plot_bgcolor="rgba(0,0,0,0)",
                               paper_bgcolor="rgba(0,0,0,0)", height=420,
                               font=dict(family="IRANSans Light"))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
         top = df[["KEY_MATERIAL", "مقاومت (روز)"]].copy() \
             if "KEY_MATERIAL" in df.columns else pd.DataFrame()
@@ -384,7 +385,7 @@ if _HAS_PLOTLY:
                 fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                                   paper_bgcolor="rgba(0,0,0,0)", height=520,
                                   font=dict(family="IRANSans Light"))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
     with t2:
         st.caption("ربع پایین‌راست خطرناک‌ترین ناحیه است: مقاومت کم و رسوب زیاد.")
@@ -410,7 +411,7 @@ if _HAS_PLOTLY:
                 fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                                   paper_bgcolor="rgba(0,0,0,0)", height=560,
                                   font=dict(family="IRANSans Light"))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
         if {"مانده تعهد", "روزهای تأخیر"} <= set(df.columns):
             s2 = df.copy()
@@ -426,7 +427,7 @@ if _HAS_PLOTLY:
                 fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                                   paper_bgcolor="rgba(0,0,0,0)", height=480,
                                   font=dict(family="IRANSans Light"))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 
     with t3:
         bott = data["extras"].get("bottlenecks")
@@ -438,7 +439,7 @@ if _HAS_PLOTLY:
             fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                               paper_bgcolor="rgba(0,0,0,0)", height=480,
                               font=dict(family="IRANSans Light"))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
         var = data["extras"].get("variants")
         if var is not None and not var.empty:
             st.dataframe(var.head(12), use_container_width=True)
@@ -453,7 +454,7 @@ if _HAS_PLOTLY:
             fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                               paper_bgcolor="rgba(0,0,0,0)", height=460,
                               font=dict(family="IRANSans Light"))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
 else:
     st.warning("برای نمودارها plotly لازم است:  pip install plotly")
 

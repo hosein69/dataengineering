@@ -21,6 +21,7 @@ SUITES = [
      "tests/test_fairness_and_graph.py"),
     ("۴) موتور کلاستر، دفترچه سورس و نقشهٔ سیال",
      "tests/test_engine_and_studio.py"),
+    ("۵) بسته‌بندی، کف خوانایی و ارسال", "tests/test_packaging.py"),
 ]
 
 

@@ -14,9 +14,23 @@ from hrperf.report.theme import (BORDER, BRAND, BRAND_DEEP, FONT_STACK, RAISED,
 
 def css() -> str:
     return f"""<style>
-:root{{--brand:{BRAND};--deep:{BRAND_DEEP};--surface:{SURFACE};--raised:{RAISED};
+/* نام‌های مختلف نصبِ ایران‌سنس روی ویندوز به یک خانواده گره می‌خورند؛
+   اگر هیچ‌کدام نبود، مرورگر بی‌صدا به گزینهٔ بعدی زنجیره می‌رود. */
+@font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:400;
+  src: local('IRANSans'), local('IRANSansWeb'), local('IRAN Sans'),
+       local('IRANSansX'), local('IRANSans Regular'); }}
+@font-face {{ font-family:'IRANSans'; font-style:normal; font-weight:700;
+  src: local('IRANSans Bold'), local('IRANSansWeb Bold'), local('IRANSansX Bold'); }}
+@font-face {{ font-family:'IRANSans Light'; font-style:normal; font-weight:300;
+  src: local('IRANSans Light'), local('IRANSansWeb Light'), local('IRANSansX Light'); }}
+
+:root{{color-scheme:light;
+--brand:{BRAND};--deep:{BRAND_DEEP};--surface:{SURFACE};--raised:{RAISED};
 --border:{BORDER};--text:{TEXT};--t2:{TEXT2};--t3:{TEXT3}}}
-html,body,[class*="css"],.stApp{{font-family:{FONT_STACK}!important;direction:rtl}}
+/* `body *` تنها انتخابگری است که پرتال‌های baseweb (منو و پاپ‌آور، که
+   بیرون از `.stApp` رندر می‌شوند) را هم می‌گیرد. */
+html,body,body *{{font-family:{FONT_STACK}!important}}
+html,body,.stApp{{direction:rtl}}
 .stApp{{background:
   radial-gradient(1100px 560px at 88% -10%, #e8f0fb 0%, transparent 58%),
   radial-gradient(900px 500px at 4% 106%, #eef4f9 0%, transparent 60%),
@@ -85,7 +99,10 @@ code, pre, kbd, samp, [data-testid="stCode"] * {{
 }}
 /* مقدارِ اسلایدر روی نوارِ رنگی می‌نشیند، پس باید سفید باشد نه تیره
    (تیره روی برند ۲٫۹۷ می‌داد؛ سفید ۶٫۶۳). */
-[data-testid="stSliderThumbValue"] {{
+[data-testid="stSliderThumbValue"],
+[data-testid="stSliderThumbValue"] * {{
+  /* عدد داخل یک فرزند است، نه روی خود عنصر؛ بدون `*` رنگ متن عمومی
+     روی آن می‌نشیند و تیره روی نوار برند ۲٫۷:۱ می‌دهد. */
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(0,0,0,.45);
 }}
@@ -128,6 +145,59 @@ small, .stCaption {{ color: var(--t2) !important; }}
   color: var(--text) !important; }}
 .stAlert, .stAlert * {{ color: var(--text) !important; }}
 
+/* ══════════════════════════════════════════════════════════════════════
+   کف خوانایی — رابط نباید به تم Streamlit وابسته باشد
+   ══════════════════════════════════════════════════════════════════════
+   اگر `.streamlit/config.toml` همراه بسته نباشد، Streamlit تم پیش‌فرضش
+   را می‌گذارد و آن تم از `prefers-color-scheme` مرورگر پیروی می‌کند: روی
+   ویندوزِ تاریک متن `#FAFAFA` می‌شود روی پس‌زمینهٔ روشن ما — نسبت
+   کنتراست ۱٫۱۵:۱، عملاً نامرئی. این در AIBL نسخهٔ ۲۶٫۱۵٫۰ رخ داد و کل
+   رابط را از کار انداخت. اینجا سه لایه هست و هرکدام به‌تنهایی کافی است:
+   پیکربندی بسته‌بندی‌شده، متغیر محیطیِ راه‌انداز، و همین CSS. */
+html, body, .stApp, [data-testid="stAppViewContainer"],
+[data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
+  background-color: var(--surface); color: var(--text); }}
+.stApp, .stApp p, .stApp span, .stApp li, .stApp td, .stApp th,
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+.stApp summary, .stApp strong, .stApp em {{ color: var(--text); }}
+
+[data-testid="stSidebar"], [data-testid="stSidebarContent"],
+[data-testid="stSidebarUserContent"] {{
+  background: linear-gradient(180deg, var(--raised), var(--surface)) !important; }}
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label, [data-testid="stSidebar"] li,
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3, [data-testid="stSidebar"] summary {{
+  color: var(--text); }}
+
+/* پوستهٔ ورودی‌ها — عنصری که واقعاً رنگ می‌گیرد هیچ شناسه‌ای ندارد و
+   فقط از روی جایگاهش زیر `data-testid` والد پیدا می‌شود. */
+[data-testid="stMultiSelect"] > div > div,
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stTextInput"] > div > div,
+[data-testid="stNumberInput"] > div > div,
+[data-testid="stDateInput"] > div > div,
+[data-testid="stTextArea"] > div > div {{
+  background-color: var(--raised) !important;
+  border-color: var(--border) !important; }}
+[data-testid="stMultiSelectTagsContainer"] > span > span {{
+  background-color: var(--brand) !important; }}
+[data-testid="stMultiSelectTagsContainer"] > span > span,
+[data-testid="stMultiSelectTagsContainer"] > span > span * {{
+  color: #ffffff !important; }}
+
+[data-baseweb="popover"] [role="listbox"], [data-baseweb="menu"],
+[role="option"], input, textarea, select {{
+  background-color: var(--raised) !important; color: var(--text) !important; }}
+[role="option"]:hover, [role="option"][aria-selected="true"] {{
+  background-color: var(--surface) !important; }}
+::placeholder {{ color: var(--t3) !important; opacity:1; }}
+
+[data-testid="stToolbar"], [data-testid="stToolbar"] * {{
+  color: var(--t2) !important; }}
+[data-testid="stDataFrame"] {{ background: var(--raised); }}
+[data-testid="stDataFrame"], [data-testid="stDataFrame"] * {{ color: var(--text); }}
+
 @media (prefers-reduced-motion: reduce){{
  .kpi,.kpi::after,.band,.stButton>button{{transition:none!important}}
  .kpi:hover{{transform:none}}}}
@@ -141,7 +211,13 @@ def kpi_card(label: str, value: str, sub: str, color: str, icon: str = "") -> st
             f'<div class="bar" style="background:{color}"></div></div>')
 
 
-def band_chip(color: str, icon: str, label: str) -> str:
-    return (f'<span class="band" style="background:{color}1a;color:{color};'
+def band_chip(color: str, icon: str, label: str, text: str = "") -> str:
+    """تراشهٔ رده — نقطه رنگ خام، متن رنگ تیره‌شدهٔ خوانا.
+
+    پس‌زمینهٔ تراشه همان رنگ رده با ۱۰٪ شفافیت است؛ متن با رنگ خام روی
+    آن ته‌رنگ، برای اندازهٔ ۱۲ پیکسل زیر حد خوانایی می‌افتاد.
+    """
+    ink = text or color
+    return (f'<span class="band" style="background:{color}1a;color:{ink};'
             f'border-color:{color}44"><span class="g" style="background:{color}">'
             f'</span>{icon} {label}</span>')

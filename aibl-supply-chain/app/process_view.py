@@ -17,7 +17,7 @@ from typing import Dict, Optional
 import pandas as pd
 import streamlit as st
 
-from .theme import BANDS, SEQUENTIAL, SERIES, STATUS, band_of
+from .theme import BANDS, SEQUENTIAL, SERIES, STATUS, band_of, finalize
 
 try:
     import plotly.graph_objects as go
@@ -112,7 +112,7 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
             fig.update_traces(marker=dict(
                 color=avg, colorscale=[[0, SEQUENTIAL[1]], [1, SEQUENTIAL[6]]],
                 line=dict(color="#fcfcfb", width=2), showscale=False))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
             with st.expander("جدول گلوگاه‌ها"):
                 st.dataframe(bott, use_container_width=True, hide_index=True)
         else:
@@ -138,7 +138,7 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
             fig.update_layout(height=320, showlegend=False, bargap=0.06,
                               xaxis_title="طول چرخه (روز)", yaxis_title="تعداد پرونده",
                               margin=dict(t=30, r=24, b=44, l=24))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
             q = v.quantile([.5, .75, .9, 1.0])
             st.caption(f"میانه {q[.5]:,.0f} · صدک۷۵ {q[.75]:,.0f} · "
                        f"صدک۹۰ {q[.9]:,.0f} · بیشینه {q[1.0]:,.0f} روز"
@@ -232,7 +232,7 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
                               xaxis_title="زمان", yaxis_title=None,
                               yaxis=dict(autorange="reversed"),
                               margin=dict(t=16, r=24, b=44, l=24))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(finalize(fig), use_container_width=True, theme=None)
             st.markdown(
                 f'<span class="band" style="background:{band[0]}1a;color:{band[0]};'
                 f'border-color:{band[0]}44"><span class="g" style="background:{band[0]}">'

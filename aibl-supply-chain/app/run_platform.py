@@ -12,7 +12,11 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--port',type=int,default=0);a=ap.parse_args();
     try: import streamlit
     except ImportError: print('Streamlit نصب نیست');return 1
-    p=a.port or free_port();env=dict(os.environ,PYTHONPATH=ROOT,PYTHONUTF8='1')
+    p=a.port or free_port()
+    # تم صریح — مستقل از اینکه فایل پیکربندی سر جایش باشد یا نه.
+    sys.path.insert(0,ROOT)
+    from app.theme import theme_env
+    env=dict(os.environ,PYTHONPATH=ROOT,PYTHONUTF8='1',**theme_env())
     print(f'AIBL Studio: http://localhost:{p} (app/studio.py)')
     return subprocess.call([sys.executable,'-m','streamlit','run',os.path.join(HERE,'studio.py'),'--server.port',str(p),'--server.headless','true','--browser.gatherUsageStats','false'],cwd=ROOT,env=env)
 if __name__=='__main__':sys.exit(main())

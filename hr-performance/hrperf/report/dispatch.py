@@ -133,6 +133,31 @@ def directory(people) -> List[Person]:
     return out
 
 
+def parse_addresses(raw: str) -> Tuple[List[str], List[str]]:
+    """نشانی‌های تایپ‌شده → (معتبر، نامعتبر).
+
+    بدون این، انتخاب گیرنده فقط از سورس HR ممکن بود و اگر آن سورس ستون
+    Email نداشت، هیچ راهی برای فرستادن نبود — کاربر نام‌ها را داشت ولی
+    جایی برای واردکردنشان نبود.
+
+    جداکننده: کاما، نقطه‌ویرگول، فاصله یا خط جدید (فارسی «؛» هم).
+    خروجی هیچ‌جا لاگ یا ذخیره نمی‌شود؛ فقط به لحظهٔ ارسال می‌رود.
+    """
+    parts = [p.strip().strip("<>").strip()
+             for p in re.split(r"[,;\u061b\s\n]+", raw or "") if p.strip()]
+    good, bad = [], []
+    seen = set()
+    for p in parts:
+        low = p.lower()
+        if _EMAIL_RE.match(low):
+            if low not in seen:
+                seen.add(low)
+                good.append(low)
+        else:
+            bad.append(p)
+    return good, bad
+
+
 def addresses(chosen: Sequence[Person]) -> List[str]:
     """نشانی‌های واقعی — فقط در لحظهٔ ارسال، هرگز در لاگ."""
     return sorted({p._address for p in chosen if p._address})
@@ -365,7 +390,8 @@ def send(subject: str, body_html: str,
          attachments: Sequence[Path] = (), send_now: bool = False) -> Dispatch:
     """ایمیل را در اتلوک می‌سازد و در صورت درخواست می‌فرستد.
 
-    ``send_now=False`` پنجرهٔ اتلوک را **باز** می‌کند تا کاربر پیش از
+    ``send_now=True`` می‌فرستد و **هیچ پیش‌نویسی نمی‌سازد**.
+    ``send_now=False`` پنجرهٔ اتلوک را باز می‌کند تا کاربر پیش از
     فرستادن ببیند — پیش‌فرض عمدی: ارسال به فهرست، عملی برگشت‌ناپذیر است.
     """
     to = [t for t in to if t]
@@ -400,8 +426,10 @@ def send(subject: str, body_html: str,
     for f in files:
         mail.Attachments.Add(str(f.resolve()))
     mail.HTMLBody = body_html
-    mail.Save()
     if send_now:
+        # عمداً بدون Save(). قبلاً Save() همیشه اجرا می‌شد و یک رونوشت در
+        # «پیش‌نویس» جا می‌گذاشت؛ کاربری که «ارسال» زده بود، پیام را در
+        # Drafts می‌دید و نتیجه می‌گرفت که برنامه ذخیره کرده نه فرستاده.
         mail.Send()
         res.sent = True
     else:
