@@ -22,6 +22,7 @@ from .cycle import Leg, bottleneck, legs, what_if
 from .drivers import Finding, OutcomeReport, analyse_all
 from .evidence import MIN_N
 from ..report import alborz as _AL
+from ..report import narrative as _NR
 from ..report import brand as _B
 from ..report import paykan as _pk
 
@@ -174,6 +175,16 @@ def build_analysis_html(df: pd.DataFrame, ref_date: str,
         headline = ("هیچ رابطه‌ای پس از کنترل مخدوش‌کننده پایدار نماند — "
                     "یعنی تفاوت‌های خام، توضیح ساده‌تری داشتند.")
 
+    # ── روایت: تحلیل هم باید بگوید دربارهٔ چه چیزی حرف می‌زند ────
+    _crit = 0
+    if "کد طبقه بحرانی" in df.columns:
+        _crit = int(df["کد طبقه بحرانی"].astype(str)
+                    .isin(["STOCKOUT", "CRITICAL"]).sum())
+    _facts = _NR.Facts(total=int(len(df)), subject="پرونده", ref_date=ref_date,
+                       critical=_crit)
+    _story = _NR.open_block(_facts, _NR.LEAD_OPENING)
+    _close = _NR.resolution_block(_facts) + _NR.coda(_NR.CODA)
+
     return f"""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{_E(title)} — {_E(ref_date)}</title><style>
@@ -228,6 +239,7 @@ font:inherit;font-weight:700;cursor:pointer;margin-top:14px}}
 @media print{{button{{display:none}} body{{background:#fff}}
 .panel{{break-inside:avoid}} header{{-webkit-print-color-adjust:exact;
 print-color-adjust:exact}}}}
+{_NR.css()}
 </style></head><body><div class="shell">
 <header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
 <h1>{_E(title)}</h1>
@@ -235,6 +247,7 @@ print-color-adjust:exact}}}}
 <div class="sub">تاریخ مرجع {_E(ref_date)} · {len(df):,} ردیف · حداقل نمونه برای هر یافته: {MIN_N}</div>
 {f'<div class="head-note">{headline}</div>' if headline else ''}
 <button onclick="window.print()">چاپ / ذخیره PDF</button></header>
+{_story}
 {blocks}
 {_cycle_block(items, wi)}
 <div class="panel"><h3>روش، و حدودش</h3><div class="method">
@@ -262,7 +275,8 @@ print-color-adjust:exact}}}}
 <b>منابع.</b> Wilson (1927) برای بازه نسبت · VanderWeele &amp; Ding (2017),
 <i>Annals of Internal Medicine</i> 167(4):268-274 برای E-value ·
 Mantel &amp; Haenszel (1959) برای تجمیع لایه‌ای.
-</div></div></div></body></html>"""
+</div></div>{_close}
+</div></body></html>"""
 
 
 def write_analysis(df: pd.DataFrame, path, ref_date: str = "",

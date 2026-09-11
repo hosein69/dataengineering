@@ -9,6 +9,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from ..report import narrative as _NR
 
 FONT = "IRANSans Light"
 
@@ -87,6 +88,31 @@ def build_custom_excel(df: pd.DataFrame, output_path: str | Path, modules: Itera
     modules = list(modules)
     selected_fields = [c for c in list(selected_fields or []) if c in df.columns]
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
+        # ── روایت، اولین شیت ─────────────────────────────────────────
+        # کسی که فایل را باز می‌کند باید در همان ثانیهٔ اول بداند دربارهٔ
+        # چیست. بدون این، هر خواننده داستان خودش را می‌سازد.
+        _crit = 0
+        if "کد طبقه بحرانی" in df.columns:
+            _crit = int(df["کد طبقه بحرانی"].astype(str)
+                        .isin(["STOCKOUT", "CRITICAL"]).sum())
+        _blind = 0
+        for _c in ("PART_OWNER_SOURCE_GAP", "PART_OWNER_DATA_GAP"):
+            if _c in df.columns:
+                _blind = int(df[_c].astype(str).str.strip().ne("").sum())
+                break
+        _med = None
+        if "مقاومت (روز)" in df.columns:
+            _m = pd.to_numeric(df["مقاومت (روز)"], errors="coerce").median()
+            _med = None if pd.isna(_m) else float(_m)
+        _facts = _NR.Facts(total=int(len(df)), subject="پرونده",
+                           ref_date=str(ref_date), critical=_crit,
+                           blind=_blind, median=_med)
+        pd.DataFrame().to_excel(writer, sheet_name="روایت")
+        _NR.excel_cover(writer.book["روایت"], _facts,
+                        title="IKCO · Global Sourcing — روایتِ این گزارش",
+                        chapters_=_NR.chapters(), numbered=True,
+                        coda_text=_NR.CODA, lead=_NR.LEAD_OPENING)
+
         # Always provide a compact executive sheet.
         k = []
         if "کد طبقه بحرانی" in df.columns:

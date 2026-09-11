@@ -59,6 +59,31 @@ FAN = pd.DataFrame({
 })
 
 
+def _rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _lum(c):
+    def f(v):
+        v /= 255.0
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = c
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def _contrast(fg, bg):
+    a, b = _lum(_rgb(fg)), _lum(_rgb(bg))
+    hi, lo = max(a, b), min(a, b)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _over(fg, alpha, bg):
+    f, b = _rgb(fg), _rgb(bg)
+    return "#%02X%02X%02X" % tuple(
+        round(f[i] * alpha + b[i] * (1 - alpha)) for i in range(3))
+
+
 def test_fanout_double_counting() -> None:
     print("\n── ۱) دوباره‌شماری در جمع ──")
     check("دانه «مانده تعهد» از سورس مبدأ به ارث می‌رسد (REG، نه ردیف)",
@@ -120,8 +145,22 @@ def test_html_export() -> None:
     check("تابع تجمیع دانه‌ای در JS هست", "function gagg" in html and "gvals" in html)
     check("ستون نسبتی میانگین می‌گیرد نه جمع", "'mean'" in html or '"mean"' in html)
     check("دکمه چاپ/PDF دارد", "window.print()" in html)
-    check("پالت وضعیت اعتبارسنجی‌شده استفاده شده",
-          "#d03b3b" in html and "#fab219" in html)
+    # پالت وضعیت باید از «البرز» بیاید، نه از هفت رشتهٔ دستی.
+    #
+    # نسخهٔ قبلی همین تست، وجودِ ‎#d03b3b‎ و ‎#fab219‎ را «اعتبارسنجی‌شده»
+    # می‌نامید. بازرسیِ مرورگر خلافش را نشان داد: «تحت نظر» ۱٫۵۸ و
+    # «نامشخص» ۱٫۷۷ روی سطح — یعنی همان تراشه‌هایی که معنیِ هر ردیف را
+    # حمل می‌کردند خوانده نمی‌شدند. حالا اندازه می‌گیریم، نه نام‌گذاری.
+    from aibl.report import alborz as _A
+    from aibl.studio_core.html_export import BAND_INK, BANDS
+
+    for label, (color, _icon) in BANDS.items():
+        check(f"رنگ «{label}» از پالت البرز است", color in _A.STATUS.values(), color)
+    for label, ink in BAND_INK.items():
+        cr = _contrast(ink, _over(BANDS[label][0], 0.10, _A.PAGE))
+        check(f"متن تراشهٔ «{label}» روی ته‌رنگ ≥ ۴٫۵:۱", cr >= 4.5, f"{cr:.2f}:1")
+    check("رنگ خام دیگر به‌عنوان متن تراشه نمی‌رود",
+          "#d03b3b" not in html.lower() and "#fab219" not in html.lower())
     check("پالت رد شده قبلی دیگر نیست", "#F1C40F" not in html and "#C0392B" not in html)
 
 

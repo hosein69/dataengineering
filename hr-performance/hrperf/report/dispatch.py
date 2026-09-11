@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from . import aqua
+from . import narrative as _NR
 from .email import EMAIL_COLUMNS, NoRecipients, _EMAIL_RE, recipients
 
 _L = aqua.LIGHT
@@ -241,12 +242,19 @@ def outlook_body(title: str, ref_date: str,
                  rows: Sequence[Sequence[str]] = (),
                  headers: Sequence[str] = (),
                  note: str = "", attachments: Sequence[str] = (),
-                 live_url: str = "") -> str:
+                 live_url: str = "", story: Optional["_NR.Facts"] = None) -> str:
     """بدنهٔ ایمیل — ثابت، ولی حامل سیگنال واقعی.
 
     روی موتور Word اتلوک کلاسیک همان‌قدر درست دیده می‌شود که روی اتلوک
     جدید: هیچ چیدمانی به flexbox یا grid تکیه ندارد.
     """
+    # ── روایت ────────────────────────────────────────────────────────
+    # ایمیل هم با داستان باز می‌شود، نه با جدول. اگر گیرنده هیچ پیوستی
+    # را باز نکند، همین سه بند باید تصویر را داده باشد.
+    _open = _NR.email_open(story, _NR.LEAD_OPENING) if story else ""
+    _res = _NR.email_resolution(story) if story else ""
+    _coda = _NR.email_coda(_NR.CODA) if story else ""
+
     kpi_cells = "".join(_kpi(l, v, c) for l, v, c in kpis) or "<td>&nbsp;</td>"
 
     head_cells = "".join(
@@ -350,6 +358,10 @@ def outlook_body(title: str, ref_date: str,
   </td></tr>
 
   <tr><td class="card pad" bgcolor="{_L['raised']}"
+      style="padding:4px 18px 12px;border:1px solid {_L['border-soft']};
+      border-top:0;border-bottom:0">{_open}</td></tr>
+
+  <tr><td class="card pad" bgcolor="{_L['raised']}"
       style="padding:6px 18px 18px;border:1px solid {_L['border-soft']};
       border-top:0;border-bottom:0">{table}</td></tr>
 
@@ -360,6 +372,10 @@ def outlook_body(title: str, ref_date: str,
   <tr><td class="card pad" bgcolor="{_L['raised']}"
       style="padding:0 18px 18px;border:1px solid {_L['border-soft']};
       border-top:0">{att}</td></tr>
+
+  <tr><td class="card pad" bgcolor="{_L['raised']}"
+      style="padding:0 18px 16px;border:1px solid {_L['border-soft']};
+      border-top:0">{_res}{_coda}</td></tr>
 
   <tr><td bgcolor="{_L['sunken']}" class="pad"
       style="padding:12px 20px;border-radius:0 0 12px 12px">

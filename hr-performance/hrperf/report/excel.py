@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 
 from . import aqua
 from .theme import BANDS, band_of
+from . import narrative as _NR
 
 FONT = aqua.FONT_XLSX
 _T = aqua.xlsx_theme(False)
@@ -74,11 +75,23 @@ def _colour_performance(ws) -> None:
         c.font = Font(name=FONT, size=9, bold=True, color=color.replace("#", ""))
 
 
-def build_excel(path: str | Path, sheets: Dict[str, pd.DataFrame]) -> str:
+def build_excel(path: str | Path, sheets: Dict[str, pd.DataFrame],
+                story: Optional["_NR.Facts"] = None,
+                story_title: str = "IKCO · Global Sourcing — روایتِ این گزارش"
+                ) -> str:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     wrote = False
     with pd.ExcelWriter(p, engine="openpyxl") as w:
+        # ── روایت، اولین شیت ─────────────────────────────────────────
+        # کسی که فایل را باز می‌کند باید در همان ثانیهٔ اول بداند دربارهٔ
+        # چیست. بدون این، هر خواننده داستان خودش را می‌سازد.
+        if story is not None:
+            pd.DataFrame().to_excel(w, sheet_name="روایت")
+            _NR.excel_cover(w.book["روایت"], story, title=story_title,
+                            chapters_=_NR.chapters(), numbered=False,
+                            coda_text=_NR.CODA, lead=_NR.LEAD_OPENING)
+            wrote = True
         for name, df in sheets.items():
             if df is None or getattr(df, "empty", True):
                 continue

@@ -640,6 +640,7 @@ with tab_send:
 
     from aibl.config.settings import SETTINGS as _CFG
     from aibl.report import dispatch as _dp
+    from aibl.report import narrative as _NR
 
     with st.container(border=True):
         panel_open("۱ · کدام گزارش‌ها پیوست شوند؟",
@@ -762,8 +763,22 @@ with tab_send:
             rows.append(row)
         heads = [DISPLAY.get(c, c) for c in cols_show] + (["وضعیت"] if rows and
                  len(rows[0]) > len(cols_show) else [])
+        # روایتِ ایمیل از همان دادهٔ فیلترشده می‌آید که KPIها از آن آمدند،
+        # پس اگر کاربر فیلتر را عوض کند، متن ایمیل هم عوض می‌شود.
+        _blind = 0
+        for _c in ("PART_OWNER_SOURCE_GAP", "PART_OWNER_DATA_GAP"):
+            if _c in fdf.columns:
+                _blind = int(fdf[_c].astype(str).str.strip().ne("").sum())
+                break
+        _med = None
+        if RES_COL in fdf.columns:
+            _m = pd.to_numeric(fdf[RES_COL], errors="coerce").median()
+            _med = None if pd.isna(_m) else float(_m)
+        story = _NR.Facts(total=int(len(fdf)), subject="پرونده",
+                          ref_date=str(ref_date), critical=crit,
+                          blind=_blind, median=_med)
         body = _dp.outlook_body(subj, ref_date, kpis=kpis, headers=heads,
-                                rows=rows, note=note,
+                                rows=rows, note=note, story=story,
                                 attachments=[f.name for f in files])
         st.session_state.aibl_mail = body
         st.session_state.aibl_files = [str(f) for f in files]

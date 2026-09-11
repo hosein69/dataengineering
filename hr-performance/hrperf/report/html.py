@@ -11,8 +11,10 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from . import alborz as _AL
+from . import narrative as _NR
 from . import paykan as _pk
 from .theme import (BANDS, BORDER, BRAND, BRAND_DEEP, CARD, FONT_STACK,
+                    band_text_color,
                     HIGHLIGHT, RAISED, SURFACE, TEXT, TEXT2, TEXT3,
                     band_of)
 
@@ -65,10 +67,13 @@ def build_html(leaderboard: pd.DataFrame, *, ref_date: str, title: str,
         f'<div class="stat"><div class="v">{v}</div><div class="l">{html.escape(l)}</div>'
         f'<div class="d" style="background:{c}"></div></div>' for l, v, c in stats[:6])
 
+    # متن تراشه، نسخهٔ ته‌رنگیِ سنجیده‌شده می‌گیرد؛ رنگ خام فقط نقطه را
+    # رنگ می‌کند. «قابل بهبود» با رنگ خام ۴٫۴۲ می‌داد — زیر کف ۴٫۵.
     legend = "".join(
-        f'<span class="band" style="background:{c}1a;color:{c};border-color:{c}44">'
+        f'<span class="band" style="background:{c}1a;'
+        f'color:{band_text_color(floor)};border-color:{c}44">'
         f'<i style="background:{c}"></i>{ic} {html.escape(lab)}</span>'
-        for _f, c, ic, lab in BANDS)
+        for floor, c, ic, lab in BANDS)
 
     def table_section(key: str, frame: Optional[pd.DataFrame], heading: str) -> str:
         if key not in sections or frame is None or frame.empty:
@@ -90,6 +95,25 @@ def build_html(leaderboard: pd.DataFrame, *, ref_date: str, title: str,
     extra += table_section("peers", peers, "گروه‌های همتا")
     extra += table_section("calibration", calibration, "کالیبراسیون انقباض")
     extra += table_section("weights", weights, "وزن‌های مدل")
+
+    # ── روایت: کارنامه هم یک داستان است، نه فقط یک جدول ──────────
+    # ``perf`` بالاتر همین ستون را عددی کرده؛ دوباره نمی‌سازیمش.
+    _med = None if perf.dropna().empty else float(perf.median())
+    _low = int((perf < 45).sum())
+    _facts = _NR.Facts(total=int(n), subject="نفر", ref_date=ref_date,
+                       critical=_low, critical_label="نیازمند اقدام",
+                       median=_med, median_label="میانهٔ امتیاز",
+                       median_unit="از ۱۰۰")
+    _story = (_NR.open_block(_facts, _NR.LEAD_OPENING)
+              + _NR.chapter("هشت کلاستری که امتیاز را می‌سازند", "",
+                            _NR.LEAD_PATH)
+              + _NR.facets(_NR.chapters()))
+    _close = (_NR.resolution_block(_facts) + _NR.coda(_NR.CODA)
+              + _NR.footer(org="IKCO · Global Sourcing (GS)",
+                           unit="Governance and Integration (GI) · "
+                                "Data Analytics and KPI",
+                           tagline=_AL.TAGLINE, ref_date=ref_date,
+                           art=_pk.mark(84, _AL.ON_TEAL_2)))
 
     return f"""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -139,6 +163,7 @@ color:{BRAND_DEEP};font:inherit;font-weight:700;cursor:pointer}}
 @media print{{.toolbar,button{{display:none!important}}body{{background:#fff}}
 header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .panel{{break-inside:avoid}} th{{position:static}}}}
+{_NR.css()}
 </style></head><body><div class="shell">
 <header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
 <div><h1>{html.escape(title)}</h1>
@@ -146,6 +171,7 @@ header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 <div class="sub">{html.escape(template_title)} · تاریخ مرجع {html.escape(ref_date)} · {n:,} نفر</div></div>
 <div class="stats">{stat_html}</div>
 <button onclick="window.print()">چاپ / ذخیره PDF</button></header>
+{_story}
 <div class="legend">{legend}</div>
 <div class="toolbar">
   <label>جستجو<input id="q" placeholder="نام / کد پرسنلی / اداره"></label>
@@ -184,4 +210,6 @@ function render(){{
     return `<td>${{esc(v)}}</td>`;}}).join('')+'</tr>').join('');
 }}
 [q,f1,f2].forEach(x=>x.addEventListener('input',render)); render();
-</script></body></html>"""
+</script>
+{_close}
+</body></html>"""

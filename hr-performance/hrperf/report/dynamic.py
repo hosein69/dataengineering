@@ -30,6 +30,7 @@ from ..fairness.skew import gini, lorenz
 #: پالت رسته‌ای اعتبارسنجی‌شده (همان پالت AIBL؛ هر شش بررسی را رد می‌کند).
 from . import aqua
 from . import alborz as _AL
+from . import narrative as _NR
 from . import paykan as _pk
 
 CATEGORICAL = aqua.categorical(False)
@@ -139,6 +140,17 @@ def build_dynamic_html(people: pd.DataFrame, ref_date: str,
                 f"{g:.2f}".translate(str.maketrans("0123456789.", "۰۱۲۳۴۵۶۷۸۹٫")))
     lz = lorenz(df[load_col]) if load_col and load_col in df.columns else []
 
+    # ── روایت: داشبورد هم با یک بند باز می‌شود ───────────────────
+    _sc = pd.to_numeric(df[score_col], errors="coerce") \
+        if score_col in df.columns else pd.Series(dtype=float)
+    _facts = _NR.Facts(total=int(len(df)), subject="نفر", ref_date=ref_date,
+                       critical=int((_sc < 45).sum()),
+                       critical_label="نیازمند اقدام",
+                       median=None if _sc.dropna().empty else float(_sc.median()),
+                       median_label="میانهٔ امتیاز", median_unit="از ۱۰۰")
+    _story = _NR.open_block(_facts, _NR.LEAD_OPENING)
+    _close = _NR.resolution_block(_facts) + _NR.coda(_NR.CODA)
+
     return f"""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{_E(title)} — {_E(ref_date)}</title><style>
@@ -207,6 +219,7 @@ font:inherit;font-weight:700;cursor:pointer}}
 @media print{{.bar-tools,button{{display:none!important}}
 body{{background:#fff}} .panel{{break-inside:avoid}}
 header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}}}
+{_NR.css()}
 </style></head><body><div class="shell">
 <header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
 <div><h1>{_E(title)}</h1>
@@ -218,6 +231,7 @@ header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}}}
   <div class="kpi"><b id="kg">{gini_txt}</b><span>جینی بار</span></div>
 </div>
 <button onclick="window.print()">چاپ / PDF</button></header>
+{_story}
 <div class="legend">{band_legend}</div>
 <div class="bar-tools"><label>جستجو<input id="q" placeholder="نام یا هر ستون"></label>{filters}</div>
 

@@ -845,6 +845,7 @@ st.caption("رتبه‌ها فقط درون گروه همتا (مدیریت + ا
 with t_send:
     import tempfile as _tf
     from hrperf.report import dispatch as _dp
+    from hrperf.report import narrative as _NR
     from hrperf.report import fluid as _fl
     from hrperf.report.builder import ReportSpec as _Spec
     from hrperf.report.builder import build as _build
@@ -977,10 +978,19 @@ with t_send:
                          str(r.get("اداره", "")),
                          f"{float(r.get('عملکرد', 0)):.1f}",
                          _dp._chip(lab, col, icon)])
+        # روایتِ ایمیل از همان جدولی می‌آید که گیرنده خواهد دید.
+        _sc = pd.to_numeric(view.get("عملکرد"), errors="coerce") \
+            if "عملکرد" in view.columns else None
+        _med = None if _sc is None or _sc.dropna().empty else float(_sc.median())
+        _low = 0 if _sc is None else int((_sc < 45).sum())
+        story = _NR.Facts(total=int(len(view)), subject="نفر",
+                          ref_date=str(ref_date), critical=_low,
+                          critical_label="نیازمند اقدام", median=_med,
+                          median_label="میانهٔ امتیاز", median_unit="از ۱۰۰")
         body = _dp.outlook_body(
             subj, ref_date, kpis=kpis,
             headers=["کد پرسنلی", "نام", "اداره", "عملکرد", "وضعیت"],
-            rows=rows, note=note, attachments=names)
+            rows=rows, note=note, attachments=names, story=story)
 
         st.session_state.mail_body = body
         st.session_state.mail_files = [str(f) for f in files]

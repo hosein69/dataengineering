@@ -47,6 +47,7 @@ REQUIRED = [
     "run_mac.command",         # بدون این، مک راه‌اندازی ندارد
     "INSTALL_MAC.md",
     ".streamlit/config.toml",   # نبودنش تم را به مرورگر می‌سپارد → متن نامرئی
+    "aibl/report/narrative.py",
     "aibl/report/alborz.py", "aibl/report/paykan.py",
     "poster/make_poster.py", "DESIGN_SYSTEM_ALBORZ.md",
     "app/studio.py", "app/styles.py", "app/theme.py",

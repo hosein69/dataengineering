@@ -24,17 +24,27 @@ import pandas as pd
 
 from .grain import (GRAIN_KEYS, KIND_ADDITIVE, KIND_RATIO, column_grain,
                     measure_kind, prefix_grain_map, safe_agg)
+from ..report import alborz as _AL
 
-#: پالت وضعیت (ثابت، هرگز تم‌پذیر) — همیشه با آیکن و برچسب
-BANDS = {
-    "توقف خط":            ("#a32828", "⏹"),
-    "بحرانی":             ("#d03b3b", "⬤"),
-    "در حال بحرانی شدن":  ("#ec835a", "◤"),
-    "تحت نظر":            ("#fab219", "◆"),
-    "ایمن":               ("#0ca30c", "✓"),
-    "بدون مصرف":          ("#8a8a85", "—"),
-    "نامشخص":             ("#b5b5ae", "?"),
-}
+#: پالت وضعیت (ثابت، هرگز تم‌پذیر) — همیشه با آیکن و برچسب.
+#:
+#: پیش از این، هفت رنگ اینجا **دستی** تعریف شده بودند و با پالت البرز
+#: یکی نبودند. بازرسیِ مرورگر رویشان رد شد:
+#:
+#:     «تحت نظر»  #FAB219 روی سطح  →  ۱٫۵۸
+#:     «نامشخص»   #B5B5AE روی سطح  →  ۱٫۷۷
+#:     «بحرانی»   #D03B3B روی سطح  →  ۴٫۱۴
+#:
+#: یعنی همان تراشه‌هایی که معنیِ هر ردیف را حمل می‌کردند، خوانده نمی‌شدند.
+#: حالا **نقطه** رنگ خام می‌گیرد و **متن** نسخهٔ ته‌رنگیِ سنجیده‌شده —
+#: همان تفکیکی که ``alborz.STATUS_ON_TINT`` برایش ساخته شده.
+_BAND_KEYS = [("توقف خط", "stockout", "⏹"), ("بحرانی", "critical", "⬤"),
+              ("در حال بحرانی شدن", "serious", "◤"), ("تحت نظر", "warning", "◆"),
+              ("ایمن", "good", "✓"), ("بدون مصرف", "neutral", "—"),
+              ("نامشخص", "unknown", "?")]
+BANDS = {fa: (_AL.STATUS[k], ic) for fa, k, ic in _BAND_KEYS}
+#: رنگ **متن** همان طبقه روی ته‌رنگ خودش — نه رنگ خام.
+BAND_INK = {fa: _AL.STATUS_ON_TINT[k] for fa, k, _ic in _BAND_KEYS}
 BAND_ORDER = list(BANDS)
 
 #: پالت رسته‌ای نمودارها. با ``scripts/validate_palette.js`` سنجیده شده و
@@ -42,15 +52,17 @@ BAND_ORDER = list(BANDS)
 #: کف دید عادی، و کنتراست با سطح. ترتیب **ثابت** است و هرگز چرخانده
 #: نمی‌شود؛ رسته هشتم به «سایر» می‌رود، نه به یک رنگ تازه.
 from ..report import aqua
-from ..report import alborz as _AL
+from ..report import brand as _B
+from ..report import narrative as _NR
 from ..report import paykan as _pk
 
 CATEGORICAL = aqua.CATEGORICAL_LIGHT
 OTHER_COLOR = aqua.OTHER_LIGHT
 
 BRAND, BRAND_DEEP = aqua.LIGHT["brand-strong"], aqua.LIGHT["header"]
-SURFACE, RAISED, BORDER = (aqua.LIGHT["surface"], aqua.LIGHT["raised"],
-                           aqua.LIGHT["border"])
+# سطحِ گزارش از «البرز» می‌آید. سطحِ سبزِ روشنِ پیش‌آکوا یک پله روشن‌تر
+# بود و تراشه‌های وضعیت را زیر کف می‌برد.
+SURFACE, RAISED, BORDER = _AL.PAGE, _AL.CARD, _AL.HAIRLINE
 TEXT, TEXT2, TEXT3 = aqua.LIGHT["text"], aqua.LIGHT["text-2"], aqua.LIGHT["text-3"]
 CARD, HIGHLIGHT = aqua.LIGHT["card"], aqua.LIGHT["highlight"]
 
@@ -194,9 +206,46 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "AIBL",
         for lab, v, col, _ic in head_stats)
 
     legend_html = "".join(
-        f'<span class="band" style="background:{c}1a;color:{c};border-color:{c}44">'
-        f'<i style="background:{c}"></i>{ic} {html.escape(b)}</span>'
+        f'<span class="band" style="background:{c}1a;color:{BAND_INK[b]};'
+        f'border-color:{c}44"><i style="background:{c}"></i>'
+        f'{ic} {html.escape(b)}</span>'
         for b, (c, ic) in BANDS.items())
+
+    # ── روایت: گزارش با داستان باز می‌شود، نه با جدول ──────────────
+    # عددهای زیر از همین داده می‌آیند، پس بندِ آغاز با هر فیلتر عوض
+    # می‌شود. بندی که همیشه یک چیز بگوید، روایت نیست؛ شعار است.
+    _band = df[band_col] if band_col and band_col in df.columns else None
+    _crit = 0
+    if _band is not None:
+        _crit = int(_band.astype(str).isin(["توقف خط", "بحرانی",
+                                            "STOCKOUT", "CRITICAL"]).sum())
+    _blind = 0
+    for _c in ("PART_OWNER_SOURCE_GAP", "PART_OWNER_DATA_GAP"):
+        if _c in df.columns:
+            _blind = int(df[_c].astype(str).str.strip().ne("").sum())
+            break
+    _med = None
+    if "مقاومت (روز)" in df.columns:
+        _m = pd.to_numeric(df["مقاومت (روز)"], errors="coerce").median()
+        _med = None if _m != _m else float(_m)
+    _facts = _NR.Facts(total=int(len(df)), subject="پرونده", ref_date=ref_date,
+                       critical=_crit, blind=_blind, median=_med)
+    from ..resolve.expert_scope import OWNER_FIELDS as _OWN
+    _own = [_NR.Chapter(c, fa_, _NR.MEANINGS.get(c, ""), ()) for c, fa_ in _OWN]
+    _story = (_NR.open_block(_facts, _NR.LEAD_OPENING)
+              + _NR.chapter("", "از لحظهٔ صدور سفارش تا ثبت رسید مالی — هر گام، "
+                            "یک سند؛ هر سند، یک قدم به جلو.", _NR.LEAD_PATH)
+              + _NR.journey(_NR.chapters()))
+    _close = (_NR.resolution_block(_facts)
+              + _NR.chapter("", "هیچ‌کدام از سورس‌ها این‌ها را نمی‌سازند. هر "
+                            "خانهٔ خالی، یک نقطهٔ کور در پروندهٔ همان قطعه است.",
+                            _NR.LEAD_TURN)
+              + _NR.facets(_own, numbered=True)
+              + _NR.coda(_NR.CODA)
+              + _NR.footer(org=f"{_B.COMPANY} · {_B.UNIT} ({_B.UNIT_SHORT})",
+                           unit=f"{_B.DIVISION} ({_B.DIVISION_SHORT}) · {_B.TEAM}",
+                           tagline=_AL.TAGLINE, ref_date=ref_date,
+                           art=_pk.mark(84, _AL.ON_TEAL_2)))
 
     return f"""<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -269,6 +318,7 @@ font:inherit;font-weight:700;cursor:pointer}}
   -webkit-print-color-adjust:exact;print-color-adjust:exact}}
   .panel,.card{{break-inside:avoid}} th{{position:static}}
 }}
+{_NR.css()}
 </style></head><body><div class="shell">
 <header>
 <div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
@@ -277,6 +327,7 @@ font:inherit;font-weight:700;cursor:pointer}}
   <div class="stats">{stat_html}</div>
   <button onclick="window.print()">چاپ / ذخیره PDF</button>
 </header>
+{_story}
 <div class="legend">{legend_html}</div>
 <div class="toolbar"><label>جستجو<input id="q" placeholder="جستجو در همه ستون‌های نمایش‌داده‌شده"></label>{filter_html}</div>
 <div class="cards" id="cards"></div>
@@ -288,13 +339,17 @@ font:inherit;font-weight:700;cursor:pointer}}
 <tbody id="tb"></tbody></table></div>
 <div class="note">جمع‌های عددی پیش از محاسبه بر کلید دانه‌ی همان ستون یکتا می‌شوند،
 پس با فیلتر کردن هم دوباره‌شماری رخ نمی‌دهد.</div></div>
-</div><script>
+</div>
+{_close}
+<script>
 const DATA={records}, COLS={json.dumps(cols, ensure_ascii=False)};
 const NUM={json.dumps(numeric, ensure_ascii=False)}, GRAIN={json.dumps(grain_of, ensure_ascii=False)};
 const AGG={json.dumps(measures, ensure_ascii=False)};
 const LAB={json.dumps({c: labels.get(c, c) for c in cols}, ensure_ascii=False)};
 const BAND={json.dumps(band_col or "", ensure_ascii=False)};
-const COLORS={json.dumps({b: c for b, (c, _i) in BANDS.items()}, ensure_ascii=False)};
+const COLORS={json.dumps(BAND_INK, ensure_ascii=False)};
+const DOTS={json.dumps({b: c for b, (c, _i) in BANDS.items()}, ensure_ascii=False)};
+const NEUTRAL={json.dumps(_AL.STATUS['neutral'])};
 const ORDER={json.dumps(BAND_ORDER, ensure_ascii=False)};
 const CATS={json.dumps(CATEGORICAL, ensure_ascii=False)}, OTHER={json.dumps(OTHER_COLOR, ensure_ascii=False)};
 const q=document.getElementById('q'), sels=[...document.querySelectorAll('select[data-f]')];
@@ -343,7 +398,7 @@ function render(){{
     const cnt={{}}; a.forEach(r=>{{const k=S(r,BAND)||'نامشخص';cnt[k]=(cnt[k]||0)+1}});
     const tot=a.length||1;
     const keys=ORDER.filter(k=>cnt[k]).concat(Object.keys(cnt).filter(k=>!ORDER.includes(k)));
-    mix.innerHTML=keys.map(k=>`<div class="seg" title="${{k}}: ${{cnt[k]}}" style="width:${{100*cnt[k]/tot}}%;background:${{COLORS[k]||'#8a8a85'}}"></div>`).join('');
+    mix.innerHTML=keys.map(k=>`<div class="seg" title="${{k}}: ${{cnt[k]}}" style="width:${{100*cnt[k]/tot}}%;background:${{DOTS[k]||NEUTRAL}}"></div>`).join('');
     document.getElementById('mixleg').textContent=keys.map(k=>`${{k}}: ${{cnt[k].toLocaleString('fa-IR')}}`).join('  ·  ');
   }}
   const esc=s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');

@@ -343,6 +343,87 @@ def test_cross_platform():
 
 
 
+# ═════════════════ روایت — قالب فیگما، به‌صورت کد ═════════════════
+def test_narrative():
+    """خروجی باید **داستان** بگوید، و داستان باید از داده بیاید.
+
+    قالب نهایی در فیگما ساخته شد و این تست همان قالب را روی خروجی‌ها
+    قفل می‌کند. سه چیز سنجیده می‌شود:
+
+    ۱. **دستور زبان** هشت عنصر دارد و ترتیبش عوض نمی‌شود.
+    ۲. **متن از عدد می‌آید.** دو گزارش با دو داده، دو بندِ آغاز دارند.
+       بندی که با هر داده‌ای یک چیز بگوید، روایت نیست؛ شعار است — و
+       همان ایرادی است که یک بار به پوستر گرفته شد.
+    ۳. **رنگ از البرز می‌آید.** هیچ رنگی در ماژول روایت تعریف نمی‌شود.
+    """
+    print("\n── روایت " + "─" * 58)
+    from hrperf.report import narrative as N
+
+    # ── ۱) دستور زبان ──
+    check("هشت عنصر دستور زبان تعریف شده", len(N.GRAMMAR) == 8, str(len(N.GRAMMAR)))
+    check("ترتیب روایت قفل است",
+          N.GRAMMAR == ("eyebrow", "opening", "chapter", "knot", "bridge",
+                        "resolution", "coda", "badge"))
+    for fn in ("hero", "eyebrow", "chapter", "knots", "resolution_block",
+               "coda", "badge", "footer", "journey", "facets", "css",
+               "email_open", "email_resolution", "email_coda", "excel_cover"):
+        check(f"«{fn}» در ماژول روایت هست", hasattr(N, fn))
+
+    # ── ۲) متن از عدد می‌آید، نه از قالبِ ثابت ──
+    a = N.Facts(total=300, subject="پرونده", critical=76, blind=81, median=46)
+    b = N.Facts(total=1200, subject="پرونده", critical=4, blind=0, median=9)
+    oa, ob = N.plain_opening(a), N.plain_opening(b)
+    check("بندِ آغاز با دادهٔ متفاوت، متفاوت است", oa != ob)
+    check("عددِ واقعی داخل بند می‌آید", "۳۰۰" in oa and "۱٬۲۰۰" in ob)
+    check("درصد بحرانی محاسبه می‌شود", "۲۵٪" in oa, oa[:70])
+    check("نبودِ نقطهٔ کور، ادعای دروغ نمی‌سازد", "نقطهٔ کور" not in ob)
+    empty = N.plain_opening(N.Facts())
+    check("گزارش خالی، صادقانه خالی اعلام می‌شود", "خالی است" in empty, empty[:46])
+    check("گزارش خالی عددِ جعلی نمی‌سازد", "۰" not in empty)
+    _t, lines = N.resolution(a)
+    check("جمع‌بندی هم از عدد می‌آید", any("۷۶" in x for x in lines))
+
+    # ── ۳) رنگ فقط از البرز ──
+    src = io.open(os.path.join(ROOT, "hrperf/report/narrative.py"), encoding="utf-8").read()
+    body = src[src.index("def css("):]
+    hexes = set(re.findall(r"#[0-9A-Fa-f]{6}", body))
+    check("هیچ رنگِ ثابتی در لایهٔ رندرِ روایت نیست", not hexes,
+          str(sorted(hexes)[:4]))
+    check("روایت از البرز می‌خواند", "alborz as _AL" in src)
+
+    # ── ۴) بلوک‌های قالب واقعاً رندر می‌شوند ──
+    html = N.css() + N.hero(a, kicker="K", title="T", subtitle="S") \
+        + N.chapter("", "x", "lead") + N.knots(N.KNOTS) \
+        + N.resolution_block(a) + N.journey(N.chapters()) \
+        + N.facets(N.chapters(), numbered=True) + N.coda(N.CODA) \
+        + N.footer(org="O", unit="U", tagline="T", ref_date="۱۴۰۵")
+    for cls in ("nr-hero", "nr-pill", "nr-knot", "nr-gutter", "nr-link",
+                "nr-res", "nr-journey", "nr-step", "nr-cards", "nr-c",
+                "nr-cont", "nr-foot", "nr-badge"):
+        check(f"بلوک «{cls}» رندر می‌شود", cls in html)
+    check("عنوان سربرگ حک‌شده است (سایهٔ دولایه)", "text-shadow:2px 3px" in html)
+    check("مُهر پایان می‌آید", "END OF REPORT" in html)
+    check("گره‌ها شماره‌دارند", ">۱<" in html and ">۲<" in html)
+    check("پلِ بین گره‌ها هست", N.KNOTS[0].bridge in html)
+
+    # ── ۵) نسخهٔ ایمیل باید روی موتور Word هم بنشیند ──
+    mail = N.email_open(a, "lead") + N.email_resolution(a) + N.email_coda("c")
+    check("ایمیل با جدول ساخته می‌شود، نه flex/grid",
+          "display:flex" not in mail and "display:grid" not in mail)
+    check("ایمیل bgcolor دارد (اگر CSS نادیده گرفته شد، زمینه می‌ماند)",
+          "bgcolor=" in mail)
+    check("ایمیل به کلاس CSS بیرونی تکیه ندارد", 'class="nr-' not in mail)
+
+    # ── ۶) خروجی‌ها واقعاً از روایت می‌خوانند ──
+    for rel, label in (("hrperf/report/html.py", "گزارش HTML"),
+                      ("hrperf/report/dynamic.py", "داشبورد"),
+                      ("hrperf/report/dispatch.py", "ایمیل"),
+                      ("hrperf/report/excel.py", "اکسل"),
+                      ("app/dashboard.py", "رابط")):
+        txt = io.open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        check(f"{label} از روایت می‌خواند", "_NR." in txt, rel)
+
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — بسته‌بندی، کف خوانایی و ارسال")
@@ -354,6 +435,7 @@ if __name__ == "__main__":
     test_charts_never_inherit_theme()
     test_send_actually_sends()
     test_cross_platform()
+    test_narrative()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:
