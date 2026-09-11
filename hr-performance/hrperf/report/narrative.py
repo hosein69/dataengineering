@@ -168,29 +168,56 @@ def css() -> str:
     روشن‌ترین توقفِ طیف ۵٫۲۶، معنیِ ستون روی کارت ۵٫۲۹.
     """
     g = _AL.header_gradient_css("135deg")
+    grain = _grain_uri()
     return f"""
 /* ── روایت — قالب نهایی ─────────────────────────────────────────────
    ترتیب همیشه یکی است: سربرگِ تیره → قلاب → گره‌ها → نتیجه →
    مسیر → پاصفحهٔ مُهردار. */
 
-/* سربرگِ تیره */
-.nr-hero{{background:{g};color:{_AL.ON_TEAL};padding:28px 44px;
-  position:relative;overflow:hidden;
+/* سربرگِ تیره — عددها از قالب نهاییِ فیگما */
+.nr-hero{{position:relative;overflow:hidden;
+  background:{g};color:{_AL.ON_TEAL};padding:28px 44px;
   box-shadow:inset 0 9px 18px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
-             inset 0 -4px 12px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)}}}
+             inset 0 -4px 12px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)},
+             0 10px 22px {_AL.rgba(_AL.SHADOW_CAST, .16)}}}
+.nr-grain{{position:absolute;inset:0;pointer-events:none;
+  mix-blend-mode:overlay;background-repeat:repeat}}
+.nr-wash{{position:absolute;left:-10%;bottom:-30%;width:70%;height:90%;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center,
+    {_AL.rgba(_AL.EMBOSS_LIGHT, .10)} 0%, transparent 68%)}}
+.nr-emblem{{position:absolute;top:26px;left:44px;width:150px;height:140px;
+  opacity:.9;pointer-events:none}}
+.nr-emblem img,.nr-emblem svg{{width:100%;height:auto;display:block}}
+.nr-hero-in{{position:relative;display:flex;flex-direction:column;
+  align-items:flex-end;gap:18px}}
+.nr-titles{{display:flex;flex-direction:column;align-items:flex-end;gap:10px;
+  width:100%}}
 .nr-hero .kick{{font-size:14px;font-weight:500;letter-spacing:1.6px;
   color:{_AL.ON_TEAL_2}}}
-.nr-hero h2{{margin:10px 0 0;font-size:44px;font-weight:900;line-height:1.1;
-  color:{_AL.TITLE_ENGRAVED};
+.nr-hero h2{{margin:0;font-size:52px;font-weight:900;line-height:1.1;
+  text-align:right;color:{_AL.TITLE_ENGRAVED};
   text-shadow:2px 3px 2.5px {_AL.rgba(_AL.ENGRAVE_DARK, .68)},
   -1px -1px 1px {_AL.rgba(_AL.ENGRAVE_LIGHT, .12)}}}
-.nr-hero .sub{{display:inline-block;margin-top:14px;padding:8px 18px;
-  border:1.6px solid {_AL.ON_TEAL_2};font-size:16px;color:{_AL.ON_TEAL}}}
-.nr-lead{{display:flex;align-items:center;justify-content:flex-start;
-  gap:12px;padding-top:20px}}
+.nr-hero .sub{{padding:8px 18px;border:1.6px solid {_AL.ON_TEAL_2};
+  font-size:18px;color:{_AL.ON_TEAL}}}
+/* ترکیب بصری: در قالب، «انفجار داده» و خودرو **کنار هم**اند نه زیر هم؛
+   یک ردیف به ارتفاع ۲۲۰ که بُرست از چپ و خودرو از راست می‌نشیند. */
+.nr-visual{{position:relative;width:100%;min-height:220px}}
+.nr-burst{{position:absolute;left:6px;top:42px;width:300px;max-width:38%;
+  height:auto;pointer-events:none}}
+/* راست‌به‌چپ: برای چسباندن خودرو به لبهٔ **راست**، حاشیهٔ خودکار
+   باید سمت چپ باشد — یعنی margin-inline-end. */
+.nr-car{{position:relative;width:500px;max-width:60%;
+  margin-inline-end:auto}}
+.nr-car svg.nr-motion{{position:absolute;left:-46px;top:52%;width:300px;
+  max-width:78%;height:auto;pointer-events:none;transform:translateY(-50%)}}
+.nr-car>div,.nr-car>svg:not(.nr-motion){{position:relative}}
+.nr-lead{{display:flex;align-items:center;justify-content:flex-start;gap:12px;
+  padding-top:20px;width:100%}}
 .nr-lead .rule{{flex:0 0 48px;height:2px;background:{_AL.ON_TEAL_2}}}
-.nr-lead p{{margin:0;max-width:620px;font-size:14px;line-height:1.8;
-  color:{_AL.ON_TEAL_2}}}
+.nr-lead p{{margin:0;max-width:560px;font-size:14px;line-height:1.8;
+  text-align:right;color:{_AL.ON_TEAL_2}}}
 .nr-lead b{{color:{_AL.ON_TEAL}}}
 
 /* قرصِ فصل — همان شکلِ قالب: گوشهٔ ۴، پرِ تیل تیره، متن سفید */
@@ -294,6 +321,23 @@ def css() -> str:
   letter-spacing:1.8px;border:1px solid {_AL.ON_TEAL_2};color:{_AL.ON_TEAL_2};
   padding:3px 9px}}
 
+/* ── همان ظرافت، روی سربرگِ گزارش‌ها ──────────────────────────────────
+   گزارش‌ها سربرگ خودشان را دارند (عنوان + آمار + دکمهٔ چاپ)، نه بلوک
+   کاملِ پوستر. ولی بافت، حکِ عنوان و عمقِ نوار باید یکی باشد؛ وگرنه
+   پوستر و گزارش دو جنس به‌نظر می‌رسند. */
+header{{position:relative;overflow:hidden;
+  box-shadow:inset 0 9px 18px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
+             inset 0 -4px 12px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)},
+             0 10px 22px {_AL.rgba(_AL.SHADOW_CAST, .16)}}}
+header::after{{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:url({grain});background-repeat:repeat;
+  mix-blend-mode:overlay;opacity:.13}}
+header>*{{position:relative;z-index:1}}
+header h1{{color:{_AL.TITLE_ENGRAVED};
+  text-shadow:2px 3px 2.5px {_AL.rgba(_AL.ENGRAVE_DARK, .68)},
+  -1px -1px 1px {_AL.rgba(_AL.ENGRAVE_LIGHT, .12)}}}
+@media print{{ header::after{{display:none}} }}
+
 @media print{{
   .nr-knot,.nr-card,.nr-res .c,.nr-c,.nr-phase{{break-inside:avoid}}
   .nr-hero,.nr-foot{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
@@ -307,19 +351,94 @@ def css() -> str:
 """
 
 
+#: بافت ریز روی نوار سربرگ. قالب فیگما دو افکت «نویز» و «بافت» دارد که
+#: هیچ معادل مستقیمی در CSS ندارند؛ این ``feTurbulence`` همان دانه‌دانگی
+#: را می‌سازد و چون data-URI است، هیچ چیزی از شبکه گرفته نمی‌شود.
+def _grain_uri() -> str:
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">'
+           '<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.82"'
+           ' numOctaves="3" stitchTiles="stitch"/>'
+           '<feColorMatrix type="saturate" values="0"/></filter>'
+           '<rect width="160" height="160" filter="url(#g)"/></svg>')
+    import base64 as _b
+    return "data:image/svg+xml;base64," + _b.b64encode(svg.encode()).decode()
+
+
+def _grain(opacity: float = 0.13) -> str:
+    return (f'<div class="nr-grain" style="background-image:url({_grain_uri()});'
+            f'opacity:{opacity}"></div>')
+
+
+#: «انفجار داده» — هفت پرتو با طول‌های دقیقِ قالب، نقطه‌هایشان، هستهٔ
+#: مرکزی و چهار میلهٔ KPI. عددها از خودِ فیگما خوانده شده‌اند.
+_RAYS = ((98, -26), (132, -14), (165, -3), (205, 6), (185, 16), (150, 27),
+         (118, 38))
+_KPI = (14, 24, 36, 28)
+
+
+def _databurst(color: str, glow: str) -> str:
+    parts = ['<svg class="nr-burst" viewBox="0 0 300 150" width="300" '
+             'height="150" aria-hidden="true">']
+    cx, cy = 268, 74
+    for i, (ln, dy) in enumerate(_RAYS):
+        y = cy + dy
+        parts.append(f'<rect x="{cx - ln}" y="{y}" width="{ln}" '
+                     f'height="{2 if i == 3 else 1}" fill="{color}" '
+                     f'opacity="{0.55 if i == 3 else 0.34}"/>')
+        for k, frac in enumerate((0.22, 0.55, 0.82)):
+            if i % 2 and k == 2:
+                continue
+            r = 3.5 if (i == 3 and k == 2) else 2
+            parts.append(f'<circle cx="{cx - ln * frac:.0f}" cy="{y + 0.5:.0f}" '
+                         f'r="{r}" fill="{glow}" opacity="0.8"/>')
+    parts.append(f'<circle cx="{cx}" cy="{cy}" r="7" fill="{glow}" opacity="0.9"/>')
+    for i, h in enumerate(_KPI):
+        parts.append(f'<rect x="{18 + i * 11}" y="{132 - h}" width="6" '
+                     f'height="{h}" fill="{color}" opacity="0.5"/>')
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def _motion(color: str) -> str:
+    """پنج خط حرکت پشت خودرو — همان پنج ``LINE`` قالب."""
+    ls = "".join(
+        f'<line x1="0" y1="{18 + i * 15}" x2="300" y2="{12 + i * 15}" '
+        f'stroke="{color}" stroke-width="1" opacity="{0.30 - i * 0.04:.2f}" '
+        f'stroke-dasharray="{"2 7" if i % 2 else "18 12"}"/>' for i in range(5))
+    return ('<svg class="nr-motion" viewBox="0 0 300 90" width="300" height="90" '
+            f'aria-hidden="true">{ls}</svg>')
+
+
 def hero(f: Facts, *, kicker: str, title: str, subtitle: str = "",
-         art: str = "") -> str:
-    """سربرگِ تیره — کیکر، عنوانِ حک‌شده، قاب زیرعنوان، و بندِ آغاز.
+         art: str = "", emblem: str = "") -> str:
+    """سربرگِ تیره — کپیِ قالب نهایی، نه تفسیر آن.
 
-    ``art`` هر HTMLی است که کنار متن بنشیند (مثلاً پیکان). خالی هم
-    درست کار می‌کند.
+    چیدمان و عددها از خودِ فیگما آمده‌اند: نوار با padding ‎۲۸/۴۴‎ و
+    فاصلهٔ ۱۸، عنوان ۵۲ با ارتفاع سطر ۱۱۰٪ و سایهٔ دولایهٔ حک، قاب
+    زیرعنوان با خط ۱٫۶، و بندِ آغاز که خطِ ۴۸×۲ در **انتهایش** می‌نشیند
+    (در راست‌به‌چپ یعنی سمت چپ) — نه اولش.
+
+    نشان و خودرو از ``report/assets/`` برداشته می‌شوند — همان
+    پرونده‌هایی که از قالب صادر شده‌اند. اگر نباشند، نشان نمایش داده
+    **نمی‌شود** (جعل نمی‌شود) و جای خودرو به نقش‌مایهٔ برداری برمی‌گردد.
     """
-    sub = f'<div class="sub">{_h.escape(subtitle)}</div>' if subtitle else ""
-    return (f'<div class="nr-hero"><div class="kick">{_h.escape(kicker)}</div>'
-            f'<h2>{_h.escape(title)}</h2>{sub}{art}'
-            f'<div class="nr-lead"><div class="rule"></div>'
-            f'<p>{_md(opening(f))}</p></div></div>')
+    from . import assets as _AS
 
+    sub = f'<div class="sub">{_h.escape(subtitle)}</div>' if subtitle else ""
+    # نشان و خودرو: **پروندهٔ واقعیِ قالب** اگر هست، وگرنه بازگشت امن.
+    # نشان جعل نمی‌شود؛ نبودنش یعنی نمایش داده نمی‌شود.
+    emblem = emblem or _AS.img("emblem")
+    art = _AS.img("paykan") or art
+    emb = f'<div class="nr-emblem">{emblem}</div>' if emblem else ""
+    return (
+        f'<div class="nr-hero">{_grain()}<div class="nr-wash"></div>{emb}'
+        f'<div class="nr-hero-in">'
+        f'<div class="nr-titles"><div class="kick">{_h.escape(kicker)}</div>'
+        f'<h2>{_h.escape(title)}</h2>{sub}</div>'
+        f'<div class="nr-visual">{_databurst(_AL.ON_TEAL_2, _AL.ICE)}'
+        f'<div class="nr-car">{_motion(_AL.ON_TEAL_2)}{art}</div></div>'
+        f'<div class="nr-lead"><p>{_md(opening(f))}</p><div class="rule"></div>'
+        f"</div></div></div>")
 
 def eyebrow(text: str, alt: bool = False) -> str:
     """قرصِ فصل — همان شکل قالب، نه یک برچسب ساده."""

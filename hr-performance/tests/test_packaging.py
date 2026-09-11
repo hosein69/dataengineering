@@ -422,6 +422,31 @@ def test_narrative():
                       ("app/dashboard.py", "رابط")):
         txt = io.open(os.path.join(ROOT, rel), encoding="utf-8").read()
         check(f"{label} از روایت می‌خواند", "_NR." in txt, rel)
+    # ── ۷) سربرگ: عددهایش از قالب فیگما آمده، نه از حدس ──
+    hero = N.hero(a, kicker="K", title="T", subtitle="S", art="<i></i>")
+    css = N.css()
+    for probe, why in (
+            ("padding:28px 44px", "حاشیهٔ نوار"),
+            ("font-size:52px", "اندازهٔ عنوان"),
+            ("letter-spacing:1.6px", "فاصلهٔ حروفِ کیکر"),
+            ("min-height:220px", "ارتفاع ترکیب بصری"),
+            ("border:1.6px solid", "خط قاب زیرعنوان"),
+            ("flex:0 0 48px", "خطِ کنار بندِ آغاز")):
+        check(f"{why} با قالب می‌خواند", probe in css, probe)
+    check("بافتِ نوار درون‌خطی است، نه فایل بیرونی",
+          "data:image/svg+xml;base64," in css and "feTurbulence" in N._grain_uri()
+          or "data:image/svg+xml;base64," in hero)
+    check("سربرگ گزارش‌ها هم همان بافت را می‌گیرد", "header::after" in css)
+    check("عنوانِ گزارش هم حک می‌شود", "header h1" in css)
+    check("خطِ بندِ آغاز **پس از** متن می‌آید (در راست‌به‌چپ یعنی چپ)",
+          hero.index('class="rule"') > hero.index("<p>"))
+    check("انفجار داده هفت پرتو دارد", len(N._RAYS) == 7, str(len(N._RAYS)))
+    check("چهار میلهٔ KPI هست", len(N._KPI) == 4)
+    check("جای نشان خالی بماند، جعل نشود",
+          'class="nr-emblem"' not in hero)
+    check("نشان وقتی داده شود، می‌نشیند",
+          'class="nr-emblem"' in N.hero(a, kicker="K", title="T",
+                                        emblem="<svg/>"))
 
 
 if __name__ == "__main__":

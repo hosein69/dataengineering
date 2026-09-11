@@ -148,6 +148,7 @@ ENGRAVE_LIGHT = "#F2E5B8"      #: لبهٔ برجسته
 EMBOSS_DARK = "#051414"        #: سایهٔ داخلیِ بالای نوار
 EMBOSS_LIGHT = "#D1F0EB"       #: نورِ داخلیِ پایین نوار
 SHADOW_WARN = "#EFD6C6"        #: سایهٔ تختِ کارتِ «نکن»
+SHADOW_CAST = "#000000"       #: سایهٔ افتادهٔ زیر نوار سربرگ (از قالب)
 
 
 def rgba(hex_color: str, alpha: float) -> str:
