@@ -13,6 +13,7 @@ import pandas as pd
 from . import alborz as _AL
 from . import narrative as _NR
 from . import paykan as _pk
+from . import assets as _AS
 from .theme import (BANDS, BORDER, BRAND, BRAND_DEEP, CARD, FONT_STACK,
                     band_text_color,
                     HIGHLIGHT, RAISED, SURFACE, TEXT, TEXT2, TEXT3,
@@ -122,14 +123,17 @@ def build_html(leaderboard: pd.DataFrame, *, ref_date: str, title: str,
 *{{box-sizing:border-box}}
 body{{margin:0;background:{SURFACE};color:{TEXT};font-family:{FONT_STACK};direction:rtl}}
 .shell{{max-width:1500px;margin:auto;padding:22px}}
-header{{background:{_AL.header_gradient_css()};border-radius:18px;
+header{{background:{_AL.header_gradient_css(_AL.HEADER_ANGLE)};border-radius:18px;
 padding:22px 26px;color:#fff;display:flex;justify-content:space-between;
 align-items:center;gap:18px;flex-wrap:wrap}}
 /* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
    عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
 header{{position:relative;overflow:hidden}}
 header>*{{position:relative;z-index:1}}
-.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+/* تصویرِ واقعیِ پیکان تیره است؛ با شفافیتِ ۰٫۴ روی نوارِ تیره محو
+   می‌شد و «بریده» به‌نظر می‌رسید. ۰٫۵۵ جسمش را برمی‌گرداند و هنوز
+   پس‌زمینه است، نه آیکن. */
+.pk{{position:absolute;left:16px;bottom:-6px;opacity:.55;z-index:0;
      pointer-events:none}}
 @media print{{.pk{{display:none}}}}
 h1{{margin:0;font-size:26px}} .sub{{opacity:.88;font-size:13px;margin-top:6px}}
@@ -165,7 +169,7 @@ header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 .panel{{break-inside:avoid}} th{{position:static}}}}
 {_NR.css()}
 </style></head><body><div class="shell">
-<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<header><div class="pk">{_AS.img("paykan", 200) or _pk.mark(150, _AL.TEAL_EDGE)}</div>
 <div><h1>{html.escape(title)}</h1>
 
 <div class="sub">{html.escape(template_title)} · تاریخ مرجع {html.escape(ref_date)} · {n:,} نفر</div></div>

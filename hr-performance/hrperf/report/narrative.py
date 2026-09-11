@@ -44,7 +44,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from . import alborz as _AL
 
-VERSION = "1.2"
+VERSION = "1.3"
 
 #: هشت عنصرِ دستور زبان، به ترتیبِ روایت. تست این ترتیب را قفل می‌کند.
 GRAMMAR: Tuple[str, ...] = ("eyebrow", "opening", "chapter", "knot",
@@ -167,58 +167,139 @@ def css() -> str:
     سفید روی قرصِ فصل ۶٫۰۹، سفید روی قرصِ فاز ۴٫۷۱، عنوان روی
     روشن‌ترین توقفِ طیف ۵٫۲۶، معنیِ ستون روی کارت ۵٫۲۹.
     """
-    g = _AL.header_gradient_css("135deg")
+    g = _AL.header_gradient_css(_AL.HEADER_ANGLE)
     grain = _grain_uri()
     return f"""
 /* ── روایت — قالب نهایی ─────────────────────────────────────────────
    ترتیب همیشه یکی است: سربرگِ تیره → قلاب → گره‌ها → نتیجه →
    مسیر → پاصفحهٔ مُهردار. */
 
-/* سربرگِ تیره — عددها از قالب نهاییِ فیگما */
-.nr-hero{{position:relative;overflow:hidden;
-  background:{g};color:{_AL.ON_TEAL};padding:28px 44px;
-  box-shadow:inset 0 9px 18px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
-             inset 0 -4px 12px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)},
-             0 10px 22px {_AL.rgba(_AL.SHADOW_CAST, .16)}}}
-.nr-grain{{position:absolute;inset:0;pointer-events:none;
-  mix-blend-mode:overlay;background-repeat:repeat}}
-.nr-wash{{position:absolute;left:-10%;bottom:-30%;width:70%;height:90%;
-  pointer-events:none;
-  background:radial-gradient(ellipse at center,
-    {_AL.rgba(_AL.EMBOSS_LIGHT, .10)} 0%, transparent 68%)}}
-.nr-emblem{{position:absolute;top:26px;left:44px;width:150px;height:140px;
-  opacity:.9;pointer-events:none}}
-.nr-emblem img,.nr-emblem svg{{width:100%;height:auto;display:block}}
-.nr-hero-in{{position:relative;display:flex;flex-direction:column;
-  align-items:flex-end;gap:18px}}
-.nr-titles{{display:flex;flex-direction:column;align-items:flex-end;gap:10px;
-  width:100%}}
-.nr-hero .kick{{font-size:14px;font-weight:500;letter-spacing:1.6px;
-  color:{_AL.ON_TEAL_2}}}
-.nr-hero h2{{margin:0;font-size:52px;font-weight:900;line-height:1.1;
-  text-align:right;color:{_AL.TITLE_ENGRAVED};
-  text-shadow:2px 3px 2.5px {_AL.rgba(_AL.ENGRAVE_DARK, .68)},
-  -1px -1px 1px {_AL.rgba(_AL.ENGRAVE_LIGHT, .12)}}}
-.nr-hero .sub{{padding:8px 18px;border:1.6px solid {_AL.ON_TEAL_2};
-  font-size:18px;color:{_AL.ON_TEAL}}}
-/* ترکیب بصری: در قالب، «انفجار داده» و خودرو **کنار هم**اند نه زیر هم؛
-   یک ردیف به ارتفاع ۲۲۰ که بُرست از چپ و خودرو از راست می‌نشیند. */
-.nr-visual{{position:relative;width:100%;min-height:220px}}
-.nr-burst{{position:absolute;left:6px;top:42px;width:300px;max-width:38%;
-  height:auto;pointer-events:none}}
-/* راست‌به‌چپ: برای چسباندن خودرو به لبهٔ **راست**، حاشیهٔ خودکار
-   باید سمت چپ باشد — یعنی margin-inline-end. */
-.nr-car{{position:relative;width:500px;max-width:60%;
-  margin-inline-end:auto}}
-.nr-car svg.nr-motion{{position:absolute;left:-46px;top:52%;width:300px;
-  max-width:78%;height:auto;pointer-events:none;transform:translateY(-50%)}}
-.nr-car>div,.nr-car>svg:not(.nr-motion){{position:relative}}
-.nr-lead{{display:flex;align-items:center;justify-content:flex-start;gap:12px;
-  padding-top:20px;width:100%}}
-.nr-lead .rule{{flex:0 0 48px;height:2px;background:{_AL.ON_TEAL_2}}}
-.nr-lead p{{margin:0;max-width:560px;font-size:14px;line-height:1.8;
-  text-align:right;color:{_AL.ON_TEAL_2}}}
-.nr-lead b{{color:{_AL.ON_TEAL}}}
+/* سربرگِ تیره — **صحنهٔ ۹۰۰×۵۲۰ قالب**، نه تفسیر آن.
+
+   هر طول با ``--u`` نوشته شده: در مرورگرِ امروز یک‌نهمِ ``cqw`` (یعنی
+   عرضِ نوار تقسیم بر ۹۰۰) و در موتورهای قدیمی ۱px. پس در عرض ۹۰۰
+   دقیقاً همان قالب است و در هر عرض دیگری همان نسبت‌ها — بدون
+   ``transform`` و بدون آنکه متن از انتخاب و چاپ بیفتد.
+
+   لبهٔ راستِ سه بلوکِ بالا در قالب یکی نیست و عمداً یکی‌اش نمی‌کنیم:
+   سرسطرِ سازمان تا ۶۹۰ می‌آید، عنوان تا ۷۵۵ و نوارِ تمرکز تا ۸۱۴.
+   همین ناهم‌ترازیِ حساب‌شده است که نوار را «چیده‌شده» نشان می‌دهد.
+
+   زیرعنوان و بندِ آغاز در قالب **فیزیکاً چپ**اند (۴۴)، کنارِ خودرو که
+   از ۴۳۰ شروع می‌شود — نه زیرِ آن. */
+/* لفافِ بیرونی کانتینر است، نه خودِ نوار: یک کوئریِ کانتینر عنصرِ
+   کانتینر را نمی‌تواند بازطراحی کند، فقط فرزندانش را. */
+.nr-hero-wrap{{--u:1px}}
+@supports (container-type:inline-size){{
+  .nr-hero-wrap{{container-type:inline-size;--u:calc(1cqw/9)}}}}
+.nr-hero{{position:relative;overflow:hidden;isolation:isolate;
+  background:{g};color:{_AL.ON_TEAL};
+  min-height:calc(520*var(--u));
+  box-shadow:inset 0 9px 18px -2px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
+             inset 0 -4px 12px -3px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)}}}
+.nr-grain{{position:absolute;inset:0;pointer-events:none;z-index:9;
+  mix-blend-mode:overlay;background-repeat:repeat;
+  background-size:calc(200*var(--u)) calc(200*var(--u))}}
+
+/* لایهٔ تزئین — غبارِ داده، دو خطِ افقی. هرگز جلوی متن نمی‌آید و اگر
+   عنوان بلند شد کش نمی‌آید؛ به همان صحنهٔ ۵۲۰ چسبیده می‌ماند. */
+.nr-deco{{position:absolute;inset:0;pointer-events:none;z-index:0}}
+.nr-deco svg{{position:absolute;left:0;top:0;width:100%;
+  height:calc(520*var(--u));display:block;overflow:visible}}
+.nr-rule-top{{position:absolute;left:calc(44*var(--u));top:calc(112*var(--u));
+  width:calc(812*var(--u));height:.5px;background:{_AL.rgba(_AL.DUST, .094)}}}
+.nr-rule-title{{position:absolute;left:calc(44*var(--u));top:calc(332*var(--u));
+  width:calc(380*var(--u));height:.6px;background:{_AL.rgba(_AL.DUST, .188)}}}
+
+/* نشانِ حک‌شده — ۱۳۰×۱۲۰ در (۳۸،۳۲). ``screen`` + همان فیلترِ قالب
+   آن را از فلزِ خاکستری به فلزِ تیل می‌برد. */
+.nr-emblem{{position:absolute;left:calc(38*var(--u));top:calc(32*var(--u));
+  width:calc(130*var(--u));height:calc(120*var(--u));
+  opacity:.92;mix-blend-mode:screen;z-index:1}}
+.nr-emblem img,.nr-emblem svg{{width:100%;height:100%;display:block;
+  object-fit:contain;
+  filter:grayscale(1) brightness(1.08) sepia(.6) hue-rotate(118deg)
+         saturate(1.7) drop-shadow(0 0 calc(7*var(--u)) {_AL.rgba(_AL.ICE, .28)})}}
+
+/* قاب پیکان — ۴۳۰×۱۸۹ در (۴۳۰،۳۰۰)، با سه خطِ حرکتِ کجِ ۳ درجه. */
+.nr-car{{position:absolute;left:calc(430*var(--u));top:calc(300*var(--u));
+  width:calc(430*var(--u));height:calc(189*var(--u));
+  overflow:hidden;z-index:1}}
+.nr-car img,.nr-car>svg.pk{{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:contain;display:block}}
+.nr-motion{{position:absolute;left:0;top:calc(108*var(--u));
+  width:calc(205*var(--u));height:calc(34*var(--u));
+  opacity:.55;transform:rotate(3deg);transform-origin:left center}}
+
+/* سرسطرِ سازمان و نوارِ تمرکز — ارتفاعشان ثابت است، پس مطلق می‌مانند. */
+.nr-hero .kick{{position:absolute;top:calc(170*var(--u));
+  right:calc(210*var(--u));width:calc(722*var(--u));z-index:2;
+  margin:0;text-align:right;line-height:1;
+  font-size:calc(11*var(--u));font-weight:500;
+  letter-spacing:calc(2*var(--u));opacity:.7;color:{_AL.ON_TEAL_2}}}
+.nr-focus{{position:absolute;left:calc(44*var(--u));top:calc(188*var(--u));
+  width:calc(770*var(--u));height:calc(3*var(--u));z-index:2;
+  background:linear-gradient(90deg,{_AL.rgba(_AL.DUST, 0)},{_AL.rgba(_AL.DUST, .25)} 50%,{_AL.rgba(_AL.DUST, 0)})}}
+
+/* از عنوان به پایین در جریان می‌ماند تا عنوانِ بلندترِ یک گزارش،
+   به‌جای بریدن، بقیه را پایین بِبَرد و نوار خودش بلند شود. */
+/* نوار خودش padding ندارد: ``cqw`` جعبهٔ **محتوا** را می‌سنجد، و هر
+   padding روی نوار واحد را کوچک می‌کرد و کلِ صحنه را ۹۰٪ می‌ساخت. */
+.nr-flow{{position:relative;z-index:2;
+  padding:calc(222*var(--u)) calc(44*var(--u)) calc(36*var(--u))}}
+/* جعبهٔ عنوان در قالب از ۴۴ بیرون می‌زند تا به ۷۷۰ برسد (از -۱۵ تا
+   ۷۵۵). همان را می‌دهیم، وگرنه در عرض‌های کوچک روی لبه می‌شکند. */
+.nr-hero h2{{margin:0 calc(101*var(--u)) 0 calc(-59*var(--u));
+  font-size:calc(40*var(--u));font-weight:900;line-height:1.08;
+  text-align:right;color:{_AL.TITLE_TOP};
+  background-image:linear-gradient({_AL.TITLE_ANGLE},{_AL.TITLE_TOP} 25%,{_AL.TITLE_BOT} 75%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:2px 4px 3px {_AL.rgba(_AL.ENGRAVE_DARK, .69)}, -1px -1px 1.5px {_AL.rgba(_AL.ENGRAVE_LIGHT, .16)}}}
+@supports not ((-webkit-background-clip:text) or (background-clip:text)){{
+  .nr-hero h2{{-webkit-text-fill-color:{_AL.TITLE_TOP};background-image:none}}}}
+/* قاب زیرعنوان — چپ، با خطِ ۱٫۵ روی لبهٔ چپ؛ عیناً قالب. */
+.nr-hero .sub{{width:max-content;max-width:100%;
+  margin:calc(78.8*var(--u)) auto 0 0;
+  padding:calc(9*var(--u)) calc(20*var(--u));
+  border-left:calc(1.5*var(--u)) solid {_AL.ON_TEAL_2};
+  font-size:calc(17*var(--u));font-weight:700;line-height:1.6;
+  text-align:right;opacity:.92;color:{_AL.ON_TEAL}}}
+/* بندِ آغازِ روایت — خطِ ۳۶×۱٫۵ فیزیکاً چپ، متنِ راست‌چین کنارش. */
+.nr-lead{{display:flex;direction:ltr;align-items:flex-start;
+  gap:calc(14*var(--u));width:calc(722*var(--u));max-width:100%;
+  margin:calc(62.8*var(--u)) auto 0 0}}
+.nr-lead .rule{{flex:0 0 calc(36*var(--u));height:calc(1.5*var(--u));
+  margin-top:calc(9*var(--u));background:{_AL.ON_TEAL_2};opacity:.45}}
+.nr-lead p{{direction:rtl;margin:0;width:calc(360*var(--u));max-width:100%;
+  font-size:calc(12*var(--u));line-height:1.7;text-align:right;
+  opacity:.78;color:{_AL.ON_TEAL_2}}}
+.nr-lead b{{color:{_AL.ON_TEAL};opacity:1}}
+/* زیر ۶۲۰: صحنه دیگر جا نمی‌شود. به‌جای برخورد، می‌ایستد و ستونی
+   می‌شود — خودرو زیر متن، و نوار به اندازهٔ محتوا بلند. */
+@container (max-width:620px){{
+  .nr-hero{{display:flex;flex-direction:column;min-height:0}}
+  .nr-deco svg{{height:calc(320*var(--u))}}
+  .nr-rule-title{{display:none}}
+  .nr-emblem{{width:calc(96*var(--u));height:calc(88*var(--u))}}
+  .nr-hero .kick{{position:static;order:0;width:auto;
+    margin:calc(150*var(--u)) calc(44*var(--u)) 0}}
+  .nr-focus{{position:static;order:1;width:auto;
+    margin:calc(10*var(--u)) calc(44*var(--u)) 0}}
+  .nr-flow{{order:2;padding-top:calc(26*var(--u))}}
+  .nr-hero h2{{margin-inline:0}}
+  .nr-hero .sub{{width:auto;white-space:normal;margin-top:calc(22*var(--u))}}
+  .nr-lead{{width:auto;margin-top:calc(24*var(--u))}}
+  .nr-lead p{{width:auto;flex:1 1 auto}}
+  .nr-car{{position:static;order:3;width:auto;height:auto;
+    aspect-ratio:430/189;margin:0 calc(44*var(--u)) calc(28*var(--u))}}
+  .nr-car img{{position:static}}
+  .nr-motion{{display:none}}}}
+@supports not (container-type:inline-size){{
+  @media (max-width:620px){{
+    .nr-hero .sub{{width:auto;white-space:normal}}
+    .nr-lead{{width:100%}}
+    .nr-lead p{{width:auto;flex:1 1 auto}}}}}}
 
 /* قرصِ فصل — همان شکلِ قالب: گوشهٔ ۴، پرِ تیل تیره، متن سفید */
 .nr-pill{{display:inline-block;background:{_AL.TEAL_INK};color:{_AL.ON_TEAL};
@@ -326,15 +407,19 @@ def css() -> str:
    کاملِ پوستر. ولی بافت، حکِ عنوان و عمقِ نوار باید یکی باشد؛ وگرنه
    پوستر و گزارش دو جنس به‌نظر می‌رسند. */
 header{{position:relative;overflow:hidden;
-  box-shadow:inset 0 9px 18px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
-             inset 0 -4px 12px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)},
-             0 10px 22px {_AL.rgba(_AL.SHADOW_CAST, .16)}}}
+  box-shadow:inset 0 9px 18px -2px {_AL.rgba(_AL.EMBOSS_DARK, .34)},
+             inset 0 -4px 12px -3px {_AL.rgba(_AL.EMBOSS_LIGHT, .12)}}}
 header::after{{content:"";position:absolute;inset:0;pointer-events:none;
   background-image:url({grain});background-repeat:repeat;
-  mix-blend-mode:overlay;opacity:.13}}
+  mix-blend-mode:overlay;opacity:.14;
+  background-size:200px 200px}}
 header>*{{position:relative;z-index:1}}
-header h1{{color:{_AL.TITLE_ENGRAVED};
-  text-shadow:2px 3px 2.5px {_AL.rgba(_AL.ENGRAVE_DARK, .68)},
+header h1{{color:{_AL.TITLE_TOP};
+  background-image:linear-gradient({_AL.TITLE_ANGLE},
+    {_AL.TITLE_TOP} 25%,{_AL.TITLE_BOT} 75%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-shadow:2px 4px 3px {_AL.rgba(_AL.ENGRAVE_DARK, .69)},
   -1px -1px 1px {_AL.rgba(_AL.ENGRAVE_LIGHT, .12)}}}
 @media print{{ header::after{{display:none}} }}
 
@@ -355,11 +440,12 @@ header h1{{color:{_AL.TITLE_ENGRAVED};
 #: هیچ معادل مستقیمی در CSS ندارند؛ این ``feTurbulence`` همان دانه‌دانگی
 #: را می‌سازد و چون data-URI است، هیچ چیزی از شبکه گرفته نمی‌شود.
 def _grain_uri() -> str:
-    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">'
-           '<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.82"'
-           ' numOctaves="3" stitchTiles="stitch"/>'
+    svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">'
+           '<filter id="g"><feTurbulence type="fractalNoise"'
+           ' baseFrequency="0.65 0.25" numOctaves="4" seed="5"'
+           ' stitchTiles="stitch"/>'
            '<feColorMatrix type="saturate" values="0"/></filter>'
-           '<rect width="160" height="160" filter="url(#g)"/></svg>')
+           '<rect width="100%" height="100%" filter="url(#g)"/></svg>')
     import base64 as _b
     return "data:image/svg+xml;base64," + _b.b64encode(svg.encode()).decode()
 
@@ -369,44 +455,83 @@ def _grain(opacity: float = 0.13) -> str:
             f'opacity:{opacity}"></div>')
 
 
-#: «انفجار داده» — هفت پرتو با طول‌های دقیقِ قالب، نقطه‌هایشان، هستهٔ
-#: مرکزی و چهار میلهٔ KPI. عددها از خودِ فیگما خوانده شده‌اند.
-_RAYS = ((98, -26), (132, -14), (165, -3), (205, 6), (185, 16), (150, 27),
-         (118, 38))
-_KPI = (14, 24, 36, 28)
+#: غبارِ داده — **۱۱۳ نقطهٔ خودِ قالب**، نه بازسازیِ حدسی. هشت ردیف که
+#: از راست‌بالا باز می‌شوند و پنج نقطهٔ تنها که رو به عنوان محو می‌شوند.
+#: هر چهارتایی ``(x, y, قطر, شفافیت)`` روی صحنهٔ ۹۰۰×۵۲۰ است.
+#:
+#: پیش از این، اینجا هفت «پرتو» بود که من ساخته بودم — و همین بود که
+#: سربرگ را شبیهِ قالب نمی‌کرد. حدس جای داده را نمی‌گیرد.
+_DUST: Tuple[Tuple[float, float, float, float], ...] = (
+    (536,28,3.5,0.784), (556,24,3.5,0.753), (576,21,4,0.784), (598,26,3,0.627), (618,22,3.5,0.753), (640,28,4,0.816),
+    (662,24,3,0.722), (682,30,3.5,0.847), (704,26,4,0.878), (726,22,3,0.784), (748,28,3.5,0.816), (770,24,4,0.91),
+    (793,30,3,0.753), (814,26,3.5,0.847), (835,22,4,0.878), (857,28,3,0.784), (500,48,3,0.502), (522,46,3.5,0.627),
+    (546,44,4,0.722), (568,48,3,0.753), (590,44,3.5,0.784), (612,48,4,0.816), (634,44,3,0.784), (656,50,3.5,0.847),
+    (678,46,4,0.878), (700,50,3,0.816), (722,46,3.5,0.878), (744,50,4,0.91), (766,46,3,0.847), (788,50,3.5,0.91),
+    (810,46,4,0.941), (832,50,3,0.847), (854,46,3.5,0.878), (875,50,4,0.816), (480,68,2.5,0.251), (503,66,3,0.408),
+    (526,64,3.5,0.565), (550,68,3,0.659), (572,64,4,0.753), (595,68,3,0.784), (618,66,3.5,0.816), (640,70,4,0.847),
+    (663,66,3,0.784), (685,70,3.5,0.878), (708,66,4,0.847), (730,70,3,0.91), (752,66,3.5,0.941), (775,70,4,0.91),
+    (797,66,3,0.941), (820,70,3.5,0.91), (842,66,4,0.941), (864,70,3,0.878), (884,66,3.5,0.847), (488,88,2.5,0.188),
+    (512,86,3,0.314), (535,88,3.5,0.471), (558,86,3,0.596), (581,88,4,0.69), (604,86,3,0.753), (627,90,3.5,0.784),
+    (650,86,4,0.847), (672,90,3,0.878), (695,86,3.5,0.847), (718,90,4,0.91), (740,86,3,0.941), (763,90,3.5,0.91),
+    (786,86,4,0.941), (808,90,3,0.91), (831,86,3.5,0.816), (853,90,4,0.753), (875,86,3,0.69), (524,108,2.5,0.22),
+    (548,106,3,0.376), (571,108,3.5,0.533), (595,106,3,0.659), (618,110,4,0.753), (641,106,3,0.784), (664,110,3.5,0.847),
+    (687,106,4,0.816), (710,110,3,0.753), (733,106,3.5,0.69), (756,110,4,0.596), (779,106,3,0.502), (802,108,3.5,0.408),
+    (825,106,4,0.314), (848,108,3,0.22), (560,128,2.5,0.251), (584,126,3,0.408), (608,130,3.5,0.565), (632,126,3,0.627),
+    (656,130,4,0.659), (680,126,3,0.596), (704,130,3.5,0.502), (728,126,4,0.408), (752,128,3,0.314), (775,126,3.5,0.22),
+    (798,128,4,0.157), (596,148,2.5,0.188), (622,148,3,0.314), (648,150,3.5,0.408), (674,148,3,0.345), (700,150,4,0.251),
+    (726,148,3,0.157), (752,150,3.5,0.094), (634,170,2.5,0.157), (662,170,3,0.251), (690,172,3.5,0.188), (718,170,3,0.125),
+    (672,192,2.5,0.094), (702,196,2,0.063), (648,214,2,0.047), (726,210,2.5,0.039), (684,234,2,0.031),
+)
+
+_KPI_DOTS: Tuple[Tuple[float, float, float, float], ...] = (
+    (494,300,5,0.878), (510,318,4,0.753), (524,334,3,0.565),
+)
+
+#: رابطِ نقطه‌های KPI — دو خطِ ۱۶ تایی با چرخش ۵۲ درجه.
+_KPI_LINKS: Tuple[Tuple[float, float, str, float], ...] = (
+    (497, 302, "GOLD", 0.502),
+    (513, 320, "DUST", 0.376),
+)
 
 
-def _databurst(color: str, glow: str) -> str:
-    parts = ['<svg class="nr-burst" viewBox="0 0 300 150" width="300" '
-             'height="150" aria-hidden="true">']
-    cx, cy = 268, 74
-    for i, (ln, dy) in enumerate(_RAYS):
-        y = cy + dy
-        parts.append(f'<rect x="{cx - ln}" y="{y}" width="{ln}" '
-                     f'height="{2 if i == 3 else 1}" fill="{color}" '
-                     f'opacity="{0.55 if i == 3 else 0.34}"/>')
-        for k, frac in enumerate((0.22, 0.55, 0.82)):
-            if i % 2 and k == 2:
-                continue
-            r = 3.5 if (i == 3 and k == 2) else 2
-            parts.append(f'<circle cx="{cx - ln * frac:.0f}" cy="{y + 0.5:.0f}" '
-                         f'r="{r}" fill="{glow}" opacity="0.8"/>')
-    parts.append(f'<circle cx="{cx}" cy="{cy}" r="7" fill="{glow}" opacity="0.9"/>')
-    for i, h in enumerate(_KPI):
-        parts.append(f'<rect x="{18 + i * 11}" y="{132 - h}" width="6" '
-                     f'height="{h}" fill="{color}" opacity="0.5"/>')
-    parts.append("</svg>")
-    return "".join(parts)
+def _deco() -> str:
+    """لایهٔ تزئینِ سربرگ — غبار، نقطه‌های KPI و رابط‌هایشان.
+
+    همه در یک ``<svg>`` با ``viewBox="0 0 900 520"`` می‌نشینند تا با
+    صحنه بکشند؛ رنگ‌ها از ``alborz`` می‌آیند و هیچ‌کدام اینجا تعریف
+    نمی‌شوند.
+    """
+    p = [f'<circle cx="{x + d / 2:g}" cy="{y + d / 2:g}" r="{d / 2:g}" '
+         f'fill="{_AL.DUST}" opacity="{o:g}"/>' for x, y, d, o in _DUST]
+    for i, (x, y, d, o) in enumerate(_KPI_DOTS):
+        fill = _AL.GOLD if i == 0 else _AL.DUST
+        p.append(f'<circle cx="{x + d / 2:g}" cy="{y + d / 2:g}" r="{d / 2:g}" '
+                 f'fill="{fill}" opacity="{o:g}"/>')
+    for x, y, tok, o in _KPI_LINKS:
+        c = _AL.GOLD if tok == "GOLD" else _AL.DUST
+        p.append(f'<line x1="{x:g}" y1="{y:g}" x2="{x + 16:g}" y2="{y:g}" '
+                 f'stroke="{c}" stroke-opacity="{o:g}" stroke-width="0.8" '
+                 f'transform="rotate(52 {x:g} {y:g})"/>')
+    return ('<div class="nr-deco" aria-hidden="true">'
+            '<svg viewBox="0 0 900 520" preserveAspectRatio="none">'
+            + "".join(p) + "</svg>"
+            f'<div class="nr-rule-top"></div>'
+            f'<div class="nr-rule-title"></div></div>')
 
 
 def _motion(color: str) -> str:
-    """پنج خط حرکت پشت خودرو — همان پنج ``LINE`` قالب."""
+    """سه خطِ حرکتِ پشت خودرو — همان سه خطِ ۲۰۵ تاییِ قالب.
+
+    در قالب هرکدام یک تصویرِ ۲۰۵×۰٫۷ بود؛ اینجا خط برداری‌اند تا در
+    هر مقیاسی تیز بمانند. فاصله‌شان (۱۰۸، ۱۲۲، ۱۳۶) و چرخشِ ۳ درجه و
+    شفافیتِ ۵۵٪ از خودِ قالب است.
+    """
     ls = "".join(
-        f'<line x1="0" y1="{18 + i * 15}" x2="300" y2="{12 + i * 15}" '
-        f'stroke="{color}" stroke-width="1" opacity="{0.30 - i * 0.04:.2f}" '
-        f'stroke-dasharray="{"2 7" if i % 2 else "18 12"}"/>' for i in range(5))
-    return ('<svg class="nr-motion" viewBox="0 0 300 90" width="300" height="90" '
-            f'aria-hidden="true">{ls}</svg>')
+        f'<line x1="0" y1="{i * 14 + 1:g}" x2="205" y2="{i * 14 + 1:g}" '
+        f'stroke="{color}" stroke-width="{1 if i == 2 else 0.7}"/>'
+        for i in range(3))
+    return ('<svg class="nr-motion" viewBox="0 0 205 34" '
+            f'preserveAspectRatio="none" aria-hidden="true">{ls}</svg>')
 
 
 def hero(f: Facts, *, kicker: str, title: str, subtitle: str = "",
@@ -430,14 +555,16 @@ def hero(f: Facts, *, kicker: str, title: str, subtitle: str = "",
     emblem = emblem or _AS.img("emblem")
     art = _AS.img("paykan") or art
     emb = f'<div class="nr-emblem">{emblem}</div>' if emblem else ""
+    car = (f'<div class="nr-car">{art}{_motion(_AL.DUST)}</div>') if art else ""
     return (
-        f'<div class="nr-hero">{_grain()}<div class="nr-wash"></div>{emb}'
-        f'<div class="nr-hero-in">'
-        f'<div class="nr-titles"><div class="kick">{_h.escape(kicker)}</div>'
-        f'<h2>{_h.escape(title)}</h2>{sub}</div>'
-        f'<div class="nr-visual">{_databurst(_AL.ON_TEAL_2, _AL.ICE)}'
-        f'<div class="nr-car">{_motion(_AL.ON_TEAL_2)}{art}</div></div>'
-        f'<div class="nr-lead"><p>{_md(opening(f))}</p><div class="rule"></div>'
+        f'<div class="nr-hero-wrap"><div class="nr-hero">'
+        f'{_grain(0.14)}{_deco()}{emb}{car}'
+        f'<p class="kick">{_h.escape(kicker)}</p>'
+        f'<div class="nr-focus"></div>'
+        f'<div class="nr-flow">'
+        f'<h2>{_h.escape(title)}</h2>{sub}'
+        f'<div class="nr-lead"><div class="rule"></div>'
+        f'<p>{_md(opening(f))}</p></div>'
         f"</div></div></div>")
 
 def eyebrow(text: str, alt: bool = False) -> str:

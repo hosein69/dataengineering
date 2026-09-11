@@ -32,6 +32,7 @@ from . import aqua
 from . import alborz as _AL
 from . import narrative as _NR
 from . import paykan as _pk
+from . import assets as _AS
 
 CATEGORICAL = aqua.categorical(False)
 OTHER = aqua.OTHER_LIGHT
@@ -158,14 +159,17 @@ def build_dynamic_html(people: pd.DataFrame, ref_date: str,
 body{{margin:0;background:{SURFACE};color:{TEXT};direction:rtl;
 font-family:'IRANSans Light',IRANSans,Vazirmatn,Tahoma,Arial,sans-serif}}
 .shell{{max-width:1400px;margin:auto;padding:20px}}
-header{{background:{_AL.header_gradient_css()};color:{_AL.ON_AQUA};
+header{{background:{_AL.header_gradient_css(_AL.HEADER_ANGLE)};color:{_AL.ON_AQUA};
 border-radius:18px;padding:22px 26px;display:flex;justify-content:space-between;
 align-items:center;gap:18px;flex-wrap:wrap;position:relative;overflow:hidden}}
 /* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
    عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
 header{{position:relative;overflow:hidden}}
 header>*{{position:relative;z-index:1}}
-.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+/* تصویرِ واقعیِ پیکان تیره است؛ با شفافیتِ ۰٫۴ روی نوارِ تیره محو
+   می‌شد و «بریده» به‌نظر می‌رسید. ۰٫۵۵ جسمش را برمی‌گرداند و هنوز
+   پس‌زمینه است، نه آیکن. */
+.pk{{position:absolute;left:16px;bottom:-6px;opacity:.55;z-index:0;
      pointer-events:none}}
 @media print{{.pk{{display:none}}}}
 header::after{{content:"";position:absolute;inset:-40% -10% auto auto;width:420px;
@@ -221,7 +225,7 @@ body{{background:#fff}} .panel{{break-inside:avoid}}
 header{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}}}
 {_NR.css()}
 </style></head><body><div class="shell">
-<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<header><div class="pk">{_AS.img("paykan", 200) or _pk.mark(150, _AL.TEAL_EDGE)}</div>
 <div><h1>{_E(title)}</h1>
 
 <div class="sub">تاریخ مرجع {_E(ref_date)} · {len(df):,} نفر</div></div>

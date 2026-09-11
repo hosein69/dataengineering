@@ -64,6 +64,19 @@ def _over(fg, alpha, bg):
         round(f[i] * alpha + b[i] * (1 - alpha)) for i in range(3))
 
 
+
+def _newest_zip(names):
+    """تازه‌ترین بسته را **عددی** انتخاب کن، نه الفبایی.
+
+    مرتب‌سازی متنی ``V3_9_0`` را بعد از ``V3_10_0`` می‌گذارد، و آن‌وقت
+    بازرسی بی‌صدا روی بستهٔ کهنه اجرا می‌شود و «سبز» می‌دهد در حالی که
+    بستهٔ واقعی ناقص است. دقیقاً همان جنسِ خطایی که این تست برای
+    گرفتنش نوشته شده بود.
+    """
+    def key(n):
+        return tuple(int(x) for x in re.findall(r"\d+", n))
+    return max(names, key=key) if names else None
+
 def test_theme_config() -> None:
     print("\n── ۱) پیکربندی تم ──")
     from hrperf.report.theme import STREAMLIT_THEME, config_toml, theme_env
@@ -97,7 +110,7 @@ def test_package_contents() -> None:
                   for n in names))
     zips = [f for f in os.listdir(ROOT) if re.match(r"HRPerf_V\d+_\d+_\d+\.zip$", f)]
     if zips:
-        newest = sorted(zips)[-1]
+        newest = _newest_zip(zips)
         inside = set(zipfile.ZipFile(os.path.join(ROOT, newest)).namelist())
         for req in mp.REQUIRED:
             check(f"{newest} شامل {req} است", req in inside)
@@ -358,6 +371,7 @@ def test_narrative():
     """
     print("\n── روایت " + "─" * 58)
     from hrperf.report import narrative as N
+    from hrperf.report import alborz as _AL
 
     # ── ۱) دستور زبان ──
     check("هشت عنصر دستور زبان تعریف شده", len(N.GRAMMAR) == 8, str(len(N.GRAMMAR)))
@@ -401,7 +415,7 @@ def test_narrative():
                 "nr-res", "nr-journey", "nr-step", "nr-cards", "nr-c",
                 "nr-cont", "nr-foot", "nr-badge"):
         check(f"بلوک «{cls}» رندر می‌شود", cls in html)
-    check("عنوان سربرگ حک‌شده است (سایهٔ دولایه)", "text-shadow:2px 3px" in html)
+    check("عنوان سربرگ حک‌شده است (سایهٔ دولایه)", "text-shadow:2px 4px 3px" in html)
     check("مُهر پایان می‌آید", "END OF REPORT" in html)
     check("گره‌ها شماره‌دارند", ">۱<" in html and ">۲<" in html)
     check("پلِ بین گره‌ها هست", N.KNOTS[0].bridge in html)
@@ -422,31 +436,83 @@ def test_narrative():
                       ("app/dashboard.py", "رابط")):
         txt = io.open(os.path.join(ROOT, rel), encoding="utf-8").read()
         check(f"{label} از روایت می‌خواند", "_NR." in txt, rel)
-    # ── ۷) سربرگ: عددهایش از قالب فیگما آمده، نه از حدس ──
+    # ── ۷) سربرگ: صحنهٔ ۹۰۰×۵۲۰ قالب، مو‌به‌مو ──
+    #
+    # این بخش یک بار با عددهای «حدسی» نوشته شده بود و همان بود که
+    # سربرگ را شبیه قالب نمی‌کرد. حالا هر عدد از خودِ پروندهٔ صادرشدهٔ
+    # فیگما خوانده شده و اینجا قفل است. اگر کسی یکی‌شان را گرد کند،
+    # این تست می‌افتد.
     hero = N.hero(a, kicker="K", title="T", subtitle="S", art="<i></i>")
     css = N.css()
     for probe, why in (
-            ("padding:28px 44px", "حاشیهٔ نوار"),
-            ("font-size:52px", "اندازهٔ عنوان"),
-            ("letter-spacing:1.6px", "فاصلهٔ حروفِ کیکر"),
-            ("min-height:220px", "ارتفاع ترکیب بصری"),
-            ("border:1.6px solid", "خط قاب زیرعنوان"),
-            ("flex:0 0 48px", "خطِ کنار بندِ آغاز")):
+            ("--u:calc(1cqw/9)", "واحدِ صحنه: عرض تقسیم بر ۹۰۰"),
+            ("min-height:calc(520*var(--u))", "ارتفاع صحنه"),
+            ("calc(222*var(--u)) calc(44*var(--u)) calc(36*var(--u))",
+             "حاشیهٔ ستونِ متن"),
+            ("left:calc(38*var(--u));top:calc(32*var(--u))", "جای نشان"),
+            ("width:calc(130*var(--u));height:calc(120*var(--u))", "اندازهٔ نشان"),
+            ("left:calc(430*var(--u));top:calc(300*var(--u))", "جای خودرو"),
+            ("width:calc(430*var(--u));height:calc(189*var(--u))", "قاب خودرو"),
+            ("top:calc(108*var(--u))", "جای خط‌های حرکت"),
+            ("top:calc(170*var(--u))", "جای سرسطرِ سازمان"),
+            ("right:calc(210*var(--u));width:calc(722*var(--u))",
+             "لبهٔ راستِ سرسطر روی ۶۹۰"),
+            ("top:calc(188*var(--u))", "جای نوار تمرکز"),
+            ("width:calc(770*var(--u));height:calc(3*var(--u))", "نوار تمرکز"),
+            ("margin:0 calc(101*var(--u)) 0 calc(-59*var(--u))",
+             "جعبهٔ عنوان از -۱۵ تا ۷۵۵"),
+            ("font-size:calc(40*var(--u))", "اندازهٔ عنوان"),
+            ("line-height:1.08", "ارتفاع سطرِ عنوان"),
+            ("top:calc(112*var(--u))", "خطِ بالا"),
+            ("width:calc(812*var(--u))", "عرضِ خطِ بالا"),
+            ("top:calc(332*var(--u))", "خطِ زیرِ عنوان"),
+            ("width:calc(380*var(--u))", "عرضِ خطِ زیرِ عنوان"),
+            ("border-left:calc(1.5*var(--u)) solid", "خطِ قاب زیرعنوان"),
+            ("font-size:calc(17*var(--u))", "اندازهٔ زیرعنوان"),
+            ("flex:0 0 calc(36*var(--u))", "خطِ کنارِ بندِ آغاز"),
+            ("width:calc(360*var(--u))", "عرضِ بندِ آغاز"),
+            ("letter-spacing:calc(2*var(--u))", "فاصلهٔ حروفِ سرسطر")):
         check(f"{why} با قالب می‌خواند", probe in css, probe)
+
+    check("طیف سربرگ چهار توقفِ قالب را دارد", len(_AL.HEADER_STOPS) == 4)
+    check("زاویهٔ طیف گرد نشده", _AL.HEADER_ANGLE == "130.872deg")
+    check("طیف قالب در CSS می‌آید", _AL.HEADER_DEEP.lower() in css.lower())
+
+    # غبارِ داده — ۱۱۳ نقطه در ۸ ردیف، به‌علاوهٔ ۳ نقطهٔ KPI.
+    check("غبار داده ۱۱۳ نقطهٔ قالب را دارد", len(N._DUST) == 113,
+          str(len(N._DUST)))
+    check("سه نقطهٔ KPI هست", len(N._KPI_DOTS) == 3)
+    check("هر ۱۱۶ دایره رندر می‌شود", hero.count("<circle") == 116,
+          str(hero.count("<circle")))
+    check("نقطهٔ شاخصِ KPI کهربایی است", _AL.GOLD in hero)
+
+    # بافت: همان feTurbulence قالب، نه یک نویزِ دلخواه.
+    grain = N._grain_uri()
+    import base64 as _b64
+    raw = _b64.b64decode(grain.split(",", 1)[1]).decode("utf-8")
+    check("بافت با پارامترهای قالب ساخته می‌شود",
+          'baseFrequency="0.65 0.25"' in raw and 'numOctaves="4"' in raw
+          and 'seed="5"' in raw, raw[:90])
     check("بافتِ نوار درون‌خطی است، نه فایل بیرونی",
-          "data:image/svg+xml;base64," in css and "feTurbulence" in N._grain_uri()
-          or "data:image/svg+xml;base64," in hero)
+          grain.startswith("data:image/svg+xml;base64,"))
     check("سربرگ گزارش‌ها هم همان بافت را می‌گیرد", "header::after" in css)
     check("عنوانِ گزارش هم حک می‌شود", "header h1" in css)
-    check("خطِ بندِ آغاز **پس از** متن می‌آید (در راست‌به‌چپ یعنی چپ)",
-          hero.index('class="rule"') > hero.index("<p>"))
-    check("انفجار داده هفت پرتو دارد", len(N._RAYS) == 7, str(len(N._RAYS)))
-    check("چهار میلهٔ KPI هست", len(N._KPI) == 4)
-    check("جای نشان خالی بماند، جعل نشود",
-          'class="nr-emblem"' not in hero)
-    check("نشان وقتی داده شود، می‌نشیند",
-          'class="nr-emblem"' in N.hero(a, kicker="K", title="T",
-                                        emblem="<svg/>"))
+    check("خطِ بندِ آغاز **پیش از** متن می‌آید (در قالب فیزیکاً چپ است)",
+          hero.index('class="rule"') < hero.index("<p>"))
+    check("در عرض کم، صحنه می‌ایستد و ستونی می‌شود",
+          "@container (max-width:620px)" in css)
+    check("کوئریِ کانتینر روی لفافِ بیرونی است، نه خودِ نوار",
+          "container-type:inline-size" in css
+          and ".nr-hero-wrap{container-type" in css.replace("\n", ""))
+
+    # نشان و خودروِ **واقعیِ** قالب در بسته‌اند — نه بازسازیِ حدسی.
+    from hrperf.report import assets as _AS
+    check("نشانِ حک‌شدهٔ قالب در بسته هست", _AS.has("emblem"))
+    check("تصویر پیکانِ قالب در بسته هست", _AS.has("paykan"))
+    check("هیچ جایگاهی خالی نمانده", not _AS.missing(), str(_AS.missing()))
+    check("نشان در سربرگ می‌نشیند", 'class="nr-emblem"' in hero)
+    check("خودرو در سربرگ می‌نشیند", 'class="nr-car"' in hero)
+    check("جایگاهِ نبوده جعل نمی‌شود", _AS.img("__not_a_slot__") == "")
 
 
 if __name__ == "__main__":

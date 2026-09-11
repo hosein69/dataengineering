@@ -25,6 +25,7 @@ from ..report import alborz as _AL
 from ..report import narrative as _NR
 from ..report import brand as _B
 from ..report import paykan as _pk
+from ..report import assets as _AS
 
 BRAND, DEEP = "#0f6e6e", "#0a4f4f"
 SURFACE, RAISED, BORDER = "#fcfcfb", "#ffffff", "#e3e3dd"
@@ -192,13 +193,16 @@ def build_analysis_html(df: pd.DataFrame, ref_date: str,
 body{{margin:0;background:{SURFACE};color:{TEXT};direction:rtl;
 font-family:'IRANSans Light',IRANSans,Vazirmatn,Tahoma,Arial,sans-serif}}
 .shell{{max-width:1280px;margin:auto;padding:22px}}
-header{{background:{_AL.header_gradient_css()};color:{_AL.ON_AQUA};
+header{{background:{_AL.header_gradient_css(_AL.HEADER_ANGLE)};color:{_AL.ON_AQUA};
 border-radius:18px;padding:24px 26px}}
 /* پیکان در سربرگ: لایهٔ زمینه، نه آیکن. هم‌فامِ سربرگ و کم‌جان تا
    عنوان رویش بخواند؛ در چاپ حذف می‌شود تا جوهر هدر نرود. */
 header{{position:relative;overflow:hidden}}
 header>*{{position:relative;z-index:1}}
-.pk{{position:absolute;left:16px;bottom:-4px;opacity:.4;z-index:0;
+/* تصویرِ واقعیِ پیکان تیره است؛ با شفافیتِ ۰٫۴ روی نوارِ تیره محو
+   می‌شد و «بریده» به‌نظر می‌رسید. ۰٫۵۵ جسمش را برمی‌گرداند و هنوز
+   پس‌زمینه است، نه آیکن. */
+.pk{{position:absolute;left:16px;bottom:-6px;opacity:.55;z-index:0;
      pointer-events:none}}
 @media print{{.pk{{display:none}}}}
 h1{{margin:0;font-size:25px}} .sub{{opacity:.9;font-size:13px;margin-top:6px}}
@@ -241,7 +245,7 @@ font:inherit;font-weight:700;cursor:pointer;margin-top:14px}}
 print-color-adjust:exact}}}}
 {_NR.css()}
 </style></head><body><div class="shell">
-<header><div class="pk">{_pk.mark(150, _AL.TEAL_EDGE)}</div>
+<header><div class="pk">{_AS.img("paykan", 200) or _pk.mark(150, _AL.TEAL_EDGE)}</div>
 <h1>{_E(title)}</h1>
 
 <div class="sub">تاریخ مرجع {_E(ref_date)} · {len(df):,} ردیف · حداقل نمونه برای هر یافته: {MIN_N}</div>
