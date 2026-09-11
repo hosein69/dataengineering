@@ -53,6 +53,9 @@ REQUIRED = [
     "aibl/report/assets/emblem.png",
     "aibl/report/assets/paykan.png",
     "aibl/report/narrative.py",
+    "aibl/report/monthly.py",   # گزارش روایتِ دادهٔ ماهانه
+    "aibl/report/mail.py",      # تمِ ایمیل، مشتق از البرز
+    "aibl/report/shot.py",      # HTML → PNG با مرورگرِ همان دستگاه
     "aibl/report/alborz.py", "aibl/report/paykan.py",
     "poster/make_poster.py", "DESIGN_SYSTEM_ALBORZ.md",
     "app/studio.py", "app/styles.py", "app/theme.py",
@@ -88,6 +91,13 @@ def members() -> list[Path]:
             for fn in sorted(filenames):
                 p = Path(dirpath) / fn
                 if p.suffix.lower() in SKIP_SUFFIX:
+                    continue
+                # PNGِ پوستر ساختنی است، نه دارایی: ``make_poster.py`` در
+                # بسته هست و هر بار می‌سازدش. گذاشتنِ ۲٫۳ مگابایت تصویر
+                # در هر نسخه، بسته را سه‌برابر می‌کرد بی‌آنکه چیزی اضافه
+                # کند. (تصویرهای ``report/assets`` فرق دارند — آن‌ها
+                # ساختنی نیستند و در فهرست الزامی‌اند.)
+                if p.suffix.lower() == ".png" and p.parent.name == "poster":
                     continue
                 out.append(p)
     return sorted(set(out))

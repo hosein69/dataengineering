@@ -409,14 +409,14 @@ function render(){{
   if(e2)e2.addEventListener('change',render);}});
 addEventListener('resize',render);
 render();
-</script></body></html>"""
+</script>{_NR.motion_js()}</body></html>"""
 
 
 def _empty(title: str, ref_date: str, why: str) -> str:
     return (f'<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">'
             f'<title>{_E(title)}</title></head><body style="font-family:Tahoma;'
             f'direction:rtl;padding:30px"><h2>{_E(title)} — {_E(ref_date)}</h2>'
-            f'<p>{_E(why)}</p></body></html>')
+            f'<p>{_E(why)}</p>{_NR.motion_js()}</body></html>')
 
 
 def write_dynamic(people: pd.DataFrame, path, ref_date: str = "", **kw) -> str:

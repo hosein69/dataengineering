@@ -402,6 +402,8 @@ def css() -> str:
   letter-spacing:1.8px;border:1px solid {_AL.ON_TEAL_2};color:{_AL.ON_TEAL_2};
   padding:3px 9px}}
 
+{MOTION_CSS}
+
 /* ── همان ظرافت، روی سربرگِ گزارش‌ها ──────────────────────────────────
    گزارش‌ها سربرگ خودشان را دارند (عنوان + آمار + دکمهٔ چاپ)، نه بلوک
    کاملِ پوستر. ولی بافت، حکِ عنوان و عمقِ نوار باید یکی باشد؛ وگرنه
@@ -494,6 +496,118 @@ _KPI_LINKS: Tuple[Tuple[float, float, str, float], ...] = (
 )
 
 
+#: ── حرکت ───────────────────────────────────────────────────────────
+#:
+#: ## قاعدهٔ نشکستنی
+#:
+#: **هیچ محتوایی به جاوااسکریپت گره نمی‌خورد.** اگر JS اجرا نشود —
+#: چون کلاینت خاموشش کرده، چون فایل آفلاین باز شده، چون در PDF چاپ
+#: شده — همه‌چیز دیده می‌شود. برای همین CSSِ پنهان‌کننده فقط وقتی فعال
+#: است که خودِ JS کلاس ``nr-anim`` را روی ریشه گذاشته باشد.
+#:
+#: این برعکسِ الگوی رایج است (پنهان در CSS، آشکار با JS) و عمدی است:
+#: آن الگو یک بار در تولید، گزارشِ چاپ‌شده را سفید تحویل می‌دهد.
+#:
+#: ## و احترام به ``prefers-reduced-motion``
+#:
+#: هر کس این تنظیم را روشن کرده، همه‌چیز را بی‌حرکت می‌بیند. این سلیقه
+#: نیست؛ برای بخشی از کاربران، حرکت سرگیجه می‌آورد.
+
+MOTION_CSS = """
+/* حرکت فقط وقتی JS زنده است و کاربر مخالفتی نکرده */
+.nr-anim [data-nr-rise]{opacity:0;transform:translateY(14px)}
+.nr-anim [data-nr-rise].nr-in{opacity:1;transform:none;
+  transition:opacity .42s cubic-bezier(.2,.8,.2,1),
+             transform .42s cubic-bezier(.2,.8,.2,1)}
+.nr-anim [data-nr-grow]{transform:scaleX(0);transform-origin:right center}
+.nr-anim [data-nr-grow].nr-in{transform:none;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+/* خطِ حرکتِ خودرو — فقط یک بار، نه حلقهٔ بی‌پایان */
+.nr-anim .nr-motion line{stroke-dasharray:205;stroke-dashoffset:205}
+.nr-anim .nr-car.nr-in .nr-motion line{stroke-dashoffset:0;
+  transition:stroke-dashoffset .9s ease-out .15s}
+@media (prefers-reduced-motion:reduce){
+  .nr-anim [data-nr-rise],.nr-anim [data-nr-grow]{
+    opacity:1!important;transform:none!important;transition:none!important}
+  .nr-anim .nr-motion line{stroke-dashoffset:0!important;transition:none!important}
+}
+@media print{
+  .nr-anim [data-nr-rise],.nr-anim [data-nr-grow]{
+    opacity:1!important;transform:none!important}
+}
+"""
+
+_MOTION_JS = """
+(function(){
+  var root = document.documentElement;
+  var reduced = window.matchMedia &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // بدون IntersectionObserver هم چیزی پنهان نمی‌ماند: کلاس را اصلاً
+  // نمی‌گذاریم، پس CSSِ پنهان‌کننده فعال نمی‌شود.
+  if (reduced || !('IntersectionObserver' in window)) return;
+  root.classList.add('nr-anim');
+
+  var targets = document.querySelectorAll('[data-nr-rise],[data-nr-grow],.nr-car');
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (!e.isIntersecting) return;
+      var el = e.target;
+      var d = parseInt(el.getAttribute('data-nr-delay') || '0', 10);
+      setTimeout(function(){ el.classList.add('nr-in'); count(el); }, d);
+      io.unobserve(el);
+    });
+  }, {rootMargin: '0px 0px -8% 0px', threshold: 0.08});
+  Array.prototype.forEach.call(targets, function(el){ io.observe(el); });
+
+  // شمارشِ عدد — فقط روی عنصری که خودش خواسته باشد، و فقط از عددِ
+  // واقعیِ داخلش. هیچ عددی ساخته نمی‌شود.
+  var FA = '۰۱۲۳۴۵۶۷۸۹';
+  function fa(n){
+    return String(n).replace(/[0-9]/g, function(d){ return FA[+d]; })
+                    .replace(/\\B(?=(\\d{3})+(?!\\d))/g, '\\u066c');
+  }
+  function count(scope){
+    var nodes = scope.querySelectorAll ? scope.querySelectorAll('[data-nr-count]') : [];
+    Array.prototype.forEach.call(nodes, function(el){
+      if (el.dataset.nrDone) return;
+      var target = parseFloat(el.getAttribute('data-nr-count'));
+      if (!isFinite(target)) return;
+      el.dataset.nrDone = '1';
+      var t0 = null, dur = 620;
+      function step(ts){
+        if (t0 === null) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur);
+        var eased = 1 - Math.pow(1 - k, 3);
+        el.textContent = fa(Math.round(target * eased));
+        if (k < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+})();
+"""
+
+
+def motion_js() -> str:
+    """تگِ اسکریپتِ حرکت — آمادهٔ درج در انتهای بدنه."""
+    return f"<script>{_MOTION_JS}</script>"
+
+
+def rise(index: int = 0) -> str:
+    """صفتِ «بالا آمدن» با تأخیرِ پلکانی، برای درج در تگ."""
+    return f' data-nr-rise data-nr-delay="{min(index, 6) * 70}"'
+
+
+def counted(value, text: str = "") -> str:
+    """عددی که از صفر تا خودش شمرده می‌شود — و اگر JS نبود، همان عدد."""
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return _h.escape(str(text or value))
+    shown = text or fa(int(n) if n == int(n) else n)
+    return f'<span data-nr-count="{n:g}">{_h.escape(shown)}</span>'
+
+
 def dust():
     """مختصات غبارِ داده — برای هر مصرف‌کننده‌ای بیرون از این ماژول.
 
@@ -584,7 +698,7 @@ def eyebrow(text: str, alt: bool = False) -> str:
 
 def open_block(f: Facts, lead: str = "") -> str:
     """بندِ آغاز روی زمینهٔ روشن — وقتی سربرگِ تیره جای دیگری است."""
-    return (f'<div class="nr-hook">{eyebrow(lead) if lead else ""}'
+    return (f'<div class="nr-hook"{rise(0)}>{eyebrow(lead) if lead else ""}'
             f'<p>{_md(opening(f))}</p></div>')
 
 
@@ -599,7 +713,7 @@ def knots(items: Sequence[Knot]) -> str:
     out = []
     for i, k in enumerate(items):
         out.append(
-            f'<div class="nr-knot">'
+            f'<div class="nr-knot"{rise(i)}>'
             f'<div class="no"><i>{fa(k.no)}</i><span>{_h.escape(k.name)}</span></div>'
             f'<div class="nr-row">'
             f'<div class="nr-col no-go">'
@@ -621,7 +735,7 @@ def resolution_block(f: Facts) -> str:
     """نتیجه: خط ← برچسب ← خط، و زیرش کارت‌های عددی."""
     title, lines = resolution(f)
     cards = "".join(f'<div class="c">{_md(x)}</div>' for x in lines)
-    return (f'<div class="nr-res"><div class="bar"><div class="ln"></div>'
+    return (f'<div class="nr-res"{rise(0)}><div class="bar"><div class="ln"></div>'
             f'{eyebrow(title)}<div class="ln"></div></div>'
             f'<div class="cards">{cards}</div></div>')
 
@@ -684,7 +798,7 @@ def facets(items: Iterable[Chapter], numbered: bool = False) -> str:
                    f'<div class="t">{_h.escape(c.title)}</div>{num}</div>'
                    + (f'<div class="m">{_h.escape(c.line)}</div>' if c.line else "")
                    + "</div>")
-    return f'<div class="nr-cards">{"".join(out)}</div>'
+    return f'<div class="nr-cards"{rise(0)}>{"".join(out)}</div>'
 
 # ═══════════════════ روایت در ایمیل ═══════════════════
 #: اتلوک کلاسیک با موتور Word نه flexbox می‌فهمد نه grid و نه کلاس CSS

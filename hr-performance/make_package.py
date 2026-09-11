@@ -42,6 +42,9 @@ REQUIRED = [
     "hrperf/report/assets/emblem.png",
     "hrperf/report/assets/paykan.png",
     "hrperf/report/narrative.py",
+    "hrperf/report/monthly.py",   # گزارش روایتِ دادهٔ ماهانه
+    "hrperf/report/mail.py",      # تمِ ایمیل، مشتق از البرز
+    "hrperf/report/shot.py",      # HTML → PNG با مرورگرِ همان دستگاه
     "hrperf/report/alborz.py", "hrperf/report/paykan.py",
     "DESIGN_SYSTEM_ALBORZ.md",
     "app/dashboard.py", "app/styles.py",

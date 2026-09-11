@@ -873,6 +873,94 @@ def test_chart_series():
         cycles = _re.findall(r"%\s*len\((?:SERIES|CATEGORICAL|_pal|palette)", txt)
         check(f"«{rel}» پالت را نمی‌چرخاند", not cycles, str(cycles[:2]))
 
+
+def test_monthly():
+    """گزارش ماهانه — **تغییر** را می‌گوید، و هرگز دلتای ساختگی نمی‌سازد.
+
+    سه قاعدهٔ صداقت اینجا قفل است:
+
+    ۱. بدون ماهِ پیش، هیچ دلتایی ساخته نمی‌شود.
+    ۲. درصد فقط روی مبنای معنادار می‌آید.
+    ۳. جهتِ «خوب» را داده تعیین نمی‌کند؛ سنجه اعلامش می‌کند.
+    """
+    print("\n── گزارش ماهانه " + "─" * 52)
+    from aibl.report import monthly as M
+    from aibl.report import narrative as N
+
+    # ۱) بدون مبنا، دلتا نداریم
+    solo = M.Movement("سنجه", 12, None, "مورد")
+    check("بدون ماهِ پیش، دلتا ساخته نمی‌شود", solo.delta is None)
+    check("بدون ماهِ پیش، حکم «نامعلوم» است", solo.verdict == "unknown")
+    check("جمله دربارهٔ نبودِ مبنا صادق است", "مقایسه" in M.sentence(solo),
+          M.sentence(solo)[:60])
+    check("تغییرِ بی‌مبنا خط تیره است", M.change(solo) == "—")
+
+    # ۲) درصد فقط روی مبنای معنادار
+    tiny = M.Movement("کوچک", 3, 1, "مورد")
+    big = M.Movement("بزرگ", 37, 46, "پرونده")
+    check("روی مبنای زیر کف، درصد نمی‌آید", tiny.pct is None,
+          str(M.PCT_FLOOR))
+    check("روی مبنای معنادار، درصد می‌آید", big.pct is not None)
+    check("درصد درست حساب می‌شود", abs(big.pct + 19.565) < 0.01,
+          f"{big.pct:.2f}")
+
+    # ۳) جهتِ خوب را سنجه اعلام می‌کند
+    down_ok = M.Movement("بحرانی", 37, 46, good="down")
+    up_ok = M.Movement("تحویل", 37, 46, good="up")
+    flat = M.Movement("حجم", 37, 46, good="flat")
+    check("کاهش، وقتی کاهش خوب است، «بهتر» است", down_ok.verdict == "better")
+    check("همان کاهش، وقتی افزایش خوب است، «بدتر» است", up_ok.verdict == "worse")
+    check("سنجهٔ خنثی رنگِ قضاوت نمی‌گیرد", flat.verdict == "same")
+
+    # ۴) نوشتنِ تغییر با واژه، نه با علامت
+    check("«کمتر» نوشته می‌شود، نه «−»", "کمتر" in M.change(down_ok)
+          and "-" not in M.change(down_ok), M.change(down_ok))
+    check("نبودِ تغییر صریح گفته می‌شود",
+          M.change(M.Movement("x", 7, 7)) == "بدون تغییر")
+
+    # ۵) نمودار: زیر دو نقطه کشیده نمی‌شود
+    check("روند با یک نقطه کشیده نمی‌شود", "<svg" not in M.spark([5]))
+    check("روند با دو نقطه کشیده می‌شود", "<svg" in M.spark([5, 9]))
+    sv = M.movement([down_ok, up_ok])
+    check("هر ریل برچسبِ مستقیم دارد", sv.count("<text") >= 2, str(sv.count("<text")))
+    check("هر ریل هاور دارد", sv.count("<title>") >= 2)
+    check("نمودار بدون مبنا اصلاً نمی‌آید", M.movement([solo]) == "")
+
+    # ۶) تعهدِ پالت: راهنما و جدول، کنارِ رنگ
+    check("راهنمای رنگ می‌آید", "nr-legend" in M.legend())
+    tbl = M.table([down_ok, solo])
+    check("جدولِ همان اعداد هم می‌آید", "<table" in tbl and "بدون تغییر" not in tbl)
+    check("سطرِ بی‌مبنا در جدول صادق است", "مبنای مقایسه ندارد" in tbl)
+
+    # ۷) صفحهٔ کامل
+    f = N.Facts(total=300, subject="پرونده", ref_date="۱۴۰۵/۰۶/۳۱",
+                critical=37, blind=12, median=18)
+    mo = M.Month(label="شهریور ۱۴۰۵", facts=f, previous="مرداد",
+                 movements=[down_ok, up_ok, solo],
+                 series=[("روند", [61, 58, 52, 49, 46, 37])])
+    html = M.page(mo, title="روایتِ دادهٔ شهریور", org="O", unit="U",
+                  tagline="T", kicker="K", subtitle="S")
+    check("صفحه خودبسنده است (بدون درخواست شبکه)",
+          'src="http' not in html and "url(http" not in html
+          and "@import" not in html)
+    check("سربرگ قالب را دارد", "nr-hero" in html and "nr-deco" in html)
+    check("حرکت هست ولی محتوا به آن گره نخورده",
+          "IntersectionObserver" in html and "nr-anim" in html)
+    check("جدول و راهنما هر دو در صفحه‌اند",
+          "nr-mo-tbl" in html and "nr-legend" in html)
+
+    # ۸) اولین ماه: به‌جای دلتا، صادقانه اعلام می‌کند
+    first = M.Month(label="مهر", facts=f, movements=[solo])
+    h1 = M.build(first, title="T", org="O", unit="U", tagline="T", kicker="K")
+    check("اولین ماه، «مبنای ماهِ بعد» را می‌گوید", "اولین ماهی" in h1)
+    check("اولین ماه نمودار دمبلی ندارد", "nr-move" not in h1)
+
+    # ۹) رنگ فقط از البرز
+    src = io.open(os.path.join(ROOT, "aibl/report/monthly.py"),
+                  encoding="utf-8").read()
+    hexes = set(re.findall(r"#[0-9A-Fa-f]{6}", src))
+    check("هیچ رنگِ ثابتی در گزارش ماهانه نیست", not hexes, str(sorted(hexes)[:3]))
+
 if __name__ == "__main__":
     print("=" * 78)
     print("AIBL — بسته‌بندی، کف خوانایی و ارسال")
@@ -890,6 +978,7 @@ if __name__ == "__main__":
     test_cross_platform()
     test_narrative()
     test_chart_series()
+    test_monthly()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

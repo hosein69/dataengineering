@@ -68,8 +68,11 @@ def _via_playwright(src: Path, out: Path, width: int, scale: int) -> bool:
     try:
         with sync_playwright() as pw:
             b = pw.chromium.launch()
+            # حرکت را خاموش می‌کنیم: عکس باید **قطعی** باشد، نه وابسته
+            # به اینکه انیمیشنِ ظاهرشدن تا لحظهٔ ضبط تمام شده باشد یا نه.
             page = b.new_page(viewport={"width": width, "height": 1200},
-                              device_scale_factor=scale)
+                              device_scale_factor=scale,
+                              reduced_motion="reduce")
             page.goto(src.resolve().as_uri())
             page.wait_for_timeout(700)          # فونت و بافت جا بیفتند
             page.screenshot(path=str(out), full_page=True)
@@ -90,6 +93,8 @@ _PROBE = ("<script>addEventListener('load',function(){"
 def _chrome_flags(tmp: str, scale: int) -> List[str]:
     flags = ["--headless=new", "--disable-gpu", "--hide-scrollbars",
              f"--user-data-dir={tmp}", f"--force-device-scale-factor={scale}",
+             # همان دلیل: ضبط نباید به پایان‌یافتنِ انیمیشن گره بخورد.
+             "--force-prefers-reduced-motion",
              "--virtual-time-budget=5000"]
     # روی لینوکسِ کانتینری کاربر معمولاً root است و sandbox کروم بالا
     # نمی‌آید. فقط در همان حالت خاموشش می‌کنیم، نه همیشه.

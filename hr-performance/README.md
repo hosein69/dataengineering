@@ -18,7 +18,7 @@ pip install -r requirements.txt
 python -m hrperf.cli demo            # اجرای نمونه بدون شبکه
 python -m hrperf.cli run             # اجرا روی input_files (کنار همین پکیج)
 python app/run_dashboard.py          # داشبورد
-python run_all_tests.py              # ۵۴۹ تست
+python run_all_tests.py              # ۵۷۹ تست
 ```
 
 ### ارسال گزارش در لحظه — تب «✉️ ارسال گزارش»
@@ -281,7 +281,7 @@ hrperf/
   report/    builder.py · html.py · excel.py · pdf.py · email.py · theme.py
   pipeline.py · cli.py
 app/         dashboard.py · run_dashboard.py · styles.py
-tests/       ۵۴۹ تست
+tests/       ۵۷۹ تست
 ```
 
 ---

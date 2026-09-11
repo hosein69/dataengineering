@@ -42,7 +42,7 @@ from typing import Dict, List, Tuple
 
 NAME = "البرز"
 NAME_EN = "Alborz Design System"
-VERSION = "1.3"
+VERSION = "1.4"
 
 # ═══════════════════ زمینه: طوسی سرد با شست‌وشوی کاهی ═══════════════════
 #: پس‌زمینهٔ صفحه یک گرادیان سه‌توقفی است، نه رنگ تخت. خاکستری خالص

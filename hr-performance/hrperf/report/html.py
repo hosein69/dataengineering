@@ -216,4 +216,4 @@ function render(){{
 [q,f1,f2].forEach(x=>x.addEventListener('input',render)); render();
 </script>
 {_close}
-</body></html>"""
+{_NR.motion_js()}</body></html>"""

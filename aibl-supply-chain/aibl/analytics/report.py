@@ -280,7 +280,7 @@ print-color-adjust:exact}}}}
 <i>Annals of Internal Medicine</i> 167(4):268-274 برای E-value ·
 Mantel &amp; Haenszel (1959) برای تجمیع لایه‌ای.
 </div></div>{_close}
-</div></body></html>"""
+</div>{_NR.motion_js()}</body></html>"""
 
 
 def write_analysis(df: pd.DataFrame, path, ref_date: str = "",

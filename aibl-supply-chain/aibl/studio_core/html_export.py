@@ -530,4 +530,4 @@ addEventListener('resize',()=>renderCharts(rows()));
 
 [q,...sels].forEach(x=>x.addEventListener('input',render));
 render();
-</script></body></html>"""
+</script>{_NR.motion_js()}</body></html>"""

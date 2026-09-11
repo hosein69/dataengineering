@@ -110,7 +110,7 @@ def html() -> str:
             '<meta charset="utf-8">'
             f"<title>خوب بد زشت داده — {B.LOCKUP}</title>"
             f"<style>{style}</style></head><body>"
-            f'<div class="sheet">{"".join(parts)}</div></body></html>')
+            f'<div class="sheet">{"".join(parts)}</div>{N.motion_js()}</body></html>')
 
 
 def main() -> int:
