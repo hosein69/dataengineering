@@ -317,7 +317,15 @@ def test_dispatch() -> None:
     check("ارتقای تدریجی فقط در @media است",
           "prefers-color-scheme" in body and "@media" in body)
     check("راست‌به‌چپ و فارسی", 'dir="rtl"' in body and 'lang="fa"' in body)
-    check("پالت آکوا به‌کار رفته", "#005349" in body and "#E1F2E9" in body)
+    # ایمیل تا دیروز پالت نسل قبل را داشت (زمینهٔ نعنایی، سربرگ #005349،
+    # عنوان طلایی) و گیرنده یک جنس می‌دید و در گزارش جنسی دیگر. حالا
+    # همان توکن‌های البرز را می‌پوشد.
+    from hrperf.report import mail as _mail
+    check("پالت ایمیل از البرز می‌آید",
+          _mail.PALETTE["header"] in body and _mail.PALETTE["surface"] in body)
+    check("پالت نسل قبل دیگر نیست",
+          "#005349" not in body and "#E1F2E9" not in body)
+    check("سرسطرِ سازمان در سربرگ ایمیل هست", "IKCO" in body)
     check("توضیح صادقانه دربارهٔ نبودِ داینامیک هست", "جاوااسکریپت" in body)
     check("تراشهٔ وضعیت با آیکن می‌آید، نه فقط رنگ",
           "▲" in dp._chip("برجسته", "#2E7D32", "▲"))

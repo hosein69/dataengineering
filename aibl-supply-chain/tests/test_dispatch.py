@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import sys
+import re
 import tempfile
 from pathlib import Path
 
@@ -81,9 +82,19 @@ def test_body_is_outlook_safe() -> None:
         attachments=["AIBL_Dashboard.xlsx"], live_url="https://x.invalid/r")
 
     low = body.lower()
-    for token in ("<script", "flex", "display:grid", "<svg", "position:absolute",
-                  "background-image"):
+    for token in ("<script", "flex", "display:grid", "<svg", "position:absolute"):
         check(f"بدنه بدون «{token}» است — موتور Word نمی‌فهمدش", token not in low)
+
+    # ``background-image`` ممنوع نیست؛ **تکیه** بر آن ممنوع است. موتور
+    # Word آن را نمی‌کشد، پس هر جا بیاید باید همان عنصر ``bgcolor`` هم
+    # داشته باشد و VML هم برایش گذاشته شده باشد. قاعدهٔ قبلی («اصلاً
+    # نیاید») طیفِ سربرگ را هم ممنوع می‌کرد، در حالی که با سه لایهٔ
+    # نشست، سربرگ روی هر کلاینتی درست دیده می‌شود.
+    for m in re.finditer(r"<t[dh][^>]*background-image[^>]*>", low):
+        check("هر background-image یک bgcolor پشتوانه دارد",
+              "bgcolor=" in m.group(0), m.group(0)[:70])
+    if "background-image" in low:
+        check("طیف سربرگ برای اتلوک نسخهٔ VML دارد", "v:fill" in low and "gradient" in low)
     check("چیدمان جدول‌محور است", body.count("<table") >= 5, str(body.count("<table")))
     check("CSS درون‌خطی است، نه کلاس", 'style="' in body)
     check("VML هست تا دکمه روی اتلوک کلاسیک گرد بماند", "v:roundrect" in body)
@@ -91,8 +102,14 @@ def test_body_is_outlook_safe() -> None:
     check("ارتقای تدریجی فقط داخل @media است",
           "@media" in body and "prefers-color-scheme" in body)
     check("راست‌به‌چپ و فارسی است", 'dir="rtl"' in body and 'lang="fa"' in body)
-    check("پالت آکوا به‌کار رفته",
-          aqua.LIGHT["header"] in body and aqua.LIGHT["surface"] in body)
+    # ایمیل تا دیروز پالت نسل قبل را داشت و گیرنده یک جنس می‌دید و در
+    # گزارش جنسی دیگر. حالا همان توکن‌های البرز را می‌پوشد.
+    from aibl.report import mail as _mail
+    check("پالت ایمیل از البرز می‌آید",
+          _mail.PALETTE["header"] in body and _mail.PALETTE["surface"] in body)
+    check("پالت نسل قبل دیگر نیست",
+          "#005349" not in body and "#E1F2E9" not in body)
+    check("سرسطرِ سازمان در سربرگ ایمیل هست", "IKCO" in body)
     check("توضیح صادقانه دربارهٔ نبودِ داینامیک هست", "جاوااسکریپت" in body)
     check("پیوست‌ها در بدنه نام برده می‌شوند", "AIBL_Dashboard.xlsx" in body)
 

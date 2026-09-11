@@ -61,10 +61,15 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from . import aqua
+from . import mail as _mail
 from . import narrative as _NR
 from .email import EMAIL_COLUMNS, NoRecipients, _EMAIL_RE, recipients
 
-_L = aqua.LIGHT
+#: پالتِ ایمیل از البرز می‌آید (``report/mail.py``). تا پیش از
+#: این، ایمیل پالتِ نسل قبل را داشت و گیرنده یک جنس می‌دید و در
+#: گزارش جنسی دیگر.
+_L = _mail.PALETTE
+_KICKER = "IKCO · GLOBAL SOURCING (GS) · DATA ANALYTICS AND KPI"
 _S = aqua.STATUS_LIGHT
 
 #: پیوست‌هایی که می‌شود انتخاب کرد. کلید → (عنوان، پسوند، توضیح)
@@ -341,14 +346,7 @@ def outlook_body(title: str, ref_date: str,
 <table role="presentation" width="820" cellpadding="0" cellspacing="0" border="0"
        style="width:820px;max-width:820px">
 
-  <tr><td bgcolor="{_L['header']}" class="pad"
-      style="padding:20px 24px;border-radius:12px 12px 0 0">
-    <div style="font-family:{aqua.FONT_XLSX},Tahoma,sans-serif;font-size:20px;
-      font-weight:bold;color:{_L['on-header-title']};
-      mso-line-height-rule:exactly;line-height:28px">{_h.escape(title)}</div>
-    <div style="font-family:{aqua.FONT_XLSX},Tahoma,sans-serif;font-size:12px;
-      color:{_L['on-header-link']};padding-top:4px">تاریخ مرجع {_h.escape(ref_date)}</div>
-  </td></tr>
+  {_mail.header_band(title, f"تاریخ مرجع {ref_date}", _KICKER)}
 
   <tr><td class="card pad" bgcolor="{_L['raised']}"
       style="padding:18px 18px 8px;border:1px solid {_L['border-soft']};
