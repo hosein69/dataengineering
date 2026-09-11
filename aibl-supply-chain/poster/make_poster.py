@@ -36,6 +36,7 @@ from aibl.report import alborz as A            # noqa: E402
 from aibl.report import narrative as N         # noqa: E402
 from aibl.report import brand as B             # noqa: E402
 from aibl.report import paykan                 # noqa: E402
+from aibl.report import shot as _shot          # noqa: E402
 from aibl.resolve.expert_scope import OWNER_FIELDS, UNOBSERVABLE_STAGES  # noqa: E402
 from aibl.stages.s80_eventlog import ACTIVITIES  # noqa: E402
 
@@ -116,6 +117,16 @@ def main() -> int:
     out = ROOT / "poster" / "IKCO_GS_data_dos_donts.html"
     out.write_text(html(), encoding="utf-8")
     print(f"✅ {out.relative_to(ROOT)} — {out.stat().st_size / 1024:,.0f} کیلوبایت")
+
+    # PNG هم می‌سازیم، چون پوستر را در پیام‌رسان و روی دیوار می‌خواهند،
+    # نه فقط در مرورگر. اگر موتوری نبود، HTML سرِ جایش است و فقط یک
+    # پیام می‌آید — تحویل به PNG گره نمی‌خورد.
+    png = _shot.render(out, out.with_suffix(".png"), width=W, scale=2)
+    if png is None:
+        print("… " + _shot.why_not())
+    else:
+        print(f"✅ {png.relative_to(ROOT)} — "
+              f"{png.stat().st_size / 1024:,.0f} کیلوبایت (عرض {W * 2}px)")
     return 0
 
 

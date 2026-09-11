@@ -25,7 +25,9 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="عملکرد منابع انسانی", page_icon="◈",
                    layout="wide", initial_sidebar_state="expanded")
 
+from app import motion
 from app.styles import band_chip, css, kpi_card
+from hrperf.report import alborz as _AL
 from hrperf.config.model import Cluster, Metric, PerformanceModel, load_model
 from hrperf.config.settings import SETTINGS
 from hrperf.pipeline import Pipeline
@@ -185,14 +187,21 @@ st.sidebar.caption(f"**{len(LB):,}** نفر · **{len(view):,}** پس از فی�
 # ══════════════════════════════════════════════════════════════════════════
 #  سربرگ
 # ══════════════════════════════════════════════════════════════════════════
-st.markdown(f"# عملکرد منابع انسانی")
-st.caption(f"تاریخ مرجع {ref_date} · {len(view):,} نفر · مدل {MODEL.model_version} · "
-           f"{len(MODEL.scored_metrics)} شاخص امتیازی در {len([c for c in MODEL.clusters.values() if c.scored])} کلاستر")
-
 perf = pd.to_numeric(view.get("عملکرد"), errors="coerce")
 counts = {}
 for v in perf.dropna():
     counts[band_of(v)[2]] = counts.get(band_of(v)[2], 0) + 1
+
+# ── سربرگ زنده — همان سربرگِ پوستر و گزارش‌ها، که نفس می‌کشد ──────────────
+motion.hero(
+    "عملکرد منابع انسانی",
+    f"تاریخ مرجع {ref_date}  ·  {len(view):,} نفر  ·  مدل {MODEL.model_version}"
+    f"  ·  {len(MODEL.scored_metrics)} شاخص امتیازی در "
+    f"{len([c for c in MODEL.clusters.values() if c.scored])} کلاستر",
+    [[label, f"{counts.get(label, 0):,}", color] for _f, color, _i, label in BANDS][:4],
+    height=220,
+)
+motion.cursor_glow()
 
 cards = [("میانه عملکرد", f"{perf.median():.1f}" if perf.notna().any() else "—",
           "نیمه بالا/پایین", SERIES[0], "◎"),
@@ -676,7 +685,7 @@ with t_studio:
             _picked = {}
             for i, (k, c) in enumerate(MODEL.clusters.items()):
                 _picked[k] = st.color_picker(
-                    c.label, c.color or _pal[i % len(_pal)], key=f"col_{k}")
+                    c.label, c.color or _AL.series_color(i), key=f"col_{k}")
             if st.form_submit_button("ذخیره رنگ‌ها"):
                 try:
                     nm = MODEL

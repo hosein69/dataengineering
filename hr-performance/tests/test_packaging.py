@@ -515,6 +515,120 @@ def test_narrative():
     check("جایگاهِ نبوده جعل نمی‌شود", _AS.img("__not_a_slot__") == "")
 
 
+
+def test_chart_series():
+    """سریِ نمودار — **اندازه‌گیری‌شده**، نه انتخابِ سلیقه‌ای.
+
+    اینجا همان ریاضیِ ``validate_palette.js`` بازنویسی شده تا ادعای
+    البرز در خودِ مخزن قابل بررسی باشد و به یک ابزار بیرونی گره نخورد:
+    OKLab، شبیه‌سازی کوررنگی، و ΔE روی **همهٔ** جفت‌ها — نه فقط مجاورها.
+
+    سریِ قبلی هشت‌تایی بود و همین آزمون را نمی‌گذراند: دو آبیِ
+    ``#2F74D0`` و ``#1478A0`` در دید عادی ΔE ۸٫۱ فاصله داشتند.
+    """
+    print("\\n── سریِ نمودار " + "─" * 54)
+    import math
+    from hrperf.report import alborz as _AL
+
+    def _lin(c):
+        c /= 255.0
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    def _rgb(h):
+        h = h.lstrip("#")
+        return [_lin(int(h[i:i + 2], 16)) for i in (0, 2, 4)]
+
+    def _oklab(rgb):
+        r, g, b = rgb
+        l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+        m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+        s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+        return (0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+                1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+                0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
+
+    #: ماتریس‌های Brettel/Viénot — همان‌هایی که ابزار سنجش به کار می‌برد
+    _CVD = {
+        "protan": ((0.152286, 1.052583, -0.204868),
+                   (0.114503, 0.786281, 0.099216),
+                   (-0.003882, -0.048116, 1.051998)),
+        "deutan": ((0.367322, 0.860646, -0.227968),
+                   (0.280085, 0.672501, 0.047413),
+                   (-0.011820, 0.042940, 0.968881)),
+    }
+
+    def _sim(rgb, kind):
+        m = _CVD[kind]
+        return [max(0.0, min(1.0, sum(m[i][j] * rgb[j] for j in range(3))))
+                for i in range(3)]
+
+    def _dE(a, b, kind=None):
+        ra, rb = _rgb(a), _rgb(b)
+        if kind:
+            ra, rb = _sim(ra, kind), _sim(rb, kind)
+        pa, pb = _oklab(ra), _oklab(rb)
+        return 100 * math.dist(pa, pb)
+
+    S = list(_AL.SERIES)
+    check("سریِ نمودار هفت اسلات دارد", len(S) == 7, str(len(S)))
+    check("اسلات اول تیلِ برند است", S[0] == "#008E82", S[0])
+
+    worst_n = min((_dE(a, b), a, b) for i, a in enumerate(S) for b in S[i + 1:])
+    check("کفِ دیدِ عادی روی همهٔ جفت‌ها ≥ ۱۵",
+          worst_n[0] >= 15.0, f"{worst_n[0]:.1f}  {worst_n[1]}↔{worst_n[2]}")
+
+    for kind in ("protan", "deutan"):
+        w = min((_dE(a, b, kind), a, b)
+                for i, a in enumerate(S) for b in S[i + 1:])
+        check(f"کفِ کوررنگی ({kind}) روی همهٔ جفت‌ها ≥ ۶",
+              w[0] >= 6.0, f"{w[0]:.1f}  {w[1]}↔{w[2]}")
+
+    def _lum(h):
+        r, g, b = _rgb(h)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    def _cr(a, b):
+        x, y = _lum(a), _lum(b)
+        hi, lo = max(x, y), min(x, y)
+        return (hi + 0.05) / (lo + 0.05)
+
+    # کنتراست: معامله‌ای که آگاهانه پذیرفته شد. سه رنگ روی زمینه زیر
+    # ۳:۱ می‌افتند و تیره‌کردنشان تفکیک را می‌شکند (اندازه‌گیری‌شده).
+    # پس اینجا **تعهدِ جبران** را می‌سنجیم، نه عددِ کنتراست را.
+    low = [c for c in S if _cr(c, _AL.PAGE) < 3.0]
+    check("رنگ‌های کم‌کنتراست همان سه‌تای مستندند، نه بیشتر",
+          len(low) <= 3, f"{len(low)}: {low}")
+    check("هیچ رنگی زیر ۲٫۵:۱ نیست (کفِ مطلق)",
+          min(_cr(c, _AL.PAGE) for c in S) >= 2.5,
+          f"{min(_cr(c, _AL.PAGE) for c in S):.2f}")
+    #: تعهد: راهنما + برچسب + جدول. رنگ تنها حاملِ معنا نیست.
+    for rel, why in [("hrperf/report/html.py", "گزارش HTML"),
+                     ("app/dashboard.py", "رابط")]:
+        txt = io.open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        check(f"{why} راهنمای رنگ دارد", ("legend" in txt or "راهنما" in txt), rel)
+    check("معاملهٔ کنتراست در البرز مستند شده",
+          "معاملهٔ کنتراست" in io.open(
+              os.path.join(ROOT, "hrperf/report/alborz.py"), encoding="utf-8").read())
+
+    # چرخش ممنوع — سری هشتم رنگِ سری اول را نمی‌گیرد
+    check("سریِ هشتم «سایر» می‌شود، نه تکرارِ اولی",
+          _AL.series_color(7) == _AL.SERIES_OTHER
+          and _AL.series_color(7) not in S)
+    check("«سایر» روی کارت خوانا می‌ماند", _cr(_AL.SERIES_OTHER, _AL.CARD) >= 3.0,
+          f"{_cr(_AL.SERIES_OTHER, _AL.CARD):.2f}")
+
+    # رنگ وضعیت هرگز سریِ بعدی نمی‌شود
+    clash = set(S) & set(_AL.STATUS.values())
+    check("رنگ وضعیت با سری قاطی نمی‌شود", not clash, str(sorted(clash)))
+
+    # هیچ مصرف‌کننده‌ای پالت خودش را نسازد
+    import re as _re
+    for rel in ["hrperf/report/fluid.py", "hrperf/report/theme.py",
+                "app/dashboard.py"]:
+        txt = io.open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        cycles = _re.findall(r"%\s*len\((?:SERIES|CATEGORICAL|_pal|palette)", txt)
+        check(f"«{rel}» پالت را نمی‌چرخاند", not cycles, str(cycles[:2]))
+
 if __name__ == "__main__":
     print("=" * 78)
     print("HRPerf — بسته‌بندی، کف خوانایی و ارسال")
@@ -527,6 +641,7 @@ if __name__ == "__main__":
     test_send_actually_sends()
     test_cross_platform()
     test_narrative()
+    test_chart_series()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:

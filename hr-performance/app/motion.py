@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """لایه حرکت — جلوه‌های بصری که به موس واکنش نشان می‌دهند.
 
+نسخهٔ همسانِ ``aibl-supply-chain/app/motion.py``. عمداً کپی شده تا دو
+پکیج مستقل بمانند؛ هر تغییر باید در **هر دو** اعمال شود.
+
 Streamlit تگ ``<script>`` را از ``st.markdown`` حذف می‌کند، پس JS فقط داخل
 ``components.html`` (یک iframe هم‌مبدأ) اجرا می‌شود. دو تکنیک اینجا:
 
@@ -20,13 +23,14 @@ import json
 
 import streamlit.components.v1 as components
 
-from .theme import BRAND, BRAND_DEEP, FONT_STACK, TEXT, TEXT_SECONDARY
-from aibl.report import alborz as _AL
-from aibl.report import paykan as _pk
-from aibl.report import brand as _B
+from hrperf.report.theme import FONT_STACK
+from hrperf.report import alborz as _AL
+from hrperf.report import paykan as _pk
 
 
-def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
+
+def hero(title: str, subtitle: str, stats: list, height: int = 240,
+         kicker: str = "IKCO · GLOBAL SOURCING (GS) · DATA ANALYTICS AND KPI") -> None:
     """سربرگِ زنده — **همان سربرگِ پوستر، که نفس می‌کشد**.
 
     تا حالا این نوار نویزِ خودش را داشت: ذراتی که تصادفی پخش می‌شدند.
@@ -40,8 +44,8 @@ def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
 
     ``stats``: فهرست ``(برچسب، مقدار، رنگ)``.
     """
-    from aibl.report import narrative as _NR
-    from aibl.report import assets as _AS
+    from hrperf.report import narrative as _NR
+    from hrperf.report import assets as _AS
 
     # نقطه‌ها روی صحنهٔ ۹۰۰×۵۲۰ قالب‌اند؛ به نسبت، نه به پیکسل، می‌روند
     # تا در هر عرضی همان الگو بماند.
@@ -132,7 +136,7 @@ def hero(title: str, subtitle: str, stats: list, height: int = 240) -> None:
 </style>
 <script>
 const D = {payload};
-document.getElementById('k').textContent = '{_B.LOCKUP_FULL}';
+document.getElementById('k').textContent = '{kicker}';
 document.getElementById('t').textContent = D.title;
 document.getElementById('s').textContent = D.subtitle;
 document.getElementById('stats').innerHTML = D.stats.map(function(s){{
@@ -229,10 +233,10 @@ def cursor_glow() -> None:
 (function(){
   try{
     var d = window.parent && window.parent.document;
-    if(!d || d.getElementById('aibl-glow')) return;
+    if(!d || d.getElementById('hrperf-glow')) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var g = d.createElement('div');
-    g.id = 'aibl-glow';
+    g.id = 'hrperf-glow';
     g.style.cssText = 'position:fixed;left:0;top:0;width:520px;height:520px;'+
       'margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;z-index:0;'+
       'background:radial-gradient(circle,rgba(15,110,110,.10) 0%,rgba(15,110,110,.05) 38%,transparent 66%);'+

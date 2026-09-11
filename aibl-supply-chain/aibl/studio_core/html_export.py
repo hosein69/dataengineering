@@ -57,7 +57,7 @@ from ..report import narrative as _NR
 from ..report import paykan as _pk
 from ..report import assets as _AS
 
-CATEGORICAL = aqua.CATEGORICAL_LIGHT
+CATEGORICAL = list(_AL.SERIES)
 OTHER_COLOR = aqua.OTHER_LIGHT
 
 BRAND, BRAND_DEEP = aqua.LIGHT["brand-strong"], aqua.LIGHT["header"]

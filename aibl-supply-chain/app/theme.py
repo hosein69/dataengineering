@@ -75,7 +75,8 @@ BAND_ORDER_FA = [BANDS[k][2] for k in BAND_ORDER]
 
 # ── پالت دسته‌ای (ترتیب ثابت، هرگز چرخشی) ─────────────────────────────────
 # ترتیب مرجع اعتبارسنجی‌شده؛ سه اسلات اول برای نمودارهای all-pairs امن‌اند.
-SERIES: List[str] = list(_aqua.CATEGORICAL_LIGHT)
+#: سریِ نمودار از البرز می‌آید — همان‌جا اندازه‌گیری و سقف‌گذاری شده.
+SERIES: List[str] = list(_AL.SERIES)
 
 #: تک‌هیو ترتیبی برای بزرگی پیوسته (روشن → تیره)
 SEQUENTIAL: List[str] = ["#D7F0E7", "#A9DFD1", "#7CCDBB",

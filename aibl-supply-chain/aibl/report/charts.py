@@ -42,6 +42,7 @@ from openpyxl.utils import get_column_letter
 from ..dataio.logging_setup import log
 from ..rulebook import get_rulebook
 from . import aqua
+from . import alborz as _AL
 from .palette import LuxuryPalette as P
 
 SHEET_CHARTS = "۱۱. نمودارهای تحلیلی"
@@ -49,10 +50,16 @@ SHEET_CHARTS = "۱۱. نمودارهای تحلیلی"
 #: پالت نمودارها — هم‌خانواده با تم گزارش، با کنتراست کافی برای چاپ سیاه‌وسفید
 #: رنگ سری‌ها — همان طیف آکوا که HTML و داشبورد به‌کار می‌برند،
 #: بدون «#» چون قالب نمودار اکسل همین را می‌خواهد.
-SERIES_COLORS = [c.lstrip("#") for c in aqua.CATEGORICAL_LIGHT]
+#: openpyxl رنگ را بدون «#» می‌خواهد. منبع همان البرز است.
+SERIES_COLORS = [c.lstrip("#") for c in _AL.SERIES]
 
 #: چیدمان: (ردیف، ستون) لنگر هر نمودار روی شیت
 _ANCHORS = ["B2", "M2", "B23", "M23", "B44", "M44", "B65"]
+
+
+def _hx(c: str) -> str:
+    """``#RRGGBB`` → ``RRGGBB``. openpyxl «#» را نمی‌پذیرد."""
+    return c.lstrip("#")
 
 
 def _font_rich(size: int = 820, bold: bool = False) -> RichText:
@@ -101,8 +108,10 @@ def _style_chart(ch: Any, title: str, height: float = 9.0,
 def _color_series(ch: Any, colors: Optional[List[str]] = None) -> None:
     palette = colors or SERIES_COLORS
     for i, s in enumerate(ch.series):
-        s.graphicalProperties = GraphicalProperties(solidFill=palette[i % len(palette)])
-        s.graphicalProperties.line.solidFill = palette[i % len(palette)]
+        # چرخش ممنوع: سریِ هشتم رنگِ سریِ اول را نمی‌گیرد، «سایر» می‌شود.
+        c = palette[i] if i < len(palette) else _hx(_AL.SERIES_OTHER)
+        s.graphicalProperties = GraphicalProperties(solidFill=c)
+        s.graphicalProperties.line.solidFill = c
 
 
 class ChartData:
@@ -184,16 +193,21 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             # رنگ هر ستون از خود قوانین می‌آید، نه سلیقه
             # رنگ هر ستون از خود rules/criticality.yaml می‌آید، نه سلیقه:
             # قرمزِ «توقف خط» همان رنگی است که در شیت‌های دیگر هم دیده می‌شود.
-            fills = {b.get("short_fa", b["code"]): b.get("color", "95A5A6")
+            fills = {b.get("short_fa", b["code"]): b.get("color", _hx(_AL.SERIES_OTHER))
                      for b in bands}
-            fills.update({"توقف خط":"C0392B", "بحرانی":"C0392B", "در حال بحرانی شدن":"F39C12",
-                          "تحت نظر":"F1C40F", "ایمن":"27AE60", "بدون مصرف":"95A5A6", "نامشخص":"95A5A6"})
+            # رنگِ وضعیت از البرز می‌آید، نه از یک فهرستِ دستی. قبلاً
+            # «تحت نظر» زردِ F1C40F بود که روی سفید ۱٫۵:۱ می‌داد.
+            fills.update({fa: _hx(_AL.STATUS[k]) for fa, k in (
+                ("توقف خط", "stockout"), ("بحرانی", "critical"),
+                ("در حال بحرانی شدن", "serious"), ("تحت نظر", "warning"),
+                ("ایمن", "good"), ("بدون مصرف", "neutral"),
+                ("نامشخص", "unknown"))})
             from openpyxl.chart.marker import DataPoint as _DP
             pts = []
             for i, lab in enumerate(labels):
                 dp = _DP(idx=i)
                 dp.graphicalProperties = GraphicalProperties(
-                    solidFill=fills.get(lab, "406057"))
+                    solidFill=fills.get(lab, _hx(_AL.SERIES_OTHER)))
                 pts.append(dp)
             ch.series[0].data_points = pts
             _apply_chart_font(ch)
@@ -216,7 +230,7 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             _style_chart(ch, "۱۰ متریال کم‌مقاومت")
             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
             ch.legend = None
-            _color_series(ch, ["C0392B"])
+            _color_series(ch, [_hx(_AL.STATUS["critical"])])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 
@@ -237,7 +251,7 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
                         titles_from_data=True)
             ch.set_categories(Reference(ws, min_col=c1, min_row=r1 + 1, max_row=r2))
             _style_chart(ch, "مقاومت انبار و کل")
-            _color_series(ch, ["95A5A6", "5B7C99"])
+            _color_series(ch, [_hx(_AL.SERIES_OTHER), _hx(_AL.SERIES[4])])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 
@@ -262,7 +276,7 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             _style_chart(ch, "مانده تعهد ارزی")
             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
             ch.legend = None
-            _color_series(ch, ["C0392B"])
+            _color_series(ch, [_hx(_AL.STATUS["critical"])])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 
@@ -286,7 +300,7 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             _style_chart(ch, "گلوگاه فرآیند")
             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
             ch.legend = None
-            _color_series(ch, ["F39C12"])
+            _color_series(ch, [_hx(_AL.STATUS["warning"])])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 
@@ -322,7 +336,7 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             _style_chart(ch, "بار کاری سازمانی")
             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
             ch.legend = None
-            _color_series(ch, ["27AE60"])
+            _color_series(ch, [_hx(_AL.STATUS["good"])])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 

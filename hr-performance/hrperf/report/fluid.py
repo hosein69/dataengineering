@@ -39,12 +39,14 @@ import pandas as pd
 
 from ..config.model import PerformanceModel
 from . import aqua
+from . import alborz as _AL
 from ..model_engine import vectors as ve
 
 #: پالت آکوا — همان تعریفی که اکسل و HTML و داشبورد از آن می‌خوانند.
 #: ترتیب ثابت، هرگز چرخانده نمی‌شود.
-CATEGORICAL_LIGHT = aqua.CATEGORICAL_LIGHT
-CATEGORICAL_DARK = aqua.CATEGORICAL_DARK
+#: یک هویت، دو سطح: همان هفت رنگ روی سطح تیره هم سنجیده شد و رد شد.
+CATEGORICAL_LIGHT = list(_AL.SERIES)
+CATEGORICAL_DARK = list(_AL.SERIES)
 OTHER_LIGHT, OTHER_DARK = aqua.OTHER_LIGHT, aqua.OTHER_DARK
 
 
@@ -52,8 +54,9 @@ def _cluster_colors(model: PerformanceModel) -> Dict[str, Dict[str, str]]:
     """رنگ هر کلاستر در دو حالت. رنگ دستیِ کاربر بر پالت مقدم است."""
     out: Dict[str, Dict[str, str]] = {}
     for i, (k, c) in enumerate(model.clusters.items()):
-        light = c.color or CATEGORICAL_LIGHT[i % len(CATEGORICAL_LIGHT)]
-        dark = c.color or CATEGORICAL_DARK[i % len(CATEGORICAL_DARK)]
+        # بدون چرخش — از اسلات هفتم که گذشت، «سایر».
+        light = c.color or _AL.series_color(i)
+        dark = c.color or _AL.series_color(i)
         out[k] = {"light": light, "dark": dark, "label": c.label,
                   "weight": round(c.weight, 4), "scored": c.scored}
     return out
