@@ -29,6 +29,10 @@ jobs:
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
         run: python run_five_symbols.py
 
+      - name: Live daily watchlist scan (long/short evidence)
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
+        run: python live_watchlist.py
+
       - name: Upload results (short retention)
         uses: actions/upload-artifact@v4
         with:
@@ -36,4 +40,5 @@ jobs:
           path: |
             Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/gh_run_output
             Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/five_symbol_output
+            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/watchlist_output
           retention-days: 1
