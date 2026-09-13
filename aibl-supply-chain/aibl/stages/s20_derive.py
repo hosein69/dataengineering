@@ -54,7 +54,26 @@ DERIVED = {
     "CLEARANCE_HINT":     (["MOGH_CLEARANCE_HINT"], "", False),
     "STAGE_ALERTS":       (["MOGH_ALERTS"], "", False),
     "HS_SUGGESTED":       (["MOGH_HS_SUGGESTED"], "", False),
-    "TRANSPORT_MODE":     (["MOGH_TRANSPORT_MODE_CODE"], "", False),
+    # ── روشِ حمل ────────────────────────────────────────────────────
+    #
+    # ⚠️ نقطهٔ تاریکِ اصلی: این ستون فقط از مقاومت می‌آمد. اگر آن سورس
+    # ستونِ «Mode of Transport» را نداشت — که در دادهٔ واقعی داشت —
+    # ستون برای **همهٔ** ردیف‌ها خالی می‌ماند. آن‌وقت:
+    #
+    #   * فیلترِ «روش حمل» در استریم‌لیت هیچ گزینه‌ای نداشت و قفل بود؛
+    #   * خروجی HTML و اکسل ستونی خالی نشان می‌داد.
+    #
+    # در همان داده، دو سورسِ دیگر جواب را می‌دانستند و نادیده گرفته
+    # می‌شدند: ترخیص (دریایی/هوایی) و BLs Tracking (هر سه، از جمله
+    # زمینی). حالا زنجیره‌ای پر می‌شود، ردیف‌به‌ردیف:
+    #
+    #   مقاومت → ترخیص → BLs Tracking
+    #
+    # ترتیب تصادفی نیست: مقاومت اعلامِ خریدار است، ترخیص اعلامِ گمرک، و
+    # BLs Tracking اعلامِ حمل‌کننده. هرچه به خودِ محموله نزدیک‌تر،
+    # دیرتر — تا اعلامِ صریحِ بالادست بازنویسی نشود.
+    "TRANSPORT_MODE_CODE": (["MOGH_TRANSPORT_MODE_CODE", "CL_TRANSPORT_MODE_CODE",
+                             "BL_TRIP_MODE_CODE"], "", False),
     "VENDOR_CODE":        (["MOGH_VENDOR_CODE"], "", False),
     "CLEARED_PCT":        (["MOGH_CLEARED_PCT"], 0, True),
     "BL_SUSPECT":         (["MOGH_BL_SUSPECT"], "", False),
@@ -161,6 +180,25 @@ class DeriveStage(Stage):
         for target, (candidates, default, numeric) in DERIVED.items():
             series = self._first_nonempty(df, candidates, default)
             df[target] = series.map(num_safe) if numeric else series
+        # ── برچسبِ فارسیِ روشِ حمل ────────────────────────────────
+        # ستونِ «روش حمل» که کاربر می‌بیند و رویش فیلتر می‌کند باید
+        # «دریایی» باشد نه ``SEA``. یک‌بار اینجا ترجمه می‌شود تا هر
+        # مصرف‌کننده ترجمهٔ خودش را نسازد.
+        from ..rulebook.loader import get_rulebook
+        _rb = get_rulebook()
+        _code = df.get("TRANSPORT_MODE_CODE", pd.Series("", index=df.index))
+        df["TRANSPORT_MODE"] = _code.fillna("").astype(str).map(_rb.transport_mode_fa)
+        # منشأ: کدام سورس این را گفت. بدون این، وقتی دو سورس اختلاف
+        # دارند هیچ راهی برای ردیابی نیست.
+        _src = pd.Series("", index=df.index, dtype="object")
+        for col, name in (("MOGH_TRANSPORT_MODE_CODE", "مقاومت"),
+                          ("CL_TRANSPORT_MODE_CODE", "ترخیص"),
+                          ("BL_TRIP_MODE_CODE", "BLs Tracking")):
+            if col in df.columns:
+                has = df[col].fillna("").astype(str).str.strip() != ""
+                _src = _src.where((_src != "") | ~has, name)
+        df["TRANSPORT_MODE_SRC"] = _src
+
         for target, src in BOOLS.items():
             # FutureWarning: downcasting در fillna حذف شد
             df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)

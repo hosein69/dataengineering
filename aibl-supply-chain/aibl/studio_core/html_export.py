@@ -95,10 +95,16 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "AIBL",
     default_cols = ["KEY_MATERIAL", "CANONICAL_ORDER", "CANONICAL_BL", "KEY_REG",
                     "CANONICAL_EXPERT", "ORG_DEPT", "روش حمل", "بحرانی (کوتاه)",
                     "مقاومت (روز)"]
+    # ⚠️ این فهرست با **برچسب** نوشته شده («روش حمل») ولی روی فریمِ
+    # کاری اجرا می‌شود که نامِ فنی دارد (``TRANSPORT_MODE``). فیلترِ
+    # سادهٔ ``c in df.columns`` ستون را بی‌صدا می‌انداخت و کاربر
+    # می‌دید روشِ حمل اصلاً در خروجی نیست. ``resolve_columns`` هر دو
+    # نام را می‌شناسد.
+    from .field_catalog import resolve_columns as _resolve_cols
     requested = list(selected_fields or default_cols)
-    cols = [c for c in requested if c in df.columns]
+    cols = _resolve_cols(df, requested)
     if not cols:
-        cols = [c for c in default_cols if c in df.columns] or list(df.columns[:12])
+        cols = _resolve_cols(df, default_cols) or list(df.columns[:12])
     labels = labels or {}
     pm = prefix_grain_map()
 

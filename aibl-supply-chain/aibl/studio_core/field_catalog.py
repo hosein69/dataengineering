@@ -83,7 +83,8 @@ DERIVED_LABELS: Dict[str, str] = {
     "SUPPLY_GROUP": "گروه تأمین", "FOREIGN_SHARE": "درصد سهم خرید خارجی",
     "VENDOR_CODE": "کد تأمین‌کننده", "BUYER": "کارشناس خرید",
     # حمل و ترخیص
-    "TRANSPORT_MODE": "روش حمل", "BL_DATE": "تاریخ بارنامه",
+    "TRANSPORT_MODE": "روش حمل", "TRANSPORT_MODE_CODE": "کد روش حمل",
+    "TRANSPORT_MODE_SRC": "منشأ روش حمل", "BL_DATE": "تاریخ بارنامه",
     "DISCHARGE_DATE": "تاریخ تخلیه", "ARRIVAL_DATE": "تاریخ ورود",
     "COTAGE_NO": "شماره کوتاژ", "CUSTOMS_FILE_NO": "شماره پرونده گمرکی",
     "ENTRY_BORDER": "مرز ورودی", "DEST_CUSTOMS": "گمرک مقصد",
@@ -198,6 +199,51 @@ class FieldSpec:
     def display(self) -> str:
         return f"{self.label} · {self.column}" if self.label != self.column else self.column
 
+
+
+# ── نام در برابر برچسب ──────────────────────────────────────────────
+#
+# یک ستون دو نام دارد: نامِ فنی در فریمِ کاری (``TRANSPORT_MODE``) و
+# برچسبی که در خروجی می‌نشیند («روش حمل»). چند جا فهرستِ ستون‌ها با
+# **برچسب** نوشته شده بود ولی روی فریمِ کاری اجرا می‌شد؛ نتیجه این بود
+# که ستون بی‌صدا از خروجی حذف می‌شد — نه خطایی، نه هشداری.
+#
+# این دو تابع همان ترجمه را یک‌جا انجام می‌دهند تا هیچ‌کس دوباره
+# فهرستِ خودش را ننویسد.
+
+def _label_to_field() -> Dict[str, str]:
+    """برچسب → نام فنی. اگر دو فیلد یک برچسب داشتند، اولی می‌ماند."""
+    out: Dict[str, str] = {}
+    for src in (DERIVED_LABELS, COMPUTED_LABELS):
+        for field, lab in src.items():
+            out.setdefault(str(lab), field)
+    return out
+
+
+def resolve_column(df, name: str) -> str:
+    """نامِ واقعیِ این ستون در این دیتافریم، یا رشتهٔ خالی.
+
+    هم نامِ فنی را می‌پذیرد هم برچسب را، و در هر دو جهت می‌گردد.
+    """
+    if name in df.columns:
+        return name
+    back = _label_to_field().get(name)
+    if back and back in df.columns:
+        return back
+    lab = DERIVED_LABELS.get(name) or COMPUTED_LABELS.get(name)
+    if lab and lab in df.columns:
+        return lab
+    return ""
+
+
+def resolve_columns(df, names) -> List[str]:
+    """فهرستی از نام‌ها را به ستون‌های موجود ترجمه کن، بدون تکرار."""
+    out: List[str] = []
+    for n in names or []:
+        c = resolve_column(df, n)
+        if c and c not in out:
+            out.append(c)
+    return out
 
 def _clean_header(raw: str) -> str:
     """هدر واقعی فایل را به یک برچسب تمیز تبدیل می‌کند.

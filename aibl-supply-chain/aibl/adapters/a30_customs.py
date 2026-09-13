@@ -107,12 +107,38 @@ class ClearanceAdapter(SourceAdapter):
         out[p("HS_CODE")] = out[p("HS_CODE")].map(
             lambda v: "" if is_empty_val(v) else str(int(num_safe(v))) if num_safe(v) > 0 else "")
 
-        # ── روش حمل از rulebook ──
+        # ── روش حمل از rulebook، با تکیه‌گاهِ نامِ فایل ──
+        #
+        # ⚠️ اینجا یک نقطهٔ تاریک بود: اگر ستون «نوع حمل» خالی می‌ماند،
+        # ردیف بی‌روشِ حمل می‌شد — در حالی که **خودِ فایل** جوابش را
+        # می‌دانست. چهار فایل ترخیص Sea/Air/Land/chabahar نام دارند و
+        # نامشان صریح‌ترین اعلامِ روشِ حمل است.
         rb = get_rulebook()
-        out[p("TRANSPORT_MODE_CODE")] = out[p("TRANSPORT_MODE")].map(rb.transport_mode)
+        code = out[p("TRANSPORT_MODE")].map(rb.transport_mode)
 
-        if "_SOURCE_SHEET" in df.columns:
-            out[p("SOURCE_SHEET")] = df["_SOURCE_SHEET"]
+        src_sheet = df["_SOURCE_SHEET"] if "_SOURCE_SHEET" in df.columns else None
+        src_file = df["_SOURCE_FILE"] if "_SOURCE_FILE" in df.columns else None
+        if src_sheet is not None or src_file is not None:
+            hint = pd.Series("", index=out.index, dtype="object")
+            for col in (src_sheet, src_file):
+                if col is None:
+                    continue
+                guess = col.fillna("").astype(str).map(rb.transport_mode)
+                hint = hint.where(hint.astype(str).str.strip() != "", guess)
+            filled = code.astype(str).str.strip() == ""
+            n_from_name = int((filled & (hint.astype(str).str.strip() != "")).sum())
+            code = code.where(~filled, hint)
+            if n_from_name:
+                log.info(f"   🚚 [clearance] روشِ حملِ {n_from_name} ردیف از نامِ "
+                         f"فایل/شیت خوانده شد (ستون «نوع حمل» خالی بود).")
+
+        out[p("TRANSPORT_MODE_CODE")] = code
+        # برچسبِ فارسی هم همین‌جا ساخته می‌شود تا مصرف‌کننده‌ها کد را
+        # خودشان ترجمه نکنند و هر کدام یک ترجمهٔ متفاوت نسازند.
+        out[p("TRANSPORT_MODE_FA")] = code.map(rb.transport_mode_fa)
+
+        if src_sheet is not None:
+            out[p("SOURCE_SHEET")] = src_sheet
 
         n_full = int(out[p("IS_FULL")].sum())
         n_part = int(out[p("IS_PARTIAL")].sum())

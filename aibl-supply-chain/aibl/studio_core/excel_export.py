@@ -172,8 +172,12 @@ def build_custom_excel(df: pd.DataFrame, output_path: str | Path, modules: Itera
                 "BL_CRITICAL_MATERIALS", "BL_CRITICAL_REASON", "ORDER_CRITICAL",
                 "ORDER_CRITICAL_MATERIALS", "ORDER_CRITICAL_REASON"
             ]
-            cols = [c for c in (selected_fields or default_cols) if c in df.columns]
-            if not cols: cols = list(df.columns[:20])
+            # همان نقطهٔ تاریکِ HTML: فهرست با برچسب نوشته شده و فریم
+            # نامِ فنی دارد، پس «روش حمل» بی‌صدا از شیت می‌افتاد.
+            from .field_catalog import resolve_columns as _resolve_cols
+            cols = _resolve_cols(df, selected_fields or default_cols)
+            if not cols:
+                cols = list(df.columns[:20])
             live = df[cols].head(max_rows)
             if field_labels:
                 # سرستون فارسی — نگاشت باید یکتا باشد وگرنه pandas ستون تکراری می‌سازد

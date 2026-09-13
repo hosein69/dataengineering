@@ -10,7 +10,11 @@ modes:
   - code: SEA
     fa: "دریایی"
     document: BL
-    aliases: [دریایی, sea, ocean, vessel, کشتی, "by sea"]
+    # «چابهار» و «بندرعباس» نام بندرند نه روش حمل؛ ولی پروندهٔ ترخیصی که
+    # از آن بندر می‌آید، دریایی است. این استنتاج عمدی و مستند است —
+    # نبودنش باعث می‌شد ردیف‌های چابهار بی‌روشِ حمل بمانند.
+    aliases: [دریایی, sea, ocean, vessel, کشتی, "by sea", marine, بندر,
+              چابهار, chabahar, بندرعباس, "شهید رجایی", bandar]
     typical_transit_days: 35
   - code: AIR
     fa: "هوایی"
@@ -18,9 +22,13 @@ modes:
     aliases: [هوایی, air, "by air", هواپیما]
     typical_transit_days: 7
   - code: ROAD
-    fa: "زمینی (جاده‌ای)"
+    fa: "زمینی"
     document: CMR
-    aliases: [زمینی, جاده, road, truck, کامیون, "by road"]
+    # ⚠️ «land» اینجا نبود و همین یک کلمه، کلِ حملِ زمینی را از گزارش
+    # حذف می‌کرد: فایل ترخیصِ زمینی «Land Clearance.xlsx» است و ستون
+    # «نوع حمل»‌اش «Land» می‌نویسد.
+    aliases: [زمینی, جاده, road, land, truck, lorry, کامیون, تریلی,
+              "by road", tir, تیر, overland]
     typical_transit_days: 20
   - code: RAIL
     fa: "ریلی"

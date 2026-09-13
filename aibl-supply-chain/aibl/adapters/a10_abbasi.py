@@ -45,4 +45,16 @@ class AbbasiAdapter(SourceAdapter):
         out = self.std(df, self.COLUMN_MAP, exclude=["توضیح"])
         self.add_bl_key(out, df, ["بارنامه", "شماره بارنامه"])
         self.add_order_key(out, df, ["شماره سفارش", "سفارش"])
+
+        # ── «نوع سفر» → کدِ روشِ حمل ─────────────────────────────────
+        # این ستون کامل‌ترین منبعِ روشِ حمل در کلِ سیستم است (هر سه روش
+        # را دارد) و تا امروز هیچ‌کجا استفاده نمی‌شد: ستونِ «روش حمل»
+        # فقط از مقاومت می‌آمد و وقتی آن سورس این ستون را نداشت، کلِ
+        # فیلتر خالی می‌ماند.
+        from ..rulebook.loader import get_rulebook
+        rb = get_rulebook()
+        p_ = self.p
+        code = out[p_("TRIP_MODE")].map(rb.transport_mode)
+        out[p_("TRIP_MODE_CODE")] = code
+        out[p_("TRIP_MODE_FA")] = code.map(rb.transport_mode_fa)
         return {"main": out}

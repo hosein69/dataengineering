@@ -285,16 +285,49 @@ class RuleBook:
         return "", ""
 
     def transport_mode(self, text: Any) -> str:
+        """متنِ آزادِ «نوع حمل» → کدِ روش حمل، یا رشتهٔ خالی.
+
+        دو قاعده که ترتیبِ نتیجه را قطعی می‌کنند:
+
+        ۱ **برابریِ کامل مقدم است.** اگر متن دقیقاً یکی از کدها یا
+          نام‌هاست، همان برنده است.
+        ۲ **در تطبیقِ زیررشته‌ای، نام بلندتر مقدم است.** بدون این، یک
+          نام کوتاه می‌توانست نام بلندتری را که در همان متن هست بپوشاند،
+          و نتیجه به ترتیبِ نوشتنِ YAML گره می‌خورد — یعنی یک ویرایشِ
+          بی‌ربط در فایل قواعد، خروجی را عوض می‌کرد.
+        """
         s = str(text or "").strip().lower()
         if not s:
             return ""
-        for m in self.get("transport.modes", []) or []:
-            if s == m["code"].lower():
-                return m["code"]
+        modes = self.get("transport.modes", []) or []
+        pairs = []
+        for m in modes:
+            code = str(m["code"])
+            if s == code.lower() or s == str(m.get("fa", "")).strip().lower():
+                return code
             for a in m.get("aliases", []) or []:
-                if str(a).lower() in s:
-                    return m["code"]
+                a = str(a).strip().lower()
+                if a:
+                    pairs.append((len(a), a, code))
+        for _n, a, code in sorted(pairs, key=lambda x: -x[0]):
+            if a in s:
+                return code
         return ""
+
+    def transport_mode_fa(self, code: Any) -> str:
+        """کدِ روش حمل → برچسبِ فارسی.
+
+        گزارش و فیلتر باید «دریایی» نشان بدهند، نه ``SEA``. تا پیش از
+        این چنین نگاشتی وجود نداشت و ستونِ «روش حمل» کدِ انگلیسی را زیر
+        سرستونِ فارسی می‌گذاشت.
+        """
+        c = str(code or "").strip().upper()
+        if not c:
+            return ""
+        for m in self.get("transport.modes", []) or []:
+            if str(m["code"]).upper() == c:
+                return str(m.get("fa") or c)
+        return c
 
     def fiscal_year_start(self) -> date:
         v = self.get("fx_governance.fiscal_year.starts_on")

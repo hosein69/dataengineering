@@ -961,6 +961,90 @@ def test_monthly():
     hexes = set(re.findall(r"#[0-9A-Fa-f]{6}", src))
     check("هیچ رنگِ ثابتی در گزارش ماهانه نیست", not hexes, str(sorted(hexes)[:3]))
 
+
+def test_transport_mode():
+    """روشِ حمل — سه نقطهٔ تاریک که با هم، حملِ زمینی و هوایی را می‌خوردند.
+
+    این تست از یک گزارشِ واقعیِ تولید آمد: «فیلترِ روش حمل قفل است و
+    خروجی فقط دریایی می‌دهد». سه ایرادِ مستقل بود و هر سه **بی‌صدا**:
+
+    ۱ ستونِ ``TRANSPORT_MODE`` فقط از یک سورس (مقاومت) می‌آمد. آن سورس
+      ستونش را نداشت ⇒ ستون برای همهٔ ردیف‌ها خالی. در همان داده،
+      ترخیص (دریایی/هوایی) و BLs Tracking (هر سه) جواب را می‌دانستند.
+    ۲ فیلتر دنبال ستونی به نامِ «روش حمل» می‌گشت، ولی نامِ واقعی
+      ``TRANSPORT_MODE`` است. شرط همیشه نادرست ⇒ نه خطا، نه فیلتر.
+    ۳ فهرستِ ستون‌های خروجیِ HTML و اکسل هم با برچسب نوشته شده بود و
+      ستون را بی‌صدا از خروجی می‌انداخت.
+
+    هر سه اینجا قفل‌اند.
+    """
+    print("\n── روشِ حمل " + "─" * 56)
+    import pandas as pd
+    from aibl.rulebook.loader import get_rulebook
+    from aibl.studio_core.filters import (FilterState, apply_filters,
+                                          filter_options, resolve,
+                                          missing_columns)
+    from aibl.studio_core.field_catalog import resolve_column, resolve_columns
+
+    rb = get_rulebook()
+
+    # ۱) قواعد: هر سه روش باید شناخته شوند — «Land» نامِ فایلِ واقعی است
+    for text, want in (("Sea", "SEA"), ("Air", "AIR"), ("Land", "ROAD"),
+                       ("دریایی", "SEA"), ("هوایی", "AIR"), ("زمینی", "ROAD"),
+                       ("by air", "AIR"), ("truck", "ROAD"), ("", "")):
+        got = rb.transport_mode(text)
+        check(f"«{text or '—'}» → {want or 'خالی'}", got == want, got)
+    check("«Land» دیگر بی‌جواب نمی‌ماند", rb.transport_mode("Land") == "ROAD")
+    check("برچسب فارسی از کد ساخته می‌شود",
+          rb.transport_mode_fa("ROAD") == "زمینی", rb.transport_mode_fa("ROAD"))
+    check("کدِ ناشناخته برچسب جعلی نمی‌سازد", rb.transport_mode_fa("XX") == "XX")
+
+    # ۲) زنجیرهٔ سورس: وقتی مقاومت ساکت است، بقیه جواب می‌دهند
+    from aibl.stages.s20_derive import DERIVED
+    chain = DERIVED["TRANSPORT_MODE_CODE"][0]
+    check("روشِ حمل از یک سورس نمی‌آید", len(chain) >= 3, str(chain))
+    for src in ("MOGH_TRANSPORT_MODE_CODE", "CL_TRANSPORT_MODE_CODE",
+                "BL_TRIP_MODE_CODE"):
+        check(f"«{src}» در زنجیره هست", src in chain)
+
+    # ۳) فیلتر: نامِ فنی و برچسب، هر دو شناخته می‌شوند
+    df = pd.DataFrame({"TRANSPORT_MODE": ["دریایی", "هوایی", "زمینی", "دریایی"],
+                       "ORG_DEPT": ["الف", "ب", "الف", "ج"]})
+    check("فیلتر ستون را با نامِ فنی پیدا می‌کند",
+          resolve(df, "transport") == "TRANSPORT_MODE")
+    lab = df.rename(columns={"TRANSPORT_MODE": "روش حمل"})
+    check("و با برچسبِ خروجی هم پیدا می‌کند",
+          resolve(lab, "transport") == "روش حمل")
+
+    opts = filter_options(df)["transport"]
+    check("هر سه روش در گزینه‌ها می‌آید",
+          opts == ["دریایی", "زمینی", "هوایی"], str(opts))
+    for mode, n in (("دریایی", 2), ("هوایی", 1), ("زمینی", 1)):
+        got = len(apply_filters(df, FilterState(transport=[mode])))
+        check(f"فیلترِ «{mode}» واقعاً فیلتر می‌کند", got == n, f"{got} ≠ {n}")
+    both = len(apply_filters(df, FilterState(transport=["هوایی", "زمینی"])))
+    check("انتخابِ چندتایی کار می‌کند", both == 2, str(both))
+    check("فیلترِ خالی همه را برمی‌گرداند",
+          len(apply_filters(df, FilterState())) == 4)
+
+    # ۴) نبودِ ستون باید **دیده** شود، نه بی‌صدا رد
+    bare = pd.DataFrame({"X": [1, 2]})
+    check("فیلترِ بی‌ستون گزارش می‌شود",
+          "transport" in missing_columns(bare), str(missing_columns(bare)))
+
+    # ۵) خروجی: فهرستِ برچسبی هم ستون را پیدا می‌کند
+    check("برچسب به نامِ فنی ترجمه می‌شود",
+          resolve_column(df, "روش حمل") == "TRANSPORT_MODE")
+    got = resolve_columns(df, ["ORG_DEPT", "روش حمل", "ستونِ نبوده"])
+    check("فهرستِ خروجی ستون را نمی‌اندازد",
+          got == ["ORG_DEPT", "TRANSPORT_MODE"], str(got))
+
+    from aibl.studio_core.html_export import build_dynamic_html
+    h = build_dynamic_html(df.assign(KEY_MATERIAL=["m1", "m2", "m3", "m4"]),
+                           ref_date="۱۴۰۵/۰۶/۳۱", title="T")
+    for mode in ("دریایی", "هوایی", "زمینی"):
+        check(f"«{mode}» به خروجی HTML می‌رسد", mode in h)
+
 if __name__ == "__main__":
     print("=" * 78)
     print("AIBL — بسته‌بندی، کف خوانایی و ارسال")
@@ -979,6 +1063,7 @@ if __name__ == "__main__":
     test_narrative()
     test_chart_series()
     test_monthly()
+    test_transport_mode()
     print("\n" + "=" * 78)
     print(f"نتیجه: {len(PASS)} موفق | {len(FAIL)} ناموفق")
     if FAIL:
