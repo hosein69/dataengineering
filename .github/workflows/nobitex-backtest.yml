@@ -1,0 +1,33 @@
+name: Vibe-Trading Nobitex Backtest (manual, real live data)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install vibe-trading-ai
+        run: pip install vibe-trading-ai
+
+      - name: Run backtests against live apiv2.nobitex.ir
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
+        run: python run_on_github.py
+
+      - name: Upload results (short retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: nobitex-backtest-results
+          path: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/gh_run_output"
+          retention-days: 1
