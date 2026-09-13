@@ -26,6 +26,9 @@ Welcome to my journey into the realm of data engineering! This repository marks 
 * This project schedules data pipelines, to perform ETL from json files in S3 to Redshift using Airflow. 
 * Why use Airflow? Airflow allows workflows to be defined as code, they become more maintainable, versionable, testable, and collaborative
 
+6. <ins> [Vibe-Trading Backtest (Nobitex & Wallex)](<./Vibe-Trading Backtest (Nobitex & Wallex)>) </ins> :heavy_check_mark:
+* A step-by-step (Persian) guide to installing and running [Vibe-Trading](https://github.com/HKUDS/Vibe-Trading), an LLM-powered trading agent, focused on backtesting with the Iranian exchanges Nobitex and Wallex as Toman-quoted data sources.
+
 **Getting Started:**
 
 To get started with the project, follow these steps:

@@ -1,0 +1,13 @@
+{
+  "source": "wallex",
+  "codes": ["USDT-TMN"],
+  "start_date": "2024-06-01",
+  "end_date": "2024-12-01",
+  "interval": "1d",
+  "strategy": "rsi_mean_reversion",
+  "params": {
+    "period": 14,
+    "buy_below": 30,
+    "sell_above": 70
+  }
+}
