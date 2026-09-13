@@ -25,9 +25,15 @@ jobs:
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
         run: python run_on_github.py
 
+      - name: Five-symbol sweep, raw vs debugged strategy (live data)
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
+        run: python run_five_symbols.py
+
       - name: Upload results (short retention)
         uses: actions/upload-artifact@v4
         with:
           name: nobitex-backtest-results
-          path: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/gh_run_output"
+          path: |
+            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/gh_run_output
+            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/five_symbol_output
           retention-days: 1
