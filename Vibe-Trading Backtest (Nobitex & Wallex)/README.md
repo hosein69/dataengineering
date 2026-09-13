@@ -141,6 +141,8 @@ vibe-trading provider doctor        # عیب‌یابی اتصال به provider
 
 برای جزئیات فنی موتور بک‌تست — نمودار جریان داده بین ماژول‌ها، ورودی/خروجی دقیق هر تابع، مدل‌های داده و همه‌ی فرمول‌های ریاضی (تبدیل سیگنال به وزن پوزیشن، اسلیپیج، کارمزد، مارجین، PnL، Sharpe/Sortino/Calmar/Max-Drawdown/Turnover/Information-Ratio و سالانه‌سازی مخصوص بازار ۲۴/۷ کریپتو) — به سند جداگانه‌ی [`ALGORITHM.md`](./ALGORITHM.md) مراجعه کنید؛ این سند مستقیماً از خواندن سورس‌کد واقعی موتور (`engines/base.py`, `engines/crypto.py`, `metrics.py`, `loaders/nobitex.py`, `loaders/wallex.py`) استخراج شده است.
 
+و برای پایین‌ترین سطح ممکن — بازگشتی‌های عددی اندیکاتورها، ترتیب دقیق عملیات در حلقه‌ی کندل‌به‌کندل، معناشناسی NaN، جدول ناوردایی‌ها و پیچیدگی زمانی هر مرحله — به [`ALGORITHM_LOWLEVEL.md`](./ALGORITHM_LOWLEVEL.md) مراجعه کنید.
+
 ## منابع
 
 - ریپوی اصلی: https://github.com/HKUDS/Vibe-Trading
