@@ -4,6 +4,16 @@
 The catalog is presentation-only: chart selection never changes source data.
 Each key has a Persian title, a business question and graceful fallbacks so an
 empty process log does not leave a blank dashboard on day one.
+
+Chart kinds and what each one is for — the form follows the question, never
+the other way round:
+
+``bar``      مقایسه بین دسته‌ها (رتبه‌بندی)
+``donut``    ترکیب یک کل ۱۰۰٪ با دسته‌های کم — بیش از ۶ دسته خوانا نیست
+``grouped``  مقایسه دو معیار روی یک محور دسته‌ای
+``scatter``  رابطه دو متغیر پیوسته؛ با خط روند و خطوط میانه (چهار ربع)
+``trend``    تغییر یک KPI در زمان — تنها شکلی که به «بهتر یا بدتر؟» جواب می‌دهد
+``pareto``   تمرکز: میله نزولی + منحنی تجمعی، برای قاعده ۸۰/۲۰
 """
 from __future__ import annotations
 
@@ -37,13 +47,27 @@ _SPECS = [
     ChartSpec("top_orders", "سفارش‌های دارای بیشترین اقلام/پرونده", "تأمین", "bar", "تمرکز عملیات روی کدام سفارش‌هاست؟", ("CANONICAL_ORDER",)),
     ChartSpec("top_bl", "بارنامه‌های دارای بیشترین اقلام/پرونده", "حمل و لجستیک", "bar", "کدام بارنامه‌ها بیشترین درگیری عملیاتی دارند؟", ("CANONICAL_BL",)),
     ChartSpec("supplier_mix", "تمرکز تأمین‌کنندگان", "تأمین", "bar", "ریسک تمرکز تأمین روی کدام Vendor/Supplier است؟", ("SUPPLIER","VENDOR_CODE","MFR_VENDOR_CODE")),
+    # ── روند: تنها شکلی که به «بهتر شدیم یا بدتر؟» جواب می‌دهد ──
+    # منبع این‌ها snapshot تاریخی (aibl/report/history.py) است نه برش جاری،
+    # پس با فیلتر مرورگری تغییر نمی‌کنند و همین در زیرنویس گفته می‌شود.
+    ChartSpec("trend_critical", "روند متریال بحرانی", "روند", "trend", "ریسک توقف خط نسبت به روزهای قبل بهتر شده یا بدتر؟"),
+    ChartSpec("trend_commitment", "روند مانده تعهد معوق", "روند", "trend", "بدهی معوق در حال انباشت است یا تسویه؟"),
+    ChartSpec("trend_resistance", "روند میانگین مقاومت", "روند", "trend", "پوشش موجودی در حال بهبود است یا فرسایش؟"),
+    # ── تمرکز و رابطه ──
+    ChartSpec("pareto_delay", "تمرکز تأخیر — قاعده ۸۰/۲۰", "ریسک و تعهد", "pareto", "چند درصد از کل تأخیر روی چند پرونده متمرکز است؟", ("روزهای تأخیر",)),
+    ChartSpec("delay_vs_commitment", "مانده تعهد در برابر روزهای تأخیر", "ریسک و تعهد", "scatter", "جریمه کجا انباشته می‌شود: پرونده‌های بزرگ یا پرونده‌های کهنه؟", ("مانده تعهد","روزهای تأخیر")),
 ]
 
 CHART_SPECS: Dict[str, ChartSpec] = {s.key: s for s in _SPECS}
 CHART_TITLES: Dict[str, str] = {s.key: s.title for s in _SPECS}
 CHART_GROUPS = tuple(dict.fromkeys(s.group for s in _SPECS))
-DEFAULT_HTML_CHARTS = ["criticality","low_resistance","stage_distribution","org_workload","transport_mix","commitment"]
-DEFAULT_EMAIL_CHARTS = ["criticality","low_resistance","stage_distribution","commitment"]
+DEFAULT_HTML_CHARTS = ["criticality","trend_critical","low_resistance","sediment_vs_resistance",
+                       "stage_distribution","org_workload","transport_mix","commitment"]
+DEFAULT_EMAIL_CHARTS = ["criticality","trend_critical","low_resistance","stage_distribution","commitment"]
+
+#: نمودارهایی که از snapshot تاریخی تغذیه می‌شوند، نه از برش جاری.
+#: مصرف‌کننده باید بداند فیلتر مرورگری روی این‌ها اثر ندارد.
+HISTORY_CHARTS = tuple(s.key for s in _SPECS if s.kind == "trend")
 
 
 def grouped_catalog() -> Dict[str, Dict[str, str]]:
