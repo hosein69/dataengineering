@@ -572,9 +572,11 @@ def _health_banner(folder)->str:
 #: رنگ متن KPI از پالت سنجیده‌شده می‌آید، نه از ثابت‌های قدیمی ماژول.
 #: ``#F39C12`` روی کارت سفید کنتراست ۱٫۹ داشت — عملاً ناخوانا، و دقیقاً
 #: روی همان عددی نشسته بود که باید دیده می‌شد.
+#: خط بالای کارت هم از همان پله تیره می‌آید، نه از نارنجی اصلی. یک نوار
+#: ۴ پیکسلی حامل معناست (کدام KPI هشدار است) و طبق WCAG 1.4.11 باید کف ۳
+#: را بگذراند؛ ``#F39C12`` روی سفید ۱٫۹ داشت.
 _TONE_INK = {"red": ds.STATUS["critical"].ink, "amber": ds.STATUS["serious"].ink,
              "green": ds.STATUS["good"].ink}
-_TONE_RULE = {"red": RED, "amber": ORANGE, "green": GREEN}
 
 
 #: حداکثر کارت KPI در یک ردیف جدول ایمیل.
@@ -593,8 +595,7 @@ def _kpi_cards(kpis:Iterable[dict[str,Any]])->str:
     width=f"{100//max(len(items),1)}%"
     cards=[]
     for k in items:
-        ink=_TONE_INK.get(k.get("tone"),ds.BRAND_INK)
-        rule=_TONE_RULE.get(k.get("tone"),THEME)
+        ink=rule=_TONE_INK.get(k.get("tone"),ds.BRAND_INK)
         delta=str(k.get("delta") or "").strip()
         dhtml=(f'<div style="font-size:11px;font-weight:700;color:{ink};margin-top:3px">{html.escape(delta)}</div>'
                if delta else "")

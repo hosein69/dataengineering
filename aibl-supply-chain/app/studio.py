@@ -511,6 +511,7 @@ with tab_export:
     st.session_state.setdefault("studio_email_cc", "")
     st.session_state.setdefault("studio_email_header", "هوشمندی روزانه زنجیره تأمین خودرو")
     st.session_state.setdefault("studio_email_intro", "این گزارش برای تصمیم‌گیری روزانه تأمین، حمل، گمرک و پشتیبانی تولید تهیه شده است.")
+    st.session_state.setdefault("studio_email_footer", "")
 
     st.info("**Artifact اصلی این نسخه فقط HTML است.** گیرنده داخل همان فایل می‌تواند "
             "برش فعال را به Excel واقعی صادر کند یا با دکمه «PDF / چاپ» همان گزارش را "
@@ -594,6 +595,13 @@ with tab_export:
             format_func=lambda k: f"{CHART_SPECS[k].group} · {CHART_TITLES[k]}", key="email_chart_picker")
         st.session_state.html_chart_keys = html_pick
         st.session_state.email_chart_keys = email_pick
+        from aibl.studio_core.chart_catalog import HISTORY_CHARTS
+        picked = [CHART_TITLES[k] for k in dict.fromkeys(list(html_pick) + list(email_pick))
+                  if k in HISTORY_CHARTS]
+        if picked:
+            st.caption("نمودار روند (" + "، ".join(picked) + ") از snapshot تاریخی تغذیه می‌شود، "
+                       "نه از برش جاری؛ پس با فیلترهای این گزارش تغییر نمی‌کند و برای نمایش "
+                       "دست‌کم دو اجرای ثبت‌شده لازم دارد.")
 
     with st.container(border=True):
         panel_open("۳ · کنترل صحت محاسبات",
@@ -666,6 +674,7 @@ with tab_export:
                 "to": st.session_state.studio_email_to, "cc": st.session_state.studio_email_cc,
                 "subject": st.session_state.get("studio_subject", f"AIBL — زنجیره تأمین خودرو — {ref_date}"),
                 "header": st.session_state.studio_email_header, "intro": st.session_state.studio_email_intro,
+                "footer": st.session_state.studio_email_footer,
                 "charts": list(st.session_state.email_chart_keys),
             })
             st.success("پروفایل ایمیل داخل همان Warehouse ذخیره شد.")
@@ -676,6 +685,7 @@ with tab_export:
             st.session_state.studio_subject = ep.get("subject", f"AIBL — زنجیره تأمین خودرو — {ref_date}")
             st.session_state.studio_email_header = ep.get("header", "هوشمندی روزانه زنجیره تأمین خودرو")
             st.session_state.studio_email_intro = ep.get("intro", "")
+            st.session_state.studio_email_footer = ep.get("footer", "")
             st.session_state.email_chart_keys = [x for x in ep.get("charts", []) if x in CHART_TITLES]
             st.rerun()
 
@@ -685,6 +695,10 @@ with tab_export:
         st.text_input("Subject", value=f"AIBL — گزارش زنجیره تأمین خودرو — {ref_date}", key="studio_subject")
         st.text_input("Header ایمیل", key="studio_email_header")
         st.text_area("متن مقدمه ایمیل", key="studio_email_intro", height=90)
+        st.text_input("پانویس ایمیل (اختیاری)", key="studio_email_footer",
+                      placeholder="خالی بگذارید تا پانویس پیش‌فرض AIBL بیاید.")
+        st.caption("بلوک «مسیر تصمیم» — سرخط، وضعیت/گره/اقدام و یافته‌های کمّی — "
+                   "به‌صورت خودکار بالای KPIها می‌آید و برای هر یافته یک اقدام مشخص می‌نویسد.")
         display_only = st.checkbox("فقط نمایش در Outlook؛ ارسال نکن", value=True, key="studio_display")
         from aibl.integrations.daily_email import email_font_status
         _font = email_font_status()
@@ -706,6 +720,7 @@ with tab_export:
                         process_extras=extras, to=st.session_state.studio_email_to,
                         cc=st.session_state.studio_email_cc, subject=st.session_state.studio_subject,
                         header_title=st.session_state.studio_email_header, intro_text=st.session_state.studio_email_intro,
+                        footer_note=st.session_state.studio_email_footer,
                         send=not display_only, display=display_only)
                 WAREHOUSE.audit("REPORT_HTML_EMAIL", run_id=warehouse_run_id or None,
                                 actor="studio", entity_type="report", entity_id=html_path.name,

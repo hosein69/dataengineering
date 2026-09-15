@@ -38,6 +38,7 @@ SUITES = [
     ("۱۹) SQLite Warehouse + HTML-only نسخه ۲۶٫۱۷", "tests/test_warehouse_v26_17.py"),
     ("۲۰) Browser runtime HTML نسخه ۲۶٫۱۷", "tests/test_html_browser_v26_17.py"),
     ("۲۱) نمودار، تحویل و پایداری نسخه ۲۶٫۱۸", "tests/test_v26_18_charts_delivery_persistence.py"),
+    ("۲۲) روایت داده، فرآیند، کنتراست و حرکت نسخه ۲۶٫۱۹", "tests/test_v26_19_storytelling_motion.py"),
 ]
 
 
