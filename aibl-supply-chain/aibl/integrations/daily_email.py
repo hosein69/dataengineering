@@ -2,12 +2,14 @@
 """AIBL Executive Daily Email Pack — Outlook integration."""
 from __future__ import annotations
 import html, os, re
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 import pandas as pd
 from ..config.settings import SETTINGS
 from ..dataio.logging_setup import log
+from ..report import design_system as ds
 
 THEME, NAVY = "#0F6E6E", "#102D4D"
 RED, ORANGE, YELLOW, GREEN, GREY = "#C0392B", "#F39C12", "#F1C40F", "#27AE60", "#95A5A6"
@@ -242,6 +244,13 @@ def _font_setup():
     Font files are never bundled with AIBL.  On managed machines set
     ``AIBL_FONT_PATH`` to the locally licensed/installed font file, or install
     IRANSans system-wide.  ``AIBL_FONT_NAME`` can override the family name.
+
+    خانواده فونت به‌صورت **زنجیره** تنظیم می‌شود، نه یک نام. دلیلش یک حالت
+    واقعی است: بعضی فونت‌های فارسی فقط حروف عربی/فارسی دارند و نویسه‌های
+    لاتین ندارند. با یک نام تنها، عنوانی مثل «همبستگی r = ۰٫۳۱» یا
+    «۸۰/۲۰» بخش لاتین‌اش به‌شکل مربع خالی چاپ می‌شد — نموداری که به‌ظاهر
+    سالم است ولی عددش خوانده نمی‌شود. با زنجیره، matplotlib برای هر نویسه
+    گمشده به فونت بعدی می‌رود.
     """
     _require_matplotlib()
     import matplotlib.pyplot as plt
@@ -254,10 +263,17 @@ def _font_setup():
         if not status.get("ok"):
             raise RuntimeError(status.get("error") or "IRANSans not found")
         family=str(status.get("family") or "IRANSans")
-        plt.rcParams["font.family"] = family
+        # زنجیره باید **فهرست نام فونت واقعی** باشد، نه نام عام «sans-serif».
+        # اندازه‌گیری روی matplotlib 3.11: با
+        #     font.family="sans-serif"; font.sans-serif=[X,"DejaVu Sans"]
+        # جایگزینی نویسه‌به‌نویسه انجام نمی‌شود و ۱۲۳ هشدار Glyph missing
+        # صادر می‌شود؛ با
+        #     font.family=[X,"DejaVu Sans"]
+        # صفر هشدار. نام عام فقط یک فونت را انتخاب می‌کند و همان‌جا می‌ماند.
+        plt.rcParams["font.family"] = [family, "DejaVu Sans"]
     except Exception:
         family="DejaVu Sans"
-        plt.rcParams["font.family"] = family
+        plt.rcParams["font.family"] = [family]
         log.warning("⚠️ فونت IRANSans برای نمودار ایمیل پیدا نشد؛ AIBL_FONT_PATH را تنظیم کنید.")
     plt.rcParams["axes.unicode_minus"] = False
     return family
@@ -275,6 +291,25 @@ def _fa(value: Any) -> str:
 def _save_chart(fig,path:Path)->Path:
     fig.savefig(path,dpi=160,bbox_inches="tight",facecolor="white")
     import matplotlib.pyplot as plt; plt.close(fig); return path
+
+def _band_fill(label: Any) -> Optional[str]:
+    """رنگ سطح یک طبقه وضعیت، یا ``None`` برای برچسبی که وضعیت نیست."""
+    st = ds.STATUS_BY_LABEL.get(str(label).strip())
+    return st.fill if st else None
+
+
+def _trend_data() -> Dict[str, Any]:
+    """تاریخچه KPI برای نمودار روند و نشان تغییر.
+
+    نبودن تاریخچه خطا نیست: روز نخست استقرار هیچ گذشته‌ای وجود ندارد و
+    نمودارهای روند بی‌صدا ساخته نمی‌شوند.
+    """
+    try:
+        from ..report.storytelling import load_history
+        return load_history()
+    except Exception:
+        return {"dates": [], "series": {}, "deltas": {}, "points": 0}
+
 
 def available_email_charts() -> Dict[str, str]:
     from ..studio_core.chart_catalog import CHART_TITLES
@@ -302,31 +337,135 @@ def make_email_charts(df: pd.DataFrame, assets: Path,
     out=[]; assets.mkdir(parents=True,exist_ok=True)
     def save(fig,key):
         path=assets/f"{len(out)+1:02d}_{key}.png"; out.append(_save_chart(fig,path))
-    def style(ax,title,xlabel="",ylabel=""):
-        ax.set_title(_fa(title),fontsize=13,fontweight="bold",pad=12)
-        if xlabel: ax.set_xlabel(_fa(xlabel))
-        if ylabel: ax.set_ylabel(_fa(ylabel))
-        ax.grid(axis="x" if getattr(ax,"name","")=="rectilinear" else "both",alpha=.12)
-    def bar(key,labels,values,color=THEME,horizontal=True,title=None):
+    def style(ax,title,xlabel="",ylabel="",subtitle=""):
+        """ظاهر مشترک همه نمودارهای ایمیل.
+
+        قاب بالا/راست حذف می‌شود و خطوط راهنما کم‌رنگ می‌مانند: در یک PNG
+        کوچک داخل کلاینت ایمیل، هر خط اضافه نسبت سیگنال به نویز را پایین
+        می‌آورد بدون آنکه چیزی به خواننده بگوید.
+        """
+        ax.set_title(_fa(title),fontsize=13,fontweight="bold",pad=14 if subtitle else 10,
+                     color=ds.TEXT)
+        if subtitle:
+            ax.text(.5,1.02,_fa(subtitle),transform=ax.transAxes,ha="center",va="bottom",
+                    fontsize=9,color=ds.TEXT_MUTED)
+        if xlabel: ax.set_xlabel(_fa(xlabel),fontsize=9,color=ds.TEXT_SECONDARY)
+        if ylabel: ax.set_ylabel(_fa(ylabel),fontsize=9,color=ds.TEXT_SECONDARY)
+        for side in ("top","right"): ax.spines[side].set_visible(False)
+        for side in ("left","bottom"): ax.spines[side].set_color(ds.BORDER_STRONG)
+        ax.tick_params(colors=ds.TEXT_MUTED,labelsize=8.5)
+        ax.grid(alpha=.16,linewidth=.7,color=ds.BORDER_STRONG)
+        ax.set_axisbelow(True)
+    def bar(key,labels,values,color=THEME,horizontal=True,title=None,edge=None,subtitle=""):
         pairs=[(str(k),float(v)) for k,v in zip(labels,values) if pd.notna(v)]
         if not pairs:return
         pairs=pairs[:12]
         fig,ax=plt.subplots(figsize=(9, max(3.6, .38*len(pairs)+1.4)))
         labs=[_fa(x[0]) for x in pairs]; vals=[x[1] for x in pairs]
+        # مرز تیره، نه سفید: سطح زرد/نارنجی روی پس‌زمینه روشن لبه ندارد و
+        # بدون مرز، میله عملاً در کارت ایمیل گم می‌شود (WCAG 1.4.11).
+        ec=edge or ds.BRAND_DEEP
         if horizontal:
-            bars=ax.barh(labs,vals,color=color,edgecolor="white")
-            for b,v in zip(bars,vals): ax.text(v,b.get_y()+b.get_height()/2,f" {v:,.1f}",va="center",fontsize=8)
+            bars=ax.barh(labs,vals,color=color,edgecolor=ec,linewidth=.7)
+            ax.grid(axis="y",alpha=0)
+            for b,v in zip(bars,vals): ax.text(v,b.get_y()+b.get_height()/2,f" {v:,.1f}",va="center",fontsize=8,color=ds.TEXT_SECONDARY)
         else:
-            bars=ax.bar(labs,vals,color=color,edgecolor="white")
+            bars=ax.bar(labs,vals,color=color,edgecolor=ec,linewidth=.7)
+            ax.grid(axis="x",alpha=0)
             ax.tick_params(axis='x',labelrotation=25)
-            for b,v in zip(bars,vals): ax.text(b.get_x()+b.get_width()/2,v,f"{v:,.1f}",ha="center",va="bottom",fontsize=8)
-        style(ax,title or CHART_TITLES[key]); fig.tight_layout(); save(fig,key)
-    def donut(key,labels,values):
+            for b,v in zip(bars,vals): ax.text(b.get_x()+b.get_width()/2,v,f"{v:,.1f}",ha="center",va="bottom",fontsize=8,color=ds.TEXT_SECONDARY)
+        style(ax,title or CHART_TITLES[key],subtitle=subtitle); fig.tight_layout(); save(fig,key)
+    def donut(key,labels,values,colors=None):
         pairs=[(str(k),float(v)) for k,v in zip(labels,values) if float(v)>0]
         if not pairs:return
         fig,ax=plt.subplots(figsize=(8.8,4.4)); labs=[_fa(x[0]) for x in pairs]; vals=[x[1] for x in pairs]
-        ax.pie(vals,labels=labs,autopct=lambda p:f"{p:.0f}%",startangle=90,wedgeprops=dict(width=.42,edgecolor="white"))
-        ax.set_title(_fa(CHART_TITLES[key]),fontsize=13,fontweight="bold"); fig.tight_layout(); save(fig,key)
+        cs=colors or [_band_fill(x[0]) or ds.CATEGORICAL[i%len(ds.CATEGORICAL)] for i,x in enumerate(pairs)]
+        w,_t,_a=ax.pie(vals,labels=labs,autopct=lambda p:f"{p:.0f}%",startangle=90,colors=cs,
+                       wedgeprops=dict(width=.42,edgecolor="white",linewidth=2),
+                       textprops=dict(fontsize=9,color=ds.TEXT_SECONDARY))
+        ax.text(0,0,f"{int(sum(vals)):,}",ha="center",va="center",fontsize=17,fontweight="bold",color=ds.BRAND_DEEP)
+        ax.set_title(_fa(CHART_TITLES[key]),fontsize=13,fontweight="bold",color=ds.TEXT); fig.tight_layout(); save(fig,key)
+    def trend(key,metric):
+        """روند KPI از snapshot تاریخی — نه از برش جاری.
+
+        بدون این نمودار، هیچ عددی در ایمیل به «بهتر شدیم یا بدتر؟» جواب
+        نمی‌دهد و مدیر ناچار است گزارش دیروز را باز کند تا مقایسه کند.
+        """
+        tr=_trend_data(); ser=(tr.get("series") or {}).get(metric)
+        pts=[(d,v) for d,v in zip(tr.get("dates") or [],ser or []) if v is not None]
+        if len(pts)<2: return
+        fig,ax=plt.subplots(figsize=(9,3.6))
+        xs=list(range(len(pts))); ys=[p[1] for p in pts]
+        ax.plot(xs,ys,color=ds.BRAND_DEEP,linewidth=2.2,marker="o",markersize=3.5,
+                markerfacecolor=ds.BRAND_DEEP,markeredgecolor="white")
+        ax.fill_between(xs,ys,min(ys)-(max(ys)-min(ys) or 1)*.12,color=ds.BRAND,alpha=.12)
+        ax.scatter([xs[-1]],[ys[-1]],s=68,color=ds.BRAND_DEEP,edgecolor="white",zorder=5,linewidth=1.6)
+        step=max(1,len(pts)//7)
+        ax.set_xticks(xs[::step]); ax.set_xticklabels([p[0][5:] for p in pts[::step]],fontsize=8)
+        d=(tr.get("deltas") or {}).get(metric); sub=""
+        if d:
+            # داخل PNG فقط واژه فارسی، نه نویسه‌های مثلثی: فونت‌های فارسی
+            # اغلب ▲/▼ ندارند و به‌جای جهت، مربع خالی چاپ می‌شود. نشان
+            # مثلثی فقط در HTML می‌آید که فونت مرورگر آن را دارد.
+            direction="افزایش" if d["change"]>0 else ("کاهش" if d["change"]<0 else "بدون تغییر")
+            word="بهبود" if d.get("improving") else ("بدتر شدن" if d.get("improving") is False else "")
+            pct=f" ({abs(d['pct']):.0f} درصد)" if d.get("pct") else ""
+            sub=f"{direction} {abs(d['change']):,.1f}{pct} نسبت به اجرای قبلی" + (f" — {word}" if word else "")
+        style(ax,CHART_TITLES[key],ylabel=metric,subtitle=sub)
+        ax.grid(axis="x",alpha=0); fig.tight_layout(); save(fig,key)
+    def scatter(key,xcol,ycol,xlabel,ylabel):
+        """پراکنش با خط رگرسیون و ضریب همبستگی.
+
+        ابری از نقطه بدون خط روند و بدون r تصمیمی را عوض نمی‌کند؛ عدد
+        همبستگی همان چیزی است که می‌گوید آیا الگو واقعی است یا توهم چشم.
+        """
+        if not {xcol,ycol}.issubset(df.columns): return
+        x=pd.to_numeric(df[xcol],errors="coerce"); y=pd.to_numeric(df[ycol],errors="coerce")
+        m=x.notna()&y.notna()
+        if int(m.sum())<3: return
+        xv,yv=x[m].to_numpy(),y[m].to_numpy()
+        fig,ax=plt.subplots(figsize=(9,4.6))
+        band=df.loc[m,"بحرانی (کوتاه)"].astype(str) if "بحرانی (کوتاه)" in df.columns else None
+        cols=[_band_fill(b) or ds.BRAND for b in band] if band is not None else ds.BRAND
+        ax.scatter(xv,yv,c=cols,alpha=.62,s=26,edgecolor="white",linewidth=.4)
+        mx,my=float(pd.Series(xv).median()),float(pd.Series(yv).median())
+        ax.axvline(mx,color=ds.TEXT_MUTED,linestyle="--",linewidth=.9,alpha=.7)
+        ax.axhline(my,color=ds.TEXT_MUTED,linestyle="--",linewidth=.9,alpha=.7)
+        sub=""
+        if len(xv)>2 and float(((xv-xv.mean())**2).sum())>0:
+            slope=float(((xv-xv.mean())*(yv-yv.mean())).sum()/((xv-xv.mean())**2).sum())
+            inter=float(yv.mean()-slope*xv.mean())
+            den=float((((xv-xv.mean())**2).sum()*((yv-yv.mean())**2).sum())**.5)
+            r=float(((xv-xv.mean())*(yv-yv.mean())).sum()/den) if den else 0.0
+            lo,hi=float(xv.min()),float(xv.max())
+            ax.plot([lo,hi],[slope*lo+inter,slope*hi+inter],color=ds.BRAND_DEEP,linewidth=1.8)
+            strength=("رابطه‌ای دیده نمی‌شود" if abs(r)<.2 else "رابطه ضعیف" if abs(r)<.5
+                      else "رابطه متوسط" if abs(r)<.75 else "رابطه قوی")
+            sub=f"همبستگی r = {r:.2f} — {strength}؛ خط‌چین‌ها میانه هر محور است"
+        style(ax,CHART_TITLES[key],xlabel=xlabel,ylabel=ylabel,subtitle=sub)
+        fig.tight_layout(); save(fig,key)
+    def pareto(key,pairs):
+        """میله نزولی + منحنی تجمعی؛ می‌گوید تمرکز روی چند پرونده است."""
+        pairs=sorted([(str(k),float(v)) for k,v in pairs if pd.notna(v) and float(v)>0],
+                     key=lambda t:-t[1])
+        if len(pairs)<2: return
+        total=sum(v for _k,v in pairs); pairs=pairs[:12]
+        fig,ax=plt.subplots(figsize=(9,4.4))
+        labs=[_fa(k[:16]) for k,_v in pairs]; vals=[v for _k,v in pairs]
+        ax.bar(labs,vals,color=ds.BRAND,edgecolor=ds.BRAND_DEEP,linewidth=.7)
+        ax.tick_params(axis="x",labelrotation=32); ax.grid(axis="x",alpha=0)
+        cum,ys=0.0,[]
+        for _k,v in pairs:
+            cum+=v; ys.append(cum/total*100)
+        ax2=ax.twinx(); ax2.plot(labs,ys,color=ds.BRAND_DEEP,linewidth=2,marker="o",markersize=3.5)
+        ax2.axhline(80,color=ds.STATUS["serious"].ink,linestyle="--",linewidth=1.1)
+        ax2.set_ylim(0,105); ax2.set_ylabel(_fa("سهم تجمعی (٪)"),fontsize=9,color=ds.TEXT_SECONDARY)
+        ax2.tick_params(colors=ds.TEXT_MUTED,labelsize=8.5)
+        for side in ("top",): ax2.spines[side].set_visible(False)
+        reach=next((i+1 for i,v in enumerate(ys) if v>=80),0)
+        sub=(f"۸۰٪ از کل روی {reach} دسته نخست متمرکز است" if reach
+             else "تمرکز کمتر از قاعده ۸۰/۲۰ است؛ اثر روی دسته‌های زیادی پخش شده")
+        style(ax,CHART_TITLES[key],subtitle=sub); fig.tight_layout(); save(fig,key)
     def counts(cols,top=12):
         c=_first_col(df,cols)
         if not c:return pd.Series(dtype=float)
@@ -349,10 +488,8 @@ def make_email_charts(df: pd.DataFrame, assets: Path,
                 ax.bar([i-w/2 for i in pos],x["مقاومت انبار (روز)"].fillna(0),width=w,label=_fa("مقاومت انبار"))
                 ax.bar([i+w/2 for i in pos],x["مقاومت (روز)"].fillna(0),width=w,label=_fa("مقاومت کل"))
                 ax.set_xticks(pos);ax.set_xticklabels(x["KEY_MATERIAL"].astype(str),rotation=35,ha="right");style(ax,CHART_TITLES[key],ylabel="روز");ax.legend(frameon=False);fig.tight_layout();save(fig,key)
-        elif key=="sediment_vs_resistance" and {"روزهای رسوب","مقاومت (روز)"}.issubset(df.columns):
-            x=pd.to_numeric(df["روزهای رسوب"],errors="coerce");y=pd.to_numeric(df["مقاومت (روز)"],errors="coerce");m=x.notna()&y.notna()
-            if m.any():
-                fig,ax=plt.subplots(figsize=(8.8,4.5));ax.scatter(x[m],y[m],alpha=.65,s=24);style(ax,CHART_TITLES[key],xlabel="روزهای رسوب",ylabel="مقاومت (روز)");fig.tight_layout();save(fig,key)
+        elif key=="sediment_vs_resistance":
+            scatter(key,"روزهای رسوب","مقاومت (روز)","روزهای رسوب","مقاومت (روز)")
         elif key=="risk_mix":
             vc=counts(["طبقه ریسک"]); donut(key,vc.index,vc.values)
         elif key=="commitment" and "مانده تعهد" in df.columns:
@@ -383,6 +520,20 @@ def make_email_charts(df: pd.DataFrame, assets: Path,
             vc=counts(["CANONICAL_BL","KEY_BL"]);bar(key,vc.index,vc.values,color=NAVY)
         elif key=="supplier_mix":
             vc=counts(["SUPPLIER","VENDOR_CODE","MFR_VENDOR_CODE"]);bar(key,vc.index,vc.values,color=THEME)
+        elif key=="trend_critical": trend(key,"متریال بحرانی")
+        elif key=="trend_commitment": trend(key,"مانده تعهد معوق")
+        elif key=="trend_resistance": trend(key,"میانگین مقاومت")
+        elif key=="delay_vs_commitment":
+            scatter(key,"روزهای تأخیر","مانده تعهد","روزهای تأخیر","مانده تعهد")
+        elif key=="pareto_delay" and "روزهای تأخیر" in df.columns:
+            kc=_first_col(df,["CANONICAL_ORDER","KEY_REG","CANONICAL_BL"])
+            if kc:
+                x=df[[kc,"روزهای تأخیر"]].copy()
+                x["روزهای تأخیر"]=pd.to_numeric(x["روزهای تأخیر"],errors="coerce")
+                # بیشینه بر هر پرونده، نه جمع: تأخیر یک ویژگی پرونده است و
+                # جمع‌زدن آن روی ردیف‌های تکراری عدد را چند برابر می‌کند.
+                x=x.dropna(); x=x[x["روزهای تأخیر"]>0].groupby(kc)["روزهای تأخیر"].max()
+                pareto(key,list(x.items()))
     return out
 
 def executive_kpis(df:pd.DataFrame)->list[dict[str,Any]]:
@@ -418,24 +569,129 @@ def _health_banner(folder)->str:
             f'color:{TEXT}">⚠️ ' + " — ".join(bits) +
             ' <div style="font-size:12px;margin-top:4px">جزئیات سلامت، lineage و اجرای منبع در Studio و HTML قابل ردیابی است. KPIهای وابسته به سورس‌های ناقص را با احتیاط بخوانید.</div></div>')
 
+#: رنگ متن KPI از پالت سنجیده‌شده می‌آید، نه از ثابت‌های قدیمی ماژول.
+#: ``#F39C12`` روی کارت سفید کنتراست ۱٫۹ داشت — عملاً ناخوانا، و دقیقاً
+#: روی همان عددی نشسته بود که باید دیده می‌شد.
+_TONE_INK = {"red": ds.STATUS["critical"].ink, "amber": ds.STATUS["serious"].ink,
+             "green": ds.STATUS["good"].ink}
+_TONE_RULE = {"red": RED, "amber": ORANGE, "green": GREEN}
+
+
+#: حداکثر کارت KPI در یک ردیف جدول ایمیل.
+#: تا نسخه ۲۶٫۱۸ همه کارت‌ها در یک ``<tr>`` با ``width:20%`` می‌رفتند؛ با شش
+#: KPI مجموع عرض ۱۲۰٪ می‌شد و Outlook کارت آخر را می‌فشرد تا برچسب بلندی
+#: مثل «سفارش خارج از Commercial Expert Data» از کارت بیرون بزند.
+KPI_PER_ROW = 3
+
+
 def _kpi_cards(kpis:Iterable[dict[str,Any]])->str:
-    colors={"red":RED,"amber":ORANGE,"green":GREEN}; cards=[]
-    for k in kpis:
-        c=colors.get(k.get("tone"),THEME)
-        cards.append(f'<td style="width:20%;padding:7px;font-family:{EMAIL_FONT}"><div style="background:#fff;border:1px solid {BORDER};border-top:4px solid {c};border-radius:12px;padding:13px;text-align:center;font-family:{EMAIL_FONT}"><div style="font-size:12px;color:#607181;font-family:{EMAIL_FONT}">{html.escape(str(k["label"]))}</div><div style="font-size:25px;font-weight:800;color:{c};margin:4px 0">{html.escape(str(k["value"]))}</div><div style="font-size:10px;color:#607181">{html.escape(str(k.get("note","")))}</div></div></td>')
+    items=list(kpis)
+    if len(items) > KPI_PER_ROW:
+        # چیدمان شبکه‌ای: هر ردیف حداکثر KPI_PER_ROW کارت، عرض همیشه ۱۰۰٪
+        rows=[items[i:i+KPI_PER_ROW] for i in range(0,len(items),KPI_PER_ROW)]
+        return "".join(_kpi_cards(r) for r in rows)
+    width=f"{100//max(len(items),1)}%"
+    cards=[]
+    for k in items:
+        ink=_TONE_INK.get(k.get("tone"),ds.BRAND_INK)
+        rule=_TONE_RULE.get(k.get("tone"),THEME)
+        delta=str(k.get("delta") or "").strip()
+        dhtml=(f'<div style="font-size:11px;font-weight:700;color:{ink};margin-top:3px">{html.escape(delta)}</div>'
+               if delta else "")
+        cards.append(
+            f'<td style="width:{width};padding:7px;font-family:{EMAIL_FONT};vertical-align:top">'
+            f'<div style="background:#fff;border:1px solid {BORDER};border-top:4px solid {rule};border-radius:12px;padding:13px;text-align:center;font-family:{EMAIL_FONT}">'
+            f'<div style="font-size:12px;color:{ds.TEXT_SECONDARY};font-family:{EMAIL_FONT}">{html.escape(str(k["label"]))}</div>'
+            f'<div style="font-size:25px;font-weight:800;color:{ink};margin:4px 0">{html.escape(str(k["value"]))}</div>'
+            f'{dhtml}<div style="font-size:10px;color:{ds.TEXT_MUTED}">{html.escape(str(k.get("note","")))}</div></div></td>')
     return "<tr>"+"".join(cards)+"</tr>"
+
+
+def _attach_deltas(kpis: list, trend: Dict[str, Any]) -> list:
+    """نشان «نسبت به اجرای قبلی» را روی KPIهای متناظر می‌نشاند.
+
+    یک عدد بدون مبنای مقایسه در ایمیل مدیریتی تقریباً بی‌مصرف است:
+    «۵۴ متریال بحرانی» نه خوب است نه بد تا وقتی معلوم نشود دیروز چند بود.
+    """
+    deltas = (trend or {}).get("deltas") or {}
+    by_label = {"متریال بحرانی": "متریال بحرانی", "تعهدات معوق": "مانده تعهد معوق"}
+    for k in kpis:
+        metric = by_label.get(str(k.get("label")))
+        d = deltas.get(metric) if metric else None
+        if not d:
+            continue
+        arrow = "▲" if d["change"] > 0 else ("▼" if d["change"] < 0 else "■")
+        word = "بهبود" if d.get("improving") else ("بدتر" if d.get("improving") is False else "بدون تغییر")
+        pct = f" ({abs(d['pct']):.0f}٪)" if d.get("pct") else ""
+        k["delta"] = f"{arrow} {abs(d['change']):,.0f}{pct} {word}"
+    return kpis
+
+
+def _story_block(df: pd.DataFrame, extras: Optional[Dict[str, Any]],
+                 trend: Dict[str, Any], day: date) -> tuple:
+    """(HTML روایت، KPIهای دارای نشان تغییر).
+
+    ساخت روایت هرگز نباید مانع ارسال ایمیل شود؛ هر شکستی به بلوک خالی
+    تبدیل می‌شود و بقیه ایمیل دست‌نخورده می‌ماند.
+    """
+    kpis = executive_kpis(df)
+    try:
+        from ..report.storytelling import build_story
+        st = build_story(df, extras or {}, trend, ref_date=f"{day:%Y-%m-%d}")
+    except Exception as ex:
+        log.debug("ساخت روایت ایمیل رد شد: %s", ex)
+        return "", kpis
+    kpis = _attach_deltas(kpis, trend)
+    font = EMAIL_FONT
+    scr = "".join(
+        f'<td width="33%" style="padding:0 6px;vertical-align:top;font-family:{font}">'
+        f'<div style="background:#fff;border:1px solid {BORDER};border-radius:10px;padding:12px;height:100%">'
+        f'<div style="font-size:10px;font-weight:800;color:{ds.BRAND_INK};letter-spacing:.3px">{lab}</div>'
+        f'<div style="font-size:12.5px;color:{ds.TEXT_SECONDARY};margin-top:5px;line-height:1.85">{html.escape(txt)}</div>'
+        f'</div></td>'
+        for lab, txt in (("وضعیت", st.situation), ("گره", st.complication), ("اقدام", st.resolution))
+        if txt)
+    findings = "".join(
+        f'<tr><td style="padding:5px 0;font-family:{font}">'
+        f'<div style="background:#fff;border:1px solid {BORDER};border-right:4px solid {f.color};border-radius:10px;padding:11px 13px">'
+        f'<div style="font-size:11px;font-weight:800;color:{f.color}">{html.escape(f.headline)}</div>'
+        f'<div style="font-size:13.5px;font-weight:700;color:{ds.TEXT};margin:3px 0">{html.escape(f.magnitude)}</div>'
+        f'<div style="font-size:11px;color:{ds.TEXT_MUTED}">{html.escape(f.comparison)}</div>'
+        f'<div style="font-size:12px;color:{ds.TEXT_SECONDARY};margin-top:6px;border-top:1px dashed {BORDER};padding-top:6px">'
+        f'<span style="color:{f.color};font-weight:800">←</span> {html.escape(f.so_what)}</div>'
+        f'</div></td></tr>'
+        for f in st.findings[:4])
+    block = (
+        f'<div style="background:{ds.SURFACE_SUNKEN};border:1px solid {BORDER};border-top:4px solid {THEME};'
+        f'border-radius:13px;padding:16px 17px;margin:0 0 18px;font-family:{font}">'
+        f'<div style="font-size:10px;font-weight:800;color:{ds.BRAND_INK};letter-spacing:.5px">◈ مسیر تصمیم</div>'
+        f'<div style="font-size:17px;font-weight:800;color:{ds.TEXT};margin:5px 0 12px;line-height:1.7">{html.escape(st.headline)}</div>'
+        + (f'<table width="100%" cellpadding="0" cellspacing="0" style="font-family:{font}"><tr>{scr}</tr></table>' if scr else "")
+        + (f'<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;font-family:{font}">{findings}</table>' if findings else "")
+        + '</div>')
+    return block, kpis
 
 def build_email_html(day: date, df: pd.DataFrame, charts: list[Path], report_file: Path,
                      *, header_title: str = "هوشمندی روزانه زنجیره تأمین خودرو",
                      intro_text: str = "",
-                     header_subtitle: str = "تأمین قطعه · ارز · حمل بین‌الملل · گمرک · پشتیبانی تولید") -> str:
-    """Executive email body with user-editable header and intro.
+                     header_subtitle: str = "تأمین قطعه · ارز · حمل بین‌الملل · گمرک · پشتیبانی تولید",
+                     process_extras: Optional[Dict[str, Any]] = None,
+                     show_story: bool = True,
+                     footer_note: str = "") -> str:
+    """Executive email body with user-editable header, intro and narrative.
 
     Outlook is conservative about CSS inheritance, therefore the IRANSans font
     stack is repeated on major tables/cells instead of relying on one body rule.
+
+    ``show_story`` بلوک «مسیر تصمیم» را کنترل می‌کند: سرخط، ساختار
+    وضعیت/گره/اقدام و حداکثر چهار یافته کمّی، هر کدام با اقدام مشخص.
+    ``process_extras`` لاگ فرآیند را می‌دهد تا گلوگاه هم وارد روایت شود.
     """
     report_file=Path(report_file)
     font=EMAIL_FONT
+    trend=_trend_data()
+    story_html,kpis=(_story_block(df,process_extras,trend,day) if show_story
+                     else ("",_attach_deltas(executive_kpis(df),trend)))
     img="".join(
         f'<tr><td style="padding:8px 0;font-family:{font}"><img src="cid:chart_{i}" width="100%" '
         f'style="display:block;border:1px solid {BORDER};border-radius:10px" alt="AIBL chart"></td></tr>'
@@ -462,15 +718,81 @@ def build_email_html(day: date, df: pd.DataFrame, charts: list[Path], report_fil
 <tr><td style="padding:22px 28px;background:{NAVY};font-family:{font}"><div style="color:#d9f1ed;font-size:10px;letter-spacing:.5px">AIBL · AUTOMOTIVE SUPPLY CHAIN INTELLIGENCE</div>
 <div style="color:#fff;font-size:24px;font-weight:800;margin-top:5px;font-family:{font}">{html.escape(header_title)}</div>
 <div style="color:#d9f1ed;font-size:13px;margin-top:5px;font-family:{font}">{html.escape(header_subtitle)} · {day:%Y-%m-%d}</div>{chain}</td></tr>
-<tr><td style="padding:20px 24px;font-family:{font}">{intro}{_health_banner(report_file.parent)}
-<table width="100%" cellpadding="0" cellspacing="0" style="font-family:{font}">{_kpi_cards(executive_kpis(df))}</table>
+<tr><td style="padding:20px 24px;font-family:{font}">{intro}{_health_banner(report_file.parent)}{story_html}
+<table width="100%" cellpadding="0" cellspacing="0" style="font-family:{font}">{_kpi_cards(kpis)}</table>
 <div style="margin:20px 0 12px;font-size:18px;font-weight:800;color:{NAVY};font-family:{font}">نمودارهای انتخاب‌شده برای تصمیم امروز</div>
 <table width="100%" cellpadding="0" cellspacing="0" style="font-family:{font}">{img}</table>
 <div style="margin:18px 0 10px;font-size:17px;font-weight:800;color:{NAVY};font-family:{font}">چرا فایل HTML را باز کنیم؟</div>
 <div style="background:#f5faf8;border:1px solid {BORDER};border-radius:10px;padding:14px;line-height:1.9;font-size:13px;font-family:{font}">در ایمیل فقط <b>سیگنال مدیریتی</b> را می‌بینید؛ جزئیات تصمیم در فایل <b>HTML تعاملی</b> است: فیلتر، نمودارهای منتخب، Process Explorer، متریال‌های بحرانی، مقاومت، تعهد ارزی و ردیابی پرونده. از داخل همان فایل می‌توانید تمام برش فعال را <b>Excel</b> بگیرید یا با «PDF / چاپ» به PDF ذخیره کنید.</div>
 {cause}<div style="margin-top:20px;text-align:center;font-family:{font}"><span style="display:inline-block;background:{THEME};color:#fff;border-radius:9px;padding:11px 18px;font-weight:800">📎 {html.escape(report_file.name)}</span></div></td></tr>
-<tr><td style="padding:14px 24px;background:#f7f9f9;color:#6b7b88;font-size:11px;font-family:{font}">این پیام توسط AIBL تولید شده است · منبع تحلیلی SQLite Warehouse است و فایل HTML snapshot قابل ردیابی همان اجراست.</td></tr>
+<tr><td style="padding:14px 24px;background:#f7f9f9;color:{ds.TEXT_MUTED};font-size:11px;font-family:{font}">{html.escape(footer_note) if str(footer_note or '').strip() else 'این پیام توسط AIBL تولید شده است · منبع تحلیلی SQLite Warehouse است و فایل HTML snapshot قابل ردیابی همان اجراست.'}</td></tr>
 </table></td></tr></table></body></html>"""
+
+@contextmanager
+def _outlook_session():
+    """دسترسی به Outlook با COM مقداردهی‌شده در **همان نخ جاری**.
+
+    خطای واقعی که در تولید رخ داد::
+
+        (-2147221008, 'CoInitialize has not been called.', None, None)
+
+    علت: Streamlit هر تعامل کاربر را روی یک نخ ScriptRunner تازه اجرا
+    می‌کند. ``win32com`` فقط روی نخی کار می‌کند که پیش‌تر ``CoInitialize``
+    روی آن صدا شده باشد؛ نخ اصلی مفسر این کار را کرده بود، نخ Streamlit نه.
+    پس همان کدی که از خط فرمان بی‌عیب اجرا می‌شد، از داخل Studio می‌افتاد.
+
+    این مدیر زمینه COM را روی نخ جاری بالا می‌آورد و **در هر مسیر خروج**
+    — چه موفق چه با استثنا — پایین می‌آورد. نبودن ``CoUninitialize`` در
+    مسیر خطا همان چیزی است که در اجرای طولانی Studio به نشت اشاره COM و
+    خطاهای بعدیِ به‌ظاهر بی‌ربط منجر می‌شود.
+
+    ``CoInitialize`` اگر روی نخی که قبلاً مقداردهی شده دوباره صدا شود،
+    ``S_FALSE`` برمی‌گرداند نه خطا — و در آن حالت هم باید یک
+    ``CoUninitialize`` متناظر داشته باشد، پس شمارش همیشه متوازن می‌ماند.
+    """
+    try:
+        import pythoncom
+        import win32com.client as win32
+    except ImportError as ex:
+        raise RuntimeError(
+            "برای ارسال با Outlook، pywin32 و Classic Outlook روی ویندوز لازم است:\n"
+            "    python -m pip install pywin32") from ex
+    pythoncom.CoInitialize()
+    try:
+        yield win32
+    finally:
+        try:
+            pythoncom.CoUninitialize()
+        except Exception as ex:          # پایین آمدن COM نباید خطای اصلی را بپوشاند
+            log.debug("CoUninitialize نادیده گرفته شد: %s", ex)
+
+
+def _select_sender(outlook, mail, *, fatal: bool) -> None:
+    """حساب فرستنده را از ``AIBL_EMAIL_SENDER`` انتخاب می‌کند.
+
+    ``fatal`` تفاوت رفتار دو مسیر را نگه می‌دارد: در ایمیل روزانه، ناتوانی
+    در پیمایش حساب‌ها فقط هشدار است (ارسال با حساب پیش‌فرض ادامه می‌یابد)،
+    ولی در Studio که کاربر عمداً فرستنده را انتخاب کرده، ارسال از حساب
+    اشتباه بدتر از نفرستادن است.
+    در هر دو مسیر، **پیدا نشدن** حساب درخواست‌شده خطای صریح است.
+    """
+    sender = os.environ.get("AIBL_EMAIL_SENDER", "").strip().lower()
+    if not sender:
+        return
+    matched = False
+    try:
+        for account in outlook.Session.Accounts:
+            if str(getattr(account, "SmtpAddress", "")).strip().lower() == sender:
+                mail.SendUsingAccount = account
+                matched = True
+                break
+    except Exception as ex:
+        if fatal:
+            raise RuntimeError(f"انتخاب حساب فرستنده Outlook ناموفق بود: {ex}") from ex
+        log.warning("انتخاب حساب فرستنده ناموفق بود: %s", ex)
+    if not matched:
+        raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
+
 
 def _add_inline(mail,path:Path,cid:str)->None:
     att=mail.Attachments.Add(str(path.resolve()),1,0,path.name); acc=att.PropertyAccessor
@@ -478,7 +800,8 @@ def _add_inline(mail,path:Path,cid:str)->None:
     try: acc.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3716001F","inline")
     except Exception: pass
 
-def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=True)->Dict[str,Any]:
+def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=True,
+                       subject:Optional[str]=None)->Dict[str,Any]:
     """Build one self-contained HTML report and optionally attach it in Outlook."""
     from ..pipeline import Pipeline
     from ..studio_core.html_export import build_dynamic_html
@@ -496,32 +819,24 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
         lineage={"warehouse_run_id": res.warehouse_run_id} if res.warehouse_run_id else None)
     paths["report_html"].write_text(report,encoding="utf-8")
     charts=make_email_charts(res.main,paths["assets"],selected=selected_charts,extras=res.extras)
-    body=build_email_html(d,res.main,charts,paths["report_html"]); paths["html"].write_text(body,encoding="utf-8")
+    body=build_email_html(d,res.main,charts,paths["report_html"],process_extras=res.extras)
+    paths["html"].write_text(body,encoding="utf-8")
     to=_recipients()
     result={"report_html":paths["report_html"],"html":paths["html"],"charts":charts,"recipients":to,"sent":False}
     if not(send or display): return result
     if not to:
         raise NoRecipients(
             "هیچ گیرنده‌ای پیکربندی نشده است. AIBL_EMAIL_TO / recipients.yaml / AIBL_EMAIL_FROM_HR را تنظیم کنید.")
-    try: import win32com.client as win32
-    except ImportError as ex: raise RuntimeError("برای Outlook باید pywin32 و Classic Outlook نصب باشد.") from ex
-    outlook=win32.Dispatch("Outlook.Application")
-    mail=outlook.CreateItem(0); mail.BodyFormat=2
-    mail.Subject=f"AIBL Executive Daily Insight — {d:%Y-%m-%d}"; mail.To="; ".join(to)
-    sender=os.environ.get("AIBL_EMAIL_SENDER","").strip().lower()
-    if sender:
-        matched=False
-        try:
-            for account in outlook.Session.Accounts:
-                if str(getattr(account,"SmtpAddress","")).strip().lower()==sender:
-                    mail.SendUsingAccount=account; matched=True; break
-        except Exception as ex: log.warning("انتخاب حساب فرستنده ناموفق بود: %s", ex)
-        if not matched: raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
-    for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
-    if paths["report_html"].exists(): mail.Attachments.Add(str(paths["report_html"].resolve()))
-    mail.HTMLBody=body; mail.Save()
-    if send: mail.Send(); result["sent"]=True
-    elif display: mail.Display()
+    with _outlook_session() as win32:
+        outlook=win32.Dispatch("Outlook.Application")
+        mail=outlook.CreateItem(0); mail.BodyFormat=2
+        mail.Subject=subject or f"AIBL Executive Daily Insight — {d:%Y-%m-%d}"; mail.To="; ".join(to)
+        _select_sender(outlook, mail, fatal=False)
+        for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
+        if paths["report_html"].exists(): mail.Attachments.Add(str(paths["report_html"].resolve()))
+        mail.HTMLBody=body; mail.Save()
+        if send: mail.Send(); result["sent"]=True
+        elif display: mail.Display()
     try:
         from ..warehouse import warehouse_from_settings
         warehouse_from_settings().audit("DAILY_HTML_EMAIL",run_id=res.warehouse_run_id or None,actor="email",entity_type="report",entity_id=paths["report_html"].name,message=f"recipients={len(to)} sent={result['sent']}")
@@ -532,7 +847,8 @@ def create_studio_email(*, day: Optional[date], df: pd.DataFrame, html_report: P
                         selected_charts=None, process_extras: Optional[Dict[str, Any]]=None,
                         send: bool=False, display: bool=True,
                         subject: Optional[str]=None, to=None, cc=None,
-                        header_title: Optional[str]=None, intro_text: str="") -> Dict[str,Any]:
+                        header_title: Optional[str]=None, intro_text: str="",
+                        footer_note: str="") -> Dict[str,Any]:
     """Compose Studio email; only the interactive HTML artifact is attached.
 
     ``to`` and ``cc`` accept strings separated by comma/semicolon or iterables.
@@ -552,26 +868,19 @@ def create_studio_email(*, day: Optional[date], df: pd.DataFrame, html_report: P
     charts=make_email_charts(df,assets,selected=selected_charts,extras=process_extras or {})
     body=build_email_html(d,df,charts,report,
                           header_title=header_title or "هوشمندی زنجیره تأمین خودرو",
-                          intro_text=intro_text or "")
-    try: import win32com.client as win32
-    except ImportError as ex: raise RuntimeError("برای Outlook روی Windows: pip install pywin32 و Classic Outlook لازم است.") from ex
-    outlook=win32.Dispatch("Outlook.Application"); mail=outlook.CreateItem(0); mail.BodyFormat=2
-    mail.Subject=subject or f"AIBL — گزارش زنجیره تأمین خودرو — {d:%Y-%m-%d}"
-    mail.To="; ".join(to_list)
-    if cc_list: mail.CC="; ".join(cc_list)
-    sender=os.environ.get("AIBL_EMAIL_SENDER","").strip().lower()
-    if sender:
-        matched=False
-        try:
-            for account in outlook.Session.Accounts:
-                if str(getattr(account,"SmtpAddress","")).strip().lower()==sender:
-                    mail.SendUsingAccount=account; matched=True; break
-        except Exception as ex: raise RuntimeError(f"انتخاب حساب فرستنده Outlook ناموفق بود: {ex}") from ex
-        if not matched: raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
-    for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
-    mail.Attachments.Add(str(report.resolve())); mail.HTMLBody=body; mail.Save()
-    if send: mail.Send()
-    elif display: mail.Display()
+                          intro_text=intro_text or "",
+                          process_extras=process_extras or {},
+                          footer_note=footer_note or "")
+    with _outlook_session() as win32:
+        outlook=win32.Dispatch("Outlook.Application"); mail=outlook.CreateItem(0); mail.BodyFormat=2
+        mail.Subject=subject or f"AIBL — گزارش زنجیره تأمین خودرو — {d:%Y-%m-%d}"
+        mail.To="; ".join(to_list)
+        if cc_list: mail.CC="; ".join(cc_list)
+        _select_sender(outlook, mail, fatal=True)
+        for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
+        mail.Attachments.Add(str(report.resolve())); mail.HTMLBody=body; mail.Save()
+        if send: mail.Send()
+        elif display: mail.Display()
     return {"sent":bool(send),"recipients":len(to_list),"cc":len(cc_list),"charts":len(charts),"report":report}
 
 def main(argv=None)->int:
