@@ -59,7 +59,7 @@ class ReportTemplate:
 _EXEC_FIELDS = ["CANONICAL_BL", "CANONICAL_ORDER", "KEY_MATERIAL", "ORG_DEPT",
                 "بحرانی (کوتاه)", "مقاومت (روز)", "مانده تعهد"]
 _OPS_FIELDS = ["KEY_MATERIAL", "CANONICAL_ORDER", "CANONICAL_BL", "KEY_REG",
-               "CANONICAL_EXPERT", "ORG_DEPT", "روش حمل", "بحرانی (کوتاه)",
+               "CANONICAL_EXPERT", "ORG_DEPT", "TRANSPORT_MODE", "بحرانی (کوتاه)",
                "مقاومت (روز)", "BL_CRITICAL_REASON", "ORDER_CRITICAL_REASON"]
 _PROC_FIELDS = ["CANONICAL_ORDER", "CANONICAL_BL", "ORG_DEPT", "CANONICAL_EXPERT",
                 "بحرانی (کوتاه)"]

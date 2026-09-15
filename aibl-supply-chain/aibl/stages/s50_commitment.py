@@ -55,12 +55,18 @@ class CommitmentStage(Stage):
         }}
 
     def kpis(self, df: pd.DataFrame, ctx: PipelineContext) -> Dict[str, tuple]:
+        # سنجه‌های تعهد در سطح ثبت سفارش (REG) هستند. پس از join روی جدول
+        # بارنامه×متریال ممکن است یک مقدار چند بار تکرار شود؛ جمع ردیفی KPI
+        # را بزرگ‌نمایی می‌کند. همان قرارداد Grain که HTML/Warehouse استفاده
+        # می‌کنند، اینجا هم منبع واحد محاسبه است.
+        from ..studio_core.grain import safe_agg
+
         red = ctx.rb.status_label("red")
-        num = lambda c: pd.to_numeric(df.get(c), errors="coerce")  # noqa: E731
         return {
             "تعهدات با هشدار قرمز": (int((df.get("وضعیت کلی هشدار") == red).sum()),
                                       "عبور از مهلت قانونی"),
-            "جمع مانده تعهد": (round(float(num("مانده تعهد").sum() or 0), 2), "سورس NTSW"),
-            "جمع جریمه برآوردی": (round(float(num("جریمه برآوردی").sum() or 0), 2),
-                                   "پلکانی طبق fx_governance.yaml"),
+            "جمع مانده تعهد": (round(safe_agg(df, "مانده تعهد", "sum"), 2),
+                                "سورس NTSW — تجمیع دانه‌ای REG"),
+            "جمع جریمه برآوردی": (round(safe_agg(df, "جریمه برآوردی", "sum"), 2),
+                                   "پلکانی طبق fx_governance.yaml — تجمیع دانه‌ای REG"),
         }

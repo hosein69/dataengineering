@@ -109,7 +109,21 @@ class ClearanceAdapter(SourceAdapter):
 
         # ── روش حمل از rulebook ──
         rb = get_rulebook()
-        out[p("TRANSPORT_MODE_CODE")] = out[p("TRANSPORT_MODE")].map(rb.transport_mode)
+        mode = out[p("TRANSPORT_MODE")].map(rb.transport_mode)
+
+        # در فایل‌های واقعی Sea / Air / Land، گاهی «نوع حمل» خالی است اما
+        # نوع فایل/شیت خودش حامل حقیقت است. فقط وقتی مقدار واقعی ستون خالی
+        # است از metadata استفاده می‌کنیم؛ مقدار موجود هرگز override نمی‌شود.
+        if "_SOURCE_SHEET" in df.columns:
+            sheet_mode = df["_SOURCE_SHEET"].map(
+                lambda x: rb.transport_mode(x) if not is_empty_val(x) else "")
+            mode = mode.where(mode.astype(str).str.strip() != "", sheet_mode)
+        if "_SOURCE_FILE" in df.columns:
+            file_mode = df["_SOURCE_FILE"].map(
+                lambda x: rb.transport_mode(x) if not is_empty_val(x) else "")
+            mode = mode.where(mode.astype(str).str.strip() != "", file_mode)
+
+        out[p("TRANSPORT_MODE_CODE")] = mode
 
         if "_SOURCE_SHEET" in df.columns:
             out[p("SOURCE_SHEET")] = df["_SOURCE_SHEET"]

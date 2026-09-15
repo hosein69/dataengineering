@@ -14,7 +14,8 @@ from typing import Dict
 
 import pandas as pd
 
-from ..core.text import clean_part_no
+from ..core.text import clean_part_no, is_empty_val
+from ..rulebook import get_rulebook
 from .base import SourceAdapter, register
 
 
@@ -45,4 +46,22 @@ class AbbasiAdapter(SourceAdapter):
         out = self.std(df, self.COLUMN_MAP, exclude=["توضیح"])
         self.add_bl_key(out, df, ["بارنامه", "شماره بارنامه"])
         self.add_order_key(out, df, ["شماره سفارش", "سفارش"])
+
+        # روش حمل در BLs Tracking با «نوع سفر» ثبت می‌شود؛ اگر این مقدار
+        # خالی باشد، از «وضعیت حمل» و در صورت امکان از نام شیت/فایل به‌عنوان
+        # سرنخ استفاده می‌کنیم. این ستون باید پیش از merge به یک کد پایدار
+        # تبدیل شود تا فیلتر Studio وابسته به نام خام سورس نباشد.
+        rb = get_rulebook()
+        mode = out[self.p("TRIP_MODE")].map(rb.transport_mode)
+        ship = out[self.p("SHIP_STATUS")].map(rb.transport_mode)
+        mode = mode.where(mode.astype(str).str.strip() != "", ship)
+        if "_SOURCE_SHEET" in df.columns:
+            sheet_mode = df["_SOURCE_SHEET"].map(
+                lambda x: rb.transport_mode(x) if not is_empty_val(x) else "")
+            mode = mode.where(mode.astype(str).str.strip() != "", sheet_mode)
+        if "_SOURCE_FILE" in df.columns:
+            file_mode = df["_SOURCE_FILE"].map(
+                lambda x: rb.transport_mode(x) if not is_empty_val(x) else "")
+            mode = mode.where(mode.astype(str).str.strip() != "", file_mode)
+        out[self.p("TRIP_MODE_CODE")] = mode
         return {"main": out}

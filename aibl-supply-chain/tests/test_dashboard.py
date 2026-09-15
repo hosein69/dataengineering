@@ -169,8 +169,10 @@ def test_dashboard_module() -> None:
           "@keyframes drift1" in src and "@keyframes drift2" in src)
     check("نبض فقط روی کارت بحرانی است", "@keyframes pulse" in src
           and ".kpi.crit::after" in src)
-    check("هر سه خروجی وجود دارد (اکسل کامل، داده فیلترشده، HTML)",
-          src.count("download_button") >= 3)
+    check("Dashboard فقط HTML را به‌عنوان artifact تحویل می‌دهد",
+          src.count("download_button") == 1 and "دانلود HTML تعاملی" in src)
+    check("Excel و PDF از داخل همان HTML معرفی شده‌اند",
+          "استخراج داده" in src and "PDF / چاپ" in src)
     check("st.set_page_config پیش از هر فراخوانی دیگر st است",
           src.index("st.set_page_config") < src.index("st.markdown"))
     check("راه‌انداز پورت آزاد پیدا می‌کند",
@@ -213,7 +215,7 @@ def test_scorecard_group_criticality() -> None:
         ws = wb["۵. کارنامه سازمانی"]
         vals = list(ws.iter_rows(min_row=2, max_row=2, min_col=7, max_col=8, values_only=True))[0]
         check("کارنامه بارنامه بحرانی را از کل BL حساب می‌کند، نه اولین ردیف", vals == (1, 1), str(vals))
-        check("فونت کارنامه IRANSans Light است", ws["A2"].font.name == "IRANSans Light", ws["A2"].font.name)
+        check("فونت کارنامه IRANSans است", ws["A2"].font.name == "IRANSans", ws["A2"].font.name)
         check("عدد بحرانی با رنگ قرمز نمایش داده می‌شود", ws["H2"].font.color.rgb in {"00C0392B", "FFC0392B"}, str(ws["H2"].font.color.rgb))
 
 

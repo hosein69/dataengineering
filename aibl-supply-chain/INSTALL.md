@@ -265,3 +265,29 @@ recipients:
 | `RowExplosionError` | کلید یک سورس یکتا نیست | لاگ نام سورس را می‌گوید؛ `dedupe_by` را در `sources.yaml` تنظیم کنید |
 | `ستون X یافت نشد` | تغییر هدر در فایل اکسل | نگاشت مربوطه را در adapter همان سورس اصلاح کنید |
 | `کتابخانه قوانین خطای ساختاری دارد` | YAML خراب یا مجموع وزن‌ها ≠ ۱ | `python -m aibl.rulebook.validate` |
+
+
+## SQLite Warehouse (V26.17)
+
+SQLite جزو کتابخانه استاندارد Python است و نصب جداگانه ندارد. AIBL با WAL کار می‌کند تا Studio بتواند هم‌زمان با خواندن Snapshotها، یک writer Pipeline نیز داده جدید ثبت کند.
+
+متغیرهای مهم:
+
+- `AIBL_WAREHOUSE_ENABLED=1` — فعال (پیش‌فرض)
+- `AIBL_WAREHOUSE_PATH=<path>` — مسیر فایل Data Warehouse
+- `AIBL_WAREHOUSE_REQUIRED=1` — در صورت شکست persistence کل Pipeline را fail کن
+- `AIBL_STUDIO_SOURCE=warehouse` — Studio از Snapshot خوانده شود (پیش‌فرض)
+- `AIBL_SQLITE_LOG=1` — Runtime log در `audit_log` نیز mirror شود
+
+کنترل نصب: `python -m aibl doctor` و `python -m aibl warehouse stats`. برای نگه‌داری دوره‌ای می‌توان از `python -m aibl warehouse prune --keep 365` و سپس `python -m aibl warehouse vacuum` استفاده کرد. SQLite برای یک writer و چند reader سازمانی مناسب است؛ اگر چند writer هم‌زمان یا حجم بسیار بزرگ لازم شد، قرارداد `Warehouse` طوری جدا شده که backend بعدی می‌تواند PostgreSQL/SQL Server باشد.
+
+در V26.17 خروجی اصلی Studio/Email فقط HTML خودبسنده است. کاربر نهایی از داخل HTML خروجی Excel فیلترشده می‌گیرد و برای PDF از دکمه «PDF / چاپ» و گزینه Save as PDF مرورگر استفاده می‌کند.
+
+
+## ارتقا به V26.18 بدون از دست رفتن Warehouse
+
+1. پوشه کد نسخه جدید را جداگانه جایگزین/Extract کنید؛ فایل SQLite را داخل پوشه Release کپی نکنید.
+2. اگر قبلاً `AIBL_WAREHOUSE_PATH` داشته‌اید همان را نگه دارید. در اولین اجرای V26.18 مسیر فعال در `%AIBL_HOME%\warehouse.path` (پیش‌فرض `%USERPROFILE%\.aibl\warehouse.path`) ثبت می‌شود.
+3. در اولین باز شدن Warehouse توسط هر Release جدید و نیز پیش از schema migration، AIBL یک backup سازگار SQLite در پوشه `warehouse_backups` کنار دیتابیس می‌سازد. Migrationها تاریخچه Snapshot/Event/Audit را reset نمی‌کنند.
+4. برای نمودارهای ایمیل با IRANSans، فونت دارای مجوز را روی سیستم نصب کنید یا `AIBL_FONT_PATH` را به همان فایل محلی اشاره دهید. پکیج فونت را توزیع نمی‌کند.
+5. در Studio > خروجی، نمودارهای HTML و Email را مستقل انتخاب کنید و در Email Composer، TO/CC/Subject/Header/متن را به‌صورت Profile در Warehouse ذخیره کنید.

@@ -1,10 +1,42 @@
-# AIBL V26.11.0 — Studio — مغز شناختی لجستیک (ماژولار + کتابخانه قوانین)
+# AIBL V26.18.0 — Automotive Supply Chain Intelligence Studio
 
 بازنویسی کامل `aibl.py` نسخه ۲۰.۱ به یک پکیج ماژولار، قانون‌محور و تست‌شده.
-**464 تست صحت در سیزده مجموعه — همه سبز، روی داده با هدرهای واقعی تولید.**
+**۲۱ مجموعه تست رگرسیون معماری، بیزینس، Warehouse، Process، HTML/Browser و Delivery.**
 
 > **اول این را بزنید:** `python -m aibl.doctor`
 > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.
+
+
+## V26.18 — Chart Studio + Durable Warehouse + Email Composer
+
+این نسخه روی سه اصل بنا شده است: **هیچ داده‌ای در ارتقای نسخه گم نشود، HTML تنها artifact ارسالی باشد، و نمودارها بخشی از طراحی گزارش باشند نه یک خروجی ثابت.** کاتالوگ مشترک ۱۵ نموداری برای HTML و Email اضافه شده (bar، donut، grouped و scatter) و انتخاب نمودارهای HTML و ایمیل مستقل است. اگر Event/Transition Log هنوز برای Process Mining کافی نباشد، گلوگاه به‌جای نمودار خالی، «توزیع مرحله فعلی» را به‌عنوان نقطه شروع نشان می‌دهد.
+
+Studio اکنون Email Composer دارد: `TO`، `CC`، `Subject`، Header، متن مقدمه و نمودارهای ایمیل قابل انتخاب و ذخیره به‌صورت Profile داخل همان Warehouse هستند. متن Outlook با IRANSans درخواست می‌شود و PNG نمودار با IRANSans نصب‌شده رندر می‌شود؛ برای نصب‌های سازمانی می‌توان `AIBL_FONT_PATH` را به فایل فونت محلیِ دارای مجوز اشاره داد. فایل فونت داخل پکیج توزیع نمی‌شود.
+
+HTML دیگر بر اساس تعداد سلول به‌طور پنهانی کوچک نمی‌شود. اگر ۳۰۰۰ ردیف درخواست شود، همان ۳۰۰۰ ردیف داخل payload می‌ماند. برای کنترل حجم/سرعت، payload به شکل آرایه‌ای فشرده‌تر شده و DOM فقط صفحه‌های ۱۰۰ ردیفی را رندر می‌کند؛ فیلتر و Excel Export همچنان روی **کل ردیف‌های موجود در artifact** اجرا می‌شوند. هر محدودیت ردیف فقط سقف صریح کاربر/قالب است و در خود HTML اعلام می‌شود.
+
+Warehouse بین Releaseها پایدار است: مسیر انتخاب‌شده در `~/.aibl/warehouse.path` (یا `%AIBL_HOME%/warehouse.path`) ثبت می‌شود، بنابراین تعویض پوشه/ZIP نسخه جدید به دیتابیس تازه سوییچ نمی‌کند. Migrationها افزایشی هستند و در اولین باز شدن Warehouse توسط هر Release جدید (یا پیش از تغییر schema) یک SQLite backup سازگار در `warehouse_backups/` ساخته می‌شود.
+
+## V26.17 — SQLite Warehouse + HTML-only Delivery
+
+در این نسخه Excel دیگر لایه نگه‌داری داده نیست. هر اجرای Pipeline یک `run_id` از ابتدای اجرا می‌گیرد و در SQLite ثبت می‌شود؛ Snapshot کامل، Event Log deduplicated، Transitionهای A→B، KPIهای تاریخی، تغییر وضعیت پرونده، lineage سورس‌ها و Audit/Runtime Log همگی قابل Query هستند. Studio در حالت عادی Snapshot را از Warehouse می‌خواند و فقط با «به‌روزرسانی Warehouse» Pipeline را دوباره اجرا می‌کند.
+
+```text
+Sources → Adapters/Stages → SQLite Warehouse (system of record)
+                              ├─ fact_case_snapshot
+                              ├─ fact_event + bridge_run_event
+                              ├─ fact_transition_snapshot
+                              ├─ fact_case_process_snapshot
+                              ├─ fact_kpi_snapshot
+                              ├─ case_state_log
+                              └─ audit_log / source_run_log
+                                         ↓
+                                  Studio / HTML
+                                         ↓
+                             Excel export / Save as PDF
+```
+
+دستورهای عملیاتی: `python -m aibl warehouse stats`، `runs`، `case <CASE_KEY>`، `bottlenecks`، `audit`، `lineage`، `prune --keep 365` و `vacuum`. فایل Warehouse به‌طور پیش‌فرض `AIBL_warehouse.sqlite3` در Output است و با `AIBL_WAREHOUSE_PATH` قابل تغییر است؛ مسیر انتخاب‌شده در pointer پایدار کاربر ذخیره می‌شود تا تعویض نسخه همان Warehouse را دوباره باز کند.
 
 ```bash
 python -m aibl.doctor                         # عیب‌یابی محیط
@@ -12,7 +44,7 @@ python -m aibl.diagnose --excel               # عیب‌یابی رابطه‌�
 python -m aibl.rulebook.validate              # اعتبارسنجی کتابخانه قوانین
 python -m aibl.pipeline                       # اجرای کامل
 python -m aibl run                            # doctor + اجرا
-python -m aibl email --no-display             # ساخت Excel + نمودارهای ایمیل
+python -m aibl email --no-display             # ساخت HTML تعاملی + نمودارهای ایمیل
 python -m aibl email                          # ساخت و باز کردن Outlook
 python -m aibl email --send                   # ارسال واقعی
 python run_all_tests.py                       # همه تست‌ها
@@ -62,12 +94,11 @@ HEADERS_MAP فقط **۱۷٫۳٪** پر است، برای بیشترِ ردیف�
 | انتخاب | گزینه‌ها |
 |---|---|
 | **قالب** | ◈ اجرایی · ▦ عملیاتی · ⛓ فرآیندی · ◍ ممیزی داده |
-| **فرمت** | Excel · HTML داینامیک (فیلترپذیر) · PDF |
+| **Artifact تحویلی Studio/Email** | فقط HTML خودبسنده؛ Excel و PDF از داخل همان HTML |
 | **محتوا** | نمودار/ویژوال و جدول‌ها مستقلاً قابل خاموش کردن |
-| **فیلدها** | هر ۳۶۷ ستون از ۱۳ سورس — انتخاب با شماست |
+| **فیلدها** | تمام ستون‌های تولیدشده Pipeline — کاتالوگ به‌صورت پویا ساخته می‌شود |
 
-هر سه فرمت از **یک منبع** ساخته می‌شوند، پس عدد Excel با عدد HTML و PDF
-یکی است.
+SQLite **منبع حقیقت** است و HTML فقط Snapshot قابل‌حمل آن است. Excel فیلترشده و PDF از همان payload فعال HTML ساخته می‌شوند؛ بنابراین artifact ارسالی واحد است و lineage آن با `warehouse_run_id` قابل ردیابی می‌ماند.
 
 ### چرا محاسبات به هم نمی‌ریزد
 
@@ -83,17 +114,17 @@ join در هر ردیف **تکرار** می‌شود:
 این خطا بی‌صداست: عدد بزرگ‌تر می‌شود و هیچ استثنایی رخ نمی‌دهد. پس:
 
 1. **تجمیع دانه‌ای.** هر جمع پیش از محاسبه بر کلید دانه‌ی همان ستون یکتا
-   می‌شود — در پایتون، در Excel، و حتی در JavaScript سند HTML هنگام فیلتر
+   می‌شود — در پایتون و در JavaScript سند HTML هنگام فیلتر
    کردن در مرورگر.
 2. **تفکیک شناسه از سنجه.** «شماره سفارش» جمع نمی‌شود (شناسه است) و
    «مقاومت (روز)» میانگین می‌گیرد نه جمع (نسبتی است).
 3. **ردپای محاسباتی.** برگه/بخش «صحت محاسبات» جمع ساده و جمع درست را کنار
    هم می‌گذارد؛ هر عددی که در سند آمده اینجا قابل ممیزی است.
 
-> ⚠️ توجه: شاخص «جمع مانده تعهد» در شیت خلاصه‌ی **خط لوله**
-> (`s50_commitment`) هنوز جمع ردیفی است. عمداً تغییرش ندادم چون عدد
-> گزارش رسمی را جابه‌جا می‌کند؛ اگر بخواهید، با یک خط به تجمیع دانه‌ای
-> منتقل می‌شود.
+> شاخص‌های «جمع مانده تعهد» و «جمع جریمه برآوردی» در خود Pipeline نیز
+> با همان Grain Registry و در سطح **REG** محاسبه می‌شوند؛ بنابراین KPI رسمی،
+> Warehouse و HTML از یک قرارداد تجمیع استفاده می‌کنند و fan-out ناشی از join
+> باعث چندبرابر شدن عدد نمی‌شود.
 
 ---
 
@@ -398,8 +429,7 @@ python app/run_dashboard.py --port 8600
 ```
 
 پس‌زمینه متحرک کم‌شتاب، کارت‌های شیشه‌ای، نبض فقط روی کارت بحرانی،
-نمودارهای پراکنش تعاملی. سه خروجی: اکسل کامل ۱۷ شیتی، اکسل داده
-فیلترشده، و HTML مستقل با CSS و JS درون‌خط که دکمه «ذخیره به PDF» دارد.
+نمودارهای پراکنش تعاملی. Artifact اصلی یک HTML مستقل با CSS/JS درون‌خط است؛ Excel فیلترشده و PDF از داخل همان HTML ساخته می‌شوند. Excel رسمی ۱۷ شیتی فقط برای سازگاری legacy API باقی مانده و منبع داده نیست.
 
 منطق داشبورد در `app/ui_kit.py` است و بدون Streamlit هم تست می‌شود
 (۴۱ تست) — چون Streamlit در زمان import کد را اجرا می‌کند و فایل
@@ -492,4 +522,4 @@ Formula Injection (SUBTOTAL/COUNTIF زنده)، گروه‌بندی سه‌لا�
 python app/run_platform.py
 ```
 
-Studio adds a drag-and-drop module layout, live filters, dynamic HTML/CSS/JavaScript export, custom Excel workbooks and the existing executive Outlook email pack. Install `streamlit-sortables==0.3.1` for drag-and-drop layout editing.
+Studio reads persisted SQLite snapshots, exposes process history / case timeline / transitions / KPI trends / audit logs, and delivers a self-contained HTML artifact. Excel/PDF are generated by the recipient from that HTML. Install `streamlit-sortables==0.3.1` for drag-and-drop layout editing.

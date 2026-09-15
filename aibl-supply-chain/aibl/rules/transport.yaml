@@ -20,7 +20,7 @@ modes:
   - code: ROAD
     fa: "زمینی (جاده‌ای)"
     document: CMR
-    aliases: [زمینی, جاده, road, truck, کامیون, "by road"]
+    aliases: [زمینی, جاده, road, truck, land, کامیون, "by road", "by land"]
     typical_transit_days: 20
   - code: RAIL
     fa: "ریلی"

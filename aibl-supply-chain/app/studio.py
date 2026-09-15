@@ -15,7 +15,6 @@
 """
 from __future__ import annotations
 
-import io
 import os
 import sys
 from datetime import date
@@ -32,16 +31,15 @@ import streamlit as st
 st.set_page_config(page_title="AIBL Studio", page_icon="◈",
                    layout="wide", initial_sidebar_state="expanded")
 
-from app import analytics, motion, process_view
+from app import analytics, motion, process_view, warehouse_view
 from app.styles import band_chip, css, kpi_card
 from app.theme import (BAND_ORDER, BANDS, SEQUENTIAL, SERIES, STATUS, TEXT_SECONDARY,
                        band_of, plotly_template)
-from aibl.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOverwrite,
-                                            build_custom_excel)
 from aibl.studio_core.field_catalog import build_catalog, catalog_groups, unique_labels
 from aibl.studio_core.filters import FilterState, apply_filters, filter_options
-from aibl.studio_core.html_export import build_dynamic_html
 from aibl.report.supply_views import build_material_view, build_bl_view, build_dept_view
+from aibl.config.settings import SETTINGS
+from aibl.warehouse import warehouse_from_settings
 
 try:
     import plotly.express as px
@@ -63,12 +61,20 @@ RES_COL = "مقاومت (روز)"
 # ══════════════════════════════════════════════════════════════════════════
 #  داده
 # ══════════════════════════════════════════════════════════════════════════
-@st.cache_data(show_spinner="در حال اجرای خط لوله…")
+@st.cache_data(show_spinner="در حال بارگذاری Snapshot از Warehouse…")
 def load_data(ref_date: str):
-    # AIBL_TODAY بیرون از این تابع ست می‌شود — در cache hit بدنه اجرا نمی‌شود.
+    """Studio از SQLite می‌خواند؛ Pipeline فقط وقتی Snapshot همان تاریخ نیست اجرا می‌شود."""
+    wh = warehouse_from_settings()
+    if SETTINGS.STUDIO_SOURCE != "pipeline":
+        snap = wh.load_snapshot(ref_date=ref_date)
+        if snap is not None and snap.ref_date == ref_date:
+            return snap.df, snap.main, dict(snap.extras), "", snap.run_id
     from aibl.pipeline import Pipeline
-    r = Pipeline().run(build_report=True)
-    return r.df, r.main, dict(r.extras), r.dashboard_path
+    r = Pipeline(today=date.fromisoformat(ref_date)).run(build_report=False)
+    snap = wh.load_snapshot(run_id=r.warehouse_run_id) if r.warehouse_run_id else None
+    if snap is not None:
+        return snap.df, snap.main, dict(snap.extras), "", snap.run_id
+    return r.df, r.main, dict(r.extras), r.dashboard_path, r.warehouse_run_id
 
 
 def panel_open(title: str, hint: str = "") -> None:
@@ -100,18 +106,27 @@ except ValueError:
     st.stop()
 os.environ["AIBL_TODAY"] = ref_date
 
-if st.sidebar.button("↻ اجرای مجدد خط لوله", use_container_width=True):
-    st.cache_data.clear()
-    st.rerun()
+if st.sidebar.button("⟳ به‌روزرسانی Warehouse", use_container_width=True):
+    try:
+        from aibl.pipeline import Pipeline
+        with st.spinner("اجرای Pipeline و ثبت Snapshot در SQLite…"):
+            Pipeline(today=date.fromisoformat(ref_date)).run(build_report=False)
+        st.cache_data.clear()
+        st.rerun()
+    except Exception as ex:
+        st.sidebar.error(f"به‌روزرسانی ناموفق: {ex}")
 
 try:
-    raw, main, extras, official_excel = load_data(ref_date)
+    raw, main, extras, official_excel, warehouse_run_id = load_data(ref_date)
 except Exception as ex:
     st.error(f"خط لوله اجرا نشد: {ex}")
     st.info("اول `python -m aibl.doctor` را بزنید تا مسیر سورس‌ها بررسی شود.")
     st.stop()
 
 df = main if not main.empty else raw
+WAREHOUSE = warehouse_from_settings()
+ARTIFACT_ROOT = Path(os.getenv("AIBL_DAILY_REPORT_ROOT") or SETTINGS.daily_report_root)
+st.sidebar.caption(f"Snapshot: **{warehouse_run_id or '—'}**")
 CATALOG = build_catalog(df)
 GROUPS = catalog_groups(CATALOG)
 SPEC_BY_COL = {s.column: s for s in CATALOG}
@@ -168,8 +183,11 @@ if RES_COL in fdf.columns:
     v = pd.to_numeric(fdf[RES_COL], errors="coerce").min()
     min_res = fnum(v, 1) if pd.notna(v) else "—"
 
-commit = fnum(pd.to_numeric(fdf.get("مانده تعهد"), errors="coerce").sum()) \
-    if "مانده تعهد" in fdf.columns else "—"
+if "مانده تعهد" in fdf.columns:
+    from aibl.studio_core.grain import safe_agg
+    commit = fnum(safe_agg(fdf, "مانده تعهد", "sum"))
+else:
+    commit = "—"
 
 # ── هدر زنده ──────────────────────────────────────────────────────────────
 motion.hero(
@@ -203,9 +221,9 @@ st.markdown(
     '</div>', unsafe_allow_html=True)
 
 (tab_over, tab_proc, tab_supply, tab_analytics, tab_fields, tab_data,
- tab_quality, tab_export) = st.tabs(
+ tab_quality, tab_warehouse, tab_export) = st.tabs(
     ["نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "⊞ تحلیل", "🧩 سازنده گزارش",
-     "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
+     "▦ داده", "◍ کیفیت داده", "🗄 انبار داده", "📦 HTML خروجی"])
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -323,16 +341,7 @@ with tab_supply:
                 st.info("داده کافی برای این نما وجود ندارد.")
                 continue
             st.dataframe(view, use_container_width=True, hide_index=True)
-            # ساخت Excel فقط با کلیک کاربر — نه در هر بازتولید صفحه
-            if st.checkbox("آماده‌سازی خروجی Excel", key=f"prep_{kind}"):
-                bio = io.BytesIO()
-                with pd.ExcelWriter(bio, engine="openpyxl") as ew:
-                    view.to_excel(ew, index=False, sheet_name="Supply View")
-                st.download_button(
-                    "⬇️ دانلود Excel", bio.getvalue(), file_name=fname,
-                    mime=("application/vnd.openxmlformats-officedocument"
-                          ".spreadsheetml.sheet"),
-                    key=f"dl_{kind}")
+            st.caption("برای تحویل، این نما را در Report Builder داخل HTML قرار دهید؛ دریافت‌کننده از همان HTML خروجی Excel/PDF می‌گیرد.")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -341,10 +350,10 @@ with tab_fields:
         f'<div class="panel"><h3>سازنده گزارش</h3><p class="hint">'
         f'هر <b>{len(ALL_COLUMNS):,}</b> فیلدی که خط لوله تولید می‌کند اینجا '
         f'قابل انتخاب است — از هر ۱۳ سورس. فیلدهای انتخابی مستقیماً به جدول، '
-        f'Excel و HTML می‌روند.</p></div>', unsafe_allow_html=True)
+        f'HTML تعاملی می‌روند؛ Excel/PDF توسط دریافت‌کننده از همان HTML ساخته می‌شود.</p></div>', unsafe_allow_html=True)
 
     DEFAULTS = [c for c in ["KEY_MATERIAL", "CANONICAL_ORDER", "CANONICAL_BL", "KEY_REG",
-                            "CANONICAL_EXPERT", "ORG_DEPT", "روش حمل", BAND_COL, RES_COL]
+                            "CANONICAL_EXPERT", "ORG_DEPT", "TRANSPORT_MODE", BAND_COL, RES_COL]
                 if c in SPEC_BY_COL]
     if "sel_fields" not in st.session_state:
         st.session_state.sel_fields = list(DEFAULTS)
@@ -477,87 +486,154 @@ with tab_quality:
 # ══════════════════════════════════════════════════════════════════════════
 #  ۷) خروجی — سازنده گزارش با قالب، فرمت و کنترل صحت
 # ══════════════════════════════════════════════════════════════════════════
+with tab_warehouse:
+    warehouse_view.render(WAREHOUSE, fdf, current_run_id=warehouse_run_id or None)
+
+
 with tab_export:
     from aibl.studio_core import templates as tpl
-    from aibl.studio_core.grain import GRAIN_FA, column_grain, measure_kind, KIND_FA
     from aibl.studio_core.report_builder import ReportSpec, build as build_report
+    from aibl.studio_core.designs import (ReportDesign, save_design, load_design,
+                                          list_designs, EMAIL_CHARTS)
+    from aibl.studio_core.chart_catalog import (CHART_SPECS, CHART_TITLES,
+                                                 DEFAULT_HTML_CHARTS, DEFAULT_EMAIL_CHARTS)
+    from aibl.integrations.daily_email import configured_recipients
 
     sel_cols = [c for c in st.session_state.sel_fields if c in fdf.columns]
+    if "report_tabs" not in st.session_state:
+        st.session_state.report_tabs = [{"title": "نمای اصلی", "fields": list(sel_cols)}]
+    if "html_chart_keys" not in st.session_state:
+        st.session_state.html_chart_keys = [x for x in DEFAULT_HTML_CHARTS if x in CHART_TITLES]
+    if "email_chart_keys" not in st.session_state:
+        st.session_state.email_chart_keys = [x for x in DEFAULT_EMAIL_CHARTS if x in CHART_TITLES]
+    if "studio_email_to" not in st.session_state:
+        st.session_state.studio_email_to = "; ".join(configured_recipients())
+    st.session_state.setdefault("studio_email_cc", "")
+    st.session_state.setdefault("studio_email_header", "هوشمندی روزانه زنجیره تأمین خودرو")
+    st.session_state.setdefault("studio_email_intro", "این گزارش برای تصمیم‌گیری روزانه تأمین، حمل، گمرک و پشتیبانی تولید تهیه شده است.")
+
+    st.info("**Artifact اصلی این نسخه فقط HTML است.** گیرنده داخل همان فایل می‌تواند "
+            "برش فعال را به Excel واقعی صادر کند یا با دکمه «PDF / چاپ» همان گزارش را "
+            "با موتور مرورگر به PDF ذخیره کند. SQLite/Studio هیچ فایل Excel را به‌عنوان منبع داده نگه نمی‌دارد.")
 
     with st.container(border=True):
-        panel_open("۱ · قالب گزارش",
-                   "قالب فقط چیدمان و نقطه شروع فیلدهاست؛ انتخاب نهایی فیلد با شماست.")
+        panel_open("۰ · طرح‌های ذخیره‌شده",
+                   "طرح گزارش بیرون از پکیج ذخیره می‌شود؛ تنظیمات ایمیل نیز می‌تواند داخل Warehouse به‌صورت Profile پایدار ذخیره شود.")
+        d1, d2, d3 = st.columns([2, 1, 1])
+        design_name = d1.text_input("نام طرح", value="گزارش HTML من", key="design_name")
+        saved = list_designs()
+        chosen = d2.selectbox("بازیابی طرح", ["—"] + saved, key="chosen_design")
+        if d3.button("↥ ذخیره طرح", use_container_width=True):
+            design = ReportDesign(
+                name=design_name.strip() or "گزارش",
+                template=st.session_state.get("report_template_pick", "executive"),
+                fields=list(sel_cols), tabs=st.session_state.report_tabs,
+                formats=["html"], visuals=True, tables=True, max_rows=5000,
+                file_stem=design_name.strip() or "AIBL Report",
+                html_charts=list(st.session_state.html_chart_keys),
+                email_charts=list(st.session_state.email_chart_keys), title="AIBL")
+            save_design(design)
+            st.success("طرح HTML ذخیره شد.")
+        if chosen != "—" and st.button("↧ بارگذاری طرح", use_container_width=True):
+            try:
+                d = load_design(chosen)
+                st.session_state.sel_fields = [c for c in d.fields if c in df.columns]
+                st.session_state.report_tabs = [x for x in d.tabs if x.get("fields")] or [{"title":"نمای اصلی","fields":list(sel_cols)}]
+                st.session_state.html_chart_keys = [x for x in (getattr(d, "html_charts", []) or d.email_charts) if x in CHART_TITLES]
+                st.session_state.email_chart_keys = [x for x in d.email_charts if x in CHART_TITLES]
+                st.session_state.report_template_pick = d.template
+                st.rerun()
+            except Exception as ex:
+                st.error(f"بارگذاری طرح ناموفق بود: {ex}")
+
+    with st.container(border=True):
+        panel_open("۱ · قالب و تب‌های HTML",
+                   "فیلتر، KPI و Process Explorer داخل فایل آفلاین کار می‌کنند؛ هر تب می‌تواند جداگانه Excel شود.")
         keys = list(tpl.TEMPLATES)
-        pick = st.radio(
-            "قالب", keys, horizontal=True, label_visibility="collapsed",
-            format_func=lambda k: f"{tpl.TEMPLATES[k].icon} {tpl.TEMPLATES[k].title}")
+        pick = st.radio("قالب", keys, horizontal=True, label_visibility="collapsed",
+                        format_func=lambda k: f"{tpl.TEMPLATES[k].icon} {tpl.TEMPLATES[k].title}",
+                        key="report_template_pick")
         T = tpl.get(pick)
         st.caption(T.description)
-        c1, c2 = st.columns([1, 1])
-        if c1.button("استفاده از فیلدهای پیش‌فرض این قالب", use_container_width=True):
+        if st.button("استفاده از فیلدهای پیش‌فرض این قالب", use_container_width=True):
             st.session_state.sel_fields = [c for c in T.default_fields if c in df.columns]
             st.rerun()
-        c2.caption(f"بخش‌ها: " + " · ".join(tpl.SECTIONS.get(x, x) for x in T.sections))
+
+        for i, tab in enumerate(st.session_state.report_tabs):
+            c1, c2, c3 = st.columns([1, 3, .7])
+            title_i = c1.text_input("عنوان تب", value=tab.get("title","تب"), key=f"tab_title_{i}")
+            fields_i = c2.multiselect("فیلدهای تب", ALL_COLUMNS,
+                default=[c for c in tab.get("fields", sel_cols) if c in ALL_COLUMNS],
+                format_func=lab, key=f"tab_fields_{i}")
+            remove = c3.button("حذف", key=f"tab_rm_{i}", disabled=len(st.session_state.report_tabs) <= 1)
+            st.session_state.report_tabs[i] = {"title": title_i, "fields": fields_i}
+            if remove:
+                st.session_state.report_tabs.pop(i); st.rerun()
+        if st.button("＋ افزودن تب", use_container_width=True):
+            st.session_state.report_tabs.append({"title": f"تب {len(st.session_state.report_tabs)+1}", "fields": list(sel_cols)})
+            st.rerun()
 
     with st.container(border=True):
-        panel_open("۲ · محتوا و فرمت")
-        a, b, c = st.columns([1, 1, 1])
-        with a:
-            st.markdown("**فرمت خروجی**")
-            f_xls = st.checkbox("Excel", value=True)
-            f_html = st.checkbox("HTML داینامیک (فیلترپذیر)", value=True)
-            f_pdf = st.checkbox("PDF", value=True)
-        with b:
-            st.markdown("**محتوا**")
-            want_vis = st.checkbox("نمودارها / ویژوال", value=True)
-            want_tab = st.checkbox("جدول‌ها", value=True)
-        with c:
-            st.markdown("**دامنه**")
-            rows_cap = st.number_input("حداکثر ردیف", 100, 100000,
-                                       int(T.max_rows), 100)
-            stem = st.text_input("نام فایل", f"AIBL {T.title}")
-        st.caption(f"فیلدهای انتخابی: **{len(sel_cols):,}** — از تب «سازنده گزارش» "
-                   f"تغییرشان دهید.")
+        panel_open("۲ · محتوای Artifact")
+        a,b,c = st.columns(3)
+        want_vis = a.checkbox("نمودارها / ویژوال", value=True)
+        want_tab = b.checkbox("جدول‌ها", value=True)
+        rows_cap = c.number_input("حداکثر ردیف داخل HTML", 100, 50000, min(int(T.max_rows),50000), 100)
+        stem = st.text_input("نام فایل HTML", f"AIBL {T.title}")
+        st.caption(f"{len(sel_cols):,} فیلد انتخاب شده است. برای فایل‌های بزرگ، فقط فیلدهای لازم را داخل HTML بگذارید؛ تاریخچه کامل در SQLite می‌ماند.")
 
-    # ── کنترل صحت، پیش از ساخت ──
+    with st.container(border=True):
+        panel_open("۲٫۵ · کاتالوگ نمودارها",
+                   "نمودار HTML و نمودار داخل ایمیل مستقل انتخاب می‌شوند. نمودار فرآیند اگر Event Log کافی نباشد، به توزیع مرحله فعلی fallback می‌کند.")
+        hc, ec = st.columns(2)
+        html_pick = hc.multiselect("نمودارهای داخل HTML", list(CHART_TITLES),
+            default=[x for x in st.session_state.html_chart_keys if x in CHART_TITLES],
+            format_func=lambda k: f"{CHART_SPECS[k].group} · {CHART_TITLES[k]}", key="html_chart_picker")
+        email_pick = ec.multiselect("نمودارهای داخل ایمیل", list(CHART_TITLES),
+            default=[x for x in st.session_state.email_chart_keys if x in CHART_TITLES],
+            format_func=lambda k: f"{CHART_SPECS[k].group} · {CHART_TITLES[k]}", key="email_chart_picker")
+        st.session_state.html_chart_keys = html_pick
+        st.session_state.email_chart_keys = email_pick
+
     with st.container(border=True):
         panel_open("۳ · کنترل صحت محاسبات",
-                   "هر ستون عددی با دانه‌ی خودش تجمیع می‌شود تا دوباره‌شماری رخ ندهد.")
+                   "تجمیع‌های داخل HTML نیز از Grain Registry پیروی می‌کنند.")
         from aibl.studio_core.grain import fanout as _fanout, integrity_report as _integ
         fo = _fanout(fdf)
+        risky = fo[fo["ضریب تکرار"] > 1.0] if not fo.empty else pd.DataFrame()
+        if not risky.empty:
+            st.warning("دانه‌های دارای fan-out: " + "، ".join(
+                f"{r['دانه']} ×{r['ضریب تکرار']}" for _,r in risky.iterrows()))
         if not fo.empty:
-            risky = fo[fo["ضریب تکرار"] > 1.0]
-            if not risky.empty:
-                st.warning(
-                    "دانه‌های زیر در این فیلتر تکرار دارند؛ جمع ساده روی آن‌ها "
-                    "چند برابر می‌شد و به‌جایش تجمیع دانه‌ای اعمال می‌شود: "
-                    + "، ".join(f"{r['دانه']} ×{r['ضریب تکرار']}"
-                                for _, r in risky.iterrows()))
-            else:
-                st.success("در این فیلتر هیچ دانه‌ای تکرار ندارد — جمع ساده و "
-                           "جمع دانه‌ای یکی می‌شوند.")
             st.dataframe(fo, use_container_width=True, hide_index=True)
         integ = _integ(fdf, sel_cols, DISPLAY)
         if not integ.empty:
-            with st.expander(f"ردپای محاسباتی {len(integ)} ستون عددی", expanded=False):
+            with st.expander(f"ردپای محاسباتی {len(integ)} ستون عددی"):
                 st.dataframe(integ, use_container_width=True, hide_index=True)
 
-    # ── ساخت ──
-    formats = ([("excel") ] if f_xls else []) + (["html"] if f_html else []) \
-        + (["pdf"] if f_pdf else [])
-    if st.button("🛠 ساخت گزارش", type="primary", use_container_width=True,
-                 disabled=not formats):
-        out_dir = (Path(os.getenv("AIBL_DAILY_REPORT_ROOT",
-                                  str(Path(official_excel).parent)))
-                   / ref_date / "reports")
+    def _build_html_artifact():
+        out_dir = ARTIFACT_ROOT / ref_date / "reports"
         spec = ReportSpec(template=pick, fields=sel_cols, ref_date=ref_date,
-                          title=f"AIBL — {T.title}", formats=formats,
-                          visuals=want_vis, tables=want_tab,
-                          max_rows=int(rows_cap), file_stem=stem.strip() or f"AIBL {T.title}")
-        with st.spinner("در حال ساخت گزارش…"):
+                          title=f"AIBL — {T.title}", formats=["html"],
+                          visuals=want_vis, tables=want_tab, max_rows=int(rows_cap),
+                          file_stem=stem.strip() or f"AIBL {T.title}",
+                          tabs=st.session_state.report_tabs,
+                          html_charts=list(st.session_state.html_chart_keys),
+                          email_charts=list(st.session_state.email_chart_keys),
+                          warehouse_run_id=warehouse_run_id or "")
+        res = build_report(fdf, extras, spec, DISPLAY, out_dir)
+        p = res.files.get("html")
+        if p:
+            WAREHOUSE.audit("REPORT_HTML_BUILT", run_id=warehouse_run_id or None,
+                            actor="studio", entity_type="report", entity_id=p.name,
+                            message=f"rows={len(fdf)} fields={len(sel_cols)} template={pick}")
+        return res
+
+    if st.button("🛠 ساخت فایل HTML نهایی", type="primary", use_container_width=True):
+        with st.spinner("ساخت HTML خودبسنده…"):
             try:
-                res = build_report(fdf, extras, spec, DISPLAY, out_dir)
-                st.session_state.report_files = {k: str(v) for k, v in res.files.items()}
+                res = _build_html_artifact()
+                st.session_state.report_files = {k:str(v) for k,v in res.files.items()}
                 st.session_state.report_msgs = res.messages
             except Exception as ex:
                 st.session_state.report_files = {}
@@ -566,35 +642,76 @@ with tab_export:
 
     files = st.session_state.get("report_files") or {}
     msgs = st.session_state.get("report_msgs") or []
+    html_path = Path(files["html"]) if files.get("html") else None
     if msgs:
         with st.container(border=True):
-            panel_open("۴ · خروجی‌ها")
+            panel_open("۴ · Artifact قابل ارسال")
             for m in msgs:
                 (st.warning if str(m).startswith("⚠️") else st.write)(m)
-            mimes = {
-                "excel": ("⬇ دانلود Excel", "application/vnd.openxmlformats-"
-                          "officedocument.spreadsheetml.sheet"),
-                "html": ("⬇ دانلود HTML داینامیک", "text/html"),
-                "pdf": ("⬇ دانلود PDF", "application/pdf"),
-            }
-            dl = st.columns(max(len(files), 1))
-            for i, (kind, path) in enumerate(files.items()):
-                p = Path(path)
-                if not p.exists():
-                    continue
-                label, mime = mimes.get(kind, (f"⬇ {kind}", "application/octet-stream"))
-                dl[i].download_button(label, p.read_bytes(), file_name=p.name,
-                                      mime=mime, use_container_width=True,
-                                      key=f"dl_{kind}")
+            if html_path and html_path.exists():
+                st.download_button("⬇ دانلود HTML نهایی", html_path.read_bytes(), file_name=html_path.name,
+                                   mime="text/html", use_container_width=True, key="dl_html_primary")
+                st.success("همین یک فایل را ارسال کنید. داخل فایل: فیلتر زنده + Export Excel + PDF/Print وجود دارد.")
 
     with st.container(border=True):
-        panel_open("گزارش رسمی خط لوله",
-                   "۱۷ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
-        if official_excel and Path(official_excel).exists():
-            st.download_button("⬇ دانلود Excel رسمی", Path(official_excel).read_bytes(),
-                               file_name=Path(official_excel).name,
-                               mime=("application/vnd.openxmlformats-officedocument"
-                                     ".spreadsheetml.sheet"))
+        panel_open("۵ · Email Composer / Outlook",
+                   "TO، CC، Subject، Header و متن ایمیل از همین‌جا تنظیم می‌شوند. فقط HTML attach می‌شود؛ Excel/PDF داخل خود HTML ساخته می‌شود.")
 
-st.caption("AIBL Studio — لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
-           "منطق کسب‌وکار در موتور AIBL باقی می‌ماند.")
+        profs = WAREHOUSE.list_profiles("email_composer")
+        pc1, pc2, pc3 = st.columns([2, 1, 1])
+        profile_name = pc1.text_input("نام پروفایل ایمیل", value="گزارش روزانه", key="email_profile_name")
+        profile_pick = pc2.selectbox("پروفایل‌های ذخیره‌شده", ["—"] + profs, key="email_profile_pick")
+        if pc3.button("ذخیره پروفایل", use_container_width=True, key="save_email_profile"):
+            WAREHOUSE.save_profile("email_composer", profile_name.strip() or "گزارش روزانه", {
+                "to": st.session_state.studio_email_to, "cc": st.session_state.studio_email_cc,
+                "subject": st.session_state.get("studio_subject", f"AIBL — زنجیره تأمین خودرو — {ref_date}"),
+                "header": st.session_state.studio_email_header, "intro": st.session_state.studio_email_intro,
+                "charts": list(st.session_state.email_chart_keys),
+            })
+            st.success("پروفایل ایمیل داخل همان Warehouse ذخیره شد.")
+        if profile_pick != "—" and st.button("بارگذاری پروفایل ایمیل", use_container_width=True, key="load_email_profile"):
+            ep = WAREHOUSE.load_profile("email_composer", profile_pick)
+            st.session_state.studio_email_to = ep.get("to", "")
+            st.session_state.studio_email_cc = ep.get("cc", "")
+            st.session_state.studio_subject = ep.get("subject", f"AIBL — زنجیره تأمین خودرو — {ref_date}")
+            st.session_state.studio_email_header = ep.get("header", "هوشمندی روزانه زنجیره تأمین خودرو")
+            st.session_state.studio_email_intro = ep.get("intro", "")
+            st.session_state.email_chart_keys = [x for x in ep.get("charts", []) if x in CHART_TITLES]
+            st.rerun()
+
+        to_cc = st.columns(2)
+        to_cc[0].text_input("TO (با ; یا , جدا کنید)", key="studio_email_to")
+        to_cc[1].text_input("CC (اختیاری)", key="studio_email_cc")
+        st.text_input("Subject", value=f"AIBL — گزارش زنجیره تأمین خودرو — {ref_date}", key="studio_subject")
+        st.text_input("Header ایمیل", key="studio_email_header")
+        st.text_area("متن مقدمه ایمیل", key="studio_email_intro", height=90)
+        display_only = st.checkbox("فقط نمایش در Outlook؛ ارسال نکن", value=True, key="studio_display")
+        from aibl.integrations.daily_email import email_font_status
+        _font = email_font_status()
+        if _font.get("ok"):
+            st.success(f"فونت نمودار ایمیل: {_font.get('family')} · آماده")
+        else:
+            st.warning("IRANSans برای PNG نمودارهای ایمیل روی این سیستم پیدا نشد. "
+                       "AIBL_FONT_PATH را به فایل فونت نصب‌شده/دارای مجوز سازمان اشاره دهید. "
+                       "متن Outlook همچنان IRANSans را درخواست می‌کند ولی گیرنده نیز باید فونت را داشته باشد.")
+        if st.button("📨 ساخت/نمایش ایمیل در Outlook", use_container_width=True):
+            try:
+                if not (html_path and html_path.exists()):
+                    res = _build_html_artifact()
+                    html_path = Path(res.files["html"])
+                    st.session_state.report_files = {k:str(v) for k,v in res.files.items()}
+                from aibl.integrations.daily_email import create_studio_email
+                r = create_studio_email(day=date.fromisoformat(ref_date), df=fdf,
+                        html_report=html_path, selected_charts=st.session_state.email_chart_keys,
+                        process_extras=extras, to=st.session_state.studio_email_to,
+                        cc=st.session_state.studio_email_cc, subject=st.session_state.studio_subject,
+                        header_title=st.session_state.studio_email_header, intro_text=st.session_state.studio_email_intro,
+                        send=not display_only, display=display_only)
+                WAREHOUSE.audit("REPORT_HTML_EMAIL", run_id=warehouse_run_id or None,
+                                actor="studio", entity_type="report", entity_id=html_path.name,
+                                message=f"to={r['recipients']} cc={r['cc']} sent={r['sent']}")
+                st.success(f"Outlook آماده شد · TO: {r['recipients']} · CC: {r['cc']} · {r['charts']} نمودار · فقط HTML")
+            except Exception as ex:
+                st.error(f"Outlook: {ex}")
+
+st.caption("AIBL Studio — SQLite لایه ماندگار داده و Process Log است؛ HTML artifact قابل ارسال است و Excel/PDF از داخل همان HTML تولید می‌شود.")

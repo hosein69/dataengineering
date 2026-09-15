@@ -176,7 +176,7 @@ def check_layout() -> None:
     root = os.path.dirname(here)
 
     expected = ["core", "config", "dataio", "adapters", "engines", "stages",
-                "narrate", "report", "resolve", "rulebook", "rules"]
+                "narrate", "report", "resolve", "rulebook", "rules", "warehouse"]
     missing = [p for p in expected
                if not os.path.isdir(os.path.join(here, p))]
     if missing:
@@ -291,6 +291,22 @@ def check_paths() -> None:
             _say(ERR, f"مسیر {label} قابل نوشتن نیست ({path}): {ex}")
 
 
+
+def check_warehouse() -> None:
+    print("\n── ۷) بررسی SQLite Warehouse ──")
+    try:
+        from .config.settings import SETTINGS
+        if not SETTINGS.WAREHOUSE_ENABLED:
+            _say(WARN, "SQLite Warehouse با AIBL_WAREHOUSE_ENABLED غیرفعال شده است.")
+            return
+        from .warehouse import warehouse_from_settings
+        wh = warehouse_from_settings()
+        st = wh.stats()
+        _say(OK, f"Warehouse schema={st.get('schema_version')} | runs={st.get('runs')} | events={st.get('events')}")
+        _say(OK, f"فایل SQLite قابل استفاده است: {st.get('path')} ({st.get('size_mb')} MB)")
+    except Exception as ex:
+        _say(ERR, f"SQLite Warehouse قابل استفاده نیست: {ex}")
+
 def main() -> int:
     print("═" * 78)
     print("AIBL Doctor — بازرس نصب و محیط اجرا")
@@ -304,6 +320,7 @@ def main() -> int:
     check_packages()
     check_rules_and_sources()
     check_paths()
+    check_warehouse()
 
     errors = [m for lvl, m in _findings if lvl == ERR]
     warns = [m for lvl, m in _findings if lvl == WARN]
@@ -318,6 +335,7 @@ def main() -> int:
         print("✅ محیط سالم است. اکنون اجرا کنید:  python -m aibl.pipeline")
         print("💡 اگر KPIها صفر یا غیرمنطقی بودند، اول این را بزنید:")
         print("   python -m aibl.diagnose --excel     ← می‌گوید کدام رابطه برقرار نشده")
+        print("   python -m aibl warehouse stats      ← سلامت و حجم Data Warehouse")
     print("═" * 78)
     return 1 if errors else 0
 

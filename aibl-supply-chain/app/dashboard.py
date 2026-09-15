@@ -6,8 +6,8 @@
     # یا با پورت دلخواه:
     streamlit run app/dashboard.py --server.port 8600
 
-خروجی‌ها: HTML مستقل (با CSS و JS درون‌خط)، PDF (از طریق چاپ مرورگر)،
-و اکسل کامل.
+خروجی تحویلی: HTML مستقل (با CSS و JS درون‌خط). Excel و PDF از
+داخل همان HTML توسط دریافت‌کننده ساخته می‌شوند؛ داده اصلی در SQLite است.
 
 ## اصول طراحی
 
@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import base64
-import io
 import os
 import sys
 from pathlib import Path
@@ -48,6 +47,9 @@ from app.ui_kit import (AQUA, AQUA_DEEP, AQUA_SOFT, AMBER, BAND_COLORS,  # noqa:
                         GREEN, GREEN_SOFT, GREY, GREY_BG, RED, WHITE,
                         band_count as _band_count, card_html, detail_columns,
                         export_html, kpis, num as _num)
+
+from aibl.studio_core.html_export import build_dynamic_html  # noqa: E402
+from aibl.warehouse import warehouse_from_settings  # noqa: E402
 
 st.set_page_config(page_title="AIBL — مغز لجستیک",
                    page_icon="◈", layout="wide",
@@ -169,16 +171,19 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 
 # ═══════════ داده ═══════════
-@st.cache_data(show_spinner="در حال اجرای خط لوله…")
+@st.cache_data(show_spinner="در حال بارگذاری Snapshot از Warehouse…")
 def load_pipeline(today: Optional[str] = None) -> Dict[str, Any]:
-    # ست‌کردن AIBL_TODAY بیرون از این تابع انجام می‌شود؛ در cache hit بدنه
-    # اجرا نمی‌شود و تاریخ مرجع واقعی با تاریخ نمایش‌داده‌شده فرق می‌کرد.
+    """Legacy dashboard نیز از همان SQLite system-of-record می‌خواند."""
     from aibl.pipeline import Pipeline
-    res = Pipeline().run(build_report=True)
-    return {
-        "df": res.df, "main": res.main, "to_resolve": res.to_resolve,
-        "extras": dict(res.extras), "dashboard": res.dashboard_path,
-    }
+    ref = (today or str(date.today())).strip()
+    wh = warehouse_from_settings()
+    snap = wh.load_snapshot(ref_date=ref)
+    if snap is None or snap.ref_date != ref:
+        res = Pipeline(today=date.fromisoformat(ref)).run(build_report=False)
+        snap = wh.load_snapshot(run_id=res.warehouse_run_id) if res.warehouse_run_id else None
+        if snap is None:
+            return {"df":res.df,"main":res.main,"to_resolve":res.to_resolve,"extras":dict(res.extras),"run_id":res.warehouse_run_id}
+    return {"df":snap.df,"main":snap.main,"to_resolve":pd.DataFrame(),"extras":dict(snap.extras),"run_id":snap.run_id}
 
 
 card = card_html
@@ -463,53 +468,40 @@ st.subheader("جزئیات پرونده‌ها")
 show = detail_columns(df)
 st.dataframe(df[show], use_container_width=True, height=420)
 
-# ═══════════ خروجی‌ها ═══════════
+# ═══════════ خروجی HTML-only ═══════════
 st.markdown("---")
-st.subheader("خروجی‌ها")
-e1, e2, e3 = st.columns(3)
-
-# اکسل کامل (همان ۱۳ شیت)
-try:
-    with open(data["dashboard"], "rb") as f:
-        e1.download_button("دانلود اکسل کامل (۱۳ شیت)", f.read(),
-                           file_name=os.path.basename(data["dashboard"]),
-                           mime=("application/vnd.openxmlformats-officedocument"
-                                 ".spreadsheetml.sheet"),
-                           use_container_width=True)
-except Exception:
-    e1.info("فایل اکسل در دسترس نیست.")
-
-# اکسل داده فیلترشده
-buf = io.BytesIO()
-with pd.ExcelWriter(buf, engine="openpyxl") as w:
-    df[show].to_excel(w, sheet_name="داده فیلترشده", index=False)
-e2.download_button("دانلود داده فیلترشده", buf.getvalue(),
-                   file_name="AIBL_filtered.xlsx",
-                   mime=("application/vnd.openxmlformats-officedocument"
-                         ".spreadsheetml.sheet"),
+st.subheader("خروجی قابل ارسال")
+st.caption("SQLite منبع داده است؛ تنها فایل ارسالی HTML است. Excel و PDF از داخل همان HTML ساخته می‌شوند.")
+html = build_dynamic_html(
+    df, ref_date, title="AIBL — مغز شناختی لجستیک",
+    selected_fields=show, max_rows=max(10000, len(df)),
+    labels={c: c for c in show},
+    template_title="Executive Process Investigation",
+    subtitle=f"{len(df):,} ردیف پس از فیلتر",
+    charts=["criticality", "low_resistance", "stock_vs_total", "risk_mix", "org_workload"],
+    process_extras=data["extras"],
+    lineage={"warehouse_run_id": data.get("run_id", "")})
+st.download_button("⬇ دانلود HTML تعاملی", html.encode("utf-8"),
+                   file_name=f"AIBL_{ref_date}_interactive.html", mime="text/html",
                    use_container_width=True)
 
-
-html = export_html(df, ref_date)
-e3.download_button("دانلود HTML (برای PDF)", html.encode("utf-8"),
-                   file_name=f"AIBL_{ref_date}.html", mime="text/html",
-                   use_container_width=True)
-
-# بسته ایمیل مدیریتی — همان Excel رسمی + HTML + نمودارهای inline
-if st.button("✉️ ساخت بسته ایمیل مدیریتی", use_container_width=True):
+st.markdown("### ✉️ ارسال گزارش از همین پنل")
+ec1, ec2, ec3 = st.columns([2, 1, 1])
+email_subject = ec1.text_input("موضوع ایمیل", f"AIBL — گزارش فیلترشده — {ref_date}")
+email_display = ec2.checkbox("نمایش در Outlook", value=True)
+email_send = ec3.checkbox("ارسال واقعی", value=False, help="ارسال واقعی از حساب Outlook انتخاب‌شده انجام می‌شود.")
+if st.button("📨 ساخت / نمایش / ارسال HTML", type="primary", use_container_width=True):
     try:
-        from aibl.integrations.daily_email import daily_paths, make_email_charts, build_email_html
-        from datetime import date as _date
-        _day = _date.fromisoformat(ref_date)
-        _paths = daily_paths(_day)
-        _charts = make_email_charts(df, _paths["assets"])
-        _email_html = build_email_html(_day, df, _charts, _paths["excel"])
-        _paths["html"].write_text(_email_html, encoding="utf-8")
-        st.success(f"بسته ایمیل ساخته شد: {_paths['folder']}")
-        st.download_button("دانلود HTML ایمیل", _email_html.encode("utf-8"),
-                           file_name=_paths["html"].name, mime="text/html",
-                           use_container_width=True)
+        from aibl.integrations.daily_email import create_studio_email
+        from aibl.config.settings import SETTINGS
+        outdir = Path(os.getenv("AIBL_DAILY_REPORT_ROOT", str(SETTINGS.daily_report_root))) / ref_date / "studio"
+        outdir.mkdir(parents=True, exist_ok=True)
+        hp = outdir / f"{ref_date}_AIBL_Studio_Filtered.html"
+        hp.write_text(html, encoding="utf-8")
+        r = create_studio_email(day=date.fromisoformat(ref_date), df=df, html_report=hp,
+            selected_charts=["criticality", "low_resistance", "stock_vs_total"],
+            send=email_send, display=email_display, subject=email_subject)
+        st.success(f"Outlook آماده شد · {r['recipients']} گیرنده · {r['charts']} نمودار · {'ارسال شد' if r['sent'] else 'نمایش/پیش‌نویس'}")
     except Exception as ex:
-        st.error(f"ساخت بسته ایمیل ناموفق بود: {ex}")
-st.caption("برای PDF: فایل HTML را در مرورگر باز کنید و دکمه «ذخیره به PDF» "
-           "را بزنید (یا Ctrl+P ← Save as PDF).")
+        st.error(f"ارسال ایمیل ناموفق بود: {ex}")
+st.caption("برای Excel از دکمه استخراج داده داخل HTML و برای PDF از «PDF / چاپ» → Save as PDF استفاده کنید.")

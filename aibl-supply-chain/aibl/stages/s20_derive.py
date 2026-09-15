@@ -54,7 +54,7 @@ DERIVED = {
     "CLEARANCE_HINT":     (["MOGH_CLEARANCE_HINT"], "", False),
     "STAGE_ALERTS":       (["MOGH_ALERTS"], "", False),
     "HS_SUGGESTED":       (["MOGH_HS_SUGGESTED"], "", False),
-    "TRANSPORT_MODE":     (["MOGH_TRANSPORT_MODE_CODE"], "", False),
+    "TRANSPORT_MODE":     (["MOGH_TRANSPORT_MODE_CODE", "BL_TRIP_MODE_CODE", "CL_TRANSPORT_MODE_CODE"], "", False),
     "VENDOR_CODE":        (["MOGH_VENDOR_CODE"], "", False),
     "CLEARED_PCT":        (["MOGH_CLEARED_PCT"], 0, True),
     "BL_SUSPECT":         (["MOGH_BL_SUSPECT"], "", False),

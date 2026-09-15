@@ -30,6 +30,14 @@ SUITES = [
     ("۱۱) سازنده گزارش و صحت دانه‌ای", "tests/test_report_builder.py"),
     ("۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین", "tests/test_supply_views.py"),
     ("۱۳) نقاط کور سیستمی و فرآیندی", "tests/test_system_health.py"),
+    ("۱۴) HTML تعاملی نسخه ۲۶٫۱۵", "tests/test_html_export_v26_15.py"),
+    ("۱۵) Oracle چندشیتی نسخه ۲۶٫۱۴", "tests/test_oracle_multisheet_v26_14.py"),
+    ("۱۶) Studio نسخه ۲۶٫۱۲", "tests/test_studio_v26_12.py"),
+    ("۱۷) Hardening نسخه ۲۶٫۱۶", "tests/test_v26_16_hardening.py"),
+    ("۱۸) Release regression نسخه ۲۶٫۱۶+", "tests/test_v26_16_release.py"),
+    ("۱۹) SQLite Warehouse + HTML-only نسخه ۲۶٫۱۷", "tests/test_warehouse_v26_17.py"),
+    ("۲۰) Browser runtime HTML نسخه ۲۶٫۱۷", "tests/test_html_browser_v26_17.py"),
+    ("۲۱) نمودار، تحویل و پایداری نسخه ۲۶٫۱۸", "tests/test_v26_18_charts_delivery_persistence.py"),
 ]
 
 
@@ -41,6 +49,9 @@ SUITE_TIMEOUT_S = int(os.environ.get("AIBL_TEST_TIMEOUT", "600"))
 
 def main() -> int:
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+    # tests are executed as files under tests/, so make package root explicit.
+    env["PYTHONPATH"] = ROOT + os.pathsep + env.get("PYTHONPATH", "")
+    env.setdefault("AIBL_SQLITE_LOG", "0")
     total_ok = total_fail = 0
     failed_suites = []
     timed_out = []

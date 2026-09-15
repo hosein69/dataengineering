@@ -13,7 +13,10 @@ from __future__ import annotations
 from typing import Callable, Dict, List
 
 import pandas as pd
-import streamlit as st
+try:
+    import streamlit as st
+except ModuleNotFoundError:  # توابع محاسباتی مانند _pivot باید بدون UI هم قابل تست باشند
+    st = None
 
 from .theme import SEQUENTIAL, SERIES, STATUS
 
@@ -45,6 +48,8 @@ def _is_numeric(s: pd.Series) -> bool:
 
 
 def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
+    if st is None:
+        raise RuntimeError("Streamlit برای رندر UI نصب نیست؛ توابع محاسباتی مستقل همچنان قابل استفاده‌اند.")
     if fdf.empty:
         st.info("فیلتر فعلی هیچ ردیفی برنمی‌گرداند.")
         return
