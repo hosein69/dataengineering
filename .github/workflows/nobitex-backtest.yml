@@ -1,7 +1,28 @@
 name: Vibe-Trading Nobitex Backtest (manual, real live data)
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "which suite to run: leveraged | all"
+        required: false
+        default: "leveraged"
+      symbols:
+        description: "Comma separated Nobitex symbols"
+        required: false
+        default: "BTCIRT,ETHIRT,SOLIRT,XRPIRT,DOGEIRT"
+      resolution:
+        description: "Nobitex UDF resolution"
+        required: false
+        default: "15"
+      lookback_days:
+        description: "Historical lookback in days"
+        required: false
+        default: "30"
+      leverage:
+        description: "Requested leverage"
+        required: false
+        default: "3"
 
 permissions:
   contents: read
@@ -9,6 +30,9 @@ permissions:
 jobs:
   backtest:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,27 +42,51 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install vibe-trading-ai
-        run: pip install vibe-trading-ai
+      - name: Install dependencies
+        run: pip install vibe-trading-ai pandas numpy requests
 
-      - name: Run backtests against live apiv2.nobitex.ir
-        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
-        run: python run_on_github.py
+      # ── uploaded leveraged long/short engine: before vs after the debug ──
+      - name: ORIGINAL leveraged engine (expected to truncate the window)
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        continue-on-error: true
+        run: |
+          python scripts/nobitex_leveraged_backtest_ORIGINAL.py \
+            --symbols "${{ inputs.symbols }}" \
+            --resolution "${{ inputs.resolution }}" \
+            --lookback-days "${{ inputs.lookback_days }}" \
+            --leverage "${{ inputs.leverage }}" \
+            --output-dir out_original
 
-      - name: Five-symbol sweep, raw vs debugged strategy (live data)
-        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
-        run: python run_five_symbols.py
+      - name: FIXED leveraged engine (paginated, corrected accounting)
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: |
+          python scripts/nobitex_leveraged_backtest.py \
+            --symbols "${{ inputs.symbols }}" \
+            --resolution "${{ inputs.resolution }}" \
+            --lookback-days "${{ inputs.lookback_days }}" \
+            --leverage "${{ inputs.leverage }}" \
+            --output-dir out_fixed
 
-      - name: Live daily watchlist scan (long/short evidence)
+      - name: Compare the two windows
+        if: always()
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/compare_original_vs_fixed.py out_original out_fixed
+
+      # ── earlier suites, only when explicitly asked for ──
+      - name: Vibe-Trading baseline suites
+        if: ${{ inputs.mode == 'all' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo"
-        run: python live_watchlist.py
+        run: |
+          python run_on_github.py
+          python run_five_symbols.py
+          python live_watchlist.py
 
       - name: Upload results (short retention)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nobitex-backtest-results
           path: |
-            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/gh_run_output
-            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/five_symbol_output
-            Vibe-Trading Backtest (Nobitex & Wallex)/local_run_demo/watchlist_output
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_original
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_fixed
           retention-days: 1
