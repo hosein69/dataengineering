@@ -158,6 +158,14 @@ def evaluate(df_ind: pd.DataFrame, symbol: str, sig: pd.Series, stop: float,
     finally:
         engine.signal = original
 
+    # Buy-and-hold over the SAME graded window. On Toman pairs this is the
+    # decisive control: they carry a structural upward drift from currency
+    # debasement, so a long-only strategy that simply stays in the market will
+    # print a large return with no alpha in it whatsoever.
+    graded = df_ind.iloc[warmup:]
+    bh = float(graded["close"].iloc[-1] / graded["close"].iloc[0] - 1.0)
+    exposure = float((sig.iloc[warmup:] != 0).mean())
+
     bpy = 365 * 24 * 60 / max(infer_minutes(df_ind.index), 1)
     rets = equity_returns(eq["equity"].astype(float))
     mu = float(rets.mean() * bpy)
@@ -179,6 +187,7 @@ def evaluate(df_ind: pd.DataFrame, symbol: str, sig: pd.Series, stop: float,
         "win_rate": m["win_rate"], "profit_factor": m["profit_factor"],
         "kelly": kelly, "quarter_kelly": frac_kelly, "dd_cap": dd_cap,
         "suggested_leverage": suggested, "n_obs": len(rets),
+        "buy_hold": bh, "excess_vs_bh": m["total_return"] - bh, "exposure": exposure,
     }
 
 
@@ -245,15 +254,16 @@ def main() -> None:
         sub = [r for r in rows if r["strategy"] == name]
         sub.sort(key=lambda r: (r["live_signal"] == "FLAT", -(r["t_stat"] if np.isfinite(r["t_stat"]) else -9)))
         lines.append(f"\n## Watchlist {name}  ({cfg['sides']})\n")
-        lines.append("| symbol | live signal | bars since flip | 180d return | Sharpe | t | "
-                     "maxDD | trades | Kelly | ¼-Kelly | DD cap | **suggested lev** | P(liq) 20d |")
+        lines.append("| symbol | live signal | bars since flip | 180d return | buy&hold | "
+                     "excess | exposure | Sharpe | t | maxDD | trades | **suggested lev** | P(liq) 20d |")
         lines.append("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         for r in sub:
             lines.append(
                 f"| {r['symbol']} | {r['live_signal']} | {r['bars_since_flip']} "
-                f"| {fmt(r['total_return'], True)} | {fmt(r['sharpe'])} | {fmt(r['t_stat'])} "
-                f"| {fmt(r['max_dd'], True)} | {r['trades']} | {fmt(r['kelly'],nd=1)} "
-                f"| {fmt(r['quarter_kelly'],nd=2)} | {fmt(r['dd_cap'],nd=1)} "
+                f"| {fmt(r['total_return'], True)} | {fmt(r['buy_hold'], True)} "
+                f"| {fmt(r['excess_vs_bh'], True)} | {fmt(r['exposure'], True, 0)} "
+                f"| {fmt(r['sharpe'])} | {fmt(r['t_stat'])} "
+                f"| {fmt(r['max_dd'], True)} | {r['trades']} "
                 f"| **{fmt(r['suggested_leverage'],nd=1)}x** "
                 f"| {fmt(r['p_liquidation_20d'], True, 3)} |")
 
@@ -287,9 +297,13 @@ def main() -> None:
         N = len(sub)
         emax = se * ((1 - g) * norm.ppf(1 - 1 / N) + g * norm.ppf(1 - 1 / (N * math.e)))
         dsr = norm.cdf((best["sharpe"] - emax) / se) if se > 0 else float("nan")
+        ex = [r["excess_vs_bh"] for r in sub]
+        beat = sum(1 for e in ex if e > 0)
         lines.append(f"\n{name}: best Sharpe {best['sharpe']:.2f} ({best['symbol']}), "
                      f"SE {se:.2f}, E[max|no edge] across N={N} = {emax:.2f}, "
                      f"deflated Sharpe = {dsr:.3f}")
+        lines.append(f"  vs buy-and-hold: beats it on {beat}/{len(sub)} symbols, "
+                     f"mean excess {np.mean(ex)*100:+.2f}%, median {np.median(ex)*100:+.2f}%")
 
     text = "\n".join(lines)
     (out_dir / "WATCHLIST_COMPARE.md").write_text(text + "\n")
