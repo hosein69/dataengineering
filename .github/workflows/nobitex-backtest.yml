@@ -87,6 +87,11 @@ jobs:
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/watchlist_compare.py watchlist_out
 
+      - name: Entry / invalidation levels for the surviving symbols
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/entry_points.py entry_out
+
       # ── earlier suites, only when explicitly asked for ──
       - name: Vibe-Trading baseline suites
         if: ${{ inputs.mode == 'all' }}
@@ -106,4 +111,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_fixed
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_probe
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/watchlist_out
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/entry_out
           retention-days: 1
