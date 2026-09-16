@@ -46,6 +46,13 @@ jobs:
         run: pip install vibe-trading-ai pandas numpy requests
 
       # ── uploaded leveraged long/short engine: before vs after the debug ──
+      - name: Probe how much history Nobitex actually retains per resolution
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        continue-on-error: true
+        run: |
+          mkdir -p out_probe
+          python scripts/probe_retention.py BTCIRT "${{ inputs.lookback_days }}" out_probe/retention.json
+
       - name: ORIGINAL leveraged engine (expected to truncate the window)
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
@@ -89,4 +96,5 @@ jobs:
           path: |
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_original
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_fixed
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_probe
           retention-days: 1
