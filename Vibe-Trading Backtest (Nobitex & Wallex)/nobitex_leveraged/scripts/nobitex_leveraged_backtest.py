@@ -415,13 +415,19 @@ def run_symbol(df: pd.DataFrame, symbol: str, leverage: float, risk_pct: float,
                 entry_fee = notional * fee_rate
 
                 if collateral + entry_fee > equity and (1 / leverage + fee_rate) > 0:
-                    # Solve collateral + fee <= equity for notional exactly.
-                    notional = max(equity, 0.0) / (1 / leverage + fee_rate)
+                    # Solve collateral + fee <= equity for notional. The exact
+                    # solution lands on the boundary, where rounding can leave
+                    # the sum a few ulps above equity and silently reject every
+                    # trade, so take a hair under it.
+                    notional = max(equity, 0.0) / (1 / leverage + fee_rate) * (1 - 1e-12)
                     qty = notional / entry_price
                     collateral = notional / leverage
                     entry_fee = notional * fee_rate
 
-                if qty > 0 and collateral > 0 and collateral + entry_fee <= equity + 1e-9:
+                # Relative tolerance: an absolute 1e-9 is far below float64
+                # resolution at realistic Toman equity values (~1e8).
+                tol = max(1e-9, abs(equity) * 1e-12)
+                if qty > 0 and collateral > 0 and collateral + entry_fee <= equity + tol:
                     tp_dist = max(take_pct, 2 * dist)
                     equity -= entry_fee
                     pos = Position(

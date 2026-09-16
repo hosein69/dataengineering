@@ -47,6 +47,7 @@ jobs:
 
       # ── uploaded leveraged long/short engine: before vs after the debug ──
       - name: Probe how much history Nobitex actually retains per resolution
+        if: ${{ inputs.mode != 'watchlist' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -54,6 +55,7 @@ jobs:
           python scripts/probe_retention.py BTCIRT "${{ inputs.lookback_days }}" out_probe/retention.json
 
       - name: ORIGINAL leveraged engine (expected to truncate the window)
+        if: ${{ inputs.mode != 'watchlist' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -65,6 +67,7 @@ jobs:
             --output-dir out_original
 
       - name: FIXED leveraged engine (paginated, corrected accounting)
+        if: ${{ inputs.mode != 'watchlist' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: |
           python scripts/nobitex_leveraged_backtest.py \
@@ -75,9 +78,14 @@ jobs:
             --output-dir out_fixed
 
       - name: Compare the two windows
-        if: always()
+        if: ${{ always() && inputs.mode != 'watchlist' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/compare_original_vs_fixed.py out_original out_fixed
+
+      - name: Live watchlists — ours vs freqtrade Supertrend
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/watchlist_compare.py watchlist_out
 
       # ── earlier suites, only when explicitly asked for ──
       - name: Vibe-Trading baseline suites
@@ -97,4 +105,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_original
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_fixed
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_probe
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/watchlist_out
           retention-days: 1
