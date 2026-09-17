@@ -35,7 +35,26 @@ from watchlist_compare import (  # noqa: E402
     FT_BUY, FT_SELL, FT_TAKE, LOOKBACK_DAYS, RESOLUTION, signal_supertrend_ft,
 )
 
-SURVIVORS = ["ETHIRT", "ADAIRT", "DOGEIRT", "XRPIRT", "BTCIRT"]
+# Which symbols to quote levels for. Reading them from the watchlist run keeps
+# this script honest: whatever cleared the buy-and-hold filter over the DISCOVERED
+# universe gets quoted, rather than five names typed here once and never revisited.
+FALLBACK_SURVIVORS = ["ETHIRT", "ADAIRT", "DOGEIRT", "XRPIRT", "BTCIRT"]
+MAX_SURVIVORS = 10
+
+
+def load_survivors() -> tuple[list[str], str]:
+    for candidate in (Path("watchlist_out/watchlists.json"),
+                      Path(__file__).resolve().parent.parent / "watchlist_out/watchlists.json"):
+        if not candidate.exists():
+            continue
+        rows = json.loads(candidate.read_text())
+        b = [r for r in rows if str(r.get("strategy", "")).startswith("B")]
+        winners = [r for r in b if (r.get("excess_vs_bh") or 0) > 0]
+        winners.sort(key=lambda r: -r["excess_vs_bh"])
+        syms = [r["symbol"] for r in winners[:MAX_SURVIVORS]]
+        if syms:
+            return syms, f"beat buy-and-hold in {candidate} ({len(winners)} of {len(b)})"
+    return list(FALLBACK_SURVIVORS), "HARD-CODED FALLBACK - watchlist output not found"
 MAX_LOSS_PER_TRADE = 0.20      # most of equity a single stop-out may cost
 MAINTENANCE = 0.005
 LEV_HARD_CAP = 5.0
@@ -155,8 +174,11 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("entry_out")
     out.mkdir(parents=True, exist_ok=True)
 
+    survivors, source = load_survivors()
+    print(f"quoting levels for {len(survivors)}: {source}", file=sys.stderr)
+
     rows = []
-    for s in SURVIVORS:
+    for s in survivors:
         try:
             rows.append(analyse(s))
         except Exception as exc:  # noqa: BLE001
@@ -166,7 +188,8 @@ def main() -> None:
         return f"{v:,.0f}" if v and np.isfinite(v) else "n/a"
 
     lines = [f"\n===== ENTRY / INVALIDATION LEVELS ({RESOLUTION}m bars) =====",
-             f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}\n",
+             f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}",
+             f"selected: {source}\n",
              "| symbol | status | price (IRT) | B entered at | run since entry | bars held "
              "| level that matters | distance | in ATR | target (+8.7%) | R:R |",
              "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]

@@ -47,8 +47,25 @@ from nobitex_leveraged_backtest import (  # noqa: E402
     signal as signal_ema_trend, warmup_bars,
 )
 
-SYMBOLS = ["BTCIRT", "ETHIRT", "SOLIRT", "XRPIRT", "DOGEIRT",
-           "ADAIRT", "TRXIRT", "LTCIRT", "BNBIRT", "USDTIRT"]
+# The scan universe used to be this hand-written list. That was a selection bug:
+# a symbol nobody typed was absent from the results in exactly the same way as one
+# that was scanned and rejected, so absence carried no information (ZEC was never
+# in any list, yet Nobitex serves it with 100% coverage). The list survives only as
+# the fallback for when discovery has not run.
+FALLBACK_SYMBOLS = ["BTCIRT", "ETHIRT", "SOLIRT", "XRPIRT", "DOGEIRT",
+                    "ADAIRT", "TRXIRT", "LTCIRT", "BNBIRT", "USDTIRT"]
+
+
+def load_symbols() -> tuple[list[str], str]:
+    """Prefer the empirically discovered universe over anything typed by hand."""
+    for candidate in (Path("universe_out/universe.json"),
+                      Path(__file__).resolve().parent.parent / "universe_out/universe.json"):
+        if candidate.exists():
+            data = json.loads(candidate.read_text())
+            syms = sorted(r["symbol"] for r in data.get("usable", []))
+            if syms:
+                return syms, f"discovered ({candidate})"
+    return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery did not run"
 RESOLUTION = "240"          # 4h: the only setting with both long retention and low churn
 LOOKBACK_DAYS = 180
 FEE = 0.0025
@@ -195,6 +212,8 @@ def main() -> None:
     out_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("watchlist_out")
     out_dir.mkdir(parents=True, exist_ok=True)
     warmup = warmup_bars(30, 14, 3)
+    symbols, source = load_symbols()
+    print(f"universe: {len(symbols)} symbols, source = {source}", file=sys.stderr)
 
     strategies = {
         "A_ema_trend_ours": dict(fn=signal_ema_trend, stop=OURS_STOP, take=OURS_TAKE,
@@ -204,7 +223,7 @@ def main() -> None:
     }
 
     rows: list[dict] = []
-    for symbol in SYMBOLS:
+    for symbol in symbols:
         try:
             raw = fetch_raw(symbol, RESOLUTION, LOOKBACK_DAYS)
             cov = raw.attrs["coverage"]
@@ -248,7 +267,8 @@ def main() -> None:
 
     lines = [f"\n===== LIVE NOBITEX WATCHLISTS — {RESOLUTION}m bars, "
              f"{LOOKBACK_DAYS}-day evidence window =====",
-             f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}\n"]
+             f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}",
+             f"universe: {len(symbols)} symbols, source = {source}\n"]
 
     for name, cfg in strategies.items():
         sub = [r for r in rows if r["strategy"] == name]
@@ -273,7 +293,7 @@ def main() -> None:
                  "| A lev | B lev | A 180d | B 180d |")
     lines.append("|---|---|---|:--:|---:|---:|---:|---:|")
     agree = disagree = 0
-    for symbol in SYMBOLS:
+    for symbol in symbols:
         a = next((r for r in rows if r["symbol"] == symbol and r["strategy"].startswith("A")), None)
         b = next((r for r in rows if r["symbol"] == symbol and r["strategy"].startswith("B")), None)
         if not a or not b:

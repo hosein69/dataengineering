@@ -30,7 +30,7 @@ permissions:
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     env:
       PYTHONUNBUFFERED: "1"
     steps:
