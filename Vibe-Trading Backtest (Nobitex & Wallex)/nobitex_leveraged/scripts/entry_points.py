@@ -57,7 +57,18 @@ def load_survivors() -> tuple[list[str], str]:
     return list(FALLBACK_SURVIVORS), "HARD-CODED FALLBACK - watchlist output not found"
 MAX_LOSS_PER_TRADE = 0.20      # most of equity a single stop-out may cost
 MAINTENANCE = 0.005
-LEV_HARD_CAP = 5.0
+VENUE_CAP = 5.0
+LEV_HARD_CAP = 5.0          # fallback only; the venue's own cap wins when known
+
+
+def venue_lev_cap() -> tuple[float, str]:
+    for c in (Path("universe_out/leverage.json"),
+              Path(__file__).resolve().parent.parent / "universe_out/leverage.json"):
+        if c.exists():
+            caps = (json.loads(c.read_text()).get("leverage_caps") or {}).values()
+            if caps:
+                return min(caps), f"venue maxLeverage ({len(list(caps))} pairs)"
+    return LEV_HARD_CAP, "FALLBACK - margin probe did not run"
 
 
 def supertrend_bands(df: pd.DataFrame, period: int, multiplier: float):
@@ -148,7 +159,7 @@ def analyse(symbol: str) -> dict:
     # Leverage bounds
     lev_risk = MAX_LOSS_PER_TRADE / dist if dist > 1e-9 else float("inf")
     lev_liq = 1.0 / (dist + MAINTENANCE) if dist > 1e-9 else float("inf")
-    lev = float(min(lev_risk, lev_liq, LEV_HARD_CAP))
+    lev = float(min(lev_risk, lev_liq, VENUE_CAP))
 
     target = basis * (1 + FT_TAKE)
     rr = FT_TAKE / dist if dist > 1e-9 else float("nan")
@@ -185,6 +196,9 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("entry_out")
     out.mkdir(parents=True, exist_ok=True)
 
+    global VENUE_CAP
+    VENUE_CAP, cap_src = venue_lev_cap()
+    print(f"venue leverage cap: {VENUE_CAP:g}x ({cap_src})", file=sys.stderr)
     survivors, source = load_survivors()
     print(f"quoting levels for {len(survivors)}: {source}", file=sys.stderr)
 
@@ -226,13 +240,14 @@ def main() -> None:
 
     lines += ["\n\n## Leverage the stop distance actually permits\n",
               "| symbol | stop distance | max lev from 20% risk budget "
-              "| max lev before liquidation precedes the stop | **usable** |",
-              "|---|---:|---:|---:|---:|"]
+              f"| max lev before liquidation precedes the stop "
+              f"| venue cap {VENUE_CAP:g}x | **usable** |",
+              "|---|---:|---:|---:|---:|---:|"]
     for r in rows:
         lines.append(
             f"| {r['symbol']} | {r['stop_distance']*100:.2f}% "
             f"| {r['lev_from_risk_budget']:.2f}x | {r['lev_before_liquidation']:.2f}x "
-            f"| **{r['suggested_leverage']:.2f}x** |")
+            f"| {VENUE_CAP:g}x | **{r['suggested_leverage']:.2f}x** |")
 
     text = "\n".join(lines)
     (out / "ENTRY_POINTS.md").write_text(text + "\n")

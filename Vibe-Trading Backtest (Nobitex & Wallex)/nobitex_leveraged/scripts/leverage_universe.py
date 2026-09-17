@@ -80,35 +80,31 @@ def symbols_from(payload: object) -> set[str]:
     return found
 
 
-def leverage_map(payload: object) -> dict[str, float]:
-    """Pull per-pair max leverage where the endpoint carries it.
+def _pair_of(node: dict) -> str | None:
+    """The Toman pair this object describes, under either spelling."""
+    for k in ("symbol", "market", "name", "pair"):
+        v = node.get(k)
+        if isinstance(v, str) and (n := _norm(v)):
+            return n
+    src = node.get("srcCurrency") or node.get("src")
+    dst = node.get("dstCurrency") or node.get("dst")
+    if isinstance(src, str) and isinstance(dst, str) and dst.upper() in TOMAN:
+        return f"{src.upper()}IRT"
+    return None
 
-    The venue caps leverage per market, so the cap is data to be read, never a
-    number to remember. Shapes differ between endpoints, so look for any object
-    that names a pair and carries a leverage-ish field beside it.
-    """
-    caps: dict[str, float] = {}
-    lev_keys = ("maxleverage", "leverage", "maxlev")
 
-    def pair_of(node: dict) -> str | None:
-        for k in ("symbol", "market", "name", "pair"):
-            v = node.get(k)
-            if isinstance(v, str) and (n := _norm(v)):
-                return n
-        src = node.get("srcCurrency") or node.get("src")
-        dst = node.get("dstCurrency") or node.get("dst")
-        if isinstance(src, str) and isinstance(dst, str) and dst.upper() in TOMAN:
-            return f"{src.upper()}IRT"
-        return None
+def _numeric_beside_pairs(payload: object, keys: tuple[str, ...]) -> dict[str, float]:
+    """Collect a numeric field keyed by the Toman pair it sits beside."""
+    out: dict[str, float] = {}
 
     def walk(node):
         if isinstance(node, dict):
-            sym = pair_of(node)
+            sym = _pair_of(node)
             if sym:
                 for k, v in node.items():
-                    if str(k).lower().replace("_", "") in lev_keys:
+                    if str(k).lower().replace("_", "") in keys:
                         try:
-                            caps[sym] = max(caps.get(sym, 0.0), float(v))
+                            out[sym] = float(v)
                         except (TypeError, ValueError):
                             pass
             for v in node.values():
@@ -118,7 +114,28 @@ def leverage_map(payload: object) -> dict[str, float]:
                 walk(v)
 
     walk(payload)
-    return caps
+    return out
+
+
+def fee_map(payload: object) -> dict[str, float]:
+    """The venue's own per-position fee rate, which the backtest must use.
+
+    The scan had been charging 0.25% a side from a spot fee schedule while the
+    margin endpoint reports 0.0005. Over a hundred round trips that difference
+    is most of the strategy's measured return, so the rate is read here rather
+    than written into the backtest by hand.
+    """
+    return _numeric_beside_pairs(payload, ("positionfeerate", "feerate", "fee"))
+
+
+def leverage_map(payload: object) -> dict[str, float]:
+    """Pull per-pair max leverage where the endpoint carries it.
+
+    The venue caps leverage per market, so the cap is data to be read, never a
+    number to remember. Shapes differ between endpoints, so look for any object
+    that names a pair and carries a leverage-ish field beside it.
+    """
+    return _numeric_beside_pairs(payload, ("maxleverage", "leverage", "maxlev"))
 
 
 def main() -> None:
@@ -128,6 +145,7 @@ def main() -> None:
     report: list[dict] = []
     margin: set[str] = set()
     caps: dict[str, float] = {}
+    fees: dict[str, float] = {}
     answered = None
     for url in CANDIDATES:
         ok, payload, why = fetch(url)
@@ -142,15 +160,21 @@ def main() -> None:
         if ok and syms and answered is None:
             answered, margin = url, syms
             caps = leverage_map(payload)
+            fees = fee_map(payload)
 
     if answered is None:
         print("\nNo margin endpoint answered. NOT falling back to the spot "
               "universe: that is the very conflation this script exists to stop.")
         (out / "leverage.json").write_text(json.dumps(
-            {"resolved": False, "probes": report, "margin_symbols": []}, indent=2))
+            {"resolved": False, "probes": report, "margin_symbols": [],
+          "leverage_caps": {}, "position_fee_rates": {}}, indent=2))
         return
 
     print(f"\nmargin universe resolved from {answered}: {len(margin)} pairs")
+    if fees:
+        lo, hi = min(fees.values()), max(fees.values())
+        print(f"venue position fee rate for {len(fees)} pairs: "
+              f"{lo:.4%} - {hi:.4%} per side")
     if caps:
         print(f"per-pair leverage caps reported for {len(caps)} pairs; "
               f"observed range {min(caps.values()):g}x - {max(caps.values()):g}x")
@@ -178,7 +202,8 @@ def main() -> None:
 
     (out / "leverage.json").write_text(json.dumps(
         {"resolved": True, "source": answered, "probes": report,
-         "margin_symbols": sorted(margin), "leverage_caps": caps, "tradeable": both,
+         "margin_symbols": sorted(margin), "leverage_caps": caps,
+         "position_fee_rates": fees, "tradeable": both,
          "spot_only": spot_only}, indent=2))
 
 

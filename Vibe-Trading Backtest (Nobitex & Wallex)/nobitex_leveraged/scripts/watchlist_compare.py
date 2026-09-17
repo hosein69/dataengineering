@@ -64,6 +64,32 @@ def _first_existing(name: str) -> Path | None:
     return None
 
 
+def load_fee() -> tuple[float, str]:
+    """Per-side position fee, taken from the venue when the probe has run."""
+    lev_path = _first_existing("leverage.json")
+    if lev_path is None:
+        return FALLBACK_FEE, "FALLBACK - margin probe did not run"
+    rates = json.loads(lev_path.read_text()).get("position_fee_rates") or {}
+    vals = sorted(set(rates.values()))
+    if not vals:
+        return FALLBACK_FEE, "FALLBACK - venue reported no fee rate"
+    # One rate across all margin markets today; if that ever stops being true,
+    # the most conservative (highest) one is the safe single number to charge.
+    return max(vals), (f"venue positionFeeRate, {len(rates)} pairs"
+                       + ("" if len(vals) == 1 else f", range {min(vals)}-{max(vals)}"))
+
+
+def load_lev_cap() -> tuple[float, str]:
+    """The venue's own maximum leverage. No sizing rule may exceed it."""
+    lev_path = _first_existing("leverage.json")
+    if lev_path is None:
+        return VENUE_LEV_CAP_FALLBACK, "FALLBACK - margin probe did not run"
+    caps = json.loads(lev_path.read_text()).get("leverage_caps") or {}
+    if not caps:
+        return VENUE_LEV_CAP_FALLBACK, "FALLBACK - venue reported no cap"
+    return min(caps.values()), f"venue maxLeverage across {len(caps)} pairs"
+
+
 def load_symbols() -> tuple[list[str], str]:
     """The tradeable universe: served by the venue AND marginable.
 
@@ -96,8 +122,14 @@ def load_symbols() -> tuple[list[str], str]:
                   f"{dropped} dropped as spot-only")
 RESOLUTION = "240"          # 4h: the only setting with both long retention and low churn
 LOOKBACK_DAYS = 180
-FEE = 0.0025
+# The fee belongs to the venue. /margin/markets/list reports positionFeeRate
+# 0.0005 per side for every margin market; the 0.0025 used before came from a
+# spot schedule and, over the 100+ round trips strategy A takes, that gap is
+# comparable to the whole measured return. load_fee() reads the real rate and
+# only falls back when the probe has not run.
+FALLBACK_FEE = 0.0025
 EXT_FEE = 0.001
+VENUE_LEV_CAP_FALLBACK = 5.0
 MAINT = 0.50
 LIQ_SLIP = 0.001
 
@@ -112,6 +144,8 @@ OURS_STOP = 0.008
 OURS_TAKE = 0.016
 
 DD_BUDGET = 0.50
+# A hand-picked cap that happened to match the venue's. Kept only as the value
+# used when the margin probe has not run; otherwise the real cap is read.
 LEV_HARD_CAP = 5.0
 KELLY_FRACTION = 0.25
 LIQ_HORIZON_DAYS = 20
@@ -188,7 +222,8 @@ def p_liquidation(leverage: float, sigma_daily: float, horizon_days: int,
 
 
 def evaluate(df_ind: pd.DataFrame, symbol: str, sig: pd.Series, stop: float,
-             take: float, warmup: int) -> dict:
+             take: float, warmup: int, fee: float = FALLBACK_FEE,
+             lev_cap: float = LEV_HARD_CAP) -> dict:
     """Backtest this signal UNLEVERED, then derive what leverage it could carry."""
     import nobitex_leveraged_backtest as engine
 
@@ -197,7 +232,7 @@ def evaluate(df_ind: pd.DataFrame, symbol: str, sig: pd.Series, stop: float,
     try:
         eq, trades, m = run_symbol(
             df_ind, symbol, leverage=1.0, risk_pct=1.0, stop_pct=stop,
-            take_pct=take, fee_rate=FEE, extension_fee_daily=EXT_FEE,
+            take_pct=take, fee_rate=fee, extension_fee_daily=EXT_FEE,
             maintenance_ratio=MAINT, max_hold_bars=0, liq_slippage=LIQ_SLIP,
             warmup=warmup)
     finally:
@@ -223,7 +258,8 @@ def evaluate(df_ind: pd.DataFrame, symbol: str, sig: pd.Series, stop: float,
     frac_kelly = kelly * KELLY_FRACTION if np.isfinite(kelly) else float("nan")
     dd_cap = DD_BUDGET / mdd if mdd > 1e-9 else float("inf")
     raw = min(frac_kelly, dd_cap) if np.isfinite(frac_kelly) else float("nan")
-    suggested = float(np.clip(raw, 0.0, LEV_HARD_CAP)) if np.isfinite(raw) else float("nan")
+    # No sizing rule may exceed what the venue will actually sell.
+    suggested = float(np.clip(raw, 0.0, lev_cap)) if np.isfinite(raw) else float("nan")
 
     return {
         "total_return": m["total_return"], "sharpe": sr, "sharpe_se": se,
@@ -241,7 +277,11 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     warmup = warmup_bars(30, 14, 3)
     symbols, source = load_symbols()
+    fee, fee_src = load_fee()
+    lev_cap, cap_src = load_lev_cap()
     print(f"universe: {len(symbols)} symbols, source = {source}", file=sys.stderr)
+    print(f"fee: {fee:.4%} per side ({fee_src})", file=sys.stderr)
+    print(f"venue leverage cap: {lev_cap:g}x ({cap_src})", file=sys.stderr)
 
     strategies = {
         "A_ema_trend_ours": dict(fn=signal_ema_trend, stop=OURS_STOP, take=OURS_TAKE,
@@ -273,7 +313,8 @@ def main() -> None:
                 prev = sig.iloc[warmup:]
                 flips = (prev != prev.shift(1)).to_numpy()
                 bars_since = int(len(prev) - 1 - np.where(flips)[0][-1])
-                res = evaluate(df, symbol, sig, cfg["stop"], cfg["take"], warmup)
+                res = evaluate(df, symbol, sig, cfg["stop"], cfg["take"], warmup,
+                               fee=fee, lev_cap=lev_cap)
                 lev = res["suggested_leverage"]
                 res.update({
                     "symbol": symbol, "strategy": name, "sides": cfg["sides"],
@@ -296,7 +337,9 @@ def main() -> None:
     lines = [f"\n===== LIVE NOBITEX WATCHLISTS — {RESOLUTION}m bars, "
              f"{LOOKBACK_DAYS}-day evidence window =====",
              f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}",
-             f"universe: {len(symbols)} symbols, source = {source}\n"]
+             f"universe: {len(symbols)} symbols, source = {source}",
+             f"fee: {fee:.4%}/side ({fee_src}); venue leverage cap {lev_cap:g}x "
+             f"({cap_src})\n"]
 
     for name, cfg in strategies.items():
         sub = [r for r in rows if r["strategy"] == name]
