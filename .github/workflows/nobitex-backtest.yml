@@ -84,6 +84,7 @@ jobs:
 
       - name: Discover which Toman pairs Nobitex actually lists
         if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        continue-on-error: true
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/discover_universe.py universe_out
 
