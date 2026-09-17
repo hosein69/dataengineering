@@ -38,29 +38,45 @@ def fetch(url: str) -> tuple[bool, object, str]:
         return False, None, f"{type(exc).__name__}: {exc}"
 
 
+# Nobitex spells the Toman quote currency "rls" (rial) in its object-shaped
+# payloads and "IRT" in its pair-name strings. The first probe only looked for
+# the second spelling, so /margin/markets/list answered 200 and was read as
+# zero pairs. Both spellings mean the same market.
+TOMAN = {"IRT", "RLS", "IRR"}
+
+
+def _norm(text: str) -> str | None:
+    t = text.replace("-", "").replace("/", "").replace("_", "").upper()
+    for qu in TOMAN:
+        if t.endswith(qu) and 5 <= len(t) <= 22:
+            return t[: -len(qu)] + "IRT"
+    return None
+
+
 def symbols_from(payload: object) -> set[str]:
-    """Pull every *IRT pair name out of whatever shape the endpoint returned."""
+    """Pull every Toman pair out of whatever shape the endpoint returned."""
     found: set[str] = set()
 
-    def walk(node, key_hint: str = ""):
+    def walk(node):
         if isinstance(node, dict):
+            # object form: {"srcCurrency": "btc", "dstCurrency": "rls", ...}
+            src = node.get("srcCurrency") or node.get("src")
+            dst = node.get("dstCurrency") or node.get("dst")
+            if isinstance(src, str) and isinstance(dst, str) \
+                    and dst.upper() in TOMAN:
+                found.add(f"{src.upper()}IRT")
             for k, v in node.items():
-                walk(v, str(k))
+                if isinstance(k, str) and (n := _norm(k)):
+                    found.add(n)
+                walk(v)
         elif isinstance(node, list):
             for v in node:
-                walk(v, key_hint)
+                walk(v)
         elif isinstance(node, str):
-            s = node.replace("-", "").replace("/", "").upper()
-            if s.endswith("IRT") and 5 <= len(s) <= 20:
-                found.add(s)
+            if (n := _norm(node)):
+                found.add(n)
 
     walk(payload)
-    # Keys themselves can carry the pair name (e.g. {"BTCIRT": {...}}).
-    if isinstance(payload, dict):
-        for k in payload:
-            s = str(k).replace("-", "").replace("/", "").upper()
-            if s.endswith("IRT"):
-                found.add(s)
     return found
 
 
@@ -77,15 +93,12 @@ def leverage_map(payload: object) -> dict[str, float]:
     def pair_of(node: dict) -> str | None:
         for k in ("symbol", "market", "name", "pair"):
             v = node.get(k)
-            if isinstance(v, str):
-                s = v.replace("-", "").replace("/", "").upper()
-                if s.endswith("IRT"):
-                    return s
-        src, dst = node.get("src"), node.get("dst")
-        if isinstance(src, str) and isinstance(dst, str):
-            s = f"{src}{dst}".replace("-", "").upper()
-            if s.endswith("IRT"):
-                return s
+            if isinstance(v, str) and (n := _norm(v)):
+                return n
+        src = node.get("srcCurrency") or node.get("src")
+        dst = node.get("dstCurrency") or node.get("dst")
+        if isinstance(src, str) and isinstance(dst, str) and dst.upper() in TOMAN:
+            return f"{src.upper()}IRT"
         return None
 
     def walk(node):
@@ -120,7 +133,12 @@ def main() -> None:
         ok, payload, why = fetch(url)
         syms = symbols_from(payload) if ok else set()
         report.append({"url": url, "ok": ok, "why": why, "irt_pairs_seen": len(syms)})
-        print(f"{url} -> {why}, {len(syms)} IRT pairs")
+        print(f"{url} -> {why}, {len(syms)} Toman pairs")
+        if ok:
+            # A 200 that parses to nothing means the parser is wrong, not the
+            # venue, so print the shape rather than guessing at it again.
+            sample = json.dumps(payload, ensure_ascii=False)[:1200]
+            print(f"    raw: {sample}{'...' if len(sample) == 1200 else ''}")
         if ok and syms and answered is None:
             answered, margin = url, syms
             caps = leverage_map(payload)
