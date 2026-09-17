@@ -120,9 +120,18 @@ def analyse(symbol: str) -> dict:
                 buy_down += 1
         entry_trigger = max(need) if need else price
 
-    dist = (price - invalidation) / price          # fractional distance to stop
+    # Risk is measured from the price the trade is actually entered at, not from
+    # today's tape. For a held position that is today's price. For a flat symbol
+    # the entry only happens once price has climbed to the trigger, which here
+    # sits well ABOVE the tape — measuring risk from today would understate the
+    # stop distance by the whole gap and hand back a leverage several times too
+    # large. (The bands drift while price travels to the trigger, so this is a
+    # lower bound on the eventual distance, not a promise; re-run at the fill.)
+    basis = price if in_pos else entry_trigger
+    dist = (basis - invalidation) / basis          # fractional distance to stop
     a14 = float(df["atr"].iloc[-1])
-    dist_atr = (price - invalidation) / a14 if a14 > 0 else float("nan")
+    dist_atr = (basis - invalidation) / a14 if a14 > 0 else float("nan")
+    gap_to_trigger = None if in_pos else (entry_trigger / price - 1)
 
     # How long has B been in, and at what price?
     entry_price = entry_time = None
@@ -141,7 +150,7 @@ def analyse(symbol: str) -> dict:
     lev_liq = 1.0 / (dist + MAINTENANCE) if dist > 1e-9 else float("inf")
     lev = float(min(lev_risk, lev_liq, LEV_HARD_CAP))
 
-    target = price * (1 + FT_TAKE)
+    target = basis * (1 + FT_TAKE)
     rr = FT_TAKE / dist if dist > 1e-9 else float("nan")
 
     return {
@@ -152,6 +161,8 @@ def analyse(symbol: str) -> dict:
         "in_position": in_pos,
         "status": "HOLDING" if in_pos else "EXITED / FLAT",
         "entry_trigger": entry_trigger,
+        "gap_to_trigger": gap_to_trigger,
+        "risk_basis": basis,
         "buy_st_still_down": buy_down,
         "bars_in_position": bars_in,
         "entry_price": entry_price,
@@ -191,12 +202,15 @@ def main() -> None:
              f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}",
              f"selected: {source}\n",
              "| symbol | status | price (IRT) | B entered at | run since entry | bars held "
-             "| level that matters | distance | in ATR | target (+8.7%) | R:R |",
-             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "| level that matters | how far to trigger | risk from entry | in ATR "
+             "| target (+8.7%) | R:R |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for r in rows:
         run = (f"{r['run_since_entry']*100:+.1f}%"
                if r["run_since_entry"] is not None else "—")
         held = r["bars_in_position"] if r["in_position"] else "—"
+        gap = ("—" if r["gap_to_trigger"] is None
+               else f"{r['gap_to_trigger']*100:+.2f}%")
         if r["in_position"]:
             level, label = r["invalidation"], "exit"
         else:
@@ -204,7 +218,9 @@ def main() -> None:
         lines.append(
             f"| {r['symbol']} | {r['status']} | {money(r['price'])} "
             f"| {money(r['entry_price'])} | {run} | {held} "
-            f"| {money(level)} ({label}) | {r['stop_distance']*100:.2f}% "
+            f"| {money(level)} ({label}) "
+            f"| {gap} "
+            f"| {r['stop_distance']*100:.2f}% "
             f"| {r['stop_distance_atr']:.1f} | {money(r['target_price'])} "
             f"| {r['reward_risk']:.2f} |")
 
