@@ -69,6 +69,9 @@ def analyse(symbol: str) -> dict:
     df = add_indicators(raw, 10, 30, 14, 3)
     price = float(df["close"].iloc[-1])
 
+    sig = signal_supertrend_ft(df)
+    in_pos = int(sig.iloc[-1]) == 1
+
     # Where does B's exit rule sit? Exit needs ALL THREE sell-Supertrends down.
     # A sell-ST that is currently 'up' flips down when price crosses under its
     # lower band, so the trigger is the lowest of those still-up bands.
@@ -81,18 +84,28 @@ def analyse(symbol: str) -> dict:
         else:
             already_down += 1
 
-    if still_up_bands:
-        invalidation = min(still_up_bands)
-    else:
-        invalidation = price       # all three already down: exit is imminent
+    invalidation = min(still_up_bands) if still_up_bands else price
+
+    # For a symbol B is NOT holding, the exit band is not the interesting level
+    # — the entry trigger is. A buy-Supertrend that is currently down flips up
+    # when price crosses over its upper band, so entry needs price above the
+    # highest of those bands.
+    entry_trigger = None
+    buy_down = 0
+    if not in_pos:
+        need = []
+        for mult, per in FT_BUY:
+            d, _, f_up = supertrend_bands(df, per, mult)
+            if d[-1] == -1:
+                need.append(float(f_up[-1]))
+                buy_down += 1
+        entry_trigger = max(need) if need else price
 
     dist = (price - invalidation) / price          # fractional distance to stop
     a14 = float(df["atr"].iloc[-1])
     dist_atr = (price - invalidation) / a14 if a14 > 0 else float("nan")
 
     # How long has B been in, and at what price?
-    sig = signal_supertrend_ft(df)
-    in_pos = int(sig.iloc[-1]) == 1
     entry_price = entry_time = None
     bars_in = 0
     if in_pos:
@@ -118,6 +131,9 @@ def analyse(symbol: str) -> dict:
         "price": price,
         "coverage": cov["coverage_ratio"],
         "in_position": in_pos,
+        "status": "HOLDING" if in_pos else "EXITED / FLAT",
+        "entry_trigger": entry_trigger,
+        "buy_st_still_down": buy_down,
         "bars_in_position": bars_in,
         "entry_price": entry_price,
         "entry_time": entry_time,
@@ -151,14 +167,21 @@ def main() -> None:
 
     lines = [f"\n===== ENTRY / INVALIDATION LEVELS ({RESOLUTION}m bars) =====",
              f"last bar: {rows[0]['last_bar'] if rows else 'n/a'}\n",
-             "| symbol | price (IRT) | B entered at | run since entry | bars held "
-             "| invalidation | distance | in ATR | target (+8.7%) | R:R |",
-             "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+             "| symbol | status | price (IRT) | B entered at | run since entry | bars held "
+             "| level that matters | distance | in ATR | target (+8.7%) | R:R |",
+             "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
     for r in rows:
+        run = (f"{r['run_since_entry']*100:+.1f}%"
+               if r["run_since_entry"] is not None else "—")
+        held = r["bars_in_position"] if r["in_position"] else "—"
+        if r["in_position"]:
+            level, label = r["invalidation"], "exit"
+        else:
+            level, label = r["entry_trigger"], "entry"
         lines.append(
-            f"| {r['symbol']} | {money(r['price'])} | {money(r['entry_price'])} "
-            f"| {r['run_since_entry']*100:+.1f}% | {r['bars_in_position']} "
-            f"| {money(r['invalidation'])} | {r['stop_distance']*100:.2f}% "
+            f"| {r['symbol']} | {r['status']} | {money(r['price'])} "
+            f"| {money(r['entry_price'])} | {run} | {held} "
+            f"| {money(level)} ({label}) | {r['stop_distance']*100:.2f}% "
             f"| {r['stop_distance_atr']:.1f} | {money(r['target_price'])} "
             f"| {r['reward_risk']:.2f} |")
 
