@@ -82,6 +82,11 @@ jobs:
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/compare_original_vs_fixed.py out_original out_fixed
 
+      - name: Discover which Toman pairs Nobitex actually lists
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/discover_universe.py universe_out
+
       - name: Live watchlists — ours vs freqtrade Supertrend
         if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
@@ -112,4 +117,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/out_probe
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/watchlist_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/entry_out
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/universe_out
           retention-days: 1
