@@ -56,16 +56,44 @@ FALLBACK_SYMBOLS = ["BTCIRT", "ETHIRT", "SOLIRT", "XRPIRT", "DOGEIRT",
                     "ADAIRT", "TRXIRT", "LTCIRT", "BNBIRT", "USDTIRT"]
 
 
-def load_symbols() -> tuple[list[str], str]:
-    """Prefer the empirically discovered universe over anything typed by hand."""
-    for candidate in (Path("universe_out/universe.json"),
-                      Path(__file__).resolve().parent.parent / "universe_out/universe.json"):
+def _first_existing(name: str) -> Path | None:
+    for candidate in (Path(f"universe_out/{name}"),
+                      Path(__file__).resolve().parent.parent / f"universe_out/{name}"):
         if candidate.exists():
-            data = json.loads(candidate.read_text())
-            syms = sorted(r["symbol"] for r in data.get("usable", []))
-            if syms:
-                return syms, f"discovered ({candidate})"
-    return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery did not run"
+            return candidate
+    return None
+
+
+def load_symbols() -> tuple[list[str], str]:
+    """The tradeable universe: served by the venue AND marginable.
+
+    Serving candles is spot availability, which is not the question — every
+    number below sizes a leveraged position, so a pair with no margin market
+    must not be quoted however good its history looks.
+    """
+    spot_path = _first_existing("universe.json")
+    if spot_path is None:
+        return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery did not run"
+
+    syms = sorted(r["symbol"] for r in json.loads(spot_path.read_text()).get("usable", []))
+    if not syms:
+        return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery found nothing"
+
+    lev_path = _first_existing("leverage.json")
+    if lev_path is None:
+        return syms, f"discovered SPOT only ({len(syms)}) - MARGIN NOT CHECKED"
+
+    lev = json.loads(lev_path.read_text())
+    if not lev.get("resolved"):
+        return syms, f"discovered SPOT only ({len(syms)}) - margin probe failed"
+
+    margin = set(lev.get("margin_symbols", []))
+    both = [s for s in syms if s in margin]
+    dropped = len(syms) - len(both)
+    if not both:
+        return syms, f"discovered SPOT only ({len(syms)}) - margin list was empty"
+    return both, (f"discovered spot AND margin: {len(both)} tradeable, "
+                  f"{dropped} dropped as spot-only")
 RESOLUTION = "240"          # 4h: the only setting with both long retention and low churn
 LOOKBACK_DAYS = 180
 FEE = 0.0025
