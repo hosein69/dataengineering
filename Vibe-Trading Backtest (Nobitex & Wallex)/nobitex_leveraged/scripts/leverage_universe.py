@@ -22,6 +22,8 @@ import requests
 BASE = "https://apiv2.nobitex.ir"
 CANDIDATES = [
     f"{BASE}/margin/markets/list",
+    f"{BASE}/margin/markets",
+    f"{BASE}/v2/margin/markets/list",
     f"{BASE}/v2/options",
 ]
 
@@ -62,12 +64,57 @@ def symbols_from(payload: object) -> set[str]:
     return found
 
 
+def leverage_map(payload: object) -> dict[str, float]:
+    """Pull per-pair max leverage where the endpoint carries it.
+
+    The venue caps leverage per market, so the cap is data to be read, never a
+    number to remember. Shapes differ between endpoints, so look for any object
+    that names a pair and carries a leverage-ish field beside it.
+    """
+    caps: dict[str, float] = {}
+    lev_keys = ("maxleverage", "leverage", "maxlev")
+
+    def pair_of(node: dict) -> str | None:
+        for k in ("symbol", "market", "name", "pair"):
+            v = node.get(k)
+            if isinstance(v, str):
+                s = v.replace("-", "").replace("/", "").upper()
+                if s.endswith("IRT"):
+                    return s
+        src, dst = node.get("src"), node.get("dst")
+        if isinstance(src, str) and isinstance(dst, str):
+            s = f"{src}{dst}".replace("-", "").upper()
+            if s.endswith("IRT"):
+                return s
+        return None
+
+    def walk(node):
+        if isinstance(node, dict):
+            sym = pair_of(node)
+            if sym:
+                for k, v in node.items():
+                    if str(k).lower().replace("_", "") in lev_keys:
+                        try:
+                            caps[sym] = max(caps.get(sym, 0.0), float(v))
+                        except (TypeError, ValueError):
+                            pass
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(payload)
+    return caps
+
+
 def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("universe_out")
     out.mkdir(parents=True, exist_ok=True)
 
     report: list[dict] = []
     margin: set[str] = set()
+    caps: dict[str, float] = {}
     answered = None
     for url in CANDIDATES:
         ok, payload, why = fetch(url)
@@ -76,6 +123,7 @@ def main() -> None:
         print(f"{url} -> {why}, {len(syms)} IRT pairs")
         if ok and syms and answered is None:
             answered, margin = url, syms
+            caps = leverage_map(payload)
 
     if answered is None:
         print("\nNo margin endpoint answered. NOT falling back to the spot "
@@ -85,6 +133,14 @@ def main() -> None:
         return
 
     print(f"\nmargin universe resolved from {answered}: {len(margin)} pairs")
+    if caps:
+        print(f"per-pair leverage caps reported for {len(caps)} pairs; "
+              f"observed range {min(caps.values()):g}x - {max(caps.values()):g}x")
+        for sym in sorted(caps, key=lambda k: (-caps[k], k)):
+            print(f"  {sym}: max {caps[sym]:g}x")
+    else:
+        print("endpoint carried no per-pair leverage cap; "
+              "treating membership alone as the signal")
 
     spot_path = out / "universe.json"
     if spot_path.exists():
@@ -104,7 +160,7 @@ def main() -> None:
 
     (out / "leverage.json").write_text(json.dumps(
         {"resolved": True, "source": answered, "probes": report,
-         "margin_symbols": sorted(margin), "tradeable": both,
+         "margin_symbols": sorted(margin), "leverage_caps": caps, "tradeable": both,
          "spot_only": spot_only}, indent=2))
 
 
