@@ -46,6 +46,7 @@ from watchlist_compare import (  # noqa: E402
     supertrend_direction as supertrend,
 )
 
+SNAPSHOT_ROOT = Path(__file__).resolve().parent.parent / "data_snapshot"
 TRAIN_FRAC = 0.60
 # A deliberately small grid. Every extra axis multiplies the search space and
 # raises the bar the winner must clear, so only parameters with a mechanical
@@ -55,6 +56,48 @@ PERIODS = [7, 10, 14, 20]
 TAKES = [0.05, 0.087, 0.15]
 STOPS = [0.10, 0.265]
 GAMMA = 0.5772156649
+
+
+def newest_snapshot() -> Path | None:
+    """The most recent dated snapshot, if one has been captured."""
+    if not SNAPSHOT_ROOT.exists():
+        return None
+    days = sorted((d for d in SNAPSHOT_ROOT.iterdir()
+                   if d.is_dir() and (d / "manifest.json").exists()),
+                  key=lambda d: d.name)
+    return days[-1] if days else None
+
+
+def load_history() -> tuple[dict[str, pd.DataFrame], str]:
+    """Prefer pinned local data over the venue.
+
+    Reading a snapshot makes the search reproducible and costs nothing, which
+    matters because the venue is the slowest and least reliable part of this
+    and it used to sit inside the search's inner loop.
+    """
+    snap = newest_snapshot()
+    if snap is not None:
+        man = json.loads((snap / "manifest.json").read_text())
+        frames = {}
+        for row in man["symbols"]:
+            f = snap / f"{row['symbol']}.csv.gz"
+            if not f.exists():
+                continue
+            df = pd.read_csv(f, index_col=0, parse_dates=True)
+            df.attrs["coverage"] = {k: row[k] for k in row if k != "symbol"}
+            frames[row["symbol"]] = df
+        if frames:
+            return frames, (f"snapshot {snap.name} ({len(frames)} symbols, "
+                            f"captured {man['captured_utc'][:16]}Z)")
+
+    symbols, src = load_symbols()
+    frames = {}
+    for sym in symbols:
+        try:
+            frames[sym] = fetch_raw(sym, RESOLUTION, LOOKBACK_DAYS)
+        except Exception as exc:  # noqa: BLE001
+            print(f"{sym}: {type(exc).__name__}: {exc}", file=sys.stderr)
+    return frames, f"LIVE fetch ({src}) - no snapshot found"
 
 
 def st_dir(df: pd.DataFrame, mult: float, period: int,
@@ -102,20 +145,20 @@ def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("max_out")
     out.mkdir(parents=True, exist_ok=True)
 
-    symbols, src = load_symbols()
     fee, fee_src = load_fee()
     lev_cap, cap_src = load_lev_cap()
     warmup = warmup_bars(30, 14, 3)
-    print(f"universe: {len(symbols)} ({src})", file=sys.stderr)
     print(f"fee {fee:.4%}/side ({fee_src}); venue cap {lev_cap:g}x ({cap_src})",
           file=sys.stderr)
 
+    raw_by_symbol, data_src = load_history()
+    print(f"data: {data_src}", file=sys.stderr)
+
     frames: dict[str, tuple[pd.DataFrame, pd.DataFrame]] = {}
     caches: dict[str, dict] = {}
-    for s in symbols:
+    for s, raw in raw_by_symbol.items():
         try:
-            raw = fetch_raw(s, RESOLUTION, LOOKBACK_DAYS)
-            if raw.attrs["coverage"]["coverage_ratio"] < 0.80:
+            if raw.attrs.get("coverage", {}).get("coverage_ratio", 1.0) < 0.80:
                 continue
             df = add_indicators(raw, 10, 30, 14, 3)
             cut = int(len(df) * TRAIN_FRAC)
@@ -236,6 +279,7 @@ def main() -> None:
         emax = dsr = float("nan")
 
     L = [f"\n===== MAXIMISING RETURN, HONESTLY ({RESOLUTION}m, {LOOKBACK_DAYS}d) =====",
+         f"data: {data_src}",
          f"universe {len(frames)} margin-tradeable symbols; fee {fee:.4%}/side; "
          f"venue cap {lev_cap:g}x",
          f"train = first {TRAIN_FRAC:.0%} of the window, test = the rest "

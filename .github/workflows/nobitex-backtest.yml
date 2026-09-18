@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "leveraged | watchlist | margin | maximise | discover | all"
+        description: "leveraged | watchlist | margin | snapshot | maximise | discover | all"
         required: false
         default: "leveraged"
       symbols:
@@ -25,7 +25,7 @@ on:
         default: "3"
 
 permissions:
-  contents: read
+  contents: write      # the snapshot mode commits the captured data
 
 jobs:
   backtest:
@@ -47,7 +47,7 @@ jobs:
 
       # ── uploaded leveraged long/short engine: before vs after the debug ──
       - name: Probe how much history Nobitex actually retains per resolution
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' && inputs.mode != 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -55,7 +55,7 @@ jobs:
           python scripts/probe_retention.py BTCIRT "${{ inputs.lookback_days }}" out_probe/retention.json
 
       - name: ORIGINAL leveraged engine (expected to truncate the window)
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' && inputs.mode != 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -67,7 +67,7 @@ jobs:
             --output-dir out_original
 
       - name: FIXED leveraged engine (paginated, corrected accounting)
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' && inputs.mode != 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: |
           python scripts/nobitex_leveraged_backtest.py \
@@ -78,7 +78,7 @@ jobs:
             --output-dir out_fixed
 
       - name: Compare the two windows
-        if: ${{ always() && inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
+        if: ${{ always() && inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' && inputs.mode != 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/compare_original_vs_fixed.py out_original out_fixed
 
@@ -89,7 +89,7 @@ jobs:
         run: python scripts/discover_universe.py universe_out
 
       - name: Which of those pairs can actually be traded with leverage
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'margin' || inputs.mode == 'maximise' }}
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'margin' || inputs.mode == 'maximise' || inputs.mode == 'snapshot' }}
         continue-on-error: true
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/leverage_universe.py universe_out
@@ -103,6 +103,29 @@ jobs:
         if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/entry_points.py entry_out
+
+      - name: Capture a dated snapshot of the margin universe's history
+        if: ${{ inputs.mode == 'snapshot' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/snapshot.py data_snapshot
+
+      - name: Commit the snapshot so no later run needs the venue
+        if: ${{ inputs.mode == 'snapshot' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data_snapshot
+          if git diff --cached --quiet; then
+            echo "snapshot unchanged, nothing to commit"
+          else
+            git commit -m "Capture Nobitex margin-universe history snapshot
+
+          Pins the data the parameter search reads so the search stops
+          depending on a rate-limited venue and returns the same answer each
+          time it runs."
+            git push origin HEAD:${{ github.ref_name }}
+          fi
 
       - name: Search for the highest-return configuration, train/test split
         if: ${{ inputs.mode == 'maximise' || inputs.mode == 'all' }}
