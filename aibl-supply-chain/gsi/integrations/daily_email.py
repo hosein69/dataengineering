@@ -453,16 +453,28 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
     d=day or SETTINGS.today; res=Pipeline(today=d).run(build_report=True); paths=daily_paths(d)
     excel=Path(res.dashboard_path); official=paths["excel"]
     if excel.resolve()!=official.resolve():
+        import tempfile
+        import shutil
+        official.parent.mkdir(parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(dir=official.parent, suffix=".tmp")
         try:
-            if official.exists(): official.unlink()
-            excel.replace(official); excel=official
-        except Exception: pass
+            with os.fdopen(fd, "wb") as target, excel.open("rb") as source:
+                shutil.copyfileobj(source, target)
+                target.flush()
+                os.fsync(target.fileno())
+            os.replace(temporary, official)
+            excel = official
+        finally:
+            Path(temporary).unlink(missing_ok=True)
     raw_charts = os.environ.get("GSI_EMAIL_CHARTS", "").strip()
     selected_charts = [x.strip() for x in raw_charts.split(",") if x.strip()] if raw_charts else None
     charts=make_email_charts(res.main,paths["assets"],selected=selected_charts,extras=res.extras)
     body=build_email_html(d,res.main,charts,excel); paths["html"].write_text(body,encoding="utf-8")
+    from ..studio_core.html_export import build_dynamic_html
+    report = paths["html"].with_name(paths["html"].stem + "_Report.html")
+    report.write_text(build_dynamic_html(res.main, str(d), process_extras=res.extras), encoding="utf-8")
     to=_recipients()
-    result={"excel":excel,"html":paths["html"],"charts":charts,"recipients":to,"sent":False}
+    result={"report":report,"excel":excel,"html":paths["html"],"charts":charts,"recipients":to,"sent":False}
     if not(send or display): return result
     if not to:
         # بی‌صدا به فهرست قدیمی نمی‌رویم — فهرست گیرندگان پیکربندی محرمانه است.
@@ -494,6 +506,7 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
                 raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
         for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
         if Path(excel).exists(): mail.Attachments.Add(str(excel.resolve()))
+        mail.Attachments.Add(str(report.resolve()))
         mail.HTMLBody=body
         mail.Save()  # قبل از Display/Send تا بدنه و CIDها پایدار شوند
         if send:
@@ -599,6 +612,14 @@ def create_case_action_email(action: Dict[str, Any], *, to: Optional[Iterable[st
                     break
             if not matched:
                 raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
+        sender = os.environ.get("GSI_EMAIL_SENDER", "").strip().lower()
+        if sender:
+            account = next((a for a in outlook.Session.Accounts if str(getattr(a, "SmtpAddress", "")).strip().lower() == sender), None)
+            if account is None:
+                raise RuntimeError("حساب فرستنده در Outlook پیدا نشد.")
+            mail.SendUsingAccount = account
+        if send and not mail.Recipients.ResolveAll():
+            raise NoRecipients("Outlook نتوانست گیرندگان را تأیید کند؛ ارسال انجام نشد.")
         mail.HTMLBody = body
         mail.Save()
         if send:
@@ -640,6 +661,14 @@ def create_personal_store_email(employee_code: str, *, to: Iterable[str] | str,
         mail.BodyFormat = 2
         mail.Subject = subject or f"GSI | گزارش شخصی {employee_code}"
         mail.To = "; ".join(recipients)
+        sender = os.environ.get("GSI_EMAIL_SENDER", "").strip().lower()
+        if sender:
+            account = next((a for a in outlook.Session.Accounts if str(getattr(a, "SmtpAddress", "")).strip().lower() == sender), None)
+            if account is None:
+                raise RuntimeError("حساب فرستنده در Outlook پیدا نشد.")
+            mail.SendUsingAccount = account
+        if send and not mail.Recipients.ResolveAll():
+            raise NoRecipients("Outlook نتوانست گیرندگان را تأیید کند؛ ارسال انجام نشد.")
         mail.HTMLBody = body
         mail.Save()
         if send:

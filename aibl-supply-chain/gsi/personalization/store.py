@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import json
+import math
 import os
 import secrets
 import sqlite3
@@ -42,7 +43,6 @@ LOCK_TIMEOUT_ENV = "GSI_PROFILE_LOCK_TIMEOUT"
 _MAGIC = b"GSI-PROFILE\x01"
 _NONCE_BYTES = 12
 _SCHEMA_VERSION = 1
-_REPLACE_ATTEMPTS = 5
 
 
 class ProfileStoreError(RuntimeError):
@@ -63,28 +63,31 @@ def generate_master_key() -> str:
 
 
 def _decode_master_key(raw: str, *, source: str = KEY_ENV) -> bytes:
-    """Decode a base64 AES-256 key. ``source`` names what is being validated so a
-    broken user-key file is never reported as a master-key problem."""
     value = (raw or "").strip()
     if not value:
-        raise ProfileConfigurationError(f"کلید رمزگذاری GSI تنظیم نشده است ({source}).")
+        raise ProfileConfigurationError("کلید رمزگذاری GSI تنظیم نشده است.")
     try:
         padded = value + "=" * (-len(value) % 4)
-        key = base64.urlsafe_b64decode(padded.encode("ascii"))
+        key = base64.b64decode(padded.encode("ascii"), altchars=b"-_", validate=True)
     except Exception as ex:
         raise ProfileConfigurationError(f"{source} باید Base64 معتبر باشد.") from ex
     if len(key) != 32:
-        raise ProfileConfigurationError(f"کلید GSI باید دقیقاً ۳۲ بایت (AES-256) باشد ({source}).")
+        raise ProfileConfigurationError("کلید اصلی GSI باید دقیقاً ۳۲ بایت (AES-256) باشد.")
     return key
 
 
 def _path_is_under(path: Path, root: Path) -> bool:
     try:
-        p = os.path.normcase(os.path.abspath(str(path)))
-        r = os.path.normcase(os.path.abspath(str(root)))
+        p = os.path.normcase(str(path.resolve()))
+        r = os.path.normcase(str(root.resolve()))
         return os.path.commonpath([p, r]) == r
     except Exception:
         return False
+
+
+def _read_key_text(path: Path) -> str:
+    raw = path.read_bytes()
+    return raw.decode("utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig").strip()
 
 
 def _read_master_key(root: Path) -> bytes:
@@ -101,7 +104,7 @@ def _read_master_key(root: Path) -> bytes:
         raise ProfileConfigurationError("فایل کلید نباید داخل GSI_PROFILE_ROOT یا زیرشاخه‌های آن باشد.")
     if not p.is_file():
         raise ProfileConfigurationError(f"فایل کلید پیدا نشد: {p}")
-    return _decode_master_key(p.read_text(encoding="utf-8"), source=f"فایل کلید اصلی «{p}»")
+    return _decode_master_key(_read_key_text(p), source=f"فایل کلید اصلی «{p}»")
 
 
 def derive_user_key(master_key: bytes, employee_code: str) -> bytes:
@@ -139,7 +142,7 @@ def _read_user_key(root: Path) -> Optional[bytes]:
         raise ProfileConfigurationError("فایل User Key نباید داخل GSI_PROFILE_ROOT باشد.")
     if not p.is_file():
         raise ProfileConfigurationError(f"فایل User Key پیدا نشد: {p}")
-    return _decode_master_key(p.read_text(encoding="utf-8"), source=f"فایل User Key «{p}»")
+    return _decode_master_key(_read_key_text(p), source=f"فایل User Key «{p}»")
 
 
 def _emp(value: str) -> str:
@@ -170,11 +173,9 @@ def _configured_root() -> str:
     if cfg.is_file():
         try:
             data = json.loads(cfg.read_text(encoding="utf-8"))
+            return str(data.get("profile_root", "")).strip()
         except Exception as ex:
-            raise ProfileConfigurationError(
-                f"فایل پیکربندی محلی خراب است: {cfg} — آن را حذف کنید تا دوباره ساخته شود."
-            ) from ex
-        return str(data.get("profile_root", "")).strip()
+            raise ProfileConfigurationError("تنظیمات محلی قابل خواندن نیست.") from ex
     return ""
 
 
@@ -208,43 +209,49 @@ class UserPaths:
 
 
 class _FileLock:
+    """Never steal an old lock: timestamps cannot prove a network writer is dead."""
     def __init__(self, path: Path, timeout: float = 10.0, stale_after: float = 120.0):
         self.path = path
-        self.timeout = max(0.1, timeout)
-        self.stale_after = max(self.timeout, stale_after)
-        self.fd: Optional[int] = None
+        if not math.isfinite(timeout) or timeout <= 0:
+            raise ProfileConfigurationError("مهلت قفل باید عدد مثبت و محدود باشد.")
+        self.timeout = timeout
+        self.token = secrets.token_hex(24).encode("ascii")
+        self.fd = None
 
     def __enter__(self):
         start = time.monotonic()
         while True:
             try:
                 self.path.parent.mkdir(parents=True, exist_ok=True)
-                self.fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.write(self.fd, _utc().encode("ascii"))
-                return self
+                self.fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             except FileExistsError:
-                try:
-                    age = time.time() - self.path.stat().st_mtime
-                    if age > self.stale_after:
-                        self.path.unlink(missing_ok=True)
-                        continue
-                except OSError:
-                    pass
                 if time.monotonic() - start >= self.timeout:
-                    raise ProfileStoreError(f"قفل فایل آزاد نشد: {self.path.name}")
-                time.sleep(0.08)
+                    raise ProfileStoreError(f"قفل فایل آزاد نشد: {self.path.name}؛ پس از اطمینان از توقف نویسنده، مدیر قفل را بررسی کند.")
+                time.sleep(min(0.08, self.timeout))
+                continue
             except OSError as ex:
                 raise ProfileStoreError(
                     f"پوشه مشترک GSI در دسترس نیست: {self.path.parent} — "
                     "اتصال درایو شبکه و دسترسی Modify روی state/ را بررسی کنید."
                 ) from ex
+            try:
+                os.write(self.fd, self.token)
+                os.fsync(self.fd)
+            except OSError:
+                os.close(self.fd)
+                self.fd = None
+                with contextlib.suppress(OSError):
+                    self.path.unlink()
+                raise
+            return self
 
     def __exit__(self, exc_type, exc, tb):
         if self.fd is not None:
-            with contextlib.suppress(OSError):
-                os.close(self.fd)
+            os.close(self.fd)
+            self.fd = None
         with contextlib.suppress(OSError):
-            self.path.unlink()
+            if self.path.read_bytes() == self.token:
+                self.path.unlink()
 
 
 class EncryptedUserStore:
@@ -255,14 +262,20 @@ class EncryptedUserStore:
         raw_key = bytes(master_key)
         if len(raw_key) != 32:
             raise ProfileConfigurationError("کلید GSI باید ۳۲ بایت باشد.")
+        self.key_is_user = key_is_user
+        if not hasattr(sqlite3.Connection, "serialize"):
+            raise ProfileConfigurationError("Python 3.11+ با پشتیبانی SQLite serialize لازم است.")
         self._user_key = raw_key if key_is_user else derive_user_key(raw_key, self.paths.employee_code)
         self.paths.state_dir.mkdir(parents=True, exist_ok=True)
-        self.paths.snapshot_dir.mkdir(parents=True, exist_ok=True)
+        if not key_is_user:
+            self.paths.snapshot_dir.mkdir(parents=True, exist_ok=True)
         raw_timeout = os.environ.get(LOCK_TIMEOUT_ENV, "10").strip()
         try:
             self.lock_timeout = float(raw_timeout)
         except ValueError:
-            self.lock_timeout = 10.0
+            raise ProfileConfigurationError("مهلت قفل نامعتبر است.")
+        if not math.isfinite(self.lock_timeout) or self.lock_timeout <= 0:
+            raise ProfileConfigurationError("مهلت قفل باید مثبت و محدود باشد.")
 
     @classmethod
     def from_env(cls, employee_code: str) -> "EncryptedUserStore":
@@ -272,7 +285,8 @@ class EncryptedUserStore:
                 f"{ROOT_ENV} تنظیم نشده و personal_config.json هم مسیر Share ندارد."
             )
         root = Path(raw_root).expanduser()
-        root.mkdir(parents=True, exist_ok=True)
+        if not root.is_dir():
+            raise ProfileConfigurationError("پوشه شبکه در دسترس نیست؛ مسیر و اتصال را بررسی کنید.")
         user_key = _read_user_key(root)
         if user_key is not None:
             return cls(root, user_key, employee_code, key_is_user=True)
@@ -303,9 +317,12 @@ class EncryptedUserStore:
         return _MAGIC + b"|" + kind.encode("ascii") + b"|" + self.employee_code.encode("ascii")
 
     def _decrypt(self, path: Path, kind: str) -> Optional[bytes]:
-        if not path.exists():
+        try:
+            blob = path.read_bytes()
+        except FileNotFoundError:
+            if not self.paths.root.is_dir() or not self.paths.folder.is_dir():
+                raise ProfileStoreError("پوشه شبکه در دسترس نیست؛ داده خالی تلقی نشد.")
             return None
-        blob = path.read_bytes()
         if len(blob) < len(_MAGIC) + _NONCE_BYTES + 16 or not blob.startswith(_MAGIC):
             raise ProfileIntegrityError(f"فرمت فایل رمزگذاری‌شده معتبر نیست: {path.name}")
         nonce = blob[len(_MAGIC):len(_MAGIC) + _NONCE_BYTES]
@@ -323,35 +340,20 @@ class EncryptedUserStore:
         return _MAGIC + nonce + ciphertext
 
     def _atomic_write(self, path: Path, blob: bytes) -> None:
-        """Write atomically, retrying the replace step.
-
-        On Windows/SMB ``os.replace`` raises PermissionError while another client
-        has the target open for reading, so a single attempt loses the publish.
-        """
-        path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + f".{os.getpid()}.{secrets.token_hex(4)}.tmp")
         try:
             with open(tmp, "wb") as fh:
                 fh.write(blob)
                 fh.flush()
                 os.fsync(fh.fileno())
-            last: Optional[BaseException] = None
-            for attempt in range(_REPLACE_ATTEMPTS):
+            for attempt in range(4):
                 try:
                     os.replace(tmp, path)
-                    return
-                except PermissionError as ex:
-                    last = ex
-                    time.sleep(0.08 * (2 ** attempt))
-                except OSError as ex:
-                    raise ProfileStoreError(
-                        f"نوشتن روی پوشه مشترک ممکن نشد: {path} — "
-                        "اتصال درایو شبکه و دسترسی Modify را بررسی کنید."
-                    ) from ex
-            raise ProfileStoreError(
-                f"فایل {path.name} توسط برنامه دیگری باز است و جایگزین نشد. "
-                "پنجره GSI یا Excel بازِ همین کاربر را ببندید و دوباره تلاش کنید."
-            ) from last
+                    break
+                except PermissionError:
+                    if attempt == 3:
+                        raise
+                    time.sleep(0.05 * (attempt + 1))
         finally:
             with contextlib.suppress(OSError):
                 tmp.unlink()
@@ -394,13 +396,16 @@ class EncryptedUserStore:
         con = sqlite3.connect(":memory:")
         try:
             con.deserialize(plain)
+            con.execute("PRAGMA trusted_schema=OFF")
+            con.execute("PRAGMA temp_store=MEMORY")
+            meta = dict(con.execute("SELECT key,value FROM meta"))
+            if meta.get("employee_code") != self.employee_code or meta.get("kind") != kind or meta.get("schema_version") != str(_SCHEMA_VERSION):
+                raise ValueError("Store metadata mismatch")
+            if con.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                raise ValueError("Store integrity check failed")
         except Exception as ex:
             con.close()
-            raise ProfileIntegrityError(f"SQLite رمزگشایی‌شده خراب است: {path.name}") from ex
-        row = con.execute("SELECT value FROM meta WHERE key='employee_code'").fetchone()
-        if not row or row[0] != self.employee_code:
-            con.close()
-            raise ProfileIntegrityError("کد پرسنلی داخل Store با فولدر کاربر تطبیق ندارد.")
+            raise ProfileIntegrityError(f"ساختار فایل معتبر نیست: {path.name}") from ex
         return con
 
     def _save_db(self, con: sqlite3.Connection, path: Path, kind: str) -> None:
@@ -411,6 +416,10 @@ class EncryptedUserStore:
 
     @contextlib.contextmanager
     def _db(self, kind: str, *, write: bool = False) -> Iterator[sqlite3.Connection]:
+        if kind not in {"profile", "snapshot"}:
+            raise ValueError("Unknown store kind")
+        if write and kind == "snapshot" and self.key_is_user:
+            raise ProfileStoreError("انتشار داده فقط با اجرای مرکزی مجاز است.")
         path = self.paths.profile if kind == "profile" else self.paths.snapshot
         lock_path = self.paths.lock_for(path)
         lock_ctx = _FileLock(lock_path, self.lock_timeout) if write else contextlib.nullcontext()
@@ -447,7 +456,7 @@ class EncryptedUserStore:
 
     def set(self, namespace: str, key: str, value: Any, *, kind: str = "profile",
             audit_event: Optional[str] = None) -> None:
-        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False)
         with self._db(kind, write=True) as con:
             con.execute(
                 "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
@@ -466,7 +475,7 @@ class EncryptedUserStore:
             for key, value in values.items():
                 con.execute(
                     "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
-                    (namespace, str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True), now),
+                    (namespace, str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False), now),
                 )
             con.execute(
                 "INSERT INTO audit(ts,event,detail_json) VALUES(?,?,?)",
@@ -479,6 +488,8 @@ class EncryptedUserStore:
         Snapshot is fresh data, not preference state. The previous snapshot is not
         merged silently, preventing stale fields from surviving a new pipeline run.
         """
+        if self.key_is_user:
+            raise ProfileStoreError("انتشار داده فقط با اجرای مرکزی مجاز است.")
         path = self.paths.snapshot
         with _FileLock(self.paths.lock_for(path), self.lock_timeout):
             con = self._new_db(self.employee_code, "snapshot")
@@ -487,13 +498,19 @@ class EncryptedUserStore:
                 for key, value in payload.items():
                     con.execute(
                         "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES('current',?,?,?)",
-                        (str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True), now),
+                        (str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False), now),
                     )
                 con.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('source_run_id',?)", (source_run_id,))
                 con.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('refreshed_at',?)", (now,))
                 self._save_db(con, path, "snapshot")
             finally:
                 con.close()
+
+    def snapshot_context(self):
+        with self._db("snapshot") as con:
+            data = {k: json.loads(v) for k, v in con.execute("SELECT key,value_json FROM kv WHERE namespace='current'")}
+            meta = dict(con.execute("SELECT key,value FROM meta"))
+        return data, meta
 
     def current_snapshot(self) -> Dict[str, Any]:
         return self.namespace("current", kind="snapshot")

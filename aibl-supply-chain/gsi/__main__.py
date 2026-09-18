@@ -29,18 +29,23 @@ def main() -> int:
         import os, subprocess
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         app = os.path.join(root, "app", "studio.py")
-        return subprocess.call([sys.executable, "-m", "streamlit", "run", app], cwd=root)
+        return subprocess.call([sys.executable, "-m", "streamlit", "run", app, "--server.address=127.0.0.1"], cwd=root)
     if cmd in ("personal", "my-workspace"):
         import os, subprocess
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         app = os.path.join(root, "app", "personal_workspace.py")
-        return subprocess.call([sys.executable, "-m", "streamlit", "run", app], cwd=root)
+        return subprocess.call([sys.executable, "-m", "streamlit", "run", app, "--server.address=127.0.0.1"], cwd=root)
     if cmd in ("publish-personal", "personal-publish"):
         from .pipeline import Pipeline
         from .personalization.publisher import publish_employee_snapshots
+        import argparse
+        ap = argparse.ArgumentParser(description="Publish scoped snapshots to shared folders")
+        ap.add_argument("--employees", help="Comma-separated complete employee roster for this publication")
+        ns = ap.parse_args(sys.argv[2:])
+        employees = ns.employees.split(",") if ns.employees else None
         pipe = Pipeline()
         result = pipe.run(build_report=False)
-        out = publish_employee_snapshots(result.main, source_run_id="pipeline", ref_date=pipe.today.isoformat())
+        out = publish_employee_snapshots(result.main, employee_codes=employees, source_run_id="pipeline", ref_date=pipe.today.isoformat())
         print(f"Personal snapshots: users={out['users']} rows={out['rows']} missing={len(out['missing'])}")
         return 0
     if cmd in ("personal-open", "live-personal"):
@@ -57,7 +62,9 @@ def main() -> int:
         if not master:
             key_file = os.environ.get("GSI_PROFILE_KEY_FILE", "").strip()
             if key_file:
-                master = open(key_file, encoding="utf-8").read().strip()
+                from pathlib import Path
+                from .personalization.store import _read_key_text
+                master = _read_key_text(Path(key_file))
         if not master:
             raise ProfileConfigurationError("Master Key مرکزی برای استخراج User Key تنظیم نشده است.")
         print(derive_user_key_text(master, emp))
@@ -73,7 +80,8 @@ def main() -> int:
         ns = ap.parse_args(sys.argv[2:])
         emp = resolve_employee_code(ns.employee)
         out = Path(ns.output)
-        out.write_text(build_personal_html(emp), encoding="utf-8")
+        from .personalization.launcher import render_live
+        render_live(emp, output=out)
         print(out.resolve())
         return 0
     if cmd == "run":

@@ -27,9 +27,11 @@ def _from_identity_file(path: str) -> str:
     if not p.is_file():
         raise IdentityError(f"فایل هویت GSI پیدا نشد: {p}")
     try:
-        data = json.loads(p.read_text(encoding="utf-8"))
+        data = json.loads(p.read_text(encoding="utf-8-sig"))
     except Exception as ex:
         raise IdentityError(f"فایل هویت GSI قابل خواندن نیست: {ex}") from ex
+    if not isinstance(data, dict):
+        raise IdentityError("ساختار فایل هویت معتبر نیست.")
     return clean_employee_code(data.get("employee_code", ""))
 
 
@@ -41,6 +43,8 @@ def resolve_employee_code(explicit: Optional[str] = None, *, required: bool = Tr
     profile root. The shared root is data storage, not an authentication source.
     """
     emp = clean_employee_code(explicit or "")
+    if explicit is not None and not emp:
+        raise IdentityError("کد پرسنلی صریح معتبر نیست.")
     if not emp:
         emp = clean_employee_code(os.environ.get(EMP_ENV, ""))
     if not emp:

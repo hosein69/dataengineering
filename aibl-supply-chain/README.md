@@ -1,3 +1,7 @@
+# اصلاحیه شبکه و Outlook — V27.1.1
+
+راهنمای استقرار و محدودیت‌های آزمون: [NETWORK_OUTLOOK_RELEASE_FA.md](NETWORK_OUTLOOK_RELEASE_FA.md). Python 3.11+ لازم است.
+
 # GSI | Global Sourcing Intelligence
 ## V27.1 — فضای شخصی پایدار، رمزگذاری‌شده و بدون API/IP داده
 
@@ -33,8 +37,8 @@ V27 روی یک اصل بنا شده است: یک زنجیره داده واحد
 ### منبع حقیقت طراحی و اجرا
 توکن‌های runtime و خروجی‌های تولیدی از `gsi/design/` می‌آیند؛ Figma مرجع visual/interaction specification است. اختلاف این دو نباید بی‌صدا با overwrite حل شود و باید در Release reconciliation شود.
 
-# GSI V27.1.0 — Personal Shared Store + Audience-aware Intelligence
-**749 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
+# GSI V27.1.1 — Personal Shared Store + Audience-aware Intelligence
+**767 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
 
 > **اول این را بزنید:** `python -m gsi.doctor`
 > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.

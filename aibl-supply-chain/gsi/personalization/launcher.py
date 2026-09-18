@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+import secrets
 import webbrowser
 from pathlib import Path
 from typing import Optional
@@ -28,9 +29,13 @@ def render_live(employee_code: Optional[str] = None, *, output: Optional[str | P
     emp = resolve_employee_code(employee_code)
     out = Path(output) if output else local_cache_dir() / f"GSI_{emp}_Live.html"
     out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = out.with_suffix(out.suffix + ".tmp")
-    tmp.write_text(build_personal_html(emp, title="GSI · وضعیت زنده من"), encoding="utf-8")
-    os.replace(tmp, out)
+    tmp = out.with_name(out.name + "." + secrets.token_hex(8) + ".tmp")
+    try:
+        tmp.write_text(build_personal_html(emp, title="GSI · آخرین وضعیت منتشرشده"), encoding="utf-8")
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
     return out
 
 

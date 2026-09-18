@@ -10,6 +10,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Dict, Iterable, Optional, Sequence
 
+import math
 import numpy as np
 import pandas as pd
 
@@ -24,12 +25,13 @@ DEFAULT_FIELDS = (
     "FX_CURRENT_STAGE", "FX_TIME_DAYS_LEFT", "FX_EVIDENCE_COVERAGE",
     "SUPPLIER_OPEN_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY",
     "ORACLE_IKCO_QTY", "ORACLE_SAPCO_QTY", "SUPPLY_POSITION_COVERAGE",
+    "NEXT_ACTION_TITLE", "NEXT_ACTION_PRIORITY", "NEXT_ACTION_DUE_DATE", "NEXT_ACTION_OWNER", "NEXT_ACTION_ID", "کد طبقه بحرانی",
     "FX_ACTION_TITLE", "FX_ACTION_PRIORITY", "FX_ACTION_DUE_DATE",
 )
 
 
 def _jsonable(v: Any) -> Any:
-    if v is None:
+    if v is None or v is pd.NaT or v is pd.NA:
         return None
     # numpy booleans subclass neither bool nor int, so they must be caught first;
     # otherwise they fall through to str() and a False becomes the truthy "False".
@@ -38,7 +40,7 @@ def _jsonable(v: Any) -> Any:
     if isinstance(v, (str, int)):
         return v
     if isinstance(v, (float, np.floating)):
-        return None if pd.isna(v) else float(v)
+        return None if not math.isfinite(float(v)) else float(v)
     if isinstance(v, (np.integer,)):
         return int(v)
     if isinstance(v, (date, datetime, pd.Timestamp)):
@@ -53,10 +55,14 @@ def _jsonable(v: Any) -> Any:
 
 def frame_payload(df: pd.DataFrame, *, fields: Optional[Sequence[str]] = None,
                   max_rows: int = 3000, ref_date: Optional[str] = None) -> Dict[str, Any]:
-    selected = [c for c in (fields or DEFAULT_FIELDS) if c in df.columns]
+    if isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows < 1:
+        raise ValueError("max_rows must be a positive integer")
+    if fields is not None and (not fields or isinstance(fields, str)):
+        raise ValueError("fields must be a nonempty sequence")
+    selected = [c for c in (DEFAULT_FIELDS if fields is None else fields) if c in df.columns]
     if "KEY_EMP" in df.columns and "KEY_EMP" not in selected:
         selected.insert(0, "KEY_EMP")
-    view = df[selected].head(max_rows).copy() if selected else df.head(max_rows).copy()
+    view = df[selected].head(max_rows).copy()
     records = [
         {str(k): _jsonable(v) for k, v in row.items()}
         for row in view.to_dict(orient="records")
@@ -83,6 +89,8 @@ def publish_employee_snapshots(df: pd.DataFrame, *, employee_codes: Optional[Ite
     work = work[work["KEY_EMP"].astype(str).str.strip().ne("")]
     wanted = None
     if employee_codes is not None:
+        if isinstance(employee_codes, str):
+            raise ValueError("employee_codes must be a sequence, not a string")
         wanted = {clean_employee_code(x) for x in employee_codes if clean_employee_code(x)}
         work = work[work["KEY_EMP"].isin(wanted)]
 
@@ -94,6 +102,10 @@ def publish_employee_snapshots(df: pd.DataFrame, *, employee_codes: Optional[Ite
         published[emp] = int(len(group))
 
     missing = sorted(wanted - set(published)) if wanted is not None else []
+    for emp in missing:
+        store = EncryptedUserStore.from_master_env(emp)
+        store.replace_snapshot(frame_payload(work.iloc[:0], fields=fields, max_rows=max_rows, ref_date=ref_date), source_run_id=source_run_id)
+        published[emp] = 0
     return {"published": published, "missing": missing, "users": len(published), "rows": sum(published.values())}
 
 

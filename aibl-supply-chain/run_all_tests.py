@@ -17,6 +17,7 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SUITES = [
+    ("۲۶) خطاهای شبکه و ذخیره‌سازی", "tests/test_network_outlook_debugged.py"),
     ("۱) الگوریتمی و بیزینسی", "tests/test_validation.py"),
     ("۲) کتابخانه قوانین و سورس مقاومت", "tests/test_rules_and_moghavemat.py"),
     ("۳) مقاومت قطعه و بحرانی بودن", "tests/test_criticality.py"),

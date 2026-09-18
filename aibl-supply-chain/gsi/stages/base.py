@@ -140,6 +140,7 @@ def register(cls: Type[Stage]) -> Type[Stage]:
 
 def discover(package: str = "gsi.stages") -> List[Stage]:
     """کشف خودکار همه مرحله‌ها و برگرداندن نمونه‌های مرتب‌شده."""
+    importlib.invalidate_caches()
     pkg = importlib.import_module(package)
     for mod in pkgutil.iter_modules(pkg.__path__):
         if mod.name.startswith("_") or mod.name == "base":

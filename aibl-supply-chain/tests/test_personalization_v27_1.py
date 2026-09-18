@@ -320,7 +320,6 @@ class PersonalPublisherTests(unittest.TestCase):
         self.assertEqual(list((user / "state").iterdir()), [])
         self.assertNotIn(b"R-A", (user / "snapshot" / "current.gsi").read_bytes())
 
-
 class V27_1_RegressionTests(unittest.TestCase):
     """رگرسیون باگ‌هایی که در ممیزی مویرگی V27.1 پیدا و رفع شدند."""
 
@@ -396,6 +395,7 @@ class V27_1_RegressionTests(unittest.TestCase):
 
     def test_broken_user_key_is_not_reported_as_master_key(self):
         """پیام خطا باید همان فایلی را نام ببرد که خراب است."""
+        self.root.mkdir(parents=True, exist_ok=True)
         bad = Path(self.tmp.name) / "bad.key"
         bad.write_text("not-base64!!", encoding="utf-8")
         os.environ["GSI_PROFILE_USER_KEY_FILE"] = str(bad)
@@ -420,11 +420,13 @@ class V27_1_RegressionTests(unittest.TestCase):
 
     def test_atomic_write_retries_before_giving_up(self):
         """روی ویندوز/SMB، os.replace وقتی خواننده‌ای فایل را باز دارد خطا می‌دهد."""
-        import inspect
+        import inspect, re
         from gsi.personalization import store as PS
         src = inspect.getsource(PS.EncryptedUserStore._atomic_write)
-        self.assertIn("PermissionError", src)
-        self.assertGreaterEqual(PS._REPLACE_ATTEMPTS, 3)
+        self.assertIn("PermissionError", src, "باید خطای دسترسی ویندوز/SMB را بگیرد")
+        self.assertTrue(re.search(r"for\s+\w+\s+in\s+range\(", src),
+                        "باید حلقه تلاش مجدد داشته باشد، نه یک بار os.replace")
+        self.assertIn("sleep", src, "تلاش مجدد باید فاصله داشته باشد")
 
     def test_doctor_checks_the_shared_store(self):
         """تنها ابزار تشخیص این استقرار باید پوشه مشترک را هم بررسی کند."""
