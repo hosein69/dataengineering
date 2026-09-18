@@ -91,35 +91,40 @@ def load_lev_cap() -> tuple[float, str]:
 
 
 def load_symbols() -> tuple[list[str], str]:
-    """The tradeable universe: served by the venue AND marginable.
+    """The tradeable universe, taken from the margin list wherever possible.
 
-    Serving candles is spot availability, which is not the question — every
-    number below sizes a leveraged position, so a pair with no margin market
-    must not be quoted however good its history looks.
+    Every number below sizes a leveraged position, so the margin list IS the
+    universe: a pair with no margin market cannot be traded here however good
+    its candle history looks. That list arrives in ONE request carrying all
+    pairs and their leverage caps.
+
+    Spot discovery used to gate this, at the cost of ~160 requests per run
+    (a probe per candidate, then a full history fetch per survivor) against a
+    venue that rate-limits at 60/min. Repeated runs pushed it into the limit
+    and the pagination loop then ground through MAX_PAGES per symbol, which is
+    what stalled a run for the better part of an hour. Coverage is verified
+    anyway when each symbol's history is fetched below, so paying for it twice
+    bought nothing. Spot discovery, when present, now only intersects.
     """
-    spot_path = _first_existing("universe.json")
-    if spot_path is None:
-        return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery did not run"
-
-    syms = sorted(r["symbol"] for r in json.loads(spot_path.read_text()).get("usable", []))
-    if not syms:
-        return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - discovery found nothing"
-
     lev_path = _first_existing("leverage.json")
-    if lev_path is None:
-        return syms, f"discovered SPOT only ({len(syms)}) - MARGIN NOT CHECKED"
+    lev = json.loads(lev_path.read_text()) if lev_path else {}
+    margin = sorted(lev.get("margin_symbols", [])) if lev.get("resolved") else []
 
-    lev = json.loads(lev_path.read_text())
-    if not lev.get("resolved"):
-        return syms, f"discovered SPOT only ({len(syms)}) - margin probe failed"
+    spot_path = _first_existing("universe.json")
+    spot = sorted(r["symbol"] for r in
+                  json.loads(spot_path.read_text()).get("usable", [])) if spot_path else []
 
-    margin = set(lev.get("margin_symbols", []))
-    both = [s for s in syms if s in margin]
-    dropped = len(syms) - len(both)
-    if not both:
-        return syms, f"discovered SPOT only ({len(syms)}) - margin list was empty"
-    return both, (f"discovered spot AND margin: {len(both)} tradeable, "
-                  f"{dropped} dropped as spot-only")
+    if margin and spot:
+        both = [s for s in spot if s in margin]
+        if both:
+            return both, (f"margin list ∩ spot discovery: {len(both)} tradeable "
+                          f"({len(spot) - len(both)} spot-only dropped)")
+    if margin:
+        return margin, (f"margin list alone: {len(margin)} pairs "
+                        f"(coverage checked per symbol below)")
+    if spot:
+        return spot, f"discovered SPOT only ({len(spot)}) - MARGIN NOT CHECKED"
+    return list(FALLBACK_SYMBOLS), "HAND-WRITTEN FALLBACK - no probe output found"
 RESOLUTION = "240"          # 4h: the only setting with both long retention and low churn
 LOOKBACK_DAYS = 180
 # The fee belongs to the venue. /margin/markets/list reports positionFeeRate

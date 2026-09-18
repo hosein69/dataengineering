@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "leveraged | watchlist | margin | maximise | all"
+        description: "leveraged | watchlist | margin | maximise | discover | all"
         required: false
         default: "leveraged"
       symbols:
@@ -83,7 +83,7 @@ jobs:
         run: python scripts/compare_original_vs_fixed.py out_original out_fixed
 
       - name: Discover which Toman pairs Nobitex actually lists
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'maximise' }}
+        if: ${{ inputs.mode == 'discover' || inputs.mode == 'all' }}
         continue-on-error: true
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/discover_universe.py universe_out
