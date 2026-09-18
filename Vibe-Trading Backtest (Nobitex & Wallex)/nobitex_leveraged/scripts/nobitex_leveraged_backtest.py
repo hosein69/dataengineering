@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -38,6 +39,9 @@ NOBITEX = "https://apiv2.nobitex.ir/market/udf/history"
 MAX_PER_REQUEST = 500        # hard server-side cap per call
 MAX_PAGES = 60               # 60 * 500 = 30k bars ceiling
 PAGE_SLEEP_S = 0.5           # endpoint allows 60 req/min
+REQUEST_TIMEOUT_S = 12       # the venue throttles by stalling, so fail fast
+REQUEST_RETRIES = 3
+CACHE_DIR = Path(os.environ.get("NOBITEX_CACHE", ".nobitex_cache"))
 
 RESOLUTION_SECONDS = {
     "1": 60, "5": 300, "15": 900, "30": 1800, "60": 3600,
@@ -67,14 +71,33 @@ class Position:
 # ─────────────────────────── data ───────────────────────────
 
 def _request_page(symbol: str, resolution: str, start: int, end: int, page: int) -> dict:
-    r = requests.get(
-        NOBITEX,
-        params={"symbol": symbol.upper(), "resolution": resolution,
-                "from": start, "to": end, "page": page},
-        timeout=30,
-    )
-    r.raise_for_status()
-    return r.json()
+    """One page, with backoff.
+
+    The venue throttles by making a connection hang rather than by returning
+    429, so a long timeout turns throttling into a stalled job: 37 symbols x 3
+    pages x a 30s timeout is most of an hour with nothing to show. A short
+    timeout plus backoff fails fast and recovers when the throttle lifts.
+    """
+    delay = 1.0
+    last: Exception | None = None
+    for attempt in range(REQUEST_RETRIES):
+        try:
+            r = requests.get(
+                NOBITEX,
+                params={"symbol": symbol.upper(), "resolution": resolution,
+                        "from": start, "to": end, "page": page},
+                timeout=REQUEST_TIMEOUT_S,
+            )
+            if r.status_code == 429:
+                raise requests.HTTPError("429 rate limited", response=r)
+            r.raise_for_status()
+            return r.json()
+        except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as exc:
+            last = exc
+            if attempt < REQUEST_RETRIES - 1:
+                time.sleep(delay)
+                delay *= 2
+    raise RuntimeError(f"{symbol}: {REQUEST_RETRIES} attempts failed: {last}")
 
 
 def fetch_raw(symbol: str, resolution: str, lookback_days: int) -> pd.DataFrame:
@@ -91,7 +114,23 @@ def fetch_raw(symbol: str, resolution: str, lookback_days: int) -> pd.DataFrame:
     stall guard still covers the case where a chunk comes back outside its own
     requested range.
     """
+    # Within one run the watchlist, the entry levels and the search each want
+    # the same history. Fetching it three times triples the load on a venue
+    # that is already the bottleneck, so the first fetch wins and the rest read
+    # from disk. The key carries the hour, so a later run still gets fresh data.
     now = int(datetime.now(timezone.utc).timestamp())
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H")
+    cache_file = CACHE_DIR / f"{symbol.upper()}_{resolution}_{lookback_days}_{stamp}.pkl"
+    if cache_file.exists():
+        try:
+            cached = pd.read_pickle(cache_file)
+            # Callers read .attrs["coverage"]; a frame that lost it on the
+            # round trip is not a usable substitute, so refetch instead.
+            if len(cached) and "coverage" in getattr(cached, "attrs", {}):
+                return cached
+        except Exception:  # noqa: BLE001
+            pass
+
     start = now - lookback_days * 86400
     step = RESOLUTION_SECONDS.get(str(resolution))
     if step is None:
@@ -170,6 +209,13 @@ def fetch_raw(symbol: str, resolution: str, lookback_days: int) -> pd.DataFrame:
         "actual_span_days": round(
             (df.index[-1] - df.index[0]).total_seconds() / 86400, 3) if got > 1 else 0.0,
     }
+
+    try:
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        df.to_pickle(cache_file)
+    except Exception:  # noqa: BLE001
+        pass          # a cache that cannot be written must not fail the fetch
+
     return df
 
 
