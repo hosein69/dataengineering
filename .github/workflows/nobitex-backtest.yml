@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "which suite to run: leveraged | watchlist | margin | all"
+        description: "leveraged | watchlist | margin | maximise | all"
         required: false
         default: "leveraged"
       symbols:
@@ -47,7 +47,7 @@ jobs:
 
       # ── uploaded leveraged long/short engine: before vs after the debug ──
       - name: Probe how much history Nobitex actually retains per resolution
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -55,7 +55,7 @@ jobs:
           python scripts/probe_retention.py BTCIRT "${{ inputs.lookback_days }}" out_probe/retention.json
 
       - name: ORIGINAL leveraged engine (expected to truncate the window)
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         continue-on-error: true
         run: |
@@ -67,7 +67,7 @@ jobs:
             --output-dir out_original
 
       - name: FIXED leveraged engine (paginated, corrected accounting)
-        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' }}
+        if: ${{ inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: |
           python scripts/nobitex_leveraged_backtest.py \
@@ -78,31 +78,36 @@ jobs:
             --output-dir out_fixed
 
       - name: Compare the two windows
-        if: ${{ always() && inputs.mode != 'watchlist' && inputs.mode != 'margin' }}
+        if: ${{ always() && inputs.mode != 'watchlist' && inputs.mode != 'margin' && inputs.mode != 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/compare_original_vs_fixed.py out_original out_fixed
 
       - name: Discover which Toman pairs Nobitex actually lists
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'maximise' }}
         continue-on-error: true
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/discover_universe.py universe_out
 
       - name: Which of those pairs can actually be traded with leverage
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'margin' }}
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'margin' || inputs.mode == 'maximise' }}
         continue-on-error: true
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/leverage_universe.py universe_out
 
       - name: Live watchlists — ours vs freqtrade Supertrend
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/watchlist_compare.py watchlist_out
 
       - name: Entry / invalidation levels for the surviving symbols
-        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' }}
+        if: ${{ inputs.mode == 'watchlist' || inputs.mode == 'all' || inputs.mode == 'maximise' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/entry_points.py entry_out
+
+      - name: Search for the highest-return configuration, train/test split
+        if: ${{ inputs.mode == 'maximise' || inputs.mode == 'all' }}
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/maximize.py max_out
 
       # ── earlier suites, only when explicitly asked for ──
       - name: Vibe-Trading baseline suites
@@ -125,4 +130,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/watchlist_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/entry_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/universe_out
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/max_out
           retention-days: 1
