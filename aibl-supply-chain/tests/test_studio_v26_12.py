@@ -4,12 +4,12 @@ from pathlib import Path
 import pandas as pd
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
-os.environ.setdefault("AIBL_DESIGNS", tempfile.mkdtemp(prefix="aibl_designs_"))
-from aibl.rulebook import get_rulebook
-from aibl.studio_core.filters import FilterState, apply_filters, filter_options
-from aibl.studio_core.html_export import build_dynamic_html
-from aibl.studio_core.report_builder import ReportSpec, build
-from aibl.studio_core.designs import ReportDesign, save_design, load_design, EMAIL_CHARTS
+os.environ.setdefault("GSI_DESIGNS", tempfile.mkdtemp(prefix="gsi_designs_"))
+from gsi.rulebook import get_rulebook
+from gsi.studio_core.filters import FilterState, apply_filters, filter_options
+from gsi.studio_core.html_export import build_dynamic_html
+from gsi.studio_core.report_builder import ReportSpec, build
+from gsi.studio_core.designs import ReportDesign, save_design, load_design, EMAIL_CHARTS
 
 def test_transport():
     rb=get_rulebook(reload=True)
@@ -41,4 +41,11 @@ def test_tabs_and_design():
     save_design(d); assert load_design("reuse").email_charts==["criticality"]
 
 if __name__=="__main__":
-    test_transport(); test_tabs_and_design(); print("OK")
+    ok = fail = 0
+    for fn in (test_transport, test_tabs_and_design):
+        try:
+            fn(); ok += 1; print(f"✅ {fn.__name__}")
+        except Exception as ex:
+            fail += 1; print(f"❌ {fn.__name__} → {type(ex).__name__}: {ex}")
+    print(f"نتیجه: {ok} موفق | {fail} ناموفق")
+    sys.exit(1 if fail else 0)

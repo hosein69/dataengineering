@@ -1,5 +1,10 @@
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 import pandas as pd
-from aibl.adapters.a40_oracle import OracleAdapter
+from gsi.adapters.a40_oracle import OracleAdapter
 
 
 def test_oracle_merges_two_sheets_preferring_full_data():
@@ -18,6 +23,20 @@ def test_oracle_merges_two_sheets_preferring_full_data():
     assert r.loc['200','ORC_MATERIAL_DESC'] == 'B'
     assert 'ORC_SOURCE_SHEET' in out.columns
 
+def _run_direct():
+    ok = fail = 0
+    for fn in [test_oracle_merges_two_sheets_preferring_full_data]:
+        try:
+            fn()
+            ok += 1
+            print(f"✅ {fn.__name__}")
+        except Exception as ex:
+            fail += 1
+            print(f"❌ {fn.__name__} → {type(ex).__name__}: {ex}")
+    print(f"نتیجه: {ok} موفق | {fail} ناموفق")
+    return 1 if fail else 0
+
+
 if __name__ == "__main__":
-    test_oracle_merges_two_sheets_preferring_full_data()
-    print("نتیجه: 1 موفق | 0 ناموفق")
+    import sys
+    sys.exit(_run_direct())

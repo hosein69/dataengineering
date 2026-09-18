@@ -28,7 +28,7 @@ for _s in (sys.stdout, sys.stderr):
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from aibl.factsheet import collect  # noqa: E402
+from gsi.factsheet import collect  # noqa: E402
 
 PASS, FAIL = [], []
 _FA = "۰۱۲۳۴۵۶۷۸۹"
@@ -79,22 +79,22 @@ def test_readme_numbers() -> None:
         actual = facts[key]
         check(f"«{label}»: README می‌گوید {claimed_fa}، کد می‌گوید {fa(actual)}",
               claimed == actual,
-              "" if claimed == actual else "README را با python -m aibl.factsheet هماهنگ کنید")
+              "" if claimed == actual else "README را با python -m gsi.factsheet هماهنگ کنید")
 
 
 def test_version_single_source() -> None:
     print("\n── ۲) نسخه تنها یک منبع دارد ──")
-    import aibl
-    import aibl.version as V
-    from aibl.factsheet import VERSION
+    import gsi
+    import gsi.version as V
+    from gsi.factsheet import VERSION
 
-    check("aibl.__version__ با شناسنامه یکی است", aibl.__version__ == VERSION,
-          f"{aibl.__version__} / {VERSION}")
+    check("gsi.__version__ با شناسنامه یکی است", gsi.__version__ == VERSION,
+          f"{gsi.__version__} / {VERSION}")
     check("version.PACKAGE_VERSION با شناسنامه یکی است",
           V.PACKAGE_VERSION == VERSION, f"{V.PACKAGE_VERSION} / {VERSION}")
     # هیچ نسخه هاردکد دیگری در پکیج نمانده باشد
     hard = []
-    for root, _, files in os.walk(os.path.join(ROOT, "aibl")):
+    for root, _, files in os.walk(os.path.join(ROOT, "gsi")):
         for f in files:
             if not f.endswith(".py") or f == "factsheet.py":
                 continue
@@ -107,10 +107,10 @@ def test_version_single_source() -> None:
 def test_factsheet_runs() -> None:
     print("\n── ۳) شناسنامه اجرا می‌شود ──")
     import subprocess
-    r = subprocess.run([sys.executable, "-m", "aibl.factsheet"], cwd=ROOT,
+    r = subprocess.run([sys.executable, "-m", "gsi.factsheet"], cwd=ROOT,
                        capture_output=True, text=True, encoding="utf-8",
                        env=dict(os.environ, PYTHONIOENCODING="utf-8"))
-    check("python -m aibl.factsheet بدون خطا اجرا می‌شود", r.returncode == 0,
+    check("python -m gsi.factsheet بدون خطا اجرا می‌شود", r.returncode == 0,
           (r.stderr or "").strip()[-90:])
     check("همه کلیدهای شناسنامه چاپ می‌شوند",
           all(k in r.stdout for k in ("بسته قانونی", "شیت داشبورد", "نسخه پکیج")))
@@ -118,7 +118,7 @@ def test_factsheet_runs() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — تست ادعاهای مستندات")
+    print("GSI — تست ادعاهای مستندات")
     print("=" * 78)
     test_readme_numbers()
     test_version_single_source()

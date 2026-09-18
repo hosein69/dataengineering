@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""داشبورد زنده AIBL — Streamlit.
+"""داشبورد زنده GSI — Streamlit.
 
 اجرا:
     streamlit run app/dashboard.py
     # یا با پورت دلخواه:
     streamlit run app/dashboard.py --server.port 8600
 
-خروجی تحویلی: HTML مستقل (با CSS و JS درون‌خط). Excel و PDF از
-داخل همان HTML توسط دریافت‌کننده ساخته می‌شوند؛ داده اصلی در SQLite است.
+خروجی‌ها: HTML مستقل (با CSS و JS درون‌خط)، PDF (از طریق چاپ مرورگر)،
+و اکسل کامل.
 
 ## اصول طراحی
 
@@ -22,6 +22,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import os
 import sys
 from pathlib import Path
@@ -48,10 +49,7 @@ from app.ui_kit import (AQUA, AQUA_DEEP, AQUA_SOFT, AMBER, BAND_COLORS,  # noqa:
                         band_count as _band_count, card_html, detail_columns,
                         export_html, kpis, num as _num)
 
-from aibl.studio_core.html_export import build_dynamic_html  # noqa: E402
-from aibl.warehouse import warehouse_from_settings  # noqa: E402
-
-st.set_page_config(page_title="AIBL — مغز لجستیک",
+st.set_page_config(page_title="GSI — مغز لجستیک",
                    page_icon="◈", layout="wide",
                    initial_sidebar_state="expanded")
 
@@ -171,19 +169,16 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 
 # ═══════════ داده ═══════════
-@st.cache_data(show_spinner="در حال بارگذاری Snapshot از Warehouse…")
+@st.cache_data(show_spinner="در حال اجرای خط لوله…")
 def load_pipeline(today: Optional[str] = None) -> Dict[str, Any]:
-    """Legacy dashboard نیز از همان SQLite system-of-record می‌خواند."""
-    from aibl.pipeline import Pipeline
-    ref = (today or str(date.today())).strip()
-    wh = warehouse_from_settings()
-    snap = wh.load_snapshot(ref_date=ref)
-    if snap is None or snap.ref_date != ref:
-        res = Pipeline(today=date.fromisoformat(ref)).run(build_report=False)
-        snap = wh.load_snapshot(run_id=res.warehouse_run_id) if res.warehouse_run_id else None
-        if snap is None:
-            return {"df":res.df,"main":res.main,"to_resolve":res.to_resolve,"extras":dict(res.extras),"run_id":res.warehouse_run_id}
-    return {"df":snap.df,"main":snap.main,"to_resolve":pd.DataFrame(),"extras":dict(snap.extras),"run_id":snap.run_id}
+    # ست‌کردن GSI_TODAY بیرون از این تابع انجام می‌شود؛ در cache hit بدنه
+    # اجرا نمی‌شود و تاریخ مرجع واقعی با تاریخ نمایش‌داده‌شده فرق می‌کرد.
+    from gsi.pipeline import Pipeline
+    res = Pipeline().run(build_report=True)
+    return {
+        "df": res.df, "main": res.main, "to_resolve": res.to_resolve,
+        "extras": dict(res.extras), "dashboard": res.dashboard_path,
+    }
 
 
 card = card_html
@@ -194,10 +189,10 @@ def num(df: pd.DataFrame, col: str) -> pd.Series:
 
 
 # ═══════════ نوار کناری ═══════════
-st.sidebar.markdown(f"### ◈ AIBL\n<span style='color:{GREY}'>مغز شناختی لجستیک</span>",
+st.sidebar.markdown(f"### ◈ GSI\n<span style='color:{GREY}'>مغز شناختی لجستیک</span>",
                     unsafe_allow_html=True)
 ref_date = st.sidebar.text_input("تاریخ مرجع (YYYY-MM-DD)",
-                                 value=os.environ.get("AIBL_TODAY") or str(date.today()))
+                                 value=os.environ.get("GSI_TODAY") or str(date.today()))
 if st.sidebar.button("اجرای مجدد خط لوله", use_container_width=True):
     st.cache_data.clear()
 
@@ -207,13 +202,13 @@ except ValueError:
     st.sidebar.error("تاریخ مرجع باید به شکل YYYY-MM-DD باشد.")
     st.stop()
 ref_date = ref_date.strip()
-os.environ["AIBL_TODAY"] = ref_date
+os.environ["GSI_TODAY"] = ref_date
 
 try:
     data = load_pipeline(ref_date)
 except Exception as ex:                               # pragma: no cover
     st.error(f"خط لوله اجرا نشد: {ex}")
-    st.info("اول `python -m aibl.doctor` را اجرا کنید تا مسیر سورس‌ها بررسی شود.")
+    st.info("اول `python -m gsi.doctor` را اجرا کنید تا مسیر سورس‌ها بررسی شود.")
     st.stop()
 
 df = data["main"] if not data["main"].empty else data["df"]
@@ -223,8 +218,8 @@ all_df = data["df"] if not data["df"].empty else df
 # اگر سورسی ناقص بوده، خواننده باید قبل از KPIها بداند؛ وگرنه یک عدد
 # سبز را «همه‌چیز مرتب» می‌خواند در حالی که مبنایش ناقص بوده.
 try:
-    from aibl import health as _health
-    from aibl.config.settings import SETTINGS as _S
+    from gsi import health as _health
+    from gsi.config.settings import SETTINGS as _S
     _hp = _health.load(str(Path(_S.daily_report_path(_S.today)).parent))
 except Exception:
     _hp = None
@@ -247,6 +242,29 @@ if "ORG_DEPT" in df.columns:
     depts = sorted({str(x) or "نامشخص" for x in df["ORG_DEPT"]})
     pd_ = st.sidebar.multiselect("مدیریت", depts, default=depts)
     df = df[df["ORG_DEPT"].astype(str).isin(pd_)]
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### گزارش برای چه کسی؟")
+# ── انتخاب مخاطب خروجی HTML ──
+#
+# داشبورد خودش همیشه نمای «تحلیل‌گر» است: اینجا کسی نشسته که می‌تواند
+# دربارهٔ کیفیت داده کاری بکند، پس بنر سلامت داده بالای صفحه می‌ماند.
+# اما فایل HTML که از اینجا بیرون می‌رود، مخاطب دیگری دارد و آن اعداد
+# برای او فقط تردید می‌سازند بدون آنکه بتواند کاری بکند.
+from gsi import audience as _AUD
+
+_aud_labels = {k: fa for k, fa in _AUD.choices()}
+_aud_key = st.sidebar.radio(
+    "نمای فایل HTML خروجی",
+    options=list(_aud_labels),
+    format_func=lambda k: _aud_labels[k],
+    index=list(_aud_labels).index(_AUD.DEFAULT),
+    help="خودِ داشبورد همیشه نمای تحلیل‌گر است؛ این انتخاب فقط روی فایل "
+         "HTML که دانلود می‌کنید اثر دارد.")
+st.sidebar.caption(_AUD.PROFILES[_aud_key].question)
+if not _AUD.PROFILES[_aud_key].show_data_quality:
+    st.sidebar.caption("سنجه‌های کیفیت داده در این فایل نمی‌آیند — جایشان "
+                       "همین داشبورد و شیت «۱۷. سلامت سیستم» است.")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### شخصی‌سازی مدیرانه")
@@ -468,40 +486,66 @@ st.subheader("جزئیات پرونده‌ها")
 show = detail_columns(df)
 st.dataframe(df[show], use_container_width=True, height=420)
 
-# ═══════════ خروجی HTML-only ═══════════
+# ═══════════ خروجی‌ها ═══════════
 st.markdown("---")
-st.subheader("خروجی قابل ارسال")
-st.caption("SQLite منبع داده است؛ تنها فایل ارسالی HTML است. Excel و PDF از داخل همان HTML ساخته می‌شوند.")
+st.subheader("خروجی‌ها")
+e1, e2, e3 = st.columns(3)
+
+# اکسل کامل (همان ۱۳ شیت)
+try:
+    with open(data["dashboard"], "rb") as f:
+        e1.download_button("دانلود اکسل کامل (۱۳ شیت)", f.read(),
+                           file_name=os.path.basename(data["dashboard"]),
+                           mime=("application/vnd.openxmlformats-officedocument"
+                                 ".spreadsheetml.sheet"),
+                           use_container_width=True)
+except Exception:
+    e1.info("فایل اکسل در دسترس نیست.")
+
+# اکسل داده فیلترشده
+buf = io.BytesIO()
+with pd.ExcelWriter(buf, engine="openpyxl") as w:
+    df[show].to_excel(w, sheet_name="داده فیلترشده", index=False)
+e2.download_button("دانلود داده فیلترشده", buf.getvalue(),
+                   file_name="GSI_filtered.xlsx",
+                   mime=("application/vnd.openxmlformats-officedocument"
+                         ".spreadsheetml.sheet"),
+                   use_container_width=True)
+
+
+# HTML مستقل و تعاملی: همان فیلترها + نمودار + Process Explorer + Excel فیلترشده
 html = build_dynamic_html(
-    df, ref_date, title="AIBL — مغز شناختی لجستیک",
+    df, ref_date, title="GSI — مغز شناختی لجستیک",
     selected_fields=show, max_rows=max(10000, len(df)),
     labels={c: c for c in show},
     template_title="Executive Process Investigation",
     subtitle=f"{len(df):,} ردیف پس از فیلتر",
     charts=["criticality", "low_resistance", "stock_vs_total", "risk_mix", "org_workload"],
-    process_extras=data["extras"],
-    lineage={"warehouse_run_id": data.get("run_id", "")})
-st.download_button("⬇ دانلود HTML تعاملی", html.encode("utf-8"),
-                   file_name=f"AIBL_{ref_date}_interactive.html", mime="text/html",
+    process_extras=data["extras"], audience=_aud_key)
+e3.download_button(f"⬇ دانلود HTML — نمای {_aud_labels[_aud_key]}", html.encode("utf-8"),
+                   file_name=f"GSI_{ref_date}_{_aud_key}.html", mime="text/html",
                    use_container_width=True)
 
 st.markdown("### ✉️ ارسال گزارش از همین پنل")
 ec1, ec2, ec3 = st.columns([2, 1, 1])
-email_subject = ec1.text_input("موضوع ایمیل", f"AIBL — گزارش فیلترشده — {ref_date}")
+email_subject = ec1.text_input("موضوع ایمیل", f"GSI — گزارش فیلترشده — {ref_date}")
 email_display = ec2.checkbox("نمایش در Outlook", value=True)
-email_send = ec3.checkbox("ارسال واقعی", value=False, help="ارسال واقعی از حساب Outlook انتخاب‌شده انجام می‌شود.")
-if st.button("📨 ساخت / نمایش / ارسال HTML", type="primary", use_container_width=True):
+email_send = ec3.checkbox("ارسال واقعی", value=False,
+                           help="ارسال واقعی از حساب Outlook انتخاب‌شده انجام می‌شود.")
+if st.button("📨 ساخت / نمایش / ارسال گزارش فیلترشده", type="primary", use_container_width=True):
     try:
-        from aibl.integrations.daily_email import create_studio_email
-        from aibl.config.settings import SETTINGS
-        outdir = Path(os.getenv("AIBL_DAILY_REPORT_ROOT", str(SETTINGS.daily_report_root))) / ref_date / "studio"
+        from gsi.integrations.daily_email import create_studio_email
+        outdir = Path(os.getenv("GSI_DAILY_REPORT_ROOT", str(Path(data["dashboard"]).parent))) / ref_date / "studio"
         outdir.mkdir(parents=True, exist_ok=True)
-        hp = outdir / f"{ref_date}_AIBL_Studio_Filtered.html"
-        hp.write_text(html, encoding="utf-8")
-        r = create_studio_email(day=date.fromisoformat(ref_date), df=df, html_report=hp,
+        xlsx = outdir / f"{ref_date}_GSI_Studio_Filtered.xlsx"
+        with pd.ExcelWriter(xlsx, engine="openpyxl") as w:
+            df[show].to_excel(w, sheet_name="داده فیلترشده", index=False)
+        r = create_studio_email(
+            day=date.fromisoformat(ref_date), df=df, excel=xlsx,
             selected_charts=["criticality", "low_resistance", "stock_vs_total"],
             send=email_send, display=email_display, subject=email_subject)
         st.success(f"Outlook آماده شد · {r['recipients']} گیرنده · {r['charts']} نمودار · {'ارسال شد' if r['sent'] else 'نمایش/پیش‌نویس'}")
     except Exception as ex:
         st.error(f"ارسال ایمیل ناموفق بود: {ex}")
-st.caption("برای Excel از دکمه استخراج داده داخل HTML و برای PDF از «PDF / چاپ» → Save as PDF استفاده کنید.")
+st.caption("برای PDF: فایل HTML را در مرورگر باز کنید و دکمه «ذخیره به PDF» "
+           "را بزنید (یا Ctrl+P ← Save as PDF).")

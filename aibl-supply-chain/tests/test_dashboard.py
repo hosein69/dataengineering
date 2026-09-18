@@ -122,8 +122,24 @@ def test_export_html() -> None:
     check("JS درون‌خط است", "<script>" in out and "window.print()" in out)
     check("دکمه ذخیره PDF دارد", "ذخیره به PDF" in out)
     check("در چاپ، دکمه پنهان می‌شود", "@media print" in out and ".btn{display:none}" in out.replace(" ", ""))
-    check("پالت آکوا/سبز/سفید/خاکستری استفاده شده",
-          all(c in out for c in ("#0F6E6E", "#D9EDE7", "#FFFFFF", "#5A6B6B")))
+    # این سنجش قبلاً چهار هگز را منجمد کرده بود ("#0F6E6E" و…). مسئله این
+    # است که آن هگزها پالت *نهم* بسته بودند و با HTML و Excel نمی‌خواندند.
+    # حالا «استفاده از پالت خانه» را می‌سنجیم، نه یک کد رنگ تاریخی را — و
+    # سخت‌گیرانه‌تر: هیچ رنگی در خروجی نباید بیرون از سیستم طراحی باشد.
+    from gsi.design import tokens as _DT
+    _allowed = {c.lower() for c in (
+        _DT.SURFACE_PAGE, _DT.SURFACE_RAISED, _DT.SURFACE_SUNKEN, _DT.SURFACE_INVERSE,
+        _DT.BORDER, _DT.BORDER_STRONG, _DT.BORDER_FOCUS, _DT.TEXT, _DT.TEXT_SECONDARY,
+        _DT.TEXT_MUTED, _DT.TEXT_ON_DARK, _DT.BRAND_NAVY, _DT.BRAND_TEAL, _DT.BRAND_GOLD,
+        _DT.TEAL_INK, _DT.GOLD_INK, _DT.TEAL_WASH, _DT.GOLD_WASH)}
+    _allowed |= {v.lower() for s_ in _DT.STATUS_SCALE for v in (s_.ink, s_.fill, s_.wash)}
+    _allowed |= {c.lower() for c in _DT.CATEGORICAL} | {c.lower() for c in _DT.SEQUENTIAL}
+    _used = {m.lower() for m in re.findall(r"#[0-9A-Fa-f]{6}", out)}
+    _stray = sorted(_used - _allowed)
+    check("هر رنگ خروجی از سیستم طراحی می‌آید", not _stray, "، ".join(_stray) or "پاک")
+    check("پالت خانه واقعاً استفاده شده",
+          _DT.BRAND_NAVY.lower() in _used and _DT.TEAL_WASH.lower() in _used
+          and _DT.STATUS["critical"].ink.lower() in _used)
     check("جدول داده در خروجی هست", 'class="dataframe tbl"' in out or 'class="tbl"' in out)
     check("همه ردیف‌ها منتقل شده‌اند", out.count("<tr>") >= len(df))
     check("تاریخ مرجع در سند آمده", "2026-09-06" in out)
@@ -169,10 +185,8 @@ def test_dashboard_module() -> None:
           "@keyframes drift1" in src and "@keyframes drift2" in src)
     check("نبض فقط روی کارت بحرانی است", "@keyframes pulse" in src
           and ".kpi.crit::after" in src)
-    check("Dashboard فقط HTML را به‌عنوان artifact تحویل می‌دهد",
-          src.count("download_button") == 1 and "دانلود HTML تعاملی" in src)
-    check("Excel و PDF از داخل همان HTML معرفی شده‌اند",
-          "استخراج داده" in src and "PDF / چاپ" in src)
+    check("هر سه خروجی وجود دارد (اکسل کامل، داده فیلترشده، HTML)",
+          src.count("download_button") >= 3)
     check("st.set_page_config پیش از هر فراخوانی دیگر st است",
           src.index("st.set_page_config") < src.index("st.markdown"))
     check("راه‌انداز پورت آزاد پیدا می‌کند",
@@ -192,7 +206,7 @@ def test_scorecard_group_criticality() -> None:
     print("\n── ۶) کارنامه سازمانی و رنگ وضعیت ──")
     from tempfile import TemporaryDirectory
     from openpyxl import load_workbook
-    from aibl.report.dashboard import ExcelDashboardBuilder
+    from gsi.report.dashboard import ExcelDashboardBuilder
 
     df = pd.DataFrame({
         "CANONICAL_BL": ["BL1", "BL1", "BL2"],
@@ -215,8 +229,18 @@ def test_scorecard_group_criticality() -> None:
         ws = wb["۵. کارنامه سازمانی"]
         vals = list(ws.iter_rows(min_row=2, max_row=2, min_col=7, max_col=8, values_only=True))[0]
         check("کارنامه بارنامه بحرانی را از کل BL حساب می‌کند، نه اولین ردیف", vals == (1, 1), str(vals))
-        check("فونت کارنامه IRANSans است", ws["A2"].font.name == "IRANSans", ws["A2"].font.name)
-        check("عدد بحرانی با رنگ قرمز نمایش داده می‌شود", ws["H2"].font.color.rgb in {"00C0392B", "FFC0392B"}, str(ws["H2"].font.color.rgb))
+        check("فونت کارنامه IRANSans Light است", ws["A2"].font.name == "IRANSans Light", ws["A2"].font.name)
+        # رنگ از سیستم طراحی می‌آید، نه از یک hex منجمد در تست. مقدار
+        # قبلی C0392B کنتراست ۴٫۷۶ داشت؛ توکن فعلی ۷٫۴۳ است. تست باید
+        # «قرمز وضعیت بحرانی» را تضمین کند، نه یک کد رنگ تاریخی را.
+        from gsi.design.tokens import STATUS, contrast, SURFACE_RAISED, AA_TEXT
+        crit = STATUS["critical"].ink.lstrip("#").upper()
+        got = str(ws["H2"].font.color.rgb)
+        check("عدد بحرانی با قرمز وضعیت بحرانی نمایش داده می‌شود",
+              got.endswith(crit), f"{got} vs {crit}")
+        check("همان قرمز کف خوانایی WCAG را دارد",
+              contrast(STATUS["critical"].ink, SURFACE_RAISED) >= AA_TEXT,
+              f'{contrast(STATUS["critical"].ink, SURFACE_RAISED)}')
 
 
 
@@ -251,14 +275,14 @@ def test_regressions_v26_2_3() -> None:
     # R2 ── یک کلیک روی «ساخت Excel سفارشی» گزارش رسمی ۱۳ شیتی را می‌بلعید.
     # نام پیش‌فرض حالا یک ثابت است، نه رشته‌ای داخل UI — پس به‌جای grep
     # روی فایل رابط، خود ثابت سنجیده می‌شود (مقاوم در برابر تغییر ویجت).
-    from aibl.config.settings import SETTINGS
-    from aibl.studio_core.excel_export import DEFAULT_CUSTOM_NAME
+    from gsi.config.settings import SETTINGS
+    from gsi.studio_core.excel_export import DEFAULT_CUSTOM_NAME
     official_stem = SETTINGS.SYSTEMMATIC_MATERIAL_BASENAME.rsplit(".", 1)[0]
     check("نام پیش‌فرض Excel سفارشی با گزارش رسمی یکی نیست",
           DEFAULT_CUSTOM_NAME.strip() != official_stem, DEFAULT_CUSTOM_NAME)
 
     # R3 ── نگهبان نوشتن روی گزارش رسمی، در خودِ writer (نه فقط در UI)
-    from aibl.studio_core.excel_export import build_custom_excel, OfficialReportOverwrite
+    from gsi.studio_core.excel_export import build_custom_excel, OfficialReportOverwrite
     from datetime import date as _date
     ref = "2026-08-31"
     blocked = False
@@ -272,7 +296,7 @@ def test_regressions_v26_2_3() -> None:
         pass
     check("writer نوشتن روی گزارش رسمی روزانه را رد می‌کند", blocked)
 
-    # R4 ── «python -m aibl email» روی نصب تازه با ModuleNotFoundError می‌افتاد.
+    # R4 ── «python -m gsi email» روی نصب تازه با ModuleNotFoundError می‌افتاد.
     req = open(os.path.join(ROOT, "requirements.txt"), encoding="utf-8").read().lower()
     missing = [x for x in ("matplotlib", "yaml", "numpy") if x not in req]
     check("وابستگی‌های واقعی در requirements.txt اعلام شده‌اند",
@@ -282,7 +306,7 @@ def test_regressions_v26_2_3() -> None:
     # نسخه قبل یک دیکشنری دستی ۲۷تایی بود و از ۳۶۷ ستون خط لوله فقط ۲۲ تا
     # را نشان می‌داد؛ بقیه در UI وجود نداشتند و قابل گزارش نبودند. حالا
     # کاتالوگ از خود adapterها مشتق می‌شود و باید *هر* ستون را پوشش دهد.
-    from aibl.studio_core.field_catalog import build_catalog, unique_labels
+    from gsi.studio_core.field_catalog import build_catalog, unique_labels
     probe = pd.DataFrame({
         "KEY_MATERIAL": ["M1"], "BL_GOODS_DESC": ["x"], "SATA_GOODS_DESC": ["y"],
         "NTSW_BALANCE": [1], "ORC_STOCK_IKCO": [5], "بحرانی (کوتاه)": ["بحرانی"],
@@ -333,18 +357,18 @@ def test_regressions_v26_2_3() -> None:
     check("هیچ نشانی ایمیل واقعی در سورس نیست",
           not leaked, f"نشت: {leaked[:4]}" if leaked else "پاک")
 
-    from aibl.integrations.daily_email import _recipients, NoRecipients
-    _saved = os.environ.pop("AIBL_EMAIL_TO", None)
+    from gsi.integrations.daily_email import _recipients, NoRecipients
+    _saved = os.environ.pop("GSI_EMAIL_TO", None)
     try:
         check("بدون پیکربندی، فهرست گیرندگان خالی است (نه یک فهرست جاسازی‌شده)",
               _recipients() == [])
     finally:
         if _saved is not None:
-            os.environ["AIBL_EMAIL_TO"] = _saved
-    os.environ["AIBL_EMAIL_TO"] = "x@a.invalid; y@b.invalid"
+            os.environ["GSI_EMAIL_TO"] = _saved
+    os.environ["GSI_EMAIL_TO"] = "x@a.invalid; y@b.invalid"
     check("فهرست گیرندگان از متغیر محیطی خوانده می‌شود",
           _recipients() == ["x@a.invalid", "y@b.invalid"], str(_recipients()))
-    os.environ.pop("AIBL_EMAIL_TO", None)
+    os.environ.pop("GSI_EMAIL_TO", None)
 
     # R9 ── جدول متقاطع: شمارش با بُعد ستون، pivot_table را با
     # «Grouper not 1-dimensional» می‌ترکاند چون index و values یکی می‌شدند.
@@ -379,7 +403,7 @@ def test_regressions_v26_2_3() -> None:
     # «CANONICAL_EXPERT» با «اولین مقدار غیرتهی» از پنج سورس پر می‌شد و
     # چون ORC_BUYER فقط ۱۷٪ پر است، برای بیشتر ردیف‌ها به CL_EXPERT
     # (کارشناس ترخیص) می‌افتاد و عملکرد ترخیص به پای خرید نوشته می‌شد.
-    from aibl.resolve.expert_roles import (ROLES, coverage as role_coverage,
+    from gsi.resolve.expert_roles import (ROLES, coverage as role_coverage,
                                            current_owner, resolve_roles)
     probe = pd.DataFrame({
         "ORC_BUYER": ["اباذر بالی", "", ""],
@@ -418,7 +442,7 @@ def test_regressions_v26_2_3() -> None:
     # R5 ── settings.py با f-string تودرتوی هم‌نقل‌قول فقط روی پایتون ۳٫۱۲+
     # کامپایل می‌شد؛ روی ۳٫۹–۳٫۱۱ کل پکیج SyntaxError می‌داد.
     bad = []
-    for base, dirs, files in os.walk(os.path.join(ROOT, "aibl")):
+    for base, dirs, files in os.walk(os.path.join(ROOT, "gsi")):
         dirs[:] = [d for d in dirs if d != "__pycache__"]
         for f in files:
             if not f.endswith(".py"):
@@ -440,7 +464,7 @@ def test_email_from_hr() -> None:
     پرسنل غیرفعال خودکار از آن حذف می‌شوند.
     """
     print("\n── ۸) گیرنده ایمیل از سورس HR ──")
-    from aibl.integrations import daily_email as de
+    from gsi.integrations import daily_email as de
 
     ppl = pd.DataFrame([
         # فعال، مدیر، نشانی سالم → باید بیاید
@@ -462,9 +486,9 @@ def test_email_from_hr() -> None:
         dict(HR_EMAIL="", HR_STATUS="فعال",
              HR_POST="مدیر", HR_DEPT="قطعات", HR_OFFICE="خرید"),
     ])
-    keys = ["AIBL_EMAIL_TO", "AIBL_RECIPIENTS_FILE", "AIBL_EMAIL_FROM_HR",
-            "AIBL_EMAIL_HR_POSTS", "AIBL_EMAIL_HR_MANAGEMENTS",
-            "AIBL_EMAIL_HR_OFFICES", "AIBL_EMAIL_HR_MAX"]
+    keys = ["GSI_EMAIL_TO", "GSI_RECIPIENTS_FILE", "GSI_EMAIL_FROM_HR",
+            "GSI_EMAIL_HR_POSTS", "GSI_EMAIL_HR_MANAGEMENTS",
+            "GSI_EMAIL_HR_OFFICES", "GSI_EMAIL_HR_MAX"]
     saved = {k: os.environ.pop(k, None) for k in keys}
     try:
         got = de.hr_recipients(ppl)
@@ -475,37 +499,37 @@ def test_email_from_hr() -> None:
               not any("not-an-email" in g for g in got))
         check("ردیف بدون نشانی حذف می‌شود", "" not in got)
 
-        os.environ["AIBL_EMAIL_HR_POSTS"] = "کارشناس"
+        os.environ["GSI_EMAIL_HR_POSTS"] = "کارشناس"
         got = de.hr_recipients(ppl)
         check("فیلتر شرح پست کار می‌کند", got == ["d.expert@x.invalid"], str(got))
 
-        os.environ["AIBL_EMAIL_HR_MANAGEMENTS"] = "قطعات"
+        os.environ["GSI_EMAIL_HR_MANAGEMENTS"] = "قطعات"
         check("فیلترها با هم AND می‌شوند", de.hr_recipients(ppl) == [])
-        os.environ.pop("AIBL_EMAIL_HR_MANAGEMENTS")
+        os.environ.pop("GSI_EMAIL_HR_MANAGEMENTS")
 
-        os.environ["AIBL_EMAIL_HR_POSTS"] = "مدیر,رئیس,کارشناس"
-        os.environ["AIBL_EMAIL_HR_MAX"] = "2"
+        os.environ["GSI_EMAIL_HR_POSTS"] = "مدیر,رئیس,کارشناس"
+        os.environ["GSI_EMAIL_HR_MAX"] = "2"
         check("سقف تعداد رعایت می‌شود", len(de.hr_recipients(ppl)) == 2)
-        os.environ.pop("AIBL_EMAIL_HR_MAX")
-        os.environ.pop("AIBL_EMAIL_HR_POSTS")
+        os.environ.pop("GSI_EMAIL_HR_MAX")
+        os.environ.pop("GSI_EMAIL_HR_POSTS")
 
         check("جدول خالی ⇒ فهرست خالی", de.hr_recipients(pd.DataFrame()) == [])
         check("سورس بدون ستون Email ⇒ فهرست خالی",
               de.hr_recipients(pd.DataFrame({"HR_POST": ["مدیر"]})) == [])
 
         # ── زنجیره حل ──
-        check("بدون AIBL_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
+        check("بدون GSI_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود",
               de._recipients() == [])
-        os.environ["AIBL_EMAIL_FROM_HR"] = "1"
+        os.environ["GSI_EMAIL_FROM_HR"] = "1"
         _real = de.hr_recipients
         de.hr_recipients = lambda frame=None: ["from.hr@x.invalid"]
         try:
             check("با فعال‌سازی، زنجیره به سورس HR می‌رسد",
                   de._recipients() == ["from.hr@x.invalid"])
-            os.environ["AIBL_EMAIL_TO"] = "override@x.invalid"
+            os.environ["GSI_EMAIL_TO"] = "override@x.invalid"
             check("متغیر محیطی صریح بر سورس HR اولویت دارد",
                   de._recipients() == ["override@x.invalid"])
-            os.environ.pop("AIBL_EMAIL_TO")
+            os.environ.pop("GSI_EMAIL_TO")
         finally:
             de.hr_recipients = _real
 
@@ -539,7 +563,7 @@ class _LogCatcher(logging.Handler):
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — تست منطق داشبورد")
+    print("GSI — تست منطق داشبورد")
     print("=" * 78)
     test_metrics()
     test_cards()

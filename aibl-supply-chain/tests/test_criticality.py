@@ -30,7 +30,7 @@ if _TESTS_DIR not in sys.path:
 def _load_make_synthetic():
     import importlib.util
     path = os.path.join(_TESTS_DIR, "make_synthetic.py")
-    spec = importlib.util.spec_from_file_location("aibl_make_synthetic", path)
+    spec = importlib.util.spec_from_file_location("gsi_make_synthetic", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -39,15 +39,15 @@ def _load_make_synthetic():
 _ms = _load_make_synthetic()
 build = _ms.build
 
-_TMP = tempfile.mkdtemp(prefix="aibl_crit_")
+_TMP = tempfile.mkdtemp(prefix="gsi_crit_")
 DIRS = build(_TMP)
 os.environ.update({
-    "AIBL_FOREIGN": DIRS["foreign"], "AIBL_BLS": DIRS["bls"],
-    "AIBL_CLEARANCE": DIRS["clearance"], "AIBL_HR": DIRS["hr"],
-    "AIBL_ESMAEILI": DIRS["esmaeili"],
-    "AIBL_GS_COMBINE": DIRS["gs_combine"], "AIBL_MOHAMADI": DIRS["mohamadi"],
-    "AIBL_OUTPUT": DIRS["output"], "AIBL_LOGS": DIRS["logs"],
-    "AIBL_TODAY": "2026-08-31",
+    "GSI_FOREIGN": DIRS["foreign"], "GSI_BLS": DIRS["bls"],
+    "GSI_CLEARANCE": DIRS["clearance"], "GSI_HR": DIRS["hr"],
+    "GSI_ESMAEILI": DIRS["esmaeili"],
+    "GSI_GS_COMBINE": DIRS["gs_combine"], "GSI_MOHAMADI": DIRS["mohamadi"],
+    "GSI_OUTPUT": DIRS["output"], "GSI_LOGS": DIRS["logs"],
+    "GSI_TODAY": "2026-08-31",
 })
 
 import logging  # noqa: E402
@@ -57,8 +57,8 @@ import pandas as pd  # noqa: E402
 import yaml  # noqa: E402
 from openpyxl import load_workbook  # noqa: E402
 
-from aibl.engines.criticality import CriticalityEngine  # noqa: E402
-from aibl.rulebook import RuleBook, get_rulebook  # noqa: E402
+from gsi.engines.criticality import CriticalityEngine  # noqa: E402
+from gsi.rulebook import RuleBook, get_rulebook  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -91,6 +91,7 @@ def test_engine() -> None:
     for ikco, sapco, transit, customs, need, exp_days, exp_band in cases:
         stock, daily = ikco + sapco, need
         r = eng.evaluate({"STOCK_IKCO": ikco, "STOCK_SAPCO": sapco,
+                          "SUPPLIER_QTY": 0,
                           "IN_TRANSIT_QTY": transit, "IN_CUSTOMS_QTY": customs,
                           "DAILY_NEED": need})
         got = -1.0 if r.resistance_days is None else r.resistance_days  # 0.0 falsy است
@@ -101,7 +102,8 @@ def test_engine() -> None:
     check("مرزهای ۱۰ و ۲۰ روز دقیقاً طبق تعریف کاربر", ok,
           "؛ ".join(bad) or f"{len(cases)} حالت درست")
 
-    r = eng.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 0, "DAILY_NEED": 0})
+    r = eng.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                      "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 0})
     check("نیاز روزانه صفر ⇒ «بدون مصرف» نه «بحرانی»",
           r.band == "NO_CONSUMPTION" and r.resistance_days is None, r.band_short)
 
@@ -109,7 +111,8 @@ def test_engine() -> None:
     check("داده غایب ⇒ «نامشخص» نه «توقف خط»",
           r.band == "UNKNOWN", r.band_short)
 
-    r = eng.evaluate({"STOCK_IKCO": 0, "STOCK_SAPCO": 0, "IN_TRANSIT_QTY": 200,
+    r = eng.evaluate({"STOCK_IKCO": 0, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                      "IN_TRANSIT_QTY": 200, "IN_CUSTOMS_QTY": 0,
                       "DAILY_NEED": 5})
     check("مقاومت انبار جدا از مقاومت کل گزارش می‌شود",
           r.resistance_warehouse == 0.0 and r.resistance_days == 40.0,
@@ -117,7 +120,8 @@ def test_engine() -> None:
 
 
     check("ترتیب مرتب‌سازی طبقات درست است",
-          [eng.evaluate({"STOCK_IKCO": s, "STOCK_SAPCO": 0,
+          [eng.evaluate({"STOCK_IKCO": s, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                         "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0,
                          "DAILY_NEED": 10}).sort_rank
            for s in (0, 50, 150, 300, 1000)] == [0, 1, 2, 3, 4],
           "توقف خط → بحرانی → در حال بحرانی → تحت نظر → ایمن")
@@ -152,7 +156,7 @@ def test_combined_alerts() -> None:
 def test_pipeline():
     print("\n── ۳) اتصال سورس Oracle → مقاومت در خط لوله ──")
     logging.disable(logging.INFO)
-    from aibl.pipeline import Pipeline
+    from gsi.pipeline import Pipeline
 
     res = Pipeline().run(build_report=True)
     df = res.df
@@ -229,7 +233,7 @@ def test_excel(res) -> None:
     first_headers = [c.value for c in m[1][:5]]
     check("ستون «طبقه بحرانی» اولین ستون شیت ماتریس است",
           first_headers[0] == "طبقه بحرانی", str(first_headers))
-    check("ستون مقاومت بلافاصله بعد از آن است", first_headers[1] == "مقاومت (روز)")
+    check("ستون مقاومت بلافاصله بعد از آن است", first_headers[1] in ("مقاومت (روز)", "مقاومت قطعی (روز)"))
 
     exec_ws = wb["۱. خلاصه اجرایی"]
     kpi_labels = [exec_ws.cell(row=r, column=1).value for r in range(6, 24)]
@@ -242,7 +246,7 @@ def test_excel(res) -> None:
 def test_configurable() -> None:
     print("\n── ۵) تغییر آستانه‌ها فقط با YAML ──")
     ext = os.path.join(_TMP, "rules_ext")
-    shutil.copytree(os.path.join(ROOT, "aibl", "rules"), ext, dirs_exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, "gsi", "rules"), ext, dirs_exist_ok=True)
     path = os.path.join(ext, "criticality.yaml")
     with open(path, encoding="utf-8") as f:
         rules = yaml.safe_load(f)
@@ -255,15 +259,18 @@ def test_configurable() -> None:
         yaml.safe_dump(rules, f, allow_unicode=True)
 
     eng = CriticalityEngine(RuleBook(rules_dir=ext))
-    r = eng.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "DAILY_NEED": 20})
+    r = eng.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                      "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("با تغییر آستانه به ۱۵ روز، ۱۲ روز «بحرانی» می‌شود",
           r.band == "CRITICAL", f"{r.resistance_days} روز → {r.band}")
-    r2 = eng.evaluate({"STOCK_IKCO": 500, "STOCK_SAPCO": 0, "DAILY_NEED": 20})
+    r2 = eng.evaluate({"STOCK_IKCO": 500, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                       "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("۲۵ روز با آستانه جدید «در حال بحرانی شدن» است",
           r2.band == "BECOMING_CRITICAL", f"{r2.resistance_days} روز → {r2.band}")
 
     eng_default = CriticalityEngine(get_rulebook())
-    r3 = eng_default.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "DAILY_NEED": 20})
+    r3 = eng_default.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+                               "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("قوانین اصلی دست‌نخورده ماند (۱۲ روز = در حال بحرانی شدن)",
           r3.band == "BECOMING_CRITICAL", r3.band_short)
 
@@ -271,8 +278,8 @@ def test_configurable() -> None:
 
 def test_group_criticality() -> None:
     print("\n── ۶) سرایت بحرانی بودن از متریال به بارنامه/سفارش ──")
-    from aibl.stages.s40_criticality import CriticalityStage
-    from aibl.stages.base import PipelineContext
+    from gsi.stages.s40_criticality import CriticalityStage
+    from gsi.stages.base import PipelineContext
     import pandas as pd
     ctx = PipelineContext(rb=get_rulebook(), today=__import__('datetime').date(2026,8,31))
     df = pd.DataFrame({
@@ -280,7 +287,7 @@ def test_group_criticality() -> None:
         "CANONICAL_BL": ["BL-1", "BL-1", "BL-2"],
         "CANONICAL_ORDER": ["ORD-1", "ORD-1", "ORD-2"],
         "STOCK_IKCO": [0, 1000, 1000], "STOCK_SAPCO": [0,0,0],
-        "IN_TRANSIT_QTY": [0,0,0], "IN_CUSTOMS_QTY": [0,0,0],
+        "SUPPLIER_QTY": [0,0,0], "IN_TRANSIT_QTY": [0,0,0], "IN_CUSTOMS_QTY": [0,0,0],
         "DAILY_NEED": [10,10,100],
     })
     out = CriticalityStage().run(df, ctx)
@@ -292,7 +299,7 @@ def test_group_criticality() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL V23 — تست مقاومت قطعه و بحرانی بودن")
+    print("GSI V23 — تست مقاومت قطعه و بحرانی بودن")
     print("=" * 78)
     test_engine()
     test_combined_alerts()

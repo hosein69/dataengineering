@@ -1,0 +1,107 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  گمرک، کوتاژ، ساتا و ترخیص
+# ═══════════════════════════════════════════════════════════════════════════
+pack: customs
+version: "1.1"
+updated_at: "2026-09-17"
+
+# انواع ترخیص
+clearance_types:
+  - code: FULL
+    fa: "ترخیص کامل"
+    detect:
+      when_field_present: [FULL_CLEAR_DATE]
+    terminal: true
+    narrative: "ترخیص قطعی گردیده"
+    recommendation: "خاتمه پرونده و ثبت سبز گمرکی"
+  - code: PARTIAL
+    fa: "ترخیص درصدی"
+    detect:
+      when_field_present: [PARTIAL_CLEAR_DATE]
+      when_value_matches: ["*", "٪", "%", "درصد"]
+      when_numeric_gt: 0
+    terminal: false
+    narrative: "در وضعیت ترخیص درصدی"
+    recommendation: "پیگیری روتین جهت ترخیص مابقی"
+    weibull_time_factor: 0.15
+  - code: NONE
+    fa: "عدم ترخیص"
+    default: true
+    narrative: "ترخیص انجام نشده"
+
+# اسناد و کدهای گمرکی
+identifiers:
+  - code: COTAGE
+    fa: "شماره کوتاژ (اظهارنامه گمرکی)"
+    issued_by: "گمرک جمهوری اسلامی ایران"
+    evidence_weight: 0.4
+    required_for_release: true
+  - code: SATA
+    fa: "کد رهگیری ساتا"
+    fa_full: "سامانه ثبت و تأیید اسناد"
+    evidence_weight: 0.2
+    status: needs_verification
+  - code: DISCHARGE
+    fa: "تاریخ تخلیه محموله"
+    evidence_weight: 0.4
+  - code: CUSTOMS_LICENSE
+    fa: "پروانه گمرکی ورود کالا"
+    note: "سند اصلی رفع تعهد ارزی"
+
+# قاعده قانونی نگهداری در انبارهای گمرکی — قانون امور گمرکی مصوب ۱۳۹۰
+legal_storage_period:
+  article: 24
+  law: "قانون امور گمرکی مصوب 1390/08/22 با اصلاحات و الحاقات بعدی"
+  status: verified
+  normal_months: 3
+  extension_months_max: 2
+  starts_from: "تاریخ تحویل کالا به انبار/اماکن گمرکی"
+  consequence_after_deadline: "مشمول مقررات متروکه، با رعایت استثناهای ماده ۲۴"
+  exceptions_note: "مناطق آزاد/ویژه، انتظار نظر قطعی گمرک و سایر تبصره‌های ماده ۲۴ باید جداگانه بررسی شوند."
+  source_locator: "ماده 24 قانون امور گمرکی؛ Nezamat.ir/post-38525 و متن‌های قانونی همسان"
+
+# تسهیل اضطراری جاری — ترخیص بدون کد ساتا با تعهد EPL
+# منبع عمومی موجود، شماره ابلاغ اصلی را کامل نشان نمی‌دهد؛ بنابراین این Rule
+# برای تصمیم خودکار «needs_verification» است تا تصویر نامه رسمی در رجیستری آرشیو شود.
+emergency_sata_waiver_1405:
+  fa: "ترخیص بدون کد ساتا با تعهد EPL (تسهیل اضطراری ۱۴۰۵)"
+  announced_on: "2026-08-11"       # 1405/05/20
+  expires_on: "2026-09-22"          # پایان شهریور 1405
+  status: needs_verification
+  authority: "هیئت وزیران / گمرک جمهوری اسلامی ایران"
+  condition: "ثبت تعهد در EPL مبنی بر عدم درخواست ارز از بانک مرکزی پس از ترخیص"
+  effect: "در صورت احراز شمول و ثبت تعهد، نبود کد SATA به تنهایی مانع خروج کالا تلقی نشود"
+  automatic_apply: false
+  source_locator: "بازنشر عمومی تسهیلات گمرکی مورخ 1405/05/20 در IranImpex؛ اصل نامه/شماره رسمی باید در Rule Registry آرشیو شود"
+
+# رسوب و توقف کالا
+demurrage:
+  critical_days: 45
+  fa: "بیش از ۴۵ روز از تاریخ تخلیه بدون ترخیص = رسوب شدید"
+  status: internal
+  escalation:
+    - after_days: 45
+      action: "استعلام علت توقف و پیگیری فوری"
+    - after_days: 90
+      action: "هشدار داخلی نزدیک‌شدن به مرز سه‌ماهه؛ تاریخ تحویل واقعی انبار کنترل شود"
+      status: internal
+    - after_days: 150
+      action: "حد بالای سه ماه + تمدید حداکثر دو ماه؛ بررسی فوری ماده ۲۴ و استثناها"
+      status: verified
+
+# احتمال حضور در گمرک (بیزین)
+customs_presence_model:
+  prior: 0.60
+  false_positive_rate: 0.10
+  evidence_weights:
+    "تاریخ تخلیه": 0.4
+    "کوتاژ گمرکی": 0.4
+    "کد ساتا": 0.2
+
+# مدل بقای ویبول
+survival_model:
+  distribution: weibull
+  beta: 1.4
+  eta_days: 45.0
+  fa: "S(t) = exp(-(t/η)^β) — احتمال باقی‌ماندن پرونده در وضعیت جاری"
+  status: internal

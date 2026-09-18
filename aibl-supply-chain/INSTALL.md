@@ -12,7 +12,7 @@ ImportError: attempted relative import with no known parent package
 سه علت هم‌زمان داشت:
 
 **۱. فایل‌ها تخت (flat) کپی شده بودند.** در پوشه `material` فایل‌هایی مثل
-`partition.py` مستقیم کنار هم بودند، نه داخل زیرپوشه‌های `aibl/`.
+`partition.py` مستقیم کنار هم بودند، نه داخل زیرپوشه‌های `gsi/`.
 
 **۲. `calendar.py` روی ماژول استاندارد پایتون سایه انداخت.** وقتی pandas
 داخلاً `import calendar` می‌زند، پایتون اول پوشه جاری را می‌گردد و به فایل من
@@ -21,10 +21,10 @@ ImportError: attempted relative import with no known parent package
 
 | نام قبلی | نام جدید |
 |---|---|
-| `aibl/core/calendar.py` | `aibl/core/jalali.py` |
-| `aibl/io/` | `aibl/dataio/` |
+| `gsi/core/calendar.py` | `gsi/core/jalali.py` |
+| `gsi/io/` | `gsi/dataio/` |
 
-**۳. `aibl.py` نسخه ۲۰.۱ هنوز در همان پوشه بود.** دستور `python -m aibl.pipeline`
+**۳. `gsi.py` نسخه ۲۰.۱ هنوز در همان پوشه بود.** دستور `python -m gsi.pipeline`
 اول به آن فایل می‌رسید و اجرایش می‌کرد.
 
 ---
@@ -32,12 +32,12 @@ ImportError: attempted relative import with no known parent package
 ## نصب صحیح
 
 ### گام ۱ — پوشه کاری تمیز
-پوشه فعلی `material` هم `aibl.py` قدیمی دارد و هم فایل‌های تخت.
+پوشه فعلی `material` هم `gsi.py` قدیمی دارد و هم فایل‌های تخت.
 یک پوشه تازه بسازید (ترجیحاً روی درایو محلی، نه مسیر UNC شبکه):
 
 ```powershell
-mkdir D:\AIBL
-cd D:\AIBL
+mkdir D:\GSI
+cd D:\GSI
 ```
 
 > اجرای پایتون از مسیر `\\ikco.com\...` کند و ناپایدار است. کد را محلی بگذارید؛
@@ -47,8 +47,8 @@ cd D:\AIBL
 ساختار باید **دقیقاً** این باشد:
 
 ```
-D:\AIBL\
-├── aibl\
+D:\GSI\
+├── gsi\
 │   ├── __init__.py
 │   ├── __main__.py
 │   ├── doctor.py
@@ -68,7 +68,7 @@ D:\AIBL\
 └── README.md
 ```
 
-اگر با Explorer کپی می‌کنید، **پوشه `aibl` را یکجا** بکشید — نه محتویاتش را.
+اگر با Explorer کپی می‌کنید، **پوشه `gsi` را یکجا** بکشید — نه محتویاتش را.
 
 ### گام ۳ — کتابخانه‌ها
 ```powershell
@@ -81,33 +81,33 @@ python -m pip install jdatetime          # اختیاری
 
 ### گام ۴ — عیب‌یابی قبل از اجرا
 ```powershell
-cd D:\AIBL
-python -m aibl.doctor
+cd D:\GSI
+python -m gsi.doctor
 ```
 
 Doctor پنج چیز را بررسی می‌کند:
-۱. سایه‌اندازی روی کتابخانه استاندارد ۲. ساختار پکیج و وجود `aibl.py` قدیمی
+۱. سایه‌اندازی روی کتابخانه استاندارد ۲. ساختار پکیج و وجود `gsi.py` قدیمی
 ۳. کتابخانه‌ها ۴. سلامت قوانین و adapterها ۵. دسترسی به ۶ پوشه شبکه و قابل‌نوشتن بودن خروجی
 
 تا وقتی خروجی `0 خطا` نیست، اجرا نکنید. Doctor مسیر دقیق هر فایل مشکل‌دار را می‌گوید.
 
 ### گام ۵ — اجرای اول
 ```powershell
-$env:AIBL_STRICT_ADAPTERS = "1"
-python -m aibl.pipeline
+$env:GSI_STRICT_ADAPTERS = "1"
+python -m gsi.pipeline
 ```
 
 با این پرچم، اولین ناسازگاری هدر بلافاصله اجرا را متوقف می‌کند به‌جای اینکه
 بی‌صدا رد شود. پس از اطمینان از هدرها:
 
 ```powershell
-Remove-Item Env:\AIBL_STRICT_ADAPTERS
-python -m aibl.pipeline
+Remove-Item Env:\GSI_STRICT_ADAPTERS
+python -m gsi.pipeline
 ```
 
 یا کوتاه‌تر — که خودش اول doctor را می‌زند و فقط در صورت سلامت اجرا می‌کند:
 ```powershell
-python -m aibl run
+python -m gsi run
 ```
 
 ---
@@ -120,7 +120,7 @@ python -m aibl run
 «جمع مانده تعهد = ۰»)، یعنی سورس خوانده شده اما **به جدول اصلی نچسبیده**.
 
 ```powershell
-python -m aibl.diagnose --excel
+python -m gsi.diagnose --excel
 ```
 
 سه جدول می‌دهد:
@@ -153,11 +153,11 @@ KEY_BL         MSCU1234567    MSCU-1234567  ← خط تیره
 
 | دستور | کار |
 |---|---|
-| `python -m aibl.doctor` | عیب‌یابی محیط |
-| `python -m aibl.diagnose --excel` | **عیب‌یابی رابطه‌ها — چرا KPI صفر است** |
-| `python -m aibl.rulebook.validate` | اعتبارسنجی قوانین + فهرست ۱۹ قاعده نیازمند تطبیق |
-| `python -m aibl.pipeline` | اجرای کامل |
-| `python -m aibl run` | doctor سپس اجرا |
+| `python -m gsi.doctor` | عیب‌یابی محیط |
+| `python -m gsi.diagnose --excel` | **عیب‌یابی رابطه‌ها — چرا KPI صفر است** |
+| `python -m gsi.rulebook.validate` | اعتبارسنجی قوانین + فهرست ۱۹ قاعده نیازمند تطبیق |
+| `python -m gsi.pipeline` | اجرای کامل |
+| `python -m gsi run` | doctor سپس اجرا |
 | `python run_all_tests.py` | هر ۳۴۶ تست |
 
 ---
@@ -169,16 +169,16 @@ KEY_BL         MSCU1234567    MSCU-1234567  ← خط تیره
 
 ```powershell
 # ۱) متغیر محیطی
-$env:AIBL_EMAIL_TO = "a.person@example.invalid; b.person@example.invalid"
+$env:GSI_EMAIL_TO = "a.person@example.invalid; b.person@example.invalid"
 
 # ۲) فایل مشخص
-$env:AIBL_RECIPIENTS_FILE = "D:\secure\recipients.yaml"
+$env:GSI_RECIPIENTS_FILE = "D:\secure\recipients.yaml"
 
 # ۳) فایل پیش‌فرض
-#    %USERPROFILE%\.aibl\recipients.yaml
+#    %USERPROFILE%\.gsi\recipients.yaml
 
 # ۴) مستقیم از سورس HR  ← توصیه‌شده
-$env:AIBL_EMAIL_FROM_HR = "1"
+$env:GSI_EMAIL_FROM_HR = "1"
 ```
 
 ### گزینه ۴: گیرنده از سورس HR (توصیه‌شده)
@@ -193,18 +193,18 @@ $env:AIBL_EMAIL_FROM_HR = "1"
 
 | متغیر | پیش‌فرض | کار |
 |---|---|---|
-| `AIBL_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
-| `AIBL_EMAIL_HR_POSTS` | `مدیر,رئیس,معاون` | فیلتر روی شرح پست |
-| `AIBL_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی مدیریت |
-| `AIBL_EMAIL_HR_OFFICES` | — | فیلتر روی اداره |
-| `AIBL_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
+| `GSI_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
+| `GSI_EMAIL_HR_POSTS` | `مدیر,رئیس,معاون` | فیلتر روی شرح پست |
+| `GSI_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی مدیریت |
+| `GSI_EMAIL_HR_OFFICES` | — | فیلتر روی اداره |
+| `GSI_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
 
 ```powershell
 # فقط مدیران و رؤسای مدیریت مواد اولیه
-$env:AIBL_EMAIL_FROM_HR      = "1"
-$env:AIBL_EMAIL_HR_POSTS     = "مدیر,رئیس"
-$env:AIBL_EMAIL_HR_MANAGEMENTS = "مواد اولیه"
-python -m aibl email
+$env:GSI_EMAIL_FROM_HR      = "1"
+$env:GSI_EMAIL_HR_POSTS     = "مدیر,رئیس"
+$env:GSI_EMAIL_HR_MANAGEMENTS = "مواد اولیه"
+python -m gsi email
 ```
 
 نکته‌های امنیتی که در پیاده‌سازی رعایت شده:
@@ -215,7 +215,7 @@ python -m aibl email
 * نشانی‌های بدشکل حذف می‌شوند (اعتبارسنجی الگو).
 * در لاگ فقط **تعداد** گیرنده نوشته می‌شود، هرگز خود نشانی‌ها:
   `👥 12 گیرنده از سورس HR انتخاب شد (از 430 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).`
-* اگر `AIBL_EMAIL_FROM_HR` تنظیم نشود، سورس HR اصلاً برای ایمیل خوانده
+* اگر `GSI_EMAIL_FROM_HR` تنظیم نشود، سورس HR اصلاً برای ایمیل خوانده
   نمی‌شود.
 
 قالب فایل (`recipients.example.yaml` را کپی کنید):
@@ -230,7 +230,7 @@ recipients:
 خطای صریح متوقف می‌شود** — عمداً، تا هرگز به فهرستی قدیمی ارسال نشود.
 
 > `recipients.yaml` در `.gitignore` است و نباید به مخزن اضافه شود.
-> حساب فرستنده هم با `AIBL_EMAIL_SENDER` تنظیم می‌شود؛ خالی یعنی حساب
+> حساب فرستنده هم با `GSI_EMAIL_SENDER` تنظیم می‌شود؛ خالی یعنی حساب
 > پیش‌فرض Outlook.
 
 ---
@@ -239,21 +239,21 @@ recipients:
 
 | متغیر | کار |
 |---|---|
-| `AIBL_STRICT_ADAPTERS=1` | توقف در اولین خطای adapter |
-| `AIBL_OUTPUT` | مسیر خروجی (پیش‌فرض `D:\of\blstotal\output`) |
-| `AIBL_LOGS` | مسیر لاگ |
-| `AIBL_RULES_DIR` | قوانین از پوشه بیرونی خوانده شود |
-| `AIBL_SOURCES_YAML` | رجیستری سورس از فایل دیگر |
-| `AIBL_TODAY` | تاریخ مرجع ثابت (برای بازتولید گزارش قدیمی) |
-| `AIBL_EMAIL_TO` / `AIBL_RECIPIENTS_FILE` / `AIBL_EMAIL_SENDER` | گیرندگان و فرستنده ایمیل (محرمانه) |
-| `AIBL_EMAIL_FROM_HR` / `AIBL_EMAIL_HR_POSTS` / `AIBL_EMAIL_HR_MANAGEMENTS` / `AIBL_EMAIL_HR_OFFICES` / `AIBL_EMAIL_HR_MAX` | گیرندگان مستقیم از ستون Email سورس HR |
-| `AIBL_FOREIGN` / `AIBL_BLS` / `AIBL_CLEARANCE` / `AIBL_HR` / `AIBL_ESMAEILI` / `AIBL_MOHAMADI` | مسیر سورس‌ها |
+| `GSI_STRICT_ADAPTERS=1` | توقف در اولین خطای adapter |
+| `GSI_OUTPUT` | مسیر خروجی (پیش‌فرض `D:\of\blstotal\output`) |
+| `GSI_LOGS` | مسیر لاگ |
+| `GSI_RULES_DIR` | قوانین از پوشه بیرونی خوانده شود |
+| `GSI_SOURCES_YAML` | رجیستری سورس از فایل دیگر |
+| `GSI_TODAY` | تاریخ مرجع ثابت (برای بازتولید گزارش قدیمی) |
+| `GSI_EMAIL_TO` / `GSI_RECIPIENTS_FILE` / `GSI_EMAIL_SENDER` | گیرندگان و فرستنده ایمیل (محرمانه) |
+| `GSI_EMAIL_FROM_HR` / `GSI_EMAIL_HR_POSTS` / `GSI_EMAIL_HR_MANAGEMENTS` / `GSI_EMAIL_HR_OFFICES` / `GSI_EMAIL_HR_MAX` | گیرندگان مستقیم از ستون Email سورس HR |
+| `GSI_FOREIGN` / `GSI_BLS` / `GSI_CLEARANCE` / `GSI_HR` / `GSI_ESMAEILI` / `GSI_MOHAMADI` | مسیر سورس‌ها |
 
 ---
 
 ## اگر باز خطا گرفتید
 
-خروجی کامل `python -m aibl.doctor` را بفرستید. برخلاف traceback خام،
+خروجی کامل `python -m gsi.doctor` را بفرستید. برخلاف traceback خام،
 دقیقاً می‌گوید کدام فایل کجاست و چه باید کرد.
 
 خطاهای رایج:
@@ -261,33 +261,7 @@ recipients:
 | پیام | علت | راه‌حل |
 |---|---|---|
 | `attempted relative import` | فایل هم‌نام ماژول استاندارد در مسیر | خروجی doctor بخش ۱ را ببینید |
-| `No module named aibl.pipeline; aibl is not a package` | `aibl.py` قدیمی در مسیر | نامش را به `aibl_legacy_v20.py.bak` تغییر دهید |
+| `No module named gsi.pipeline; gsi is not a package` | `gsi.py` قدیمی در مسیر | نامش را به `gsi_legacy_v20.py.bak` تغییر دهید |
 | `RowExplosionError` | کلید یک سورس یکتا نیست | لاگ نام سورس را می‌گوید؛ `dedupe_by` را در `sources.yaml` تنظیم کنید |
 | `ستون X یافت نشد` | تغییر هدر در فایل اکسل | نگاشت مربوطه را در adapter همان سورس اصلاح کنید |
-| `کتابخانه قوانین خطای ساختاری دارد` | YAML خراب یا مجموع وزن‌ها ≠ ۱ | `python -m aibl.rulebook.validate` |
-
-
-## SQLite Warehouse (V26.17)
-
-SQLite جزو کتابخانه استاندارد Python است و نصب جداگانه ندارد. AIBL با WAL کار می‌کند تا Studio بتواند هم‌زمان با خواندن Snapshotها، یک writer Pipeline نیز داده جدید ثبت کند.
-
-متغیرهای مهم:
-
-- `AIBL_WAREHOUSE_ENABLED=1` — فعال (پیش‌فرض)
-- `AIBL_WAREHOUSE_PATH=<path>` — مسیر فایل Data Warehouse
-- `AIBL_WAREHOUSE_REQUIRED=1` — در صورت شکست persistence کل Pipeline را fail کن
-- `AIBL_STUDIO_SOURCE=warehouse` — Studio از Snapshot خوانده شود (پیش‌فرض)
-- `AIBL_SQLITE_LOG=1` — Runtime log در `audit_log` نیز mirror شود
-
-کنترل نصب: `python -m aibl doctor` و `python -m aibl warehouse stats`. برای نگه‌داری دوره‌ای می‌توان از `python -m aibl warehouse prune --keep 365` و سپس `python -m aibl warehouse vacuum` استفاده کرد. SQLite برای یک writer و چند reader سازمانی مناسب است؛ اگر چند writer هم‌زمان یا حجم بسیار بزرگ لازم شد، قرارداد `Warehouse` طوری جدا شده که backend بعدی می‌تواند PostgreSQL/SQL Server باشد.
-
-در V26.17 خروجی اصلی Studio/Email فقط HTML خودبسنده است. کاربر نهایی از داخل HTML خروجی Excel فیلترشده می‌گیرد و برای PDF از دکمه «PDF / چاپ» و گزینه Save as PDF مرورگر استفاده می‌کند.
-
-
-## ارتقا به V26.18 بدون از دست رفتن Warehouse
-
-1. پوشه کد نسخه جدید را جداگانه جایگزین/Extract کنید؛ فایل SQLite را داخل پوشه Release کپی نکنید.
-2. اگر قبلاً `AIBL_WAREHOUSE_PATH` داشته‌اید همان را نگه دارید. در اولین اجرای V26.18 مسیر فعال در `%AIBL_HOME%\warehouse.path` (پیش‌فرض `%USERPROFILE%\.aibl\warehouse.path`) ثبت می‌شود.
-3. در اولین باز شدن Warehouse توسط هر Release جدید و نیز پیش از schema migration، AIBL یک backup سازگار SQLite در پوشه `warehouse_backups` کنار دیتابیس می‌سازد. Migrationها تاریخچه Snapshot/Event/Audit را reset نمی‌کنند.
-4. برای نمودارهای ایمیل با IRANSans، فونت دارای مجوز را روی سیستم نصب کنید یا `AIBL_FONT_PATH` را به همان فایل محلی اشاره دهید. پکیج فونت را توزیع نمی‌کند.
-5. در Studio > خروجی، نمودارهای HTML و Email را مستقل انتخاب کنید و در Email Composer، TO/CC/Subject/Header/متن را به‌صورت Profile در Warehouse ذخیره کنید.
+| `کتابخانه قوانین خطای ساختاری دارد` | YAML خراب یا مجموع وزن‌ها ≠ ۱ | `python -m gsi.rulebook.validate` |

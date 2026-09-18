@@ -1,0 +1,40 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "27.1.0",
+  "identity": "Data • Process • Decision",
+  "figma": "https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2",
+  "html_sample": "examples/GSI_V27_UI_SAMPLE.html",
+  "tests": {
+    "passed": 749,
+    "failed": 0,
+    "suites": 25
+  },
+  "rulebook": {
+    "packs": 13,
+    "structural_errors": 0,
+    "needs_verification": 23
+  },
+  "pipeline_stages": 17,
+  "manifest_tracked_files": 123,
+  "doctor": {
+    "errors": 0,
+    "warnings": 10
+  },
+  "figma_delivery": {
+    "named_pages": 11,
+    "component_sets": 14,
+    "standalone_components": 5,
+    "variants": 80,
+    "publishable_variables": 140
+  },
+  "release": "Personal Shared Store / No Reset",
+  "personal_store": {
+    "transport": "shared-folder-only",
+    "encryption": "AES-256-GCM",
+    "profile": "state/profile.gsi",
+    "snapshot": "snapshot/current.gsi",
+    "identity": "KEY_EMP / local identity file",
+    "live_view": "gsi://personal",
+    "http_ip_data_transport": false
+  }
+}

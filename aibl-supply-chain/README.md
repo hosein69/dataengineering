@@ -1,92 +1,59 @@
-# AIBL V26.19.0 — Automotive Supply Chain Intelligence Studio
+# GSI | Global Sourcing Intelligence
+## V27.1 — فضای شخصی پایدار، رمزگذاری‌شده و بدون API/IP داده
 
-بازنویسی کامل `aibl.py` نسخه ۲۰.۱ به یک پکیج ماژولار، قانون‌محور و تست‌شده.
-**۲۲ مجموعه تست رگرسیون معماری، بیزینس، Warehouse، Process، HTML/Browser، Delivery و Storytelling.**
+GSI اکنون یک لایه Personal Shared Store دارد. سیستم مرکزی داده را با `KEY_EMP` scope می‌کند و برای هر کد پرسنلی در Shared Folder دو فایل رمزگذاری‌شده نگه می‌دارد: `state/profile.gsi` برای Preferenceهای پایدار و `snapshot/current.gsi` برای آخرین داده عملیاتی همان فرد. فایل‌ها AES-256-GCM هستند و SQLite plaintext روی Share نوشته نمی‌شود. Client می‌تواند فقط User Key خودش را داشته باشد؛ Master Key روی سیستم مرکزی می‌ماند.
 
-> **اول این را بزنید:** `python -m aibl.doctor`
+دسترسی شخصی: `python -m gsi personal` · انتشار مرکزی: `python -m gsi publish-personal` · Live View بدون HTTP Data API: `python -m gsi personal-open` یا پروتکل محلی `gsi://personal`. جزئیات استقرار و ACL در `docs/PERSONAL_SHARED_STORE_V27_1_FA.md` است.
+
+
+## V27.0 — Audience-aware Product Design + Case Action + End-to-End Traceability
+
+**Data • Process • Decision**
+
+V27 روی یک اصل بنا شده است: یک زنجیره داده واحد، اما عمق نمایش متفاوت برای نقش‌های مختلف. کارشناس «اقدام بعدی»، مدیر میانی «صف و گلوگاه»، مدیر ارشد «تصمیم و Exposure» و تحلیل‌گر «Evidence و Data Lineage» را می‌بیند. منطق عملیاتی V26.20 حفظ شده و Design System/UX V27 روی همان Truth Model سوار شده است.
+
+### زنجیره قابل رهگیری
+`درخواست → ثبت سفارش → صف تخصیص → تخصیص → خرید ارز → تأمین وجه → SWIFT/تبدیل → حمل → ورود/EPL → ترخیص فیزیکی → سند بانکی → رفع تعهد`
+
+سه سبد موجودی **«نزد سازنده / در راه / گمرک» از سورس کارشناسان** مرجع عملیاتی‌اند. Oracle موجودی IKCO/SAPCO و نیاز روزانه را برای کنترل و Reconciliation اضافه می‌کند. نبود داده هرگز صفر فرض نمی‌شود: **`UNKNOWN ≠ ZERO`**.
+
+### Product Design V27
+مرجع visual/interaction واقعی در Figma:
+
+- `https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2`
+- ۱۱ صفحه نام‌گذاری‌شده GSI
+- ۱۴ Component Set + ۵ Component مستقل
+- ۸۰ Variant
+- ۱۴۰ Variable قابل انتشار در ۸ Collection
+- Prototype کلیک‌پذیر با مسیر Success/Error
+- Accessibility/Responsive/UX Audit و Developer Handoff داخل خود فایل
+
+نمونه HTML تعاملی و مستقل از Backend: `examples/GSI_V27_UI_SAMPLE.html`. داده‌های این فایل **Demo** هستند و نباید به‌عنوان داده عملیاتی یا Rule جاری تلقی شوند.
+
+### منبع حقیقت طراحی و اجرا
+توکن‌های runtime و خروجی‌های تولیدی از `gsi/design/` می‌آیند؛ Figma مرجع visual/interaction specification است. اختلاف این دو نباید بی‌صدا با overwrite حل شود و باید در Release reconciliation شود.
+
+# GSI V27.1.0 — Personal Shared Store + Audience-aware Intelligence
+**749 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
+
+> **اول این را بزنید:** `python -m gsi.doctor`
 > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.
 
-
-## V26.19 — Data Storytelling + Process Analytics + Motion
-
-نسخه ۲۶٫۱۸ نمودار می‌ساخت؛ این نسخه **روایت** می‌سازد. خروجی حالا به سه سؤالی
-جواب می‌دهد که تصمیم‌گیرنده واقعاً می‌پرسد: نسبت به دیروز بهتر شدیم یا بدتر،
-این عدد چقدر غیرعادی است، و فردا صبح دقیقاً روی چه چیزی کار کنم.
-
-روایت با الگوی **وضعیت ← گره ← اقدام** ساخته می‌شود و هر یافته سه جزء اجباری
-دارد: بزرگی، مقایسه و «پس چه». یافته‌ای که «پس چه» ندارد ساخته نمی‌شود — همین
-قاعده مانع تبدیل گزارش به فهرست اعداد است. روایت در HTML با فیلتر فعال زنده
-بازمحاسبه می‌شود و در ایمیل هم بالای KPIها می‌آید.
-
-تحلیل فرآیند بر **میانه و صدک ۹۰** بنا شده، نه میانگین: توزیع زمان چرخه در
-زنجیره تأمین راست‌چوله است و میانگین را چند پرونده گیرکرده جابه‌جا می‌کند.
-به‌علاوه کارایی جریان، نرخ دوباره‌کاری، تمرکز واریانت و اعتبارسنجی متقابل با
-قانون لیتل. گلوگاه‌ها بر مجموع زمان تلف‌شده مرتب می‌شوند، نه بر میانگین تکی.
-
-کاتالوگ نمودار به **۲۰** رسید: نمودار روند (از snapshot تاریخی)، پارتو با
-منحنی تجمعی و خط ۸۰٪، و پراکنشی که حالا محور عددگذاری‌شده، خطوط میانه (چهار
-ربع)، خط رگرسیون و ضریب همبستگی دارد. HTML فیلتر بازه تاریخ گرفت با میان‌برهای
-۷ / ۳۰ / ۹۰ / ۳۶۵ روز.
-
-`aibl/report/design_system.py` تنها منبع رنگ و حرکت شد. کنتراست **ادعا
-نمی‌شود، محاسبه می‌شود**: `audit_contrast()` فهرست تخلف‌های WCAG را برمی‌گرداند
-و تست رگرسیون روی فهرست خالی قفل است. هر وضعیت سه رنگ دارد — `ink` برای متن،
-`fill` برای سطح نمودار، `wash` برای پس‌زمینه — چون زرد و نارنجی هرگز روی سفید
-به کف ۳:۱ نمی‌رسند و طبق WCAG 1.4.11 مرز عنصر گرافیکی حامل تفکیک‌پذیری است.
-
-لایه حرکت CSS خالص است، فقط `transform` و `opacity` را انیمیت می‌کند،
-`prefers-reduced-motion` را احترام می‌گذارد و پیش از چاپ همه چیز را نمایان
-می‌کند. هیچ کتابخانه‌ای بارگذاری نمی‌شود: گزارش از داخل Outlook و روی شبکه
-اداری باز می‌شود.
-
-جزئیات کامل و اعداد اندازه‌گیری‌شده در
-`RELEASE_NOTES_V26_19_0_STORYTELLING_MOTION.md`.
-
-## V26.18 — Chart Studio + Durable Warehouse + Email Composer
-
-این نسخه روی سه اصل بنا شده است: **هیچ داده‌ای در ارتقای نسخه گم نشود، HTML تنها artifact ارسالی باشد، و نمودارها بخشی از طراحی گزارش باشند نه یک خروجی ثابت.** کاتالوگ مشترک ۱۵ نموداری برای HTML و Email اضافه شده (bar، donut، grouped و scatter) و انتخاب نمودارهای HTML و ایمیل مستقل است. اگر Event/Transition Log هنوز برای Process Mining کافی نباشد، گلوگاه به‌جای نمودار خالی، «توزیع مرحله فعلی» را به‌عنوان نقطه شروع نشان می‌دهد.
-
-Studio اکنون Email Composer دارد: `TO`، `CC`، `Subject`، Header، متن مقدمه و نمودارهای ایمیل قابل انتخاب و ذخیره به‌صورت Profile داخل همان Warehouse هستند. متن Outlook با IRANSans درخواست می‌شود و PNG نمودار با IRANSans نصب‌شده رندر می‌شود؛ برای نصب‌های سازمانی می‌توان `AIBL_FONT_PATH` را به فایل فونت محلیِ دارای مجوز اشاره داد. فایل فونت داخل پکیج توزیع نمی‌شود.
-
-HTML دیگر بر اساس تعداد سلول به‌طور پنهانی کوچک نمی‌شود. اگر ۳۰۰۰ ردیف درخواست شود، همان ۳۰۰۰ ردیف داخل payload می‌ماند. برای کنترل حجم/سرعت، payload به شکل آرایه‌ای فشرده‌تر شده و DOM فقط صفحه‌های ۱۰۰ ردیفی را رندر می‌کند؛ فیلتر و Excel Export همچنان روی **کل ردیف‌های موجود در artifact** اجرا می‌شوند. هر محدودیت ردیف فقط سقف صریح کاربر/قالب است و در خود HTML اعلام می‌شود.
-
-Warehouse بین Releaseها پایدار است: مسیر انتخاب‌شده در `~/.aibl/warehouse.path` (یا `%AIBL_HOME%/warehouse.path`) ثبت می‌شود، بنابراین تعویض پوشه/ZIP نسخه جدید به دیتابیس تازه سوییچ نمی‌کند. Migrationها افزایشی هستند و در اولین باز شدن Warehouse توسط هر Release جدید (یا پیش از تغییر schema) یک SQLite backup سازگار در `warehouse_backups/` ساخته می‌شود.
-
-## V26.17 — SQLite Warehouse + HTML-only Delivery
-
-در این نسخه Excel دیگر لایه نگه‌داری داده نیست. هر اجرای Pipeline یک `run_id` از ابتدای اجرا می‌گیرد و در SQLite ثبت می‌شود؛ Snapshot کامل، Event Log deduplicated، Transitionهای A→B، KPIهای تاریخی، تغییر وضعیت پرونده، lineage سورس‌ها و Audit/Runtime Log همگی قابل Query هستند. Studio در حالت عادی Snapshot را از Warehouse می‌خواند و فقط با «به‌روزرسانی Warehouse» Pipeline را دوباره اجرا می‌کند.
-
-```text
-Sources → Adapters/Stages → SQLite Warehouse (system of record)
-                              ├─ fact_case_snapshot
-                              ├─ fact_event + bridge_run_event
-                              ├─ fact_transition_snapshot
-                              ├─ fact_case_process_snapshot
-                              ├─ fact_kpi_snapshot
-                              ├─ case_state_log
-                              └─ audit_log / source_run_log
-                                         ↓
-                                  Studio / HTML
-                                         ↓
-                             Excel export / Save as PDF
-```
-
-دستورهای عملیاتی: `python -m aibl warehouse stats`، `runs`، `case <CASE_KEY>`، `bottlenecks`، `audit`، `lineage`، `prune --keep 365` و `vacuum`. فایل Warehouse به‌طور پیش‌فرض `AIBL_warehouse.sqlite3` در Output است و با `AIBL_WAREHOUSE_PATH` قابل تغییر است؛ مسیر انتخاب‌شده در pointer پایدار کاربر ذخیره می‌شود تا تعویض نسخه همان Warehouse را دوباره باز کند.
-
 ```bash
-python -m aibl.doctor                         # عیب‌یابی محیط
-python -m aibl.diagnose --excel               # عیب‌یابی رابطه‌ها (چرا KPI صفر است)
-python -m aibl.rulebook.validate              # اعتبارسنجی کتابخانه قوانین
-python -m aibl.pipeline                       # اجرای کامل
-python -m aibl run                            # doctor + اجرا
-python -m aibl email --no-display             # ساخت HTML تعاملی + نمودارهای ایمیل
-python -m aibl email                          # ساخت و باز کردن Outlook
-python -m aibl email --send                   # ارسال واقعی
+python -m gsi.doctor                         # عیب‌یابی محیط
+python -m gsi.diagnose --excel               # عیب‌یابی رابطه‌ها (چرا KPI صفر است)
+python -m gsi.rulebook.validate              # اعتبارسنجی کتابخانه قوانین
+python -m gsi.pipeline                       # اجرای کامل
+python -m gsi run                            # doctor + اجرا
+python -m gsi.design.handoff                 # قرارداد Design System / Figma
+python -m gsi.design.handoff --json          # توکن ماشین‌خوان
+python -m gsi email --no-display             # ساخت Excel + نمودارهای ایمیل
+python -m gsi email                          # ساخت و باز کردن Outlook
 python run_all_tests.py                       # همه تست‌ها
 ```
 
 ### ⚠️ نام ماژول‌ها در نسخه ۲۲ تغییر کرد
-`aibl/core/calendar.py` → **`aibl/core/jalali.py`** و `aibl/io/` → **`aibl/dataio/`**
+`gsi/core/calendar.py` → **`gsi/core/jalali.py`** و `gsi/io/` → **`gsi/dataio/`**
 تا حتی اگر فایل‌ها تخت کپی شوند، روی کتابخانه استاندارد پایتون سایه نیندازند.
 این علت خطای اجرای اول روی شبکه بود.
 
@@ -129,11 +96,12 @@ HEADERS_MAP فقط **۱۷٫۳٪** پر است، برای بیشترِ ردیف�
 | انتخاب | گزینه‌ها |
 |---|---|
 | **قالب** | ◈ اجرایی · ▦ عملیاتی · ⛓ فرآیندی · ◍ ممیزی داده |
-| **Artifact تحویلی Studio/Email** | فقط HTML خودبسنده؛ Excel و PDF از داخل همان HTML |
+| **فرمت** | Excel · HTML داینامیک (فیلترپذیر) · PDF |
 | **محتوا** | نمودار/ویژوال و جدول‌ها مستقلاً قابل خاموش کردن |
-| **فیلدها** | تمام ستون‌های تولیدشده Pipeline — کاتالوگ به‌صورت پویا ساخته می‌شود |
+| **فیلدها** | هر ۳۶۷ ستون از ۱۳ سورس — انتخاب با شماست |
 
-SQLite **منبع حقیقت** است و HTML فقط Snapshot قابل‌حمل آن است. Excel فیلترشده و PDF از همان payload فعال HTML ساخته می‌شوند؛ بنابراین artifact ارسالی واحد است و lineage آن با `warehouse_run_id` قابل ردیابی می‌ماند.
+هر سه فرمت از **یک منبع** ساخته می‌شوند، پس عدد Excel با عدد HTML و PDF
+یکی است.
 
 ### چرا محاسبات به هم نمی‌ریزد
 
@@ -149,17 +117,17 @@ join در هر ردیف **تکرار** می‌شود:
 این خطا بی‌صداست: عدد بزرگ‌تر می‌شود و هیچ استثنایی رخ نمی‌دهد. پس:
 
 1. **تجمیع دانه‌ای.** هر جمع پیش از محاسبه بر کلید دانه‌ی همان ستون یکتا
-   می‌شود — در پایتون و در JavaScript سند HTML هنگام فیلتر
+   می‌شود — در پایتون، در Excel، و حتی در JavaScript سند HTML هنگام فیلتر
    کردن در مرورگر.
 2. **تفکیک شناسه از سنجه.** «شماره سفارش» جمع نمی‌شود (شناسه است) و
    «مقاومت (روز)» میانگین می‌گیرد نه جمع (نسبتی است).
 3. **ردپای محاسباتی.** برگه/بخش «صحت محاسبات» جمع ساده و جمع درست را کنار
    هم می‌گذارد؛ هر عددی که در سند آمده اینجا قابل ممیزی است.
 
-> شاخص‌های «جمع مانده تعهد» و «جمع جریمه برآوردی» در خود Pipeline نیز
-> با همان Grain Registry و در سطح **REG** محاسبه می‌شوند؛ بنابراین KPI رسمی،
-> Warehouse و HTML از یک قرارداد تجمیع استفاده می‌کنند و fan-out ناشی از join
-> باعث چندبرابر شدن عدد نمی‌شود.
+> ⚠️ توجه: شاخص «جمع مانده تعهد» در شیت خلاصه‌ی **خط لوله**
+> (`s50_commitment`) هنوز جمع ردیفی است. عمداً تغییرش ندادم چون عدد
+> گزارش رسمی را جابه‌جا می‌کند؛ اگر بخواهید، با یک خط به تجمیع دانه‌ای
+> منتقل می‌شود.
 
 ---
 
@@ -169,9 +137,9 @@ join در هر ردیف **تکرار** می‌شود:
 
 | کاری که می‌خواهید بکنید | تنها جایی که باید دست بزنید |
 |---|---|
-| افزودن / حذف / غیرفعال کردن یک سورس | `aibl/config/sources.yaml` |
-| تغییر یک مهلت قانونی، آستانه، وزن ریسک، ارز، ترم حمل، کد تعرفه | `aibl/rules/*.yaml` |
-| افزودن سورسی با منطق خواندن جدید | یک فایل جدید در `aibl/adapters/` |
+| افزودن / حذف / غیرفعال کردن یک سورس | `gsi/config/sources.yaml` |
+| تغییر یک مهلت قانونی، آستانه، وزن ریسک، ارز، ترم حمل، کد تعرفه | `gsi/rules/*.yaml` |
+| افزودن سورسی با منطق خواندن جدید | یک فایل جدید در `gsi/adapters/` |
 
 adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل جدید بگذارید → سورس فعال می‌شود.
 فایل را پاک کنید → حذف می‌شود. هیچ فایل دیگری ویرایش نمی‌شود.
@@ -182,14 +150,14 @@ adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل ج�
 
 ---
 
-## ۲. کتابخانه قوانین (`aibl/rules/`)
+## ۲. کتابخانه قوانین (`gsi/rules/`)
 
-هیچ عدد قانونی داخل کد پایتون نیست. ۹ بسته YAML:
+هیچ عدد قانونی داخل کد پایتون نیست. ۱۳ بسته YAML:
 
 | فایل | محتوا | وضعیت |
 |---|---|---|
 | `criticality.yaml` | **مقاومت قطعه**: مقاومت = موجودی ÷ مصرف روزانه، طبقه‌بندی (زیر ۱۰ روز بحرانی، ۱۰ تا ۲۰ در حال بحرانی شدن)، مرتب‌سازی، هشدارهای ترکیبی | internal |
-| `fx_governance.yaml` | چرخه ۱۰ مرحله‌ای PR→PO→ثبت سفارش→تخصیص→تأمین ارز→حمل→اسناد→گمرک→رفع تعهد، مهلت‌ها، جریمه پلکانی، کانال‌های تأمین ارز، روش‌های پرداخت و رفع تعهد | internal + needs_verification |
+| `fx_governance.yaml` | چرخه ۱۲ مرحله‌ای PR→PO→ثبت سفارش→صف تخصیص→تخصیص→تأمین ارز→حمل→اسناد بانکی→EPL→ترخیص→رفع تعهد، مهلت‌ها، جریمه پلکانی، کانال‌های تأمین ارز، روش‌های پرداخت و رفع تعهد | internal + needs_verification |
 | `incoterms.yaml` | Incoterms® 2020 — هر ۱۱ ترم با نقطه انتقال ریسک، تعهد بیمه، مسئول ترخیص | verified (ICC) |
 | `hs_codes.yaml` | ساختار HS، فصول مرتبط با ابزار و قطعه، استنتاج تعرفه از شرح کالا | verified (WCO) |
 | `currencies.yaml` | ISO 4217 با نام‌های فارسی و تعداد اعشار | verified |
@@ -197,13 +165,60 @@ adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل ج�
 | `customs.yaml` | انواع ترخیص، کوتاژ، ساتا، رسوب و تشدید، پارامترهای ویبول و بیزین | internal |
 | `alarms.yaml` | ۸ آستانه × ۲ سگمنت، وزن‌های موتور ریسک، طبقه‌بندی | internal |
 | `status_lexicon.yaml` | واژگان وضعیت فارسی → مرحله چرخه عمر | internal |
+| `warehouse.yaml` | **سامانه جامع انبارها**: قبض انبار الکترونیکی، شناسه کالا/رهگیری، مهلت اظهار ورود و خروج، آستانه شکاف شاهد پس از ترخیص | internal + needs_verification |
+| `legacy_knowledge.yaml` | دانش تاریخی versioned: A/B/C، mapping، root cause، evidence و anti-pattern؛ **non-binding** | legacy_reference |
 
 ### وضعیت اعتبار هر قاعده
 - `verified` — از منبع رسمی (ICC / WCO / ISO)
 - `internal` — رویه جاری IKCO (of.txt / of2.txt)
-- `needs_verification` — **۲۰ قاعده** که باید با آخرین بخشنامه بانک مرکزی تطبیق داده شود
+- `needs_verification` — **۲۳ قاعده** که باید با آخرین بخشنامه بانک مرکزی تطبیق داده شود
 
-`python -m aibl.rulebook.validate` این ۲۰ مورد را فهرست می‌کند و شیت ۸ داشبورد
+## گزارش برای چه کسی؟ — پروفایل مخاطب
+
+یک خروجی و سه خواننده یعنی هیچ‌کدام آن را مال خودش نمی‌داند. `gsi/audience.py`
+چهار پروفایل دارد و هرکدام تعیین می‌کند **چه چیزی دیده شود، به چه عمقی، و چه
+چیزی دیده نشود**:
+
+| | کارشناس | مدیر میانی | مدیر ارشد | تحلیل‌گر |
+|---|---|---|---|---|
+| یافته / ردیف / نمودار | ۵ / ۲۰۰ / ۲ | ۴ / ۸۰ / ۴ | ۳ / ۱۰ / ۱ | ۸ / ۱۰۰۰ / ۶ |
+| کیفیت داده | ✗ | ✗ | ✗ | ✓ |
+
+```bash
+GSI_AUDIENCE=manager python -m gsi.pipeline     # یا از داشبورد انتخاب کنید
+```
+
+هر سه نمای عملیاتی در **یک فایل**‌اند و خواننده با یک کلیک جابه‌جا می‌شود.
+
+**سنجه‌های کیفیت داده عمداً در هیچ نمای عملیاتی نمی‌آیند.** مدیری که «پوشش
+داده ۷۲٪» می‌بیند به کل گزارش بی‌اعتماد می‌شود بدون آنکه بتواند کاری بکند.
+جایشان داشبورد Streamlit و شیت «۱۷. سلامت سیستم» است — جایی که کسی نشسته که
+می‌تواند دربارهٔ آنها اقدام کند.
+
+## لحن — `gsi/voice.py`
+
+شش قاعده که در کد اجرا می‌شوند: عدد بدون مخرج منتشر نمی‌شود · بزرگ‌نمایی
+خنثی می‌شود · «مانع» به‌جای «مقصر» · چهار حالتِ ندانستن از هم جدا می‌مانند ·
+همبستگی علت نامیده نمی‌شود · هر یافته با مالک و مهلت تمام می‌شود.
+
+### پنجره اعتبار — `effective_from` و `expires_on`
+
+هر قاعده می‌تواند تاریخ شروع و تاریخ انقضا داشته باشد. قاعده‌ای که تاریخ
+مرجع بیرون از پنجره‌اش باشد **اعمال نمی‌شود**:
+
+```python
+rb.active("customs.emergency_sata_waiver_1405")   # None اگر منقضی شده باشد
+rb.get(...)                                        # برای نمایش و ممیزی، همیشه می‌دهد
+rb.is_expired(path) · rb.days_to_expiry(path)
+rb.expired()        # سطح error — قاعده‌ای که از مدار خارج شده
+rb.expiring_soon()  # سطح warning — تا ۳۰ روز دیگر منقضی می‌شود
+```
+
+تا V26.20 این دو فیلد نوشته می‌شدند ولی **هیچ‌جا خوانده نمی‌شدند**؛ یعنی یک
+بخشنامه منقضی تا ابد «آخرین نسخه معتبر» می‌ماند. حالا `python -m gsi.doctor`
+و شیت «۱۷. سلامت سیستم» هر دو پنجره اعتبار را گزارش می‌کنند.
+
+`python -m gsi.rulebook.validate` این موارد را فهرست می‌کند و شیت ۸ داشبورد
 همان فهرست را برای ممیزی مدیریتی چاپ می‌کند.
 
 ### به‌روزرسانی یک قانون
@@ -223,7 +238,7 @@ release_production:
 RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخاب می‌کند.
 
 قوانین را می‌توان بیرون از پکیج هم نگه داشت:
-`AIBL_RULES_DIR=D:\of\rules python -m aibl.pipeline`
+`GSI_RULES_DIR=D:\of\rules python -m gsi.pipeline`
 
 ### مهم‌ترین موارد نیازمند تطبیق
 `docs_after_opening` (۱۸۰ روز)، `allocation_validity`، `registration_validity`،
@@ -286,7 +301,7 @@ RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخ
 
 ### تغییر نام هدرها
 اگر هدرها عوض شوند فقط `MoghavematAdapter.COLUMN_MAP` را ویرایش کنید
-(`aibl/adapters/moghavemat.py`) — یک دیکشنری ۳۵ سطری، بدون دست زدن به منطق.
+(`gsi/adapters/moghavemat.py`) — یک دیکشنری ۳۵ سطری، بدون دست زدن به منطق.
 
 ---
 
@@ -298,7 +313,7 @@ RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخ
 
 | مرحله | پاسخ به سؤال | خروجی |
 |---|---|---|
-| `s80_eventlog` | فرآیند **چگونه** اجرا شده؟ | جدول فعالیت استاندارد Celonis (`_CASE_KEY`, `ACTIVITY_EN`, `EVENTTIME`, `_SORTING`)، جدول پرونده، گلوگاه‌ها، واریانت‌ها، فایل `AIBL_EventLog.csv` آماده بارگذاری |
+| `s80_eventlog` | فرآیند **چگونه** اجرا شده؟ | جدول فعالیت استاندارد Celonis (`_CASE_KEY`, `ACTIVITY_EN`, `EVENTTIME`, `_SORTING`)، جدول پرونده، گلوگاه‌ها، واریانت‌ها، فایل `GSI_EventLog.csv` آماده بارگذاری |
 | `s85_conformance` | **کجا** منحرف شده و **چرا**؟ | فعالیت جاافتاده، نقض ترتیب، امتیاز انطباق، و ریشه‌یابی با «اثر تفاضلی» |
 
 مسیر مرجع (happy path) از `rules/fx_governance.yaml` خوانده می‌شود — یعنی
@@ -464,7 +479,8 @@ python app/run_dashboard.py --port 8600
 ```
 
 پس‌زمینه متحرک کم‌شتاب، کارت‌های شیشه‌ای، نبض فقط روی کارت بحرانی،
-نمودارهای پراکنش تعاملی. Artifact اصلی یک HTML مستقل با CSS/JS درون‌خط است؛ Excel فیلترشده و PDF از داخل همان HTML ساخته می‌شوند. Excel رسمی ۱۷ شیتی فقط برای سازگاری legacy API باقی مانده و منبع داده نیست.
+نمودارهای پراکنش تعاملی. سه خروجی: اکسل کامل ۱۷ شیتی، اکسل داده
+فیلترشده، و HTML مستقل با CSS و JS درون‌خط که دکمه «ذخیره به PDF» دارد.
 
 منطق داشبورد در `app/ui_kit.py` است و بدون Streamlit هم تست می‌شود
 (۴۱ تست) — چون Streamlit در زمان import کد را اجرا می‌کند و فایل
@@ -474,7 +490,7 @@ python app/run_dashboard.py --port 8600
 
 ## ضدِ دریفت مستندات
 
-`python -m aibl.factsheet` اعداد زنده سیستم را چاپ می‌کند و
+`python -m gsi.factsheet` اعداد زنده سیستم را چاپ می‌کند و
 `tests/test_doc_claims.py` هر عدد فارسی داخل README را با آن می‌سنجد.
 اگر README بگوید «۹ شیت» و کد ۱۷ شیت بسازد، تست قرمز می‌شود.
 
@@ -485,7 +501,7 @@ python app/run_dashboard.py --port 8600
 ## ۵. ساختار
 
 ```
-aibl/
+gsi/
 ├── rules/          ۸ فایل YAML — کل دانش قانونی سیستم
 ├── rulebook/       loader.py (دسترسی، نسخه‌بندی، ممیزی) + validate.py
 ├── config/         settings.py · sources.yaml · sources.py · business_rules.py (shim)
@@ -497,7 +513,7 @@ aibl/
 ├── narrate/        narrator (۵ شاخه + گارد ضد باگ B1)
 ├── report/         palette · dashboard (۸ شیت) · extracts
 ├── doctor.py       بازرس نصب و محیط
-├── __main__.py     نقطه ورود «python -m aibl»
+├── __main__.py     نقطه ورود «python -m gsi»
 └── pipeline.py     ارکستراتور
 ```
 
@@ -527,7 +543,7 @@ Formula Injection (SUBTOTAL/COUNTIF زنده)، گروه‌بندی سه‌لا�
 
 - سورس غایب → هشدار و ادامه (مگر `required: true`)
 - **خطای adapter → لاگ CRITICAL صریح** که خروجی ناقص است.
-  با `AIBL_STRICT_ADAPTERS=1` اجرا متوقف می‌شود.
+  با `GSI_STRICT_ADAPTERS=1` اجرا متوقف می‌شود.
 - فایل مقاومت غایب → هشدار بحرانی، نه گزارش خالی بی‌صدا
 - ادغامی که تعداد سطر را عوض کند → `RowExplosionError`
 - قانون نامعتبر (مثلاً مجموع وزن‌ها ≠ ۱) → توقف قبل از خواندن هر داده‌ای
@@ -536,25 +552,40 @@ Formula Injection (SUBTOTAL/COUNTIF زنده)، گروه‌بندی سه‌لا�
 
 ## ۷. پوشش تست‌ها
 
-| مجموعه | تعداد | چه چیزی را اثبات می‌کند |
-|---|---|---|
-| `test_validation.py` | ۴۸ | نرمال‌سازی، تقویم شمسی، ویبول، بیزین، جریمه پلکانی، ریسک، عدم انفجار سطر، اتصال HR، KPI بر بارنامه یکتا، ۸ شیت اکسل |
-| `test_rules_and_moghavemat.py` | ۵۵ | بارگذاری و اعتبارسنجی ۸ بسته قانون، نسخه‌بندی زمانی، Incoterms، HS، اعتبارسنجی بارنامه، واژگان وضعیت، تجمیع سطح سفارش، سه قرارداد ماژولاریتی |
-| `test_criticality.py` | ۳۲ | فرمول مقاومت، مرزهای ۱۰/۲۰ روز، حالت‌های مرزی (مصرف صفر، داده غایب، کالای در راه)، اتصال Oracle→متریال، مرتب‌سازی، هشدار ترکیبی، شیت ۹، پیکربندی‌پذیری آستانه‌ها |
-| `test_import_hygiene.py` | ۱۹ | تصادم نام با stdlib، **بازتولید و رفع خطای واقعی شبکه**، اجرا از هر پوشه، نقاط ورود، استقلال از jdatetime |
+| مجموعه | تعداد موفق | پوشش اصلی |
+|---|---:|---|
+| `test_validation.py` | 61 | نرمال‌سازی، تقویم، ریسک، ادغام و اجرای خط لوله |
+| `test_rules_and_moghavemat.py` | 63 | RuleBook، نسخه زمانی، Incoterms/HS/حمل، قواعد مقاومت |
+| `test_criticality.py` | 34 | بحرانی بودن، مقاومت و سناریوهای مرزی |
+| `test_architecture.py` | 36 | قرارداد Stage، افزونه‌پذیری، Event Log و معماری |
+| `test_contracts_report.py` | 14 | قرارداد گزارش و رگرسیون موجودی/مقاومت |
+| `test_dashboard.py` | 77 | KPI، Excel/HTML، Analytics، نقش‌ها و ایمیل |
+| `test_import_hygiene.py` | 19 | نصب، import، stdlib collision و نقاط ورود |
+| `test_doc_claims.py` | 8 | تطبیق ادعاهای README با کد |
+| `test_email_report.py` | 11 | بسته ایمیل مدیریتی |
+| `test_studio.py` | 5 | Studio ماژولار |
+| `test_report_builder.py` | 32 | گزارش‌ساز و صحت دانه‌ای |
+| `test_supply_views.py` | 55 | مالکیت، وضعیت قطعه، نماهای تأمین و پوشش Runner |
+| `test_system_health.py` | 49 | نقاط کور، ناهنجاری زمانی و سلامت سیستم |
+| `test_oracle_multisheet_v26_14.py` | 1 | ادغام Oracle چندشیتی |
+| `test_studio_v26_12.py` | 2 | فیلتر حمل، Tab و Designهای Studio |
+| `test_html_export_v26_15.py` | 1 | HTML پویا و Process Explorer |
+| `test_fx_traceability_v26_16.py` | 5 | FX ledger، تعهدها، conformance و snapshot قواعد |
+| `test_money_flow_v26_18.py` | 13 | Rate bridge، Reallocation، Deadline، Stage و Field Intelligence |
+| **جمع** | **486** | **۱۸ مجموعه ثبت‌شده در `run_all_tests.py`** |
 
 ## ۸. گام بعدی
 
-1. `python -m aibl.doctor` تا محیط ۰ خطا شود.
+1. `python -m gsi.doctor` تا محیط ۰ خطا شود.
 2. هدرهای واقعی مقاومت را با `COLUMN_MAP` تطبیق دهید (احتمالاً بدون تغییر کار می‌کند).
-3. ۱۹ قاعده `needs_verification` را با آخرین بخشنامه‌ها به‌روزرسانی کنید.
-4. اولین اجرای واقعی با `AIBL_STRICT_ADAPTERS=1`.
+3. ۲۳ قاعده `needs_verification` را با آخرین بخشنامه‌ها به‌روزرسانی کنید.
+4. اولین اجرای واقعی با `GSI_STRICT_ADAPTERS=1`.
 
 
-## AIBL Studio — Modular Streamlit Platform
+## GSI Studio — Modular Streamlit Platform
 
 ```bash
 python app/run_platform.py
 ```
 
-Studio reads persisted SQLite snapshots, exposes process history / case timeline / transitions / KPI trends / audit logs, and delivers a self-contained HTML artifact. Excel/PDF are generated by the recipient from that HTML. Install `streamlit-sortables==0.3.1` for drag-and-drop layout editing.
+Studio adds a drag-and-drop module layout, live filters, dynamic HTML/CSS/JavaScript export, custom Excel workbooks and the existing executive Outlook email pack. Install `streamlit-sortables==0.3.1` for drag-and-drop layout editing.
