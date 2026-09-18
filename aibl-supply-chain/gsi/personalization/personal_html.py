@@ -32,6 +32,9 @@ def build_personal_html(employee_code: str, *, title: str = "GSI · فضای ش�
     meta = ctx.get("snapshot_meta") or {}
     refreshed = meta.get("refreshed_at") or current.get("ref_date") or "—"
 
+    max_findings = max(1, int(prefs.get("max_findings", 5) or 5))
+    table_rows = max(1, int(prefs.get("table_rows", 80) or 80))
+
     action_rows = []
     for r in records:
         act = r.get("FX_ACTION_TITLE") or r.get("مانع فعلی")
@@ -41,11 +44,11 @@ def build_personal_html(employee_code: str, *, title: str = "GSI · فضای ش�
             f"<tr><td>{_e(r.get('KEY_REG'))}</td><td>{_e(r.get('مرحله جاری') or r.get('FX_CURRENT_STAGE'))}</td>"
             f"<td>{_e(act)}</td><td>{_e(r.get('FX_ACTION_DUE_DATE'))}</td></tr>"
         )
-        if len(action_rows) >= 12:
+        if len(action_rows) >= max_findings:
             break
 
     case_rows = []
-    for r in records[: min(80, int(prefs.get("table_rows", 80) or 80))]:
+    for r in records[:table_rows]:
         case_rows.append(
             f"<tr><td>{_e(r.get('KEY_REG'))}</td><td>{_e(r.get('CANONICAL_ORDER'))}</td>"
             f"<td>{_e(r.get('CANONICAL_BL'))}</td><td>{_e(r.get('مرحله جاری') or r.get('FX_CURRENT_STAGE'))}</td>"

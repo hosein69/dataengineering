@@ -2,7 +2,7 @@
 
 ## مرجع‌ها
 
-- Figma: https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2
+- Figma: https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz
 - HTML demo: `../examples/GSI_V27_UI_SAMPLE.html`
 - Runtime tokens: `gsi/design/tokens.py`
 - CSS contract: `gsi/design/css.py`

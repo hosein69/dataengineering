@@ -31,7 +31,11 @@ DEFAULT_FIELDS = (
 def _jsonable(v: Any) -> Any:
     if v is None:
         return None
-    if isinstance(v, (str, bool, int)):
+    # numpy booleans subclass neither bool nor int, so they must be caught first;
+    # otherwise they fall through to str() and a False becomes the truthy "False".
+    if isinstance(v, (bool, np.bool_)):
+        return bool(v)
+    if isinstance(v, (str, int)):
         return v
     if isinstance(v, (float, np.floating)):
         return None if pd.isna(v) else float(v)

@@ -8,6 +8,6 @@
 - Stage 6/6 — Regression + Doctor + RuleBook + Manifest + ZIP integrity: COMPLETE
 
 Release target: `27.0.0`
-Figma: https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2
+Figma: https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz
 
 Final validation: 725 tests passed / 0 failed · Doctor 0 errors / 10 warnings · RuleBook 0 structural errors · Manifest 116 tracked files.

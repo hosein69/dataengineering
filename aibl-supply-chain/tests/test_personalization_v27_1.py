@@ -321,6 +321,124 @@ class PersonalPublisherTests(unittest.TestCase):
         self.assertNotIn(b"R-A", (user / "snapshot" / "current.gsi").read_bytes())
 
 
+class V27_1_RegressionTests(unittest.TestCase):
+    """رگرسیون باگ‌هایی که در ممیزی مویرگی V27.1 پیدا و رفع شدند."""
+
+    def setUp(self):
+        import pandas as pd
+        self.pd = pd
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name) / "shared"
+        self.keep = {k: os.environ.get(k) for k in
+                     ["GSI_PROFILE_ROOT", "GSI_PROFILE_MASTER_KEY", "GSI_PROFILE_KEY_FILE",
+                      "GSI_PROFILE_USER_KEY", "GSI_PROFILE_USER_KEY_FILE", "GSI_EMP_CODE"]}
+        for k in self.keep:
+            os.environ.pop(k, None)
+        os.environ["GSI_PROFILE_ROOT"] = str(self.root)
+        os.environ["GSI_PROFILE_MASTER_KEY"] = generate_master_key()
+        os.environ["GSI_EMP_CODE"] = "1001"
+
+    def tearDown(self):
+        for k, v in self.keep.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        self.tmp.cleanup()
+
+    def test_numpy_bool_stays_boolean(self):
+        """np.bool_ نباید به رشته «True»/«False» تبدیل شود؛ «False» رشته‌ای truthy است."""
+        import numpy as np
+        from gsi.personalization.publisher import _jsonable
+        self.assertIs(_jsonable(np.bool_(True)), True)
+        self.assertIs(_jsonable(np.bool_(False)), False)
+        self.assertIs(_jsonable(True), True)
+
+    def _publish(self, rows=300):
+        from gsi.personalization.publisher import publish_employee_snapshots
+        df = self.pd.DataFrame([
+            {"KEY_EMP": "1001", "KEY_REG": f"R{i}", "مانع فعلی": "منتظر تأیید",
+             "مرحله جاری": "تأیید فنی"} for i in range(rows)
+        ])
+        publish_employee_snapshots(df)
+
+    def test_audience_caps_reach_the_personal_html(self):
+        """تغییر مخاطب باید واقعاً تعداد سطر و یافته را عوض کند، نه فقط ذخیره شود."""
+        from gsi.personalization.service import PersonalWorkspace
+        from gsi.personalization.personal_html import build_personal_html
+        from gsi import audience as AUD
+        self._publish(300)
+        ws = PersonalWorkspace.from_env("1001")
+        seen = {}
+        for key in ("expert", "manager", "executive", "analyst"):
+            ws.save_preferences({"audience": key})
+            prefs = ws.preferences()
+            profile = AUD.get(key)
+            self.assertEqual(prefs["table_rows"], profile.table_rows)
+            self.assertEqual(prefs["max_findings"], profile.max_findings)
+            html = build_personal_html("1001")
+            cases = html.split("پرونده‌های من")[1].count("<tr>") - 1
+            self.assertEqual(cases, min(profile.table_rows, 300))
+            seen[key] = html
+        self.assertNotEqual(seen["executive"], seen["analyst"],
+                            "خروجی مدیر ارشد و تحلیل‌گر نباید یکسان باشد")
+
+    def test_namespace_and_get_share_one_error_contract(self):
+        """هر دو باید ProfileIntegrityError بدهند، نه یکی JSONDecodeError خام."""
+        store = EncryptedUserStore.from_master_env("1001")
+        store.set("preferences", "ok", 1)
+        with store._db("profile", write=True) as con:
+            con.execute("INSERT OR REPLACE INTO kv VALUES('preferences','bad','{not json','t')")
+        with self.assertRaises(ProfileIntegrityError):
+            store.get("preferences", "bad")
+        with self.assertRaises(ProfileIntegrityError):
+            store.namespace("preferences")
+
+    def test_broken_user_key_is_not_reported_as_master_key(self):
+        """پیام خطا باید همان فایلی را نام ببرد که خراب است."""
+        bad = Path(self.tmp.name) / "bad.key"
+        bad.write_text("not-base64!!", encoding="utf-8")
+        os.environ["GSI_PROFILE_USER_KEY_FILE"] = str(bad)
+        with self.assertRaises(ProfileConfigurationError) as ctx:
+            EncryptedUserStore.from_env("1001")
+        self.assertIn("User Key", str(ctx.exception))
+        self.assertNotIn("GSI_PROFILE_MASTER_KEY", str(ctx.exception))
+
+    def test_vanished_share_gives_an_actionable_error(self):
+        """قطع شدن درایو شبکه نباید FileNotFoundError خام روی فایل .lock بدهد."""
+        import shutil
+        from gsi.personalization.store import ProfileStoreError
+        store = EncryptedUserStore.from_master_env("1001")
+        store.set("preferences", "a", 1)
+        shutil.rmtree(self.root / "00001001")
+        try:
+            store.set("preferences", "b", 2)
+        except ProfileStoreError as ex:
+            self.assertIn("پوشه مشترک", str(ex))
+        except FileNotFoundError:
+            self.fail("خطای خام FileNotFoundError به کاربر رسید")
+
+    def test_atomic_write_retries_before_giving_up(self):
+        """روی ویندوز/SMB، os.replace وقتی خواننده‌ای فایل را باز دارد خطا می‌دهد."""
+        import inspect
+        from gsi.personalization import store as PS
+        src = inspect.getsource(PS.EncryptedUserStore._atomic_write)
+        self.assertIn("PermissionError", src)
+        self.assertGreaterEqual(PS._REPLACE_ATTEMPTS, 3)
+
+    def test_doctor_checks_the_shared_store(self):
+        """تنها ابزار تشخیص این استقرار باید پوشه مشترک را هم بررسی کند."""
+        from gsi import doctor
+        self.assertTrue(hasattr(doctor, "check_personal_store"))
+        import inspect
+        self.assertIn("check_personal_store()", inspect.getsource(doctor.main))
+
+    def test_handoff_points_at_the_real_figma_file(self):
+        from gsi.design import handoff
+        self.assertIn("0splRPuGQgIo33XFkwa0rz", handoff.FIGMA_FILE)
+        self.assertNotIn("v3FIHcKem4vqZoZwcDWdZ2", handoff.FIGMA_FILE)
+
+
 def main() -> int:
     suite = unittest.defaultTestLoader.loadTestsFromModule(__import__(__name__))
     result = unittest.TextTestRunner(verbosity=2).run(suite)

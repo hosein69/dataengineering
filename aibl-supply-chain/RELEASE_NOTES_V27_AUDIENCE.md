@@ -207,7 +207,7 @@
 
 این Release علاوه بر Audience/Voice، مرجع طراحی محصول را نیز به یک فایل واقعی Figma منتقل می‌کند:
 
-- Figma: `https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2`
+- Figma: `https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz`
 - ۱۱ صفحه GSI از Cover تا Handoff
 - ۱۴ Component Set، ۵ Component مستقل و ۸۰ Variant
 - ۱۴۰ Variable قابل انتشار؛ Primitiveها و Sizeهای داخلی hidden هستند

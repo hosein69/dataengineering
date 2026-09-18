@@ -42,6 +42,7 @@ LOCK_TIMEOUT_ENV = "GSI_PROFILE_LOCK_TIMEOUT"
 _MAGIC = b"GSI-PROFILE\x01"
 _NONCE_BYTES = 12
 _SCHEMA_VERSION = 1
+_REPLACE_ATTEMPTS = 5
 
 
 class ProfileStoreError(RuntimeError):
@@ -61,17 +62,19 @@ def generate_master_key() -> str:
     return base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("ascii")
 
 
-def _decode_master_key(raw: str) -> bytes:
+def _decode_master_key(raw: str, *, source: str = KEY_ENV) -> bytes:
+    """Decode a base64 AES-256 key. ``source`` names what is being validated so a
+    broken user-key file is never reported as a master-key problem."""
     value = (raw or "").strip()
     if not value:
-        raise ProfileConfigurationError("کلید رمزگذاری GSI تنظیم نشده است.")
+        raise ProfileConfigurationError(f"کلید رمزگذاری GSI تنظیم نشده است ({source}).")
     try:
         padded = value + "=" * (-len(value) % 4)
         key = base64.urlsafe_b64decode(padded.encode("ascii"))
     except Exception as ex:
-        raise ProfileConfigurationError("GSI_PROFILE_MASTER_KEY باید Base64 معتبر باشد.") from ex
+        raise ProfileConfigurationError(f"{source} باید Base64 معتبر باشد.") from ex
     if len(key) != 32:
-        raise ProfileConfigurationError("کلید اصلی GSI باید دقیقاً ۳۲ بایت (AES-256) باشد.")
+        raise ProfileConfigurationError(f"کلید GSI باید دقیقاً ۳۲ بایت (AES-256) باشد ({source}).")
     return key
 
 
@@ -98,7 +101,7 @@ def _read_master_key(root: Path) -> bytes:
         raise ProfileConfigurationError("فایل کلید نباید داخل GSI_PROFILE_ROOT یا زیرشاخه‌های آن باشد.")
     if not p.is_file():
         raise ProfileConfigurationError(f"فایل کلید پیدا نشد: {p}")
-    return _decode_master_key(p.read_text(encoding="utf-8"))
+    return _decode_master_key(p.read_text(encoding="utf-8"), source=f"فایل کلید اصلی «{p}»")
 
 
 def derive_user_key(master_key: bytes, employee_code: str) -> bytes:
@@ -120,7 +123,7 @@ def derive_user_key_text(master_key_text: str, employee_code: str) -> str:
 def _read_user_key(root: Path) -> Optional[bytes]:
     raw = os.environ.get(USER_KEY_ENV, "").strip()
     if raw:
-        return _decode_master_key(raw)
+        return _decode_master_key(raw, source=USER_KEY_ENV)
     key_file = os.environ.get(USER_KEY_FILE_ENV, "").strip()
     if not key_file:
         if os.name == "nt":
@@ -136,7 +139,7 @@ def _read_user_key(root: Path) -> Optional[bytes]:
         raise ProfileConfigurationError("فایل User Key نباید داخل GSI_PROFILE_ROOT باشد.")
     if not p.is_file():
         raise ProfileConfigurationError(f"فایل User Key پیدا نشد: {p}")
-    return _decode_master_key(p.read_text(encoding="utf-8"))
+    return _decode_master_key(p.read_text(encoding="utf-8"), source=f"فایل User Key «{p}»")
 
 
 def _emp(value: str) -> str:
@@ -167,9 +170,11 @@ def _configured_root() -> str:
     if cfg.is_file():
         try:
             data = json.loads(cfg.read_text(encoding="utf-8"))
-            return str(data.get("profile_root", "")).strip()
-        except Exception:
-            return ""
+        except Exception as ex:
+            raise ProfileConfigurationError(
+                f"فایل پیکربندی محلی خراب است: {cfg} — آن را حذف کنید تا دوباره ساخته شود."
+            ) from ex
+        return str(data.get("profile_root", "")).strip()
     return ""
 
 
@@ -213,6 +218,7 @@ class _FileLock:
         start = time.monotonic()
         while True:
             try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
                 self.fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
                 os.write(self.fd, _utc().encode("ascii"))
                 return self
@@ -227,6 +233,11 @@ class _FileLock:
                 if time.monotonic() - start >= self.timeout:
                     raise ProfileStoreError(f"قفل فایل آزاد نشد: {self.path.name}")
                 time.sleep(0.08)
+            except OSError as ex:
+                raise ProfileStoreError(
+                    f"پوشه مشترک GSI در دسترس نیست: {self.path.parent} — "
+                    "اتصال درایو شبکه و دسترسی Modify روی state/ را بررسی کنید."
+                ) from ex
 
     def __exit__(self, exc_type, exc, tb):
         if self.fd is not None:
@@ -312,13 +323,35 @@ class EncryptedUserStore:
         return _MAGIC + nonce + ciphertext
 
     def _atomic_write(self, path: Path, blob: bytes) -> None:
+        """Write atomically, retrying the replace step.
+
+        On Windows/SMB ``os.replace`` raises PermissionError while another client
+        has the target open for reading, so a single attempt loses the publish.
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + f".{os.getpid()}.{secrets.token_hex(4)}.tmp")
         try:
             with open(tmp, "wb") as fh:
                 fh.write(blob)
                 fh.flush()
                 os.fsync(fh.fileno())
-            os.replace(tmp, path)
+            last: Optional[BaseException] = None
+            for attempt in range(_REPLACE_ATTEMPTS):
+                try:
+                    os.replace(tmp, path)
+                    return
+                except PermissionError as ex:
+                    last = ex
+                    time.sleep(0.08 * (2 ** attempt))
+                except OSError as ex:
+                    raise ProfileStoreError(
+                        f"نوشتن روی پوشه مشترک ممکن نشد: {path} — "
+                        "اتصال درایو شبکه و دسترسی Modify را بررسی کنید."
+                    ) from ex
+            raise ProfileStoreError(
+                f"فایل {path.name} توسط برنامه دیگری باز است و جایگزین نشد. "
+                "پنجره GSI یا Excel بازِ همین کاربر را ببندید و دوباره تلاش کنید."
+            ) from last
         finally:
             with contextlib.suppress(OSError):
                 tmp.unlink()
@@ -407,7 +440,10 @@ class EncryptedUserStore:
             rows = con.execute(
                 "SELECT key,value_json FROM kv WHERE namespace=? ORDER BY key", (namespace,)
             ).fetchall()
-        return {k: json.loads(v) for k, v in rows}
+        try:
+            return {k: json.loads(v) for k, v in rows}
+        except json.JSONDecodeError as ex:
+            raise ProfileIntegrityError("JSON داخل Store معتبر نیست.") from ex
 
     def set(self, namespace: str, key: str, value: Any, *, kind: str = "profile",
             audit_event: Optional[str] = None) -> None:

@@ -10,6 +10,8 @@
 from __future__ import annotations
 
 import glob
+from pathlib import Path
+import time
 import importlib.util
 import os
 import sys
@@ -303,6 +305,88 @@ def check_paths() -> None:
             _say(ERR, f"مسیر {label} قابل نوشتن نیست ({path}): {ex}")
 
 
+def check_personal_store() -> None:
+    """Validate the shared-folder personal store — the only transport this
+    deployment has besides email. Nothing here touches the network stack."""
+    print("\n── ۷) بررسی Store شخصی روی پوشه مشترک ──")
+    from .personalization import store as PS
+
+    root_raw = os.environ.get(PS.ROOT_ENV, "").strip()
+    if not root_raw:
+        try:
+            root_raw = PS._configured_root()
+        except Exception as ex:
+            _say(ERR, f"پیکربندی محلی Store خوانده نشد: {ex}")
+            return
+    if not root_raw:
+        _say(WARN, f"{PS.ROOT_ENV} تنظیم نشده است — Store شخصی و publish-personal کار نمی‌کنند.")
+        return
+
+    root = os.path.abspath(os.path.expanduser(root_raw))
+    if not os.path.isdir(root):
+        _say(ERR, f"پوشه مشترک Store در دسترس نیست: {root}")
+        return
+    _say(OK, f"پوشه مشترک Store: {root}")
+
+    probe = os.path.join(root, ".gsi_write_test")
+    try:
+        with open(probe, "w") as f:
+            f.write("ok")
+        os.remove(probe)
+        _say(OK, "پوشه مشترک قابل نوشتن است (دسترسی Modify برقرار است).")
+    except Exception as ex:
+        _say(ERR, f"پوشه مشترک قابل نوشتن نیست ({root}): {ex}")
+
+    master = os.environ.get(PS.KEY_ENV, "").strip()
+    key_file = os.environ.get(PS.KEY_FILE_ENV, "").strip()
+    user_key = os.environ.get(PS.USER_KEY_ENV, "").strip()
+    user_file = os.environ.get(PS.USER_KEY_FILE_ENV, "").strip()
+
+    if not any((master, key_file, user_key, user_file)):
+        _say(WARN, f"هیچ کلیدی تنظیم نشده — یکی از {PS.KEY_ENV}/{PS.KEY_FILE_ENV} "
+                   f"(مرکزی) یا {PS.USER_KEY_ENV}/{PS.USER_KEY_FILE_ENV} (کلاینت) لازم است.")
+
+    for label, path in (("کلید اصلی", key_file), ("User Key", user_file)):
+        if not path:
+            continue
+        p_abs = os.path.abspath(os.path.expanduser(path))
+        if not os.path.isfile(p_abs):
+            _say(ERR, f"فایل {label} پیدا نشد: {p_abs}")
+            continue
+        if PS._path_is_under(Path(p_abs), Path(root)):
+            _say(ERR, f"فایل {label} داخل پوشه مشترک است: {p_abs} — "
+                      "کلید هرگز نباید کنار داده رمزگذاری‌شده بماند.")
+        else:
+            _say(OK, f"فایل {label} بیرون پوشه مشترک است: {p_abs}")
+        try:
+            PS._decode_master_key(Path(p_abs).read_text(encoding="utf-8"), source=f"فایل {label}")
+            _say(OK, f"فایل {label} یک کلید معتبر ۳۲ بایتی است.")
+        except Exception as ex:
+            _say(ERR, f"فایل {label} معتبر نیست: {ex}")
+
+    emp = os.environ.get("GSI_EMP_CODE", "").strip()
+    if not emp:
+        _say(WARN, "GSI_EMP_CODE تنظیم نشده — روی کلاینت، فضای شخصی هویت کاربر را پیدا نمی‌کند.")
+    else:
+        folder = os.path.join(root, emp)
+        if os.path.isdir(folder):
+            snap = os.path.join(folder, "snapshot", "current.gsi")
+            if os.path.isfile(snap):
+                age_h = (time.time() - os.path.getmtime(snap)) / 3600.0
+                _say(OK if age_h <= 48 else WARN,
+                     f"Snapshot کاربر {emp}: {age_h:.1f} ساعت پیش به‌روز شده.")
+            else:
+                _say(WARN, f"برای کاربر {emp} هنوز Snapshot منتشر نشده است.")
+        else:
+            _say(WARN, f"پوشه کاربر {emp} در Store وجود ندارد — publish-personal هنوز اجرا نشده.")
+
+    stale = glob.glob(os.path.join(root, "*", "*", "*.lock"))
+    old = [f for f in stale if (time.time() - os.path.getmtime(f)) > 300]
+    if old:
+        _say(WARN, f"{len(old)} قفل کهنه در Store مانده — نمونه: {old[0]}")
+
+
+
 def main() -> int:
     print("═" * 78)
     print("GSI Doctor — بازرس نصب و محیط اجرا")
@@ -316,6 +400,7 @@ def main() -> int:
     check_packages()
     check_rules_and_sources()
     check_paths()
+    check_personal_store()
 
     errors = [m for lvl, m in _findings if lvl == ERR]
     warns = [m for lvl, m in _findings if lvl == WARN]

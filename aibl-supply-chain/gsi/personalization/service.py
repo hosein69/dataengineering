@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
+from .. import audience as _audience
 from .identity import resolve_employee_code
 from .store import EncryptedUserStore
 
@@ -32,8 +33,19 @@ class PersonalWorkspace:
         return cls(emp, EncryptedUserStore.from_env(emp))
 
     def preferences(self) -> Dict[str, Any]:
+        """Preferences, with the caps of the selected audience profile resolved.
+
+        ``table_rows`` and ``max_findings`` are derived from ``gsi.audience`` rather
+        than stored, so the renderers cannot drift from the profile definitions.
+        """
         saved = self.store.namespace("preferences")
-        return {**_DEFAULTS, **saved}
+        prefs = {**_DEFAULTS, **saved}
+        profile = _audience.get(str(prefs.get("audience") or ""))
+        prefs["audience"] = profile.key
+        prefs["table_rows"] = int(profile.table_rows)
+        prefs["max_findings"] = int(profile.max_findings)
+        prefs["audience_sections"] = list(profile.sections)
+        return prefs
 
     def save_preferences(self, values: Mapping[str, Any]) -> Dict[str, Any]:
         allowed = set(_DEFAULTS)

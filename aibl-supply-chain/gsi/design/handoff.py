@@ -83,7 +83,7 @@ def tokens_json() -> Dict[str, Any]:
 #: کد، منبع حقیقت توکن‌های runtime و خروجی‌های تولیدی است؛ Figma منبع حقیقت
 #: visual/interaction specification محصول است. اختلاف بین این دو باید در Release
 #: reconciliation حل شود و نباید یکی بی‌صدا دیگری را overwrite کند.
-FIGMA_FILE = "https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2"
+FIGMA_FILE = "https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz"
 
 #: نمونه HTML تعاملی داخل همین پکیج؛ داده‌های آن Demo هستند، نه داده عملیاتی.
 HTML_SAMPLE = "examples/GSI_V27_UI_SAMPLE.html"

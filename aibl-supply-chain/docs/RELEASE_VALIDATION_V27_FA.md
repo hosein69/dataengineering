@@ -44,7 +44,7 @@ Runner یک‌تکه به سقف زمان اجرای این محیط در مجم
 
 ## Design System / Figma
 
-- فایل: https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2
+- فایل: https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz
 - صفحات: Cover / Foundations / Design Tokens / Components / Patterns / User Flows / Wireframes / Desktop / Mobile / Prototype / Handoff
 - Prototype دارای مسیر Success و Error/Retry/Back است.
 - `gsi/design/handoff.py` به همین فایل و شمارش واقعی Variable/Componentها اشاره می‌کند.

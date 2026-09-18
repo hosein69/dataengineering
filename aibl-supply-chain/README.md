@@ -20,7 +20,7 @@ V27 روی یک اصل بنا شده است: یک زنجیره داده واحد
 ### Product Design V27
 مرجع visual/interaction واقعی در Figma:
 
-- `https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2`
+- `https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz`
 - ۱۱ صفحه نام‌گذاری‌شده GSI
 - ۱۴ Component Set + ۵ Component مستقل
 - ۸۰ Variant
