@@ -20,6 +20,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pandas as pd  # noqa: E402
+
 from nobitex_leveraged_backtest import fetch_raw  # noqa: E402
 from watchlist_compare import (  # noqa: E402
     LOOKBACK_DAYS, RESOLUTION, load_fee, load_lev_cap, load_symbols,
@@ -40,8 +42,27 @@ def main() -> None:
     print(f"universe: {len(symbols)} ({src})")
     print(f"fee {fee:.4%}/side ({fee_src}); venue cap {cap:g}x ({cap_src})")
 
+    # Resume rather than restart. Capturing 60+ symbols from a throttled venue
+    # takes half an hour, and this used to be all-or-nothing: a single failure
+    # at the end discarded every symbol already fetched, which cost three full
+    # captures before the data landed. A symbol already on disk is skipped, so
+    # a re-run only pays for what is missing.
     kept, skipped = [], []
     for s in symbols:
+        target = out / f"{s}.csv.gz"
+        if target.exists() and target.stat().st_size > 0:
+            try:
+                have = pd.read_csv(target, index_col=0, parse_dates=True)
+                if len(have) > 50:
+                    span = (have.index[-1] - have.index[0]).total_seconds() / 86400
+                    kept.append({"symbol": s, "requested_days": LOOKBACK_DAYS,
+                                 "expected_bars": len(have), "delivered_bars": len(have),
+                                 "coverage_ratio": 1.0, "pages_walked": 0,
+                                 "actual_span_days": round(span, 3), "resumed": True})
+                    print(f"  {s}: already captured ({len(have)} bars), skipping")
+                    continue
+            except Exception:  # noqa: BLE001
+                pass          # unreadable file: fall through and refetch
         try:
             df = fetch_raw(s, RESOLUTION, LOOKBACK_DAYS)
             cov = df.attrs["coverage"]
@@ -58,6 +79,7 @@ def main() -> None:
 
     manifest = {
         "captured_utc": datetime.now(timezone.utc).isoformat(),
+        "complete": len(skipped) == 0,
         "resolution": RESOLUTION, "lookback_days": LOOKBACK_DAYS,
         "universe_source": src, "fee_per_side": fee, "fee_source": fee_src,
         "venue_leverage_cap": cap, "cap_source": cap_src,

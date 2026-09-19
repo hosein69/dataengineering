@@ -68,6 +68,25 @@ def newest_snapshot() -> Path | None:
     return days[-1] if days else None
 
 
+def snapshot_terms() -> tuple[float, str, float, str] | None:
+    """Fee and leverage cap as recorded when the snapshot was captured.
+
+    The probe writes its output beside a workflow run, not into the repository,
+    so a run off the snapshot cannot re-read it and would silently fall back to
+    a spot fee five times the real one. The manifest records both, so the terms
+    travel with the data they describe.
+    """
+    snap = newest_snapshot()
+    if snap is None:
+        return None
+    man = json.loads((snap / "manifest.json").read_text())
+    fee, cap = man.get("fee_per_side"), man.get("venue_leverage_cap")
+    if fee is None or cap is None:
+        return None
+    return (float(fee), f"snapshot manifest ({man.get('fee_source', 'venue')})",
+            float(cap), f"snapshot manifest ({man.get('cap_source', 'venue')})")
+
+
 def load_history() -> tuple[dict[str, pd.DataFrame], str]:
     """Prefer pinned local data over the venue.
 
@@ -135,18 +154,23 @@ def score(df: pd.DataFrame, sig: pd.Series, stop: float, take: float,
     if not len(eq):
         return None
     bh = float(df["close"].iloc[-1] / df["close"].iloc[warmup] - 1)
+    curve = eq["equity"].astype(float)
+    curve.index = pd.to_datetime(curve.index, utc=True)
     return {"ret": m["total_return"], "bh": bh,
             "excess": m["total_return"] - bh, "trades": m["trades"],
-            "eq": pd.Series([r["equity"] for r in eq],
-                            index=[r["time"] for r in eq])}
+            "eq": curve}
 
 
 def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("max_out")
     out.mkdir(parents=True, exist_ok=True)
 
-    fee, fee_src = load_fee()
-    lev_cap, cap_src = load_lev_cap()
+    terms = snapshot_terms()
+    if terms is not None:
+        fee, fee_src, lev_cap, cap_src = terms
+    else:
+        fee, fee_src = load_fee()
+        lev_cap, cap_src = load_lev_cap()
     warmup = warmup_bars(30, 14, 3)
     print(f"fee {fee:.4%}/side ({fee_src}); venue cap {lev_cap:g}x ({cap_src})",
           file=sys.stderr)

@@ -1,2 +1,4 @@
 .nobitex_cache/
 vt-venv/
+__pycache__/
+*.pyc
