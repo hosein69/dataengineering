@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from alpha_beta import (  # noqa: E402
     BPY, OURS_STOP, OURS_TAKE, ema_long_short, long_only_ema, ols_alpha, run,
     short_only,
-)
+)  # noqa: E402
 from maximize import load_history, newest_snapshot  # noqa: E402
 from nobitex_leveraged_backtest import (  # noqa: E402
     add_indicators, equity_returns, warmup_bars,
@@ -34,6 +34,31 @@ from nobitex_leveraged_backtest import (  # noqa: E402
 
 TOP = 5
 MAINTENANCE = 0.005
+RIAL = "USDTIRT"
+
+
+def to_usdt(frames: dict) -> dict:
+    """Re-price every pair in USDT by dividing out the rial leg.
+
+    Rial pricing adds the same currency move to every symbol, which lifts
+    losers into apparent winners and charges a short that drift on every
+    position. Ranking has to happen on the move that is actually the symbol's
+    own, so signals, alpha and the market are all computed here instead.
+    """
+    if RIAL not in frames:
+        return frames
+    rial = frames[RIAL]["close"]
+    out = {}
+    for s, d in frames.items():
+        if s == RIAL:
+            continue
+        q = d.copy()
+        r = rial.reindex(q.index).ffill()
+        for c in ("open", "high", "low", "close"):
+            if c in q:
+                q[c] = q[c] / r
+        out[s] = q
+    return out
 
 
 def money(v: float) -> str:
@@ -48,9 +73,17 @@ def main() -> None:
     fee, lev = float(man["fee_per_side"]), float(man["venue_leverage_cap"])
     warmup = warmup_bars(30, 14, 3)
 
+    usdt = "--usdt" in sys.argv
     raw, src = load_history()
-    frames = {}
+    base = {}
     for s, d in raw.items():
+        base[s] = d
+    irt_price = {s: float(d["close"].iloc[-1]) for s, d in base.items()}
+
+    if usdt:
+        base = to_usdt(base)
+    frames = {}
+    for s, d in base.items():
         try:
             frames[s] = add_indicators(d, 10, 30, 14, 3)
         except Exception:  # noqa: BLE001
@@ -68,7 +101,8 @@ def main() -> None:
             bars_since += 1
 
         rec = {"symbol": s, "live": live, "bars_since_flip": bars_since,
-               "price": float(d["close"].iloc[-1]),
+               "price": irt_price.get(s, float(d["close"].iloc[-1])),
+               "price_basis": float(d["close"].iloc[-1]),
                "atr": float(d["atr"].iloc[-1])}
         for side, fn in (("short", short_only), ("long", long_only_ema)):
             c, _t = run(d, fn(d), OURS_STOP, OURS_TAKE, warmup, fee)
@@ -87,11 +121,15 @@ def main() -> None:
         return c[:TOP]
 
     liq_move = 1.0 / lev - MAINTENANCE          # adverse move that wipes margin
-    L = [f"\n===== FIVE SHORTS, FIVE LONGS AT {lev:g}x =====",
+    denom = "USDT" if usdt else "rial"
+    mdrift = rm.mean() * BPY
+    L = [f"\n===== FIVE SHORTS, FIVE LONGS AT {lev:g}x, priced in {denom} =====",
          f"data: {src}; last bar {frames[list(frames)[0]].index[-1]}",
          f"fee {fee:.4%}/side; stop {OURS_STOP:.0%}; target {OURS_TAKE:.0%}",
          f"at {lev:g}x the {OURS_STOP:.0%} stop costs {lev*OURS_STOP:.0%} of equity; "
          f"liquidation needs a {liq_move:.1%} adverse move, so the stop comes first",
+         f"market drift {mdrift*100:+.0f}%/yr in {denom} -> a short pays "
+         f"{-mdrift*100:+.0f}%/yr before any skill",
          "ranked by alpha vs the equal-weight market, not by raw return\n"]
 
     for side, want, label in (("short", -1, "SHORT"), ("long", 1, "LONG")):
