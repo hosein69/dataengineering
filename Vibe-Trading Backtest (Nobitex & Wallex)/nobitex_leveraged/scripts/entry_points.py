@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from maximize import newest_snapshot  # noqa: E402
 from nobitex_leveraged_backtest import add_indicators, atr, fetch_raw  # noqa: E402
 from watchlist_compare import (  # noqa: E402
     FT_BUY, FT_SELL, FT_TAKE, LOOKBACK_DAYS, RESOLUTION, signal_supertrend_ft,
@@ -43,6 +44,8 @@ MAX_SURVIVORS = 10
 
 
 def load_survivors() -> tuple[list[str], str]:
+    if len(sys.argv) > 2:
+        return sys.argv[2].split(","), "named on the command line"
     for candidate in (Path("watchlist_out/watchlists.json"),
                       Path(__file__).resolve().parent.parent / "watchlist_out/watchlists.json"):
         if not candidate.exists():
@@ -62,6 +65,11 @@ LEV_HARD_CAP = 5.0          # fallback only; the venue's own cap wins when known
 
 
 def venue_lev_cap() -> tuple[float, str]:
+    snap = newest_snapshot()
+    if snap is not None:
+        man = json.loads((snap / "manifest.json").read_text())
+        if man.get("venue_leverage_cap"):
+            return float(man["venue_leverage_cap"]), "snapshot manifest (venue maxLeverage)"
     for c in (Path("universe_out/leverage.json"),
               Path(__file__).resolve().parent.parent / "universe_out/leverage.json"):
         if c.exists():
@@ -93,8 +101,23 @@ def supertrend_bands(df: pd.DataFrame, period: int, multiplier: float):
     return direction, f_lo, f_up
 
 
+def read_history(symbol: str) -> pd.DataFrame:
+    """Snapshot first: the levels must describe the same bars the search scored,
+    and re-fetching would both cost a throttled request and risk quoting levels
+    off a different window than the one everything else here is based on."""
+    snap = newest_snapshot()
+    if snap is not None:
+        f = snap / f"{symbol}.csv.gz"
+        if f.exists():
+            df = pd.read_csv(f, index_col=0, parse_dates=True)
+            df.attrs["coverage"] = {"coverage_ratio": 1.0,
+                                    "source": f"snapshot {snap.name}"}
+            return df
+    return fetch_raw(symbol, RESOLUTION, LOOKBACK_DAYS)
+
+
 def analyse(symbol: str) -> dict:
-    raw = fetch_raw(symbol, RESOLUTION, LOOKBACK_DAYS)
+    raw = read_history(symbol)
     cov = raw.attrs["coverage"]
     df = add_indicators(raw, 10, 30, 14, 3)
     price = float(df["close"].iloc[-1])
