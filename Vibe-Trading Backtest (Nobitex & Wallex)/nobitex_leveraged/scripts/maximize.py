@@ -154,8 +154,11 @@ def score(df: pd.DataFrame, sig: pd.Series, stop: float, take: float,
     if not len(eq):
         return None
     bh = float(df["close"].iloc[-1] / df["close"].iloc[warmup] - 1)
-    curve = eq["equity"].astype(float)
-    curve.index = pd.to_datetime(curve.index, utc=True)
+    # run_symbol returns a RangeIndex with the time in a "timestamp" column;
+    # reading the index as the time silently produced epoch-nanosecond stamps,
+    # so anything joined on it (a market series, another symbol) matched nothing.
+    curve = pd.Series(eq["equity"].astype(float).to_numpy(),
+                      index=pd.to_datetime(eq["timestamp"], utc=True))
     return {"ret": m["total_return"], "bh": bh,
             "excess": m["total_return"] - bh, "trades": m["trades"],
             "eq": curve}
