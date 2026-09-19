@@ -1,5 +1,5 @@
 {
-  "captured_utc": "2026-09-19T04:56:12.504019+00:00",
+  "captured_utc": "2026-09-19T05:00:08.066663+00:00",
   "complete": false,
   "resolution": "240",
   "lookback_days": 180,
@@ -584,6 +584,15 @@
       "coverage_ratio": 0.1435,
       "pages_walked": 2,
       "actual_span_days": 25.667
+    },
+    {
+      "symbol": "BANKIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 408,
+      "coverage_ratio": 0.3778,
+      "pages_walked": 2,
+      "actual_span_days": 67.833
     }
   ],
   "skipped": [
