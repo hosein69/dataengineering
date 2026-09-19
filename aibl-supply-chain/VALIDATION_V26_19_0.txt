@@ -1,0 +1,116 @@
+AIBL V26.19.0 — FINAL VALIDATION
+Date: 2026-09-16
+
+PACKAGE / CONTRACTS
+- Package version: 26.19.0
+- aibl.factsheet: 22 test files, 17 dashboard sheets, 13 adapters, 9 rule packs
+- Contract issues: 0
+- Manifest regenerated: 108 package files
+- Doctor: 0 errors, 9 environment/domain warnings only
+  * optional jdatetime absent
+  * 20 rules flagged for business/circular verification by design
+  * corporate network paths unavailable in validation container
+  * one-time warehouse backup on 26.18.0 -> 26.19.0 package upgrade (expected)
+
+DEBUG — DEFECTS FIXED AND HOW EACH WAS MEASURED
+1) RTL chart labels drawn underneath the bars.
+   In a dir="rtl" document SVG text-anchor="end" resolves to the LOGICAL end,
+   which for RTL text is the left side. Measured in Chromium at anchor x=240:
+     text-anchor="end"                        -> text box [272 .. 374]  (on the bar)
+     direction:ltr; unicode-bidi:plaintext    -> text box [170 .. 272]  (correct)
+   Fix: one CSS rule on all SVG text. unicode-bidi:plaintext takes direction
+   from each label's own first strong character, so Persian activity names and
+   Latin material codes both render correctly.
+2) Outlook (-2147221008) "CoInitialize has not been called", Studio send path only.
+   Streamlit runs each interaction on a fresh ScriptRunner thread; win32com
+   requires CoInitialize on that thread. Both call sites now use one
+   _outlook_session() context manager; CoUninitialize runs on every exit path
+   including the error path.
+3) Email KPI cards overflowed: six cards at width:20% in one row = 120%.
+   Now max 3 per row, width computed from count.
+4) Missing glyphs in email chart PNGs. Measured on matplotlib 3.11:
+     font.family="sans-serif" + font.sans-serif=[X,"DejaVu Sans"] -> 123 warnings
+     font.family=[X,"DejaVu Sans"]                                -> 0 warnings
+   Per-glyph fallback only engages for an explicit list of real font names.
+5) KPI card accent rule used #F39C12 at 1.9:1 on white. Now the measured ink.
+
+DESIGN SYSTEM / CONTRAST
+- aibl/report/design_system.py is the single source for HTML, email and dashboard
+- contrast_ratio() implements WCAG 2.1; audit_contrast() returns violations
+- audit_contrast(): 0 violations, asserted by the regression suite
+- Status palette: separate ink (text/boundary) and fill (chart surface)
+  * "becoming critical" text: #ec835a (2.64) -> #9a4718 (6.39)
+  * "watch" text:            #fab219 (1.83) -> #7a5405 (6.78)
+  * muted note text:         #6e6e66 (4.1)  -> #5c6b66 (5.4)
+- Yellow/orange fills cannot reach 3:1 on white; their boundary carries the
+  contrast per WCAG 1.4.11. Every status stroke >= 6.3:1.
+
+DATA STORYTELLING
+- Minto pyramid: situation -> complication -> resolution
+- Every finding carries magnitude, comparison and so-what; no so-what, no finding
+- Narrative recomputes live in HTML against the active filter
+- Email carries the same narrative above the KPI row
+- KPI cards show period-over-period delta with per-metric "better" direction
+
+PROCESS ANALYTICS
+- Median and p90 replace mean for cycle time and transition wait
+- Bottlenecks ranked by total time lost, not by single-transition mean
+- Flow efficiency, rework rate, variant concentration, Little's Law cross-check
+- No Event Log -> basis reported as "stage", no hypothetical bottleneck invented
+
+CHARTS
+- Shared catalog: 20 charts; kinds bar, donut, grouped, scatter, trend, pareto
+- Trend charts read the stored KPI history and say so in their own caption
+- Scatter: numbered axes, gridlines, median quadrants, OLS line, correlation r
+- Pareto: cumulative curve plus 80% reference line
+- HTML and Email chart selections remain independent
+
+HTML
+- Date-range filter on any date column in the payload, with 7/30/90/365 presets
+- Active range applies to narrative, KPIs, charts, table and Excel export
+- Payload integrity unchanged: 3,000 rows requested -> 3,000 rows embedded
+- DOM pagination 100 rows/page; Excel export covers the whole active slice
+- Browser run in Chromium: date presets, dropdown filters and search exercised,
+  zero page errors
+- Generated JavaScript: node --check clean
+
+MOTION
+- transform and opacity only; GPU-composited, no layout recalculation
+- Exit-biased curves; no spring or bounce
+- prefers-reduced-motion disables all animation
+- Zero external libraries; native IntersectionObserver only
+- Three safety nets so content is never permanently invisible: no-observer
+  path, 1500 ms failsafe, and beforeprint reveal
+
+FIGMA DESIGN SYSTEM
+- File: AIBL Design System — Tokens & Motion (V26.19)
+- AIBL Color: 49 variables; AIBL Motion: 14 variables
+- Two documentation boards: status palette with measured ratios, motion board
+  with easing curves drawn as vectors
+- Code remains the source of truth; Figma is for review and proposal
+
+REGRESSION SUITES VERIFIED
+- validation: 61 / 0
+- rules_and_moghavemat: 63 / 0
+- criticality: 34 / 0
+- architecture: 36 / 0
+- contracts_report: 14 / 0
+- dashboard: 78 / 0
+- import_hygiene: 19 / 0
+- doc_claims: 8 / 0
+- email_report: 11 / 0
+- studio: 5 / 0
+- report_builder: 32 / 0
+- supply_views: 55 / 0
+- system_health: 49 / 0
+- html_export_v26_15: 1 / 0
+- oracle_multisheet_v26_14: 1 / 0
+- studio_v26_12: exit 0 / OK
+- v26_16_hardening: 4 / 0
+- v26_16_release: 13 / 0
+- warehouse_v26_17: 19 / 0
+- html_browser_v26_17: 4 / 0
+- v26_18_charts_delivery_persistence: 21 / 0
+- v26_19_storytelling_motion: 48 / 0
+
+TOTAL: 576 passed / 0 failed

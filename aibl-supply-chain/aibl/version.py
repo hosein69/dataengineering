@@ -40,6 +40,10 @@ REQUIRED_CONTRACTS: Dict[str, int] = {
     "rulebook.loader": 1,
     "engines.criticality": 1,
     "stages.base": 1,
+    "warehouse.sqlite_store": 2,  # durable path + schema migration backup + profiles
+    "studio_core.html_export": 5, # compact no-silent-truncation payload + chart catalog/pagination
+    "studio_core.designs": 2,     # independent HTML/email chart selections + composer fields
+    "studio_core.report_builder": 3,  # separate HTML/email chart contracts + access scope
 }
 
 #: توضیح فارسی هر قرارداد، برای پیام خطای قابل فهم
@@ -52,6 +56,10 @@ CONTRACT_NOTES: Dict[str, str] = {
     "rulebook.loader": "بارگذار کتابخانه قوانین YAML",
     "engines.criticality": "موتور مقاومت قطعه",
     "stages.base": "قرارداد مرحله‌های خط لوله",
+    "warehouse.sqlite_store": "SQLite Warehouse، Event Log و Transition history",
+    "studio_core.html_export": "HTML خودبسنده بدون truncation پنهان، pagination و کاتالوگ نمودار",
+    "studio_core.designs": "طرح پایدار نمودارهای HTML/Email و تنظیمات ارائه",
+    "studio_core.report_builder": "قرارداد سازنده گزارش با نمودارهای مستقل و scope دسترسی",
 }
 
 

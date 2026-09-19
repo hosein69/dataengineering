@@ -23,18 +23,18 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-os.environ.setdefault("AIBL_OUTPUT", tempfile.mkdtemp(prefix="aibl_rep_"))
-os.environ.setdefault("AIBL_LOGS", tempfile.mkdtemp(prefix="aibl_replog_"))
+os.environ.setdefault("GSI_OUTPUT", tempfile.mkdtemp(prefix="gsi_rep_"))
+os.environ.setdefault("GSI_LOGS", tempfile.mkdtemp(prefix="gsi_replog_"))
 
 import pandas as pd  # noqa: E402
 
-from aibl.studio_core import templates as tpl  # noqa: E402
-from aibl.studio_core.grain import (KIND_ADDITIVE, KIND_IDENTIFIER,  # noqa: E402
+from gsi.studio_core import templates as tpl  # noqa: E402
+from gsi.studio_core.grain import (KIND_ADDITIVE, KIND_IDENTIFIER,  # noqa: E402
                                     KIND_RATIO, column_grain, fanout,
                                     integrity_report, measure_kind, naive_agg,
                                     preferred_agg, safe_agg, summable)
-from aibl.studio_core.html_export import build_dynamic_html  # noqa: E402
-from aibl.studio_core.report_builder import ReportSpec, build  # noqa: E402
+from gsi.studio_core.html_export import build_dynamic_html  # noqa: E402
+from gsi.studio_core.report_builder import ReportSpec, build  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -111,7 +111,7 @@ def test_integrity_report() -> None:
 
 def test_html_export() -> None:
     print("\n── ۴) خروجی HTML ──")
-    html = build_dynamic_html(FAN, "2026-08-31", "AIBL",
+    html = build_dynamic_html(FAN, "2026-08-31", "GSI",
                               selected_fields=["CANONICAL_BL", "مانده تعهد",
                                                "مقاومت (روز)", "بحرانی (کوتاه)"])
     check("سند راست‌به‌چپ و فارسی است", 'dir="rtl"' in html and 'lang="fa"' in html)
@@ -120,8 +120,15 @@ def test_html_export() -> None:
     check("تابع تجمیع دانه‌ای در JS هست", "function gagg" in html and "gvals" in html)
     check("ستون نسبتی میانگین می‌گیرد نه جمع", "'mean'" in html or '"mean"' in html)
     check("دکمه چاپ/PDF دارد", "window.print()" in html)
-    check("پالت وضعیت اعتبارسنجی‌شده استفاده شده",
-          "#d03b3b" in html and "#fab219" in html)
+    # پالت از سیستم طراحی می‌آید؛ تست باید «رنگ وضعیت از منبع واحد» را
+    # تضمین کند، نه یک hex منجمد. مقدار hex در طول زمان بهتر می‌شود.
+    from gsi.design.tokens import STATUS, SURFACE_RAISED, AA_TEXT, AA_LARGE, contrast
+    check("پالت وضعیت از سیستم طراحی می‌آید",
+          all(STATUS[k].fill in html for k in ("critical", "warning", "good")))
+    check("رنگ متن هر وضعیت کف WCAG AA را دارد",
+          all(contrast(s.ink, SURFACE_RAISED) >= AA_TEXT for s in STATUS.values()))
+    check("مرز هر سطح رنگی کف ۳:۱ را دارد",
+          all(contrast(s.stroke, SURFACE_RAISED) >= AA_LARGE for s in STATUS.values()))
     check("پالت رد شده قبلی دیگر نیست", "#F1C40F" not in html and "#C0392B" not in html)
 
 
@@ -136,7 +143,7 @@ def test_templates_build() -> None:
     with tempfile.TemporaryDirectory() as td:
         for key in tpl.TEMPLATES:
             spec = ReportSpec(template=key, fields=list(FAN.columns),
-                              ref_date="2026-08-31", title="AIBL",
+                              ref_date="2026-08-31", title="GSI",
                               formats=["excel", "html"], file_stem=f"t_{key}")
             res = build(FAN, {}, spec, {}, td)
             check(f"قالب «{tpl.get(key).title}» هر دو فرمت را می‌سازد",
@@ -157,9 +164,16 @@ def test_cross_format_consistency() -> None:
         check("عدد گزارش صحت با محاسبه مستقل یکی است",
               safe == safe_agg(FAN, "مانده تعهد", "sum") == 1500.0, f"{safe:,.0f}")
         html = res.html
-        check("HTML همان مقدار دانه‌ای را در سربرگ دارد",
-              "1,500" in html or "1500" in html or "۱٬۵۰۰" in html
-              or 'GRAIN' in html)   # مقدار در JS محاسبه می‌شود
+        # مقدار در مرورگر محاسبه می‌شود، پس عدد در HTML نیست. چیزی که باید
+        # تضمین شود این است: کلید دانه «مانده تعهد» داخل payload هست و تابع
+        # تجمیع از آن یکتاسازی می‌کند — بدون این دو، جمع سربرگ ۳ برابر می‌شد.
+        import json as _json, re as _re
+        _m = _re.search(r"const TAB_META=(\[.*?\]);", html, _re.S)
+        _grain = _json.loads(_m.group(1))[0]["grain"] if _m else {}
+        check("کلید دانه «مانده تعهد» در payload مرورگر هست",
+              _grain.get("مانده تعهد") == "KEY_REG", str(_grain.get("مانده تعهد")))
+        check("تجمیع مرورگر پیش از جمع، بر همان کلید یکتا می‌کند",
+              "function gvals" in html and "seen.has(key)" in html)
         from openpyxl import load_workbook
         wb = load_workbook(res.files["excel"])
         check("برگه «صحت محاسبات» در Excel هست", "صحت محاسبات" in wb.sheetnames,
@@ -168,7 +182,7 @@ def test_cross_format_consistency() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — تست سازنده گزارش و صحت دانه‌ای")
+    print("GSI — تست سازنده گزارش و صحت دانه‌ای")
     print("=" * 78)
     test_fanout_double_counting()
     test_measure_kind()

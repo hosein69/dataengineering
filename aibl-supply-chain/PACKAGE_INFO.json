@@ -1,0 +1,63 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "27.2.1",
+  "identity": "Data • Process • Decision",
+  "figma": "https://www.figma.com/design/v3FIHcKem4vqZoZwcDWdZ2",
+  "html_sample": "examples/GSI_V27_UI_SAMPLE.html",
+  "rulebook": {
+    "packs": 13,
+    "structural_errors": 0,
+    "needs_verification": 23
+  },
+  "pipeline_stages": 17,
+  "manifest_tracked_files": 123,
+  "doctor": {
+    "errors": 0,
+    "warnings": 10
+  },
+  "figma_delivery": {
+    "named_pages": 11,
+    "component_sets": 14,
+    "standalone_components": 5,
+    "variants": 80,
+    "publishable_variables": 140
+  },
+  "release": "Runtime bottleneck contract and optional encryption import fix",
+  "personal_store": {
+    "transport": "shared-folder-only",
+    "encryption": "AES-256-GCM",
+    "profile": "state/profile.gsi",
+    "snapshot": "snapshot/current.gsi",
+    "identity": "KEY_EMP / local identity file",
+    "live_view": "gsi://personal",
+    "http_ip_data_transport": false
+  },
+  "tests_previous_release": {
+    "passed": 749,
+    "failed": 0,
+    "suites": 25
+  },
+  "control_center": {
+    "source_kinds": [
+      "contacts",
+      "clusters",
+      "memberships"
+    ],
+    "path_env": "GSI_CONTROL_ROOT",
+    "default_clusters": 7,
+    "automatic_send": false,
+    "source_ingestion": "manual validated commit",
+    "scope": "existing encrypted per-user snapshot"
+  },
+  "tests": {
+    "passed": 798,
+    "failed": 1,
+    "suites": 28,
+    "verification_log": "TEST_RESULTS_V27_2_1.log",
+    "streamlit_runtime_tested": false,
+    "outlook_com_tested": "mock only",
+    "smb_tested": false,
+    "targeted_runtime_passed": 7,
+    "architecture_isolated_passed": 42
+  }
+}

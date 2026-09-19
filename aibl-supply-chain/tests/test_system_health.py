@@ -25,11 +25,11 @@ for _s in (sys.stdout, sys.stderr):
 import pandas as pd  # noqa: E402
 from openpyxl import Workbook  # noqa: E402
 
-from aibl import health  # noqa: E402
-from aibl.dataio.reader import read_sheet  # noqa: E402
-from aibl.report import system_health as sh  # noqa: E402
-from aibl.resolve import commercial_coverage as cc  # noqa: E402
-from aibl.resolve import part_status as ps  # noqa: E402
+from gsi import health  # noqa: E402
+from gsi.dataio.reader import read_sheet  # noqa: E402
+from gsi.report import system_health as sh  # noqa: E402
+from gsi.resolve import commercial_coverage as cc  # noqa: E402
+from gsi.resolve import part_status as ps  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -165,7 +165,7 @@ def test_timeline_anomaly() -> None:
 def test_material_lineage() -> None:
     print("\n── ۵) سفارش چندمتریاله پنهان نمی‌ماند ──")
     health.reset()
-    from aibl.adapters.moghavemat import MoghavematAdapter as M
+    from gsi.adapters.moghavemat import MoghavematAdapter as M
     got = M._uniq_values(pd.Series(["a", "", None, "a", " b "]))
     check("تابع یکتاسازی مقادیر خالی را دور می‌ریزد", got == ["a", "b"], str(got))
     check("خروجی مرتب است (نسب پایدار، نه وابسته به ترتیب ردیف)",
@@ -203,7 +203,7 @@ def test_coverage_states() -> None:
 def test_runtime_hygiene() -> None:
     print("\n── ۷) بهداشت اجرا ──")
     bad = []
-    for base, dirs, files in os.walk(os.path.join(ROOT, "aibl")):
+    for base, dirs, files in os.walk(os.path.join(ROOT, "gsi")):
         dirs[:] = [x for x in dirs if x != "__pycache__"]
         for f in files:
             if not f.endswith(".py"):
@@ -219,9 +219,9 @@ def test_runtime_hygiene() -> None:
     check("هیچ escape نامعتبری در سورس نیست", not bad, str(bad[:3]))
 
     out = subprocess.run([sys.executable, "-W", "error::RuntimeWarning",
-                          "-m", "aibl.factsheet"], cwd=ROOT,
+                          "-m", "gsi.factsheet"], cwd=ROOT,
                          capture_output=True, text=True, timeout=120)
-    check("«python -m aibl.factsheet» بدون RuntimeWarning اجرا می‌شود",
+    check("«python -m gsi.factsheet» بدون RuntimeWarning اجرا می‌شود",
           "RuntimeWarning" not in (out.stderr or ""), (out.stderr or "")[:120])
 
     src = open(os.path.join(ROOT, "run_all_tests.py"), encoding="utf-8").read()
@@ -229,7 +229,7 @@ def test_runtime_hygiene() -> None:
           "timeout=" in src and "TimeoutExpired" in src)
     check("خروجی TIMEOUT صریح گزارش می‌شود", "TIMEOUT" in src)
 
-    tree = ast.parse(open(os.path.join(ROOT, "aibl", "__init__.py"),
+    tree = ast.parse(open(os.path.join(ROOT, "gsi", "__init__.py"),
                           encoding="utf-8").read())
     lazy = any(isinstance(n, ast.FunctionDef) and n.name == "__getattr__"
                for n in tree.body)
@@ -238,7 +238,7 @@ def test_runtime_hygiene() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — نقاط کور سیستمی و فرآیندی")
+    print("GSI — نقاط کور سیستمی و فرآیندی")
     print("=" * 78)
     test_reader_fail_closed()
     test_health_registry()

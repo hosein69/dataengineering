@@ -24,7 +24,7 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PKG = os.path.join(ROOT, "aibl")
+PKG = os.path.join(ROOT, "gsi")
 sys.path.insert(0, ROOT)
 
 _TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +35,7 @@ if _TESTS_DIR not in sys.path:
 def _load_make_synthetic():
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "aibl_make_synthetic", os.path.join(_TESTS_DIR, "make_synthetic.py"))
+        "gsi_make_synthetic", os.path.join(_TESTS_DIR, "make_synthetic.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -43,15 +43,15 @@ def _load_make_synthetic():
 
 build = _load_make_synthetic().build
 
-_TMP = tempfile.mkdtemp(prefix="aibl_arch_")
+_TMP = tempfile.mkdtemp(prefix="gsi_arch_")
 DIRS = build(_TMP)
 ENV = {
-    "AIBL_FOREIGN": DIRS["foreign"], "AIBL_BLS": DIRS["bls"],
-    "AIBL_CLEARANCE": DIRS["clearance"], "AIBL_HR": DIRS["hr"],
-    "AIBL_ESMAEILI": DIRS["esmaeili"],
-    "AIBL_GS_COMBINE": DIRS["gs_combine"], "AIBL_MOHAMADI": DIRS["mohamadi"],
-    "AIBL_OUTPUT": DIRS["output"], "AIBL_LOGS": DIRS["logs"],
-    "AIBL_TODAY": "2026-08-31",
+    "GSI_FOREIGN": DIRS["foreign"], "GSI_BLS": DIRS["bls"],
+    "GSI_CLEARANCE": DIRS["clearance"], "GSI_HR": DIRS["hr"],
+    "GSI_ESMAEILI": DIRS["esmaeili"],
+    "GSI_GS_COMBINE": DIRS["gs_combine"], "GSI_MOHAMADI": DIRS["mohamadi"],
+    "GSI_OUTPUT": DIRS["output"], "GSI_LOGS": DIRS["logs"],
+    "GSI_TODAY": "2026-08-31",
 }
 os.environ.update(ENV)
 
@@ -59,9 +59,9 @@ import logging  # noqa: E402
 
 import pandas as pd  # noqa: E402
 
-from aibl.stages import (collect_columns, discover, validate_graph)  # noqa: E402
-from aibl.stages.base import REGISTRY, StageContractError  # noqa: E402
-from aibl.version import check_contracts  # noqa: E402
+from gsi.stages import (collect_columns, discover, validate_graph)  # noqa: E402
+from gsi.stages.base import REGISTRY, StageContractError  # noqa: E402
+from gsi.version import check_contracts  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -106,14 +106,14 @@ def test_stage_contract() -> None:
     check("ستون‌های گزارش را مرحله‌ها اعلام می‌کنند، نه dashboard",
           len(cols) >= 30, f"{len(cols)} ستون از {len(stages)} مرحله")
     check("ستون‌های بحرانی در ابتدای ترتیب نمایش‌اند",
-          [c.title for c in cols[:2]] == ["طبقه بحرانی", "مقاومت (روز)"],
+          [c.title for c in cols[:2]] == ["طبقه بحرانی", "مقاومت قطعی (روز)"],
           str([c.title for c in cols[:4]]))
 
 
 # ═══════════ ۲) گارد ترتیب — باگ B1 دیگر ممکن نیست ═══════════
 def test_order_guard() -> None:
     print("\n── ۲) گارد ترتیب علّی ──")
-    from aibl.stages.base import Stage
+    from gsi.stages.base import Stage
 
     class BadStage(Stage):
         name = "bad_test_stage"
@@ -145,7 +145,9 @@ def test_order_guard() -> None:
 # ═══════════ ۳) افزودن قابلیت = یک فایل ═══════════
 def test_add_remove_feature() -> None:
     print("\n── ۳) افزودن و حذف قابلیت با یک فایل ──")
-    new_file = os.path.join(PKG, "stages", "s95_demo_feature.py")
+    isolated_root = tempfile.mkdtemp(prefix='gsi_plugin_test_')
+    shutil.copytree(PKG, os.path.join(isolated_root,'gsi'),ignore=shutil.ignore_patterns('__pycache__','s95_demo_feature.py'))
+    new_file = os.path.join(isolated_root, 'gsi', 'stages', 's95_demo_feature.py')
     content = '''# -*- coding: utf-8 -*-
 """مرحله آزمایشی — اثبات اینکه یک قابلیت فقط یک فایل است."""
 from __future__ import annotations
@@ -186,17 +188,17 @@ class DemoStage(Stage):
         code = (
             "import sys; sys.path.insert(0, r'%s')\n"
             "import logging; logging.disable(logging.INFO)\n"
-            "from aibl.pipeline import Pipeline\n"
+            "from gsi.pipeline import Pipeline\n"
             "r = Pipeline().run(build_report=True)\n"
             "print('COL_OK', 'شاخص فشار تأمین' in r.df.columns)\n"
             "from openpyxl import load_workbook\n"
             "ws = load_workbook(r.dashboard_path)['۲. کالبدشکافی ۳ لایه‌ای ماتریسی']\n"
             "print('SHEET_OK', any(c.value == 'شاخص فشار تأمین' for c in ws[1]))\n"
             "ex = load_workbook(r.dashboard_path)['۱. خلاصه اجرایی']\n"
-            "vals = [ex.cell(row=i, column=1).value for i in range(6, 30)]\n"
+            "vals = [ex.cell(row=i, column=1).value for i in range(6, ex.max_row + 1)]\n"
             "print('KPI_OK', any(v and 'فشار تأمین' in str(v) for v in vals))\n"
-        ) % ROOT
-        r = subprocess.run([sys.executable, "-c", code], cwd=ROOT,
+        ) % isolated_root
+        r = subprocess.run([sys.executable, "-c", code], cwd=isolated_root,
                            capture_output=True, text=True,
                            env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                            encoding="utf-8", errors="replace")
@@ -214,17 +216,17 @@ class DemoStage(Stage):
     # رجیستری مرحله‌ها کش می‌شود و هنوز فایلِ حذف‌شده را در خود دارد،
     # پس baseline یکی بیشتر از واقعیت درمی‌آمد و تست کاذب قرمز می‌شد.
     code0 = ("import sys; sys.path.insert(0, r'%s')\n"
-             "from aibl.stages import discover\n"
-             "print('BASE', len(discover()))\n") % ROOT
-    r0 = subprocess.run([sys.executable, "-c", code0], cwd=ROOT,
+             "from gsi.stages import discover\n"
+             "print('BASE', len(discover()))\n") % isolated_root
+    r0 = subprocess.run([sys.executable, "-c", code0], cwd=isolated_root,
                         capture_output=True, text=True,
                         env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                         encoding="utf-8", errors="replace")
     baseline = int(r0.stdout.split("BASE")[1].split()[0]) if "BASE" in r0.stdout else -1
     code2 = ("import sys; sys.path.insert(0, r'%s')\n"
-             "from aibl.stages import discover\n"
-             "print('STAGES', len(discover()))\n") % ROOT
-    r2 = subprocess.run([sys.executable, "-c", code2], cwd=ROOT,
+             "from gsi.stages import discover\n"
+             "print('STAGES', len(discover()))\n") % isolated_root
+    r2 = subprocess.run([sys.executable, "-c", code2], cwd=isolated_root,
                         capture_output=True, text=True,
                         env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                         encoding="utf-8", errors="replace")
@@ -241,9 +243,9 @@ def test_version_skew() -> None:
 
     # شبیه‌سازی دقیق سناریوی واقعی: sources.py قدیمی، بقیه جدید
     sandbox = os.path.join(_TMP, "skew")
-    shutil.copytree(PKG, os.path.join(sandbox, "aibl"),
+    shutil.copytree(PKG, os.path.join(sandbox, "gsi"),
                     ignore=shutil.ignore_patterns("__pycache__"))
-    stale = os.path.join(sandbox, "aibl", "config", "sources.py")
+    stale = os.path.join(sandbox, "gsi", "config", "sources.py")
     with open(stale, encoding="utf-8") as f:
         src = f.read()
     # نسخه قرارداد را هرچه باشد یک واحد پایین می‌آورد (وابسته به عدد ثابت نیست)
@@ -256,7 +258,7 @@ def test_version_skew() -> None:
         f.write(src)
 
     env = dict(os.environ, PYTHONPATH=sandbox, PYTHONIOENCODING="utf-8")
-    d = subprocess.run([sys.executable, "-m", "aibl.doctor"], cwd=sandbox,
+    d = subprocess.run([sys.executable, "-m", "gsi.doctor"], cwd=sandbox,
                        capture_output=True, text=True, env=env,
                        encoding="utf-8", errors="replace")
     check("Doctor فایل قدیمی را تشخیص می‌دهد", d.returncode == 1)
@@ -269,7 +271,7 @@ def test_version_skew() -> None:
 
     # خط لوله هم باید پیش از خواندن داده متوقف شود، نه با AttributeError
     code = ("import sys; sys.path.insert(0, r'%s')\n"
-            "from aibl.pipeline import Pipeline\n"
+            "from gsi.pipeline import Pipeline\n"
             "Pipeline().run(build_report=False)\n") % sandbox
     p = subprocess.run([sys.executable, "-c", code], cwd=sandbox,
                        capture_output=True, text=True, env=env,
@@ -288,7 +290,7 @@ def test_version_skew() -> None:
 def test_eventlog():
     print("\n── ۵) لاگ رویداد (استاندارد Celonis) ──")
     logging.disable(logging.INFO)
-    from aibl.pipeline import Pipeline
+    from gsi.pipeline import Pipeline
 
     res = Pipeline().run(build_report=True)
     ev = res.extras.get("eventlog")
@@ -313,29 +315,57 @@ def test_eventlog():
     check("جدول پرونده با throughput ساخته شد",
           cases is not None and "THROUGHPUT_DAYS" in cases.columns,
           f"میانگین {cases['THROUGHPUT_DAYS'].mean():.0f} روز" if cases is not None else "")
-    check("طول چرخه = فاصله نخستین تا آخرین رویداد",
-          bool(((cases["LAST_EVENT"] - cases["FIRST_EVENT"]).dt.days
-                == cases["THROUGHPUT_DAYS"]).all()))
+    # زمان چرخه فقط برای پرونده **بسته** معنا دارد. اگر پرونده باز را هم
+    # در همین ستون بگذاریم، میانگین چرخه مصنوعاً کوتاه می‌شود: پرونده‌های
+    # کند هنوز تمام نشده‌اند، پس در مخرج می‌آیند ولی زمان کاملشان در صورت
+    # نیست. این تست هر سه ستون زمانی را جدا می‌سنجد.
+    closed = cases[cases["CASE_STATE"] == "CLOSED"]
+    openc = cases[cases["CASE_STATE"] == "OPEN"]
+    check("زمان چرخه فقط برای پرونده بسته و برابر فاصله نخستین تا آخرین است",
+          bool(closed.empty or ((closed["LAST_EVENT"] - closed["FIRST_EVENT"]).dt.days
+                                == closed["THROUGHPUT_DAYS"]).all()),
+          f"{len(closed)} پرونده بسته")
+    check("پرونده باز زمان چرخه نمی‌گیرد، سن و انتظار جاری می‌گیرد",
+          bool(openc.empty or (openc["THROUGHPUT_DAYS"].isna().all()
+                               and openc["CURRENT_WAIT_DAYS"].notna().all())),
+          f"{len(openc)} پرونده باز")
+
+    # تکرار رکورد منبع نباید به دوباره‌کاری تبدیل شود.
+    check("رویدادها در سطح (پرونده، فعالیت، تاریخ) یکتا شده‌اند",
+          not ev.duplicated(subset=["_CASE_KEY", "ACTIVITY_EN", "EVENTTIME"]).any())
+    check("شمار ردیف منبع نگه داشته شده و از رویداد یکتا کمتر نیست",
+          bool((cases["SOURCE_ROWS"] >= cases["EVENT_COUNT"]).all()))
+    check("نقاط کنترل طی‌شده هرگز از ۱۰۰٪ رد نمی‌کند",
+          float(cases["PROCESS_COMPLETENESS"].max()) <= 100.0,
+          f"بیشینه {cases['PROCESS_COMPLETENESS'].max():.1f}٪")
 
     bn = res.extras.get("bottlenecks")
-    check("گلوگاه‌ها محاسبه و نزولی مرتب شدند",
+    check("گلوگاه‌ها با میانه محاسبه و نزولی مرتب شدند",
           bn is not None and not bn.empty
-          and list(bn["میانگین روز"]) == sorted(bn["میانگین روز"], reverse=True),
+          and list(bn["میانه روز"]) == sorted(bn["میانه روز"], reverse=True),
           f"{bn.iloc[0]['از فعالیت']} → {bn.iloc[0]['به فعالیت']}: "
-          f"{bn.iloc[0]['میانگین روز']:.0f} روز" if bn is not None and len(bn) else "")
+          f"میانه {bn.iloc[0]['میانه روز']:.0f} روز" if bn is not None and len(bn) else "")
+    check("گذار «به خودش» در جدول گلوگاه نیست",
+          bn is not None and not (bn["از فعالیت"] == bn["به فعالیت"]).any())
+
+    q = res.extras.get("stage_queue")
+    check("صف جاری هر مرحله محاسبه شد",
+          q is not None and {"مرحله جاری", "تعداد پرونده",
+                             "میانه انتظار (روز)"} <= set(q.columns),
+          f"{len(q)} مرحله دارای صف" if q is not None else "")
 
     var = res.extras.get("variants")
     check("مسیرهای فرآیند (variants) با سهم درصدی تولید شد",
           var is not None and "سهم (٪)" in var.columns,
           f"{len(var)} مسیر متمایز" if var is not None else "")
 
-    csv_path = os.path.join(DIRS["output"], "AIBL_EventLog.csv")
-    check("فایل CSV آماده بارگذاری در Celonis ذخیره شد",
-          os.path.exists(csv_path), csv_path)
-    if os.path.exists(csv_path):
-        head = pd.read_csv(csv_path, nrows=1)
-        check("سرستون CSV مطابق استاندارد Celonis است",
-              all(c in head.columns for c in required), str(list(head.columns)[:5]))
+    from gsi.warehouse.store import Warehouse
+    wh=Warehouse()
+    with wh.db() as c:
+        saved=c.execute("SELECT id FROM wh_frame WHERE run_id=? AND name='extras/eventlog'",(res.extras['warehouse_run_id'],)).fetchone()
+    check("لاگ رویداد فقط در دیتاورهوس ثبت شد", saved is not None)
+    stored=wh.read_frame(saved[0]) if saved else pd.DataFrame()
+    check("ستون‌های استاندارد Celonis در دیتاورهوس حفظ شد",all(col in stored for col in required))
 
     from openpyxl import load_workbook
     wb = load_workbook(res.dashboard_path)
@@ -343,7 +373,7 @@ def test_eventlog():
           "۱۰. نقشه فرآیند و گلوگاه" in wb.sheetnames, str(wb.sheetnames[-2:]))
     # ⚠️ عدد از شناسنامه می‌آید، نه هاردکد: افزودن شیت جدید نباید تست را
     # بشکند، ولی ناهماهنگی مستندات با کد باید فوراً دیده شود.
-    from aibl.factsheet import DASHBOARD_SHEETS
+    from gsi.factsheet import DASHBOARD_SHEETS
     check(f"داشبورد {DASHBOARD_SHEETS} شیتی کامل است",
           len(wb.sheetnames) == DASHBOARD_SHEETS, f"{len(wb.sheetnames)} شیت")
     return res
@@ -372,7 +402,7 @@ def test_thin_orchestrator() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL V23 — تست معماری، اختلاف نسخه و لاگ رویداد")
+    print("GSI V23 — تست معماری، اختلاف نسخه و لاگ رویداد")
     print("=" * 78)
     test_stage_contract()
     test_order_guard()

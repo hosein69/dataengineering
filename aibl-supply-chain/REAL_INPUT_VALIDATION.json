@@ -1,0 +1,11 @@
+{
+  "input_files": 4,
+  "sheets": 17,
+  "nonempty_rows_including_headers": 1815,
+  "stored_rows": 1815,
+  "all_counts_match": true,
+  "integrity": "ok",
+  "fx_valid_transactions": 4,
+  "fx_quarantined_rows": 1,
+  "oracle_reference_sheet": "1"
+}

@@ -1,0 +1,78 @@
+AIBL V26.18.0 — FINAL VALIDATION
+Date: 2026-09-15
+
+PACKAGE / CONTRACTS
+- Package version: 26.18.0
+- aibl.factsheet: 21 test files, 17 dashboard sheets, 13 adapters, 9 rule packs
+- Contract issues: 0
+- Manifest regenerated: 106 package files
+- Doctor: 0 errors, 8 environment/domain warnings only
+  * optional jdatetime absent
+  * 20 rules flagged for business/circular verification by design
+  * corporate network paths unavailable in validation container
+
+V26.18 DELIVERY / CHARTS
+- Shared chart catalog: 15 selectable charts
+- Chart kinds: bar, donut, grouped, scatter
+- HTML and Email chart selections are independent
+- Process bottleneck fallback: current-stage distribution when event/transition history is insufficient
+- HTML automotive supply-chain identity and process ribbon validated in Chromium
+- Browser runtime: no JavaScript page errors
+
+HTML DATA INTEGRITY
+- Silent max_payload_cells row truncation removed
+- Synthetic request: 3,000 rows -> embedded payload: 3,000 rows
+- DOM pagination: 100 rows/page; synthetic 3,000-row report shows 30 pages
+- Compact array payload removes repeated per-row JSON keys
+- Excel export operates on the complete active filtered payload, not the visible page
+- Browser regression: filtered XLSX contains only active slice and preserves numeric/date cell types
+- PDF/Print uses the same HTML DOM
+
+WAREHOUSE PERSISTENCE
+- SQLite schema: 2
+- Durable pointer: ~/.aibl/warehouse.path or %AIBL_HOME%/warehouse.path
+- Path priority: AIBL_WAREHOUSE_PATH > durable pointer > configured legacy path
+- Existing snapshots/events/transitions/audit are not reset on package update
+- Automatic consistent SQLite backup on first open by a new package release
+- Automatic consistent SQLite backup before schema migration
+- app_profile persists Studio/Email Composer profiles in the same warehouse
+- Schema-upgrade regression: profile/data survived 1 -> 2 migration
+- Package-upgrade regression: 26.17.0 -> 26.18.0 backup created and profile/data survived
+- Warehouse regression: 19 passed / 0 failed
+
+EMAIL / FONT / EXCEL
+- Studio Email Composer: TO, CC, Subject, Header, Intro text, chart selection
+- Email Composer profiles persist in Warehouse
+- Audit logs recipient counts only; addresses are not written to audit messages
+- Outlook HTML requests IRANSans
+- PNG chart rendering resolves installed IRANSans / AIBL_FONT_PATH; Studio warns visibly if unavailable
+- Font files are not bundled in the release
+- Native Excel chart XML validated with IRANSans + fa-IR + RTL metadata
+- Custom Excel user-facing sheet/KPI names Persianized
+- Official commitment chart uses grain-safe aggregation
+
+REGRESSION SUITES VERIFIED
+- validation: 61 / 0
+- rules_and_moghavemat: 63 / 0
+- criticality: 34 / 0
+- architecture: 36 / 0
+- contracts_report: 14 / 0
+- dashboard: 78 / 0
+- import_hygiene: 19 / 0
+- doc_claims: 8 / 0
+- email_report: 11 / 0
+- studio: 5 / 0
+- report_builder: 32 / 0
+- supply_views: 55 / 0
+- system_health: 49 / 0
+- html_export_v26_15: 1 / 0
+- oracle_multisheet_v26_14: 1 / 0
+- studio_v26_12: exit 0 / OK
+- v26_16_hardening: 4 / 0
+- v26_16_release: 13 / 0
+- warehouse_v26_17: 19 / 0
+- html_browser_v26_17: 9 / 0
+- v26_18_charts_delivery_persistence: 21 / 0
+
+NOTE
+The monolithic run_all_tests.py invocation hit the outer execution time limit of the validation environment. The suite files were therefore also run directly with bounded per-suite execution; all 21 suite files returned success. The warnings above are not code/contract/manifest failures.

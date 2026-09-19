@@ -25,6 +25,9 @@ def main() -> int:
     if cmd in ("email", "mail", "daily-email"):
         from .integrations.daily_email import main as run
         return run(sys.argv[2:])
+    if cmd in ("warehouse", "wh", "dw"):
+        from .warehouse.cli import main as run
+        return run(sys.argv[2:])
     if cmd in ("studio", "dashboard"):
         import os, subprocess
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,7 +41,7 @@ def main() -> int:
         from .pipeline import main as run
         run()
         return 0
-    print(f"دستور ناشناخته «{cmd}». گزینه‌ها: doctor | diagnose | rules | email | studio | run")
+    print(f"دستور ناشناخته «{cmd}». گزینه‌ها: doctor | diagnose | rules | warehouse | email | studio | run")
     return 2
 
 

@@ -1,0 +1,141 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  واژگان وضعیت — استخراج مرحله چرخه عمر از متن آزاد فارسی
+#
+#  منبع اصلی: ستون «Additional Data (Note , Brand etc.)» در فایل مقاومت.
+#  قالب مشاهده‌شده:  «وضعیت بازرگانی // وضعیت لجستیک-ارزی»
+#  نمونه‌ها:
+#     "در مرحله مذاکره بازرگانی//"
+#     "ترخیص درصدی انجام شد//در انتظار خرید ارز"
+#     "در انتظار پرداخت //دارای کد رهگیری تحویل ترخیص"
+#     "آماده حمل کالا//در انتظار ثبت سفارش"
+#
+#  برای افزودن عبارت جدید فقط یک سطر به phrases اضافه کنید.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: status_lexicon
+version: "1.0"
+updated_at: "2026-08-31"
+status: internal
+
+parsing:
+  separator: "//"
+  left_field: COMMERCIAL_NOTE       # وضعیت بازرگانی
+  right_field: LOGISTICS_NOTE       # وضعیت لجستیک / ارزی
+  trim: true
+  empty_as_null: true
+
+# نگاشت عبارت → مرحله چرخه عمر (کدهای stage در fx_governance.yaml)
+phrases:
+  # ── مرحله بازرگانی ──
+  - match: "در مرحله استعلام"
+    stage: NEGOTIATION
+    progress: 15
+    fa: "استعلام‌گیری از تأمین‌کنندگان"
+  - match: "مذاکره بازرگانی"
+    stage: NEGOTIATION
+    progress: 20
+    fa: "مذاکره بازرگانی"
+  - match: "تکمیل جدول مقایسه"
+    stage: NEGOTIATION
+    progress: 25
+    fa: "تکمیل جدول مقایسه فنی/مالی"
+  - match: "تایید کمیسیون"
+    stage: NEGOTIATION
+    progress: 30
+    fa: "در انتظار تأیید کمیسیون معاملات"
+  - match: "ارسال ORDER"
+    stage: PO
+    progress: 40
+    fa: "ابلاغ سفارش به تأمین‌کننده"
+  - match: "در حال ساخت"
+    stage: PO
+    progress: 45
+    fa: "در حال تولید نزد تأمین‌کننده"
+
+  # ── ثبت سفارش و ارز ──
+  - match: "در انتظار ثبت سفارش"
+    stage: ORDER_REG
+    progress: 50
+    blocking: true
+    fa: "منتظر ثبت سفارش در سامانه جامع تجارت"
+    alert: "پرونده بدون ثبت سفارش قابل تخصیص ارز نیست."
+  - match: "در انتظار تخصیص"
+    stage: ALLOCATION
+    progress: 55
+    blocking: true
+    fa: "منتظر تخصیص ارز"
+  - match: "در انتظار خرید ارز"
+    stage: FX_SUPPLY
+    progress: 60
+    blocking: true
+    fa: "منتظر خرید/تأمین ارز"
+    alert: "ریسک عبور از مهلت رفع تعهد در صورت تأخیر خرید ارز."
+  - match: "در انتظار پرداخت"
+    stage: FX_SUPPLY
+    progress: 60
+    blocking: true
+    fa: "منتظر پرداخت"
+
+  # ── حمل ──
+  - match: "آماده حمل"
+    stage: SHIPMENT
+    progress: 70
+    fa: "کالا آماده حمل"
+  - match: "در حال حمل"
+    stage: SHIPMENT
+    progress: 75
+    fa: "در مسیر حمل بین‌المللی"
+
+  # ── اسناد و گمرک ──
+  - match: "تحویل به واحد چک و بررسی"
+    stage: DOCS
+    progress: 80
+    fa: "اسناد تحویل واحد بررسی شد"
+  - match: "تکمیل فرم ترخیص"
+    stage: DOCS
+    progress: 82
+    fa: "فرم ترخیص تکمیل شد"
+  - match: "کد رهگیری تحویل ترخیص"
+    stage: CUSTOMS
+    progress: 85
+    fa: "دارای کد رهگیری ترخیص"
+  - match: "ترخیص درصدی"
+    stage: CUSTOMS
+    progress: 90
+    clearance_type: PARTIAL
+    fa: "ترخیص درصدی انجام شد"
+  - match: "ترخیص کامل"
+    stage: CUSTOMS
+    progress: 95
+    clearance_type: FULL
+    fa: "ترخیص کامل انجام شد"
+
+  # ── پایانی ──
+  - match: "تمام"
+    stage: RELEASE
+    progress: 100
+    terminal: true
+    exact: true                # فقط تطبیق دقیق، تا «ناتمام» را نگیرد
+    fa: "پرونده خاتمه‌یافته"
+  - match: "ابطال"
+    stage: CANCELLED
+    progress: 0
+    terminal: true
+    excluded_from_kpi: true
+    fa: "سفارش ابطال شده"
+    alert: "این ردیف نباید در KPI رسوب و تعهد شمرده شود."
+
+# مراحل ویژه که در چرخه اصلی نیستند
+extra_stages:
+  - code: CANCELLED
+    fa: "ابطال شده"
+    terminal: true
+    excluded_from_kpi: true
+
+# وضعیت‌های سفارش (ستون Order Status در فایل مقاومت)
+order_status_map:
+  "Open": OPEN
+  "Closed": CLOSED
+  "Cancelled": CANCELLED
+  "باز": OPEN
+  "بسته": CLOSED
+  "ابطال": CANCELLED

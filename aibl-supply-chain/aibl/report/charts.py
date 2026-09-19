@@ -54,29 +54,37 @@ _ANCHORS = ["B2", "M2", "B23", "M23", "B44", "M44", "B65"]
 
 def _font_rich(size: int = 820, bold: bool = False) -> RichText:
     cp = CharacterProperties(
-        sz=size, b=bold,
-        latin=DrawingFont(typeface="IRANSans Light"),
-        ea=DrawingFont(typeface="IRANSans Light"),
-        cs=DrawingFont(typeface="IRANSans Light"),
+        sz=size, b=bold, lang="fa-IR", rtl=True,
+        latin=DrawingFont(typeface="IRANSans"),
+        ea=DrawingFont(typeface="IRANSans"),
+        cs=DrawingFont(typeface="IRANSans"),
     )
-    return RichText(p=[Paragraph(pPr=ParagraphProperties(defRPr=cp))])
+    return RichText(p=[Paragraph(pPr=ParagraphProperties(defRPr=cp, rtl=True, algn="r"))])
 
 
 def _apply_chart_font(ch: Any) -> None:
-    """فونت همه متن‌های نمودار را به IRANSans Light تنظیم می‌کند."""
+    """فونت و جهت همه متن‌های نمودار را برای فارسی/IRANSans تنظیم می‌کند."""
     try:
         if ch.title and ch.title.tx and ch.title.tx.rich and ch.title.tx.rich.p:
-            para = ch.title.tx.rich.p[0]
-            if para.r:
-                para.r[0].rPr = CharacterProperties(
-                    sz=1050, b=True,
-                    latin=DrawingFont(typeface="IRANSans Light"),
-                    ea=DrawingFont(typeface="IRANSans Light"),
-                    cs=DrawingFont(typeface="IRANSans Light"),
-                )
+            for para in ch.title.tx.rich.p:
+                para.pPr = ParagraphProperties(rtl=True, algn="r", defRPr=CharacterProperties(
+                    sz=1050, b=True, lang="fa-IR", rtl=True,
+                    latin=DrawingFont(typeface="IRANSans"), ea=DrawingFont(typeface="IRANSans"),
+                    cs=DrawingFont(typeface="IRANSans")))
+                if para.r:
+                    for run in para.r:
+                        run.rPr = CharacterProperties(sz=1050, b=True, lang="fa-IR", rtl=True,
+                            latin=DrawingFont(typeface="IRANSans"), ea=DrawingFont(typeface="IRANSans"),
+                            cs=DrawingFont(typeface="IRANSans"))
         for axis in (getattr(ch, "x_axis", None), getattr(ch, "y_axis", None)):
             if axis is not None:
                 axis.txPr = _font_rich()
+        if getattr(ch, "legend", None) is not None:
+            try: ch.legend.txPr = _font_rich(size=760)
+            except Exception: pass
+        if getattr(ch, "dataLabels", None) is not None:
+            try: ch.dataLabels.txPr = _font_rich(size=760)
+            except Exception: pass
     except Exception as exc:
         log.debug("chart font styling skipped: %s", exc)
 
@@ -246,7 +254,8 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
                    ("در مهلت", (overdue <= 0) & (bal > 0)),
                    ("تسویه‌شده", bal <= 0)]
         labels = [b[0] for b in buckets]
-        vals = [float(bal[m].sum()) for _, m in buckets]
+        from ..studio_core.grain import safe_agg
+        vals = [safe_agg(df.loc[m].copy(), "مانده تعهد", "sum") for _, m in buckets]
         counts = [int(m.sum()) for _, m in buckets]
         if sum(counts):
             r1, c1, r2, c2 = data.write("مانده تعهد بر حسب وضعیت مهلت", labels,
@@ -265,9 +274,10 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
 
     # ── ۵) گلوگاه فرآیند ──
     bott = (ctx_extras or {}).get("bottlenecks")
+    process_chart_done = False
     if bott is not None and not getattr(bott, "empty", True):
         b = bott.head(8)
-        val_col = next((c for c in b.columns if "میانگین" in c), None)
+        val_col = next((c for c in b.columns if "میانگین" in str(c)), None)
         has_pair = {"از فعالیت", "به فعالیت"} <= set(b.columns)
         if val_col and has_pair:
             labels = [f"{a} ← {c}" for a, c in
@@ -286,6 +296,23 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
             _color_series(ch, ["F39C12"])
             _apply_chart_font(ch)
             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
+            process_chart_done = True
+    # در روزهای اول که هنوز Transition Log تاریخ کافی ندارد، جای نمودار فرآیند
+    # خالی نمی‌ماند: توزیع مرحله فعلی نقطه شروع قابل‌فهمی برای مدیر است.
+    if not process_chart_done and n_charts < len(anchors):
+        stage_col = next((c for c in ("STAGE_FA", "ORDER_STAGE_FA", "LIFECYCLE_STAGE") if c in df.columns), None)
+        if stage_col:
+            counts = df[stage_col].fillna("").astype(str).replace("", "نامشخص").value_counts().head(10)
+            if len(counts):
+                r1, c1, r2, c2 = data.write("نقطه شروع فرآیند — مرحله فعلی",
+                    [str(x) for x in counts.index], {"تعداد پرونده": [int(v) for v in counts.values]})
+                ch = BarChart(); ch.type, ch.grouping = "bar", "clustered"
+                ch.add_data(Reference(ws, min_col=c1 + 1, min_row=r1, max_row=r2), titles_from_data=True)
+                ch.set_categories(Reference(ws, min_col=c1, min_row=r1 + 1, max_row=r2))
+                _style_chart(ch, "نقطه شروع فرآیند — توزیع مرحله فعلی")
+                ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True; ch.legend = None
+                _color_series(ch, ["F39C12"]); _apply_chart_font(ch)
+                ws.add_chart(ch, anchors[n_charts]); n_charts += 1
 
     # ── ۶) توزیع طبقه ریسک ──
     if "طبقه ریسک" in df.columns:

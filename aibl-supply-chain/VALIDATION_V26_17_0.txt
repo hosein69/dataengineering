@@ -1,0 +1,45 @@
+AIBL V26.17.0 — FINAL VALIDATION
+Date: 2026-09-15
+
+Architecture / release
+- python -m aibl.doctor: PASS (0 errors; environment-only network/rule warnings remain)
+- Manifest fingerprint: PASS
+- Package version consistency: PASS (26.17.0)
+- compileall aibl/app: PASS
+
+SQLite Warehouse
+- Warehouse regression: 19 PASS / 0 FAIL
+- Durable run lifecycle: RUNNING / SUCCESS / FAILED
+- UUID-based run_id prevents same-second refresh collisions
+- Source lineage + fingerprints
+- Wide case snapshot + partition
+- Deduplicated event catalog + run bridge
+- Per-run transition snapshots with wait_days
+- Case process snapshots / variants / throughput / rework
+- KPI history with grain-safe aggregation
+- Case state change log; historical backfill does not compare against future state
+- Operational/runtime audit log
+- Retention + VACUUM + CLI
+
+HTML-only delivery
+- Chromium browser runtime: 9 PASS / 0 FAIL
+- Active browser filters drive table/KPI/process calculations
+- Filtered Excel export contains only active slice
+- Excel export preserves numeric/date cell types
+- PDF/Print uses the exact same HTML DOM
+- No JavaScript runtime errors in browser smoke test
+- warehouse_run_id embedded for lineage
+- payload cap protects browser from oversized artifacts
+
+Business / aggregation hardening
+- Dashboard regression: 78 PASS / 0 FAIL
+- Release regression: 13 PASS / 0 FAIL
+- Hardening regression: 4 PASS / 0 FAIL
+- Commitment balance and estimated penalty KPIs are REG-grain safe
+- Historical resistance KPI is MATERIAL-grain safe
+- Semantic metric registry avoids classifying large unique amounts as identifiers
+
+Final design
+Sources -> Adapters/Stages -> SQLite Warehouse (system of record) -> Studio -> one self-contained HTML artifact
+Recipient can export the active HTML slice to XLSX or Print/Save as PDF.
+Legacy Python Excel APIs remain only for backward compatibility; Studio and Daily Email use HTML-only delivery.
