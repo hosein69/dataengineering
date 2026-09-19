@@ -23,6 +23,10 @@ on:
         description: "snapshot mode: explicit comma-separated symbols (e.g. spot-only names)"
         required: false
         default: ""
+      global_symbols:
+        description: "snapshot mode: Binance symbols to fetch as a global reference"
+        required: false
+        default: ""
       leverage:
         description: "Requested leverage"
         required: false
@@ -113,13 +117,19 @@ jobs:
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: python scripts/snapshot.py data_snapshot "${{ inputs.symbols_extra }}"
 
+      - name: Fetch the same coins from a global venue for comparison
+        if: ${{ inputs.mode == 'snapshot' && inputs.global_symbols != '' }}
+        continue-on-error: true
+        working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
+        run: python scripts/global_ref.py global_ref "${{ inputs.global_symbols }}" 540
+
       - name: Commit the snapshot so no later run needs the venue
         if: ${{ inputs.mode == 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data_snapshot
+          git add data_snapshot global_ref
           if git diff --cached --quiet; then
             echo "snapshot unchanged, nothing to commit"
           else
@@ -169,4 +179,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/universe_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/max_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/data_snapshot
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/global_ref
           retention-days: 5
