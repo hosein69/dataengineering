@@ -36,7 +36,13 @@ def main() -> None:
     out = root / day
     out.mkdir(parents=True, exist_ok=True)
 
-    symbols, src = load_symbols()
+    # The margin list is the default universe, but spot lists far more, so an
+    # explicit set can be requested — a spot-only name is invisible otherwise.
+    extra = [x for x in (sys.argv[2].split(",") if len(sys.argv) > 2 else []) if x]
+    if extra:
+        symbols, src = extra, "named on the command line"
+    else:
+        symbols, src = load_symbols()
     fee, fee_src = load_fee()
     cap, cap_src = load_lev_cap()
     print(f"universe: {len(symbols)} ({src})")

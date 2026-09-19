@@ -19,6 +19,10 @@ on:
         description: "Historical lookback in days"
         required: false
         default: "30"
+      symbols_extra:
+        description: "snapshot mode: explicit comma-separated symbols (e.g. spot-only names)"
+        required: false
+        default: ""
       leverage:
         description: "Requested leverage"
         required: false
@@ -107,7 +111,7 @@ jobs:
       - name: Capture a dated snapshot of the margin universe's history
         if: ${{ inputs.mode == 'snapshot' }}
         working-directory: "Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged"
-        run: python scripts/snapshot.py data_snapshot
+        run: python scripts/snapshot.py data_snapshot "${{ inputs.symbols_extra }}"
 
       - name: Commit the snapshot so no later run needs the venue
         if: ${{ inputs.mode == 'snapshot' }}
