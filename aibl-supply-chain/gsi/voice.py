@@ -174,6 +174,15 @@ def fa_num(v) -> str:
     return s.replace(",", "٬").replace(".", "٫").translate(_FA_DIGITS)
 
 
+def fa_digits(s) -> str:
+    """ارقام لاتین را فارسی می‌کند بدون دست‌زدن به بقیه رشته.
+
+    برای تاریخ و هر رشته‌ای که عدد است ولی «کمیت» نیست؛ ``fa_num`` جداکننده
+    هزارگان می‌گذارد که روی تاریخ غلط است.
+    """
+    return str(s).translate(_FA_DIGITS)
+
+
 def headline(count: int, total: int, subject: str, *,
              none_text: str = "") -> str:
     """تیتر — با مخرج، بدون صفت، و صادق وقتی چیزی نیست."""

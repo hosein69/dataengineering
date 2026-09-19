@@ -188,7 +188,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
         title,
         eyebrow="GSI · GLOBAL SOURCING INTELLIGENCE · DATA • PROCESS • DECISION",
         subtitle=(f"{template_title}{' · ' if template_title else ''}"
-                  f"تاریخ مرجع {ref_date}{' · ' + subtitle if subtitle else ''}"),
+                  f"تاریخ مرجع {V.fa_digits(ref_date)}{' · ' + subtitle if subtitle else ''}"),
         stats=stats, actions=actions)
 
     legend_html = C.legend(T.STATUS_SCALE)
@@ -714,7 +714,7 @@ function renderStory(a){
  let situation='این برش '+fmt(a.length)+' ردیف'
   +(mats.size?('، '+fmt(mats.size)+' قطعه یکتا'):'')+' دارد.';
  let complication=nCrit?(fmt(nCrit)+unit+' در وضعیت بحرانی یا توقف خط است'
-  +(mats.size?(' — '+(nCrit/mats.size*100).toFixed(1)+'٪ از قطعات این برش'):'')+'.')
+  +(mats.size?(' — '+(nCrit/mats.size*100).toLocaleString('fa-IR',{minimumFractionDigits:1,maximumFractionDigits:1})+'٪ از قطعات این برش'):'')+'.')
   :'قطعه‌ای در طبقه بحرانی نیست.';
  if(facets.length>1)complication+=' ابعاد دیگر ریسک: '
   +facets.filter(x=>x.k!=='موجودی').map(x=>x.k+' '+fmt(x.n)).join('، ')+'.';
@@ -745,7 +745,7 @@ function renderStory(a){
  const box=document.getElementById('story_findings');
  if(box){const items=[];
   if(nCrit)items.push(['ریسک توقف خط',fmt(nCrit)+unit+' بحرانی',
-   mats.size?((nCrit/mats.size*100).toFixed(1)+'٪ از قطعات این برش'):'',
+   mats.size?((nCrit/mats.size*100).toLocaleString('fa-IR',{minimumFractionDigits:1,maximumFractionDigits:1})+'٪ از قطعات این برش'):'',
    'پیگیری از کم‌مقاومت‌ترین قطعه شروع شود.','critical']);
   facets.filter(x=>x.k!=='موجودی').forEach(x=>items.push(
    [x.k,fmt(x.n)+' مورد',x.t,'بررسی و رفع شکاف شاهد یا مهلت، پیش از رسیدن به مرحله بعد.',x.tone]));

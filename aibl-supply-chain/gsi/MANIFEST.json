@@ -30,7 +30,7 @@
   "design/__init__.py": "edfb3e771f19a073",
   "design/charts_js.py": "a49f1dbd36376675",
   "design/components.py": "a2d244e67928538b",
-  "design/css.py": "ffa3bb1e2a182a3f",
+  "design/css.py": "812f50cc7fa9811f",
   "design/excel.py": "0cd2ad3fbb7f1782",
   "design/handoff.py": "20c8e157dea076f6",
   "design/tokens.py": "6ed13f3499c910d6",
@@ -116,13 +116,13 @@
   "studio_core/field_catalog.py": "ca57ebf462df66f7",
   "studio_core/filters.py": "6cc5353d76d18934",
   "studio_core/grain.py": "9235e33b462ec2ca",
-  "studio_core/html_export.py": "0a446b2bb3bc084d",
+  "studio_core/html_export.py": "444d1c7777b11cc9",
   "studio_core/pdf_export.py": "0f5605abc99e04b1",
   "studio_core/registry.py": "474645204139b06d",
   "studio_core/report_builder.py": "6cd30c1fef015802",
   "studio_core/templates.py": "0c4f4ba2eb38250c",
   "version.py": "ae49401aa8bbe734",
-  "voice.py": "31b7ba6dfb215991"
+  "voice.py": "cf3b92f89d2c8387"
  },
  "package_version": "27.1.1"
 }

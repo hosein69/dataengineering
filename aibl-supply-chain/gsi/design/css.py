@@ -171,18 +171,65 @@ def _responsive() -> str:
 @media (max-width:{b['lg'] - 1}px){{
   .grid-auto{{--col:220px}}
   .only-lg{{display:none!important}}
+
+  /* ── تبلت: نوار بالایی نباید از دسکتاپ بلندتر شود ──
+     در این عرض عنوان می‌شکست و نوار به ۱۸۱px می‌رسید، یعنی بلندتر از
+     همان نوار روی ۱۴۴۰. عنوان یک‌خطی می‌شود و خط لاتین حذف. */
+  .appbar{{padding:{T.SPACE['md']}px {T.SPACE['lg']}px}}
+  .appbar .eyebrow{{display:none}}
+  .appbar .t-h1{{font-size:19px;line-height:1.35;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}}
+  .appbar .sub{{font-size:12px;line-height:1.5;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}}
 }}
 @media (max-width:{b['md'] - 1}px){{
-  .shell{{padding:{T.SPACE['sm']}px}}
+  .shell{{padding:{T.SPACE['md']}px}}
   .grid-auto{{--col:100%}}
   .split{{flex-direction:column;align-items:stretch}}
   .t-display{{font-size:25px}} .t-h1{{font-size:21px}} .t-metric{{font-size:22px}}
   .toolbar label{{min-width:100%}}
   .only-md{{display:none!important}}
+
+  /* ── نوار بالایی: یک نوار، نه یک بنر ──
+     روی دسکتاپ چهار چیز زیر هم می‌نشیند و ۳۰۹px ارتفاع می‌گیرد — ۳۷٪ صفحه گوشی.
+     در موبایل نوار به یک ردیف برمی‌گردد: عنوان راست، عدد چپ. */
+  .appbar{{padding:{T.SPACE['sm']}px {T.SPACE['md']}px;border-radius:var(--r-lg);
+    background:var(--inverse)}}          /* گرادیان حذف می‌شود؛ روی صفحه کوچک فقط نویز است */
+  .appbar.split{{flex-direction:row;align-items:center;gap:{T.SPACE['sm']}px}}
+  .appbar .eyebrow{{display:none}}       /* خط لاتین حروف‌بزرگ، دو خط می‌شکست */
+  .appbar .stack{{gap:0}}
+  .appbar .t-h1{{font-size:16px;line-height:1.35;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}}
+  .appbar .sub{{font-size:11px;line-height:1.4;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;opacity:.85}}
+  .appbar .cluster{{flex:0 0 auto}}
+  .stat-pill{{flex-direction:row;align-items:baseline;gap:{T.SPACE['2xs']}px;
+    min-width:0;padding:{T.SPACE['2xs']}px {T.SPACE['xs']}px}}
+  .stat-pill b{{font-size:15px}} .stat-pill span{{font-size:10px}}
+  .appbar .btn{{display:none}}           /* چاپ، کارِ دسکتاپ است */
+
+  /* ── ردیف چیپ: نوار افقی، نه شکستن دندانه‌دار ──
+     شکستن آزاد، سه ردیف ناهموار می‌ساخت. نوار افقی با محوشدگی لبه،
+     به کاربر می‌گوید ادامه دارد. این همان پیمایش افقی جدول نیست:
+     آنجا ستون پنهان دیده نمی‌شود، اینجا چیپ بعدی از لبه پیداست. */
+  .cluster:not(.hug){{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    padding-inline-end:{T.SPACE['xl']}px;
+    -webkit-mask-image:linear-gradient(to left,transparent 0,#000 {T.SPACE['xl']}px);
+    mask-image:linear-gradient(to left,transparent 0,#000 {T.SPACE['xl']}px)}}
+  .cluster:not(.hug)::-webkit-scrollbar{{display:none}}
+  .cluster:not(.hug)>*{{flex:0 0 auto}}
+
+  /* ── اقدام ثانویه نباید شبیه اقدام اصلی باشد ──
+     دکمه استخراج، تمام‌عرض و پررنگ بود و چشم را از خودِ داده می‌دزدید. */
+  .btn--decision{{background:transparent;color:var(--gold-ink);
+    border:1px solid var(--gold-ink);box-shadow:none}}
 }}
 @media (max-width:{b['sm'] - 1}px){{
   .t-h1{{font-size:19px}} .t-metric{{font-size:20px}}
   .hide-xs{{display:none!important}}
+  .appbar .t-h1{{font-size:15px}}
+  .appbar .sub{{display:none}}          /* زیر ۴۸۰px فقط عنوان و عدد می‌ماند */
 }}
 @media print{{
   @page{{size:A4 landscape;margin:12mm}}
