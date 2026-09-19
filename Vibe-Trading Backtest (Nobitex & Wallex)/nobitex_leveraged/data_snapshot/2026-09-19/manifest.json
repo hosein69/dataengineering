@@ -1,8 +1,9 @@
 {
-  "captured_utc": "2026-09-19T01:10:52.284357+00:00",
+  "captured_utc": "2026-09-19T04:56:12.504019+00:00",
+  "complete": false,
   "resolution": "240",
   "lookback_days": 180,
-  "universe_source": "margin list alone: 68 pairs (coverage checked per symbol below)",
+  "universe_source": "named on the command line",
   "fee_per_side": 0.0005,
   "fee_source": "venue positionFeeRate, 64 pairs, range 0.0003-0.0005",
   "venue_leverage_cap": 5.0,
@@ -574,6 +575,15 @@
       "coverage_ratio": 1.0,
       "pages_walked": 3,
       "actual_span_days": 179.833
+    },
+    {
+      "symbol": "TAOIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 155,
+      "coverage_ratio": 0.1435,
+      "pages_walked": 2,
+      "actual_span_days": 25.667
     }
   ],
   "skipped": [
