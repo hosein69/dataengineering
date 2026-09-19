@@ -45,23 +45,7 @@ from .stages import (PipelineContext, collect_columns, describe, discover as
                      discover_stages, log_plan, validate_graph)
 from .version import PACKAGE_VERSION, check_contracts
 
-def _key_column(join_on: str):
-    """نام ستون کلید از رجیستری ``config/keys.yaml``.
-
-    برای کلید مرکب، فهرست ستون‌های اجزا برگردانده می‌شود تا safe_merge
-    بتواند روی چند ستون هم‌زمان ادغام کند.
-    """
-    from .config.keys import get_keys
-    kr = get_keys()
-    try:
-        spec = kr.get(join_on)
-    except KeyError:
-        log.error(f"❌ کلید «{join_on}» در config/keys.yaml تعریف نشده است.")
-        return None
-    if spec.is_composite:
-        return [kr.get(p).column if p in kr.keys else p for p in spec.parts]
-    return spec.column
-
+from .dataio.join_keys import _key_column
 
 _KEY_BY_JOIN = {"BL": KEY_BL, "ORDER": KEY_ORDER, "REG": KEY_REG,
                 "EMP": KEY_EMP, "MATERIAL": KEY_MATERIAL, "PR": KEY_PR}
@@ -263,6 +247,10 @@ class Pipeline:
 
     # ═══════ اجرا ═══════
     def run(self, build_report: bool = True) -> PipelineResult:
+        from .warehouse.bridge import run_pipeline
+        return run_pipeline(self,build_report,PACKAGE_VERSION)
+
+    def _run_warehouse(self, build_report: bool = True) -> PipelineResult:
         bar = "=" * 90
         log.info(f"{bar}\n🚀 GSI {PACKAGE_VERSION} — تاریخ مرجع: {self.today}\n{bar}")
         health.reset()
@@ -283,11 +271,15 @@ class Pipeline:
                              part.counts, self.resolver.audit_df(),
                              extras=self.ctx.extras,
                              mogh_lines=lines if lines is not None else pd.DataFrame())
+        from .warehouse.bridge import persist_result,report_metadata
+        persist_result(res)
+
         if build_report:
             res.dashboard_path = self.build_report(res)
             res.extract_paths = write_expert_extracts(res.main, SETTINGS.expert_extracts_dir)
             write_audit_report(res.audit, os.path.join(
                 SETTINGS.OUTPUT_DIR, "GSI_Data_Conflicts_Audit.xlsx"))
+        report_metadata(res)
         log.info("🏁 خط لوله با موفقیت پایان یافت.")
         return res
 

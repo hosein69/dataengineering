@@ -462,11 +462,9 @@ class EncryptedUserStore:
                 "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
                 (namespace, key, encoded, _utc()),
             )
-            if audit_event:
-                con.execute(
-                    "INSERT INTO audit(ts,event,detail_json) VALUES(?,?,?)",
-                    (_utc(), audit_event, json.dumps({"namespace": namespace, "key": key}, ensure_ascii=False)),
-                )
+        if audit_event:
+            from gsi.warehouse.store import Warehouse
+            Warehouse().audit(audit_event, {'namespace':namespace,'key':key,'employee':str(self.paths.folder),'operation':'profile_set'})
 
     def merge(self, namespace: str, values: Mapping[str, Any], *, kind: str = "profile",
               audit_event: str = "merge") -> None:
@@ -477,10 +475,8 @@ class EncryptedUserStore:
                     "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
                     (namespace, str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False), now),
                 )
-            con.execute(
-                "INSERT INTO audit(ts,event,detail_json) VALUES(?,?,?)",
-                (now, audit_event, json.dumps({"namespace": namespace, "keys": sorted(map(str, values))}, ensure_ascii=False)),
-            )
+        from gsi.warehouse.store import Warehouse
+        Warehouse().audit(audit_event, {'namespace':namespace,'keys':sorted(map(str,values)),'employee':str(self.paths.folder),'operation':'profile_merge'})
 
     def replace_snapshot(self, payload: Mapping[str, Any], *, source_run_id: str = "") -> None:
         """Replace the user's current operational snapshot atomically.
@@ -524,7 +520,11 @@ class EncryptedUserStore:
             rows = con.execute(
                 "SELECT ts,event,detail_json FROM audit ORDER BY id DESC LIMIT ?", (max(1, min(int(limit), 500)),)
             ).fetchall()
-        return [{"ts": ts, "event": event, "detail": json.loads(detail)} for ts, event, detail in rows]
+        legacy=[{"ts": ts, "event": event, "detail": json.loads(detail)} for ts, event, detail in rows]
+        from gsi.warehouse.store import Warehouse
+        with Warehouse().db() as c:
+            recent=c.execute("SELECT at,kind,payload FROM wh_audit WHERE json_extract(payload,'$.employee')=? ORDER BY id DESC LIMIT ?",(str(self.paths.folder),max(1,min(int(limit),500)))).fetchall()
+        return ([{'ts':ts,'event':event,'detail':json.loads(detail)} for ts,event,detail in recent]+legacy)[:limit]
 
     def integrity_check(self, *, kind: str = "profile") -> str:
         with self._db(kind) as con:

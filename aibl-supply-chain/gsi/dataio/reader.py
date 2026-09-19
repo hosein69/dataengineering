@@ -112,6 +112,39 @@ def read_source(source_key: str) -> Dict[str, pd.DataFrame]:
     else:
         log.info(f"🔌 اتصال موفق به سورس '{spec.key}' → {os.path.basename(targets[0])}")
 
+    # Capture original bytes before any parsing; all sheets remain in the warehouse.
+    from ..warehouse.excel import capture, frame
+    from io import BytesIO
+    captures = {f: capture(f, source_key) for f in targets}
+    if source_key in ('oracle', 'fx_transaction', 'ntsw'):
+        result = {}
+        for f, (fid, blob, sheets) in captures.items():
+            for name, rows in sheets.items():
+                df = frame(rows, source_key, name, fid)
+                if source_key=='oracle':
+                    forbidden={'وضعیت','قطعه بحرانی','شماره نامه','تاریخ ثبت','توضیحات','شماره پرسنلی','کارشناس خرید خارجی','ریسک پذیری','Column18'}
+                    df=df.drop(columns=[col for col in df if col in forbidden],errors='ignore')
+                if not df.empty:
+                    from ..warehouse.store import Warehouse
+                    from ..warehouse.marts import stage
+                    stage(df,source_key,name,fid)
+                    Warehouse().frame(df,'staging',source_key+'/'+name)
+                    if name in result:
+                        result[name] = pd.concat([result[name],df],ignore_index=True)
+                    else: result[name] = df
+        return result
+    # The legacy readers now read the exact archived version, not a changing network file.
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix='gsi_input_') as tmp:
+        local_targets = []
+        for f, (fid, blob, sheets) in captures.items():
+            local = os.path.join(tmp, fid + os.path.splitext(f)[1])
+            with open(local, 'wb') as handle: handle.write(blob)
+            local_targets.append(local)
+        return _read_targets(spec, local_targets)
+
+
+def _read_targets(spec, targets):
     out: Dict[str, pd.DataFrame] = {}
 
     # استراتژی all_data_sheets: نام شیت در هر فایل فرق دارد (مثل Clearance که

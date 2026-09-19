@@ -17,7 +17,12 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SUITES = [
+    ("۲۹) دیتاورهوس و مخاطبان V28", "tests/test_warehouse_v28.py"),
+    ("۲۸) رفع خطای زمان اجرا", "tests/test_runtime_v27_2_1.py"),
+    ("۲۷) مرکز مخاطبان و منابع", "tests/test_control_center_v27_2.py"),
     ("۲۶) خطاهای شبکه و ذخیره‌سازی", "tests/test_network_outlook_debugged.py"),
+    ("۰) اتحاد شیت‌های اوراکل (V28.1)", "tests/test_oracle_union_v28_1.py"),
+    ("۰) زنجیره تعهد ارزی (V28.1)", "tests/test_fx_obligation_v28_1.py"),
     ("۱) الگوریتمی و بیزینسی", "tests/test_validation.py"),
     ("۲) کتابخانه قوانین و سورس مقاومت", "tests/test_rules_and_moghavemat.py"),
     ("۳) مقاومت قطعه و بحرانی بودن", "tests/test_criticality.py"),

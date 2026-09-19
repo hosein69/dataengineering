@@ -157,7 +157,7 @@ class EventLogStage(Stage):
         }, index=df.index)
         df = pd.concat([df.drop(columns=block.columns, errors="ignore"), block], axis=1)
 
-        self._export_csv(events, cases)
+        # Event/case history is persisted by the warehouse pipeline; CSV is an explicit UI export only.
         closed = cases[cases["CASE_STATE"] == "CLOSED"]
         dup = int(cases["SOURCE_ROWS"].sum() - cases["EVENT_COUNT"].sum())
         log.info(

@@ -84,6 +84,8 @@ class NtswAdapter(SourceAdapter):
     }
 
     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        from ..warehouse.numeric import number
+        num_safe = number
         out: Dict[str, pd.DataFrame] = {}
         rb = get_rulebook()
         p = self.p
@@ -95,6 +97,10 @@ class NtswAdapter(SourceAdapter):
             c[p("CURRENCY")] = c[p("CURRENCY")].map(rb.normalize_currency)
             for f in ("INITIAL_COMMIT", "BALANCE"):
                 c[p(f)] = c[p(f)].map(num_safe)
+            if c.groupby(KEY_REG)[p('CURRENCY')].nunique().gt(1).any():
+                raise ValueError('تعهد یک ثبت سفارش چند ارز دارد؛ تجمیع به یک مبلغ مجاز نیست. جزئیات در دیتاورهوس محفوظ است.')
+            if c[[p('INITIAL_COMMIT'),p('BALANCE')]].isna().any().any():
+                raise ValueError('مبلغ تعهد نامعلوم یا نامعتبر است؛ صفر فرض نمی‌شود.')
             out["commitment"] = self._agg_commitment(c)
             log.info(f"   ✅ [ntsw] Release Commitment: {len(c)} ردیف تعهد → "
                      f"{len(out['commitment'])} کد ثبت سفارش")

@@ -11,6 +11,7 @@
 رنگ وضعیت همیشه با آیکن و برچسب می‌آید؛ محور تکی، بدون دو مقیاس.
 """
 from __future__ import annotations
+from gsi.studio_core.runtime_data import bottleneck_view
 
 from typing import Dict, Optional
 import html
@@ -309,17 +310,17 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
     # ── ۱) گلوگاه گذارها (تمام‌عرض — نام گذار طولانی است) ──
     with st.container(border=True):
         st.markdown("##### ⛓ گلوگاه گذارها")
-        st.caption("میانگین روزهای انتظار بین دو فعالیت پیاپی. "
+        st.caption("مدت بین دو فعالیت پیاپی، با شاخص اعلام‌شده روی نمودار. "
                    "بلندترین میله، کندترین گذار فرآیند است.")
-        if bott is not None and not bott.empty and HAS_PLOTLY:
-            b = bott.copy().head(12)
+        b, metric = bottleneck_view(bott)
+        if not b.empty and HAS_PLOTLY:
             full = (b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str))
             lbl = full.map(lambda t: short(t, 34))
-            avg = pd.to_numeric(b["میانگین روز"], errors="coerce").fillna(0)
-            fig = _bar(lbl, avg, full, "میانگین روز",
+            avg = b[metric]
+            fig = _bar(lbl, avg, full, metric,
                        colors=avg, hover_extra=" روز")
             fig.update_traces(marker=dict(
-                color=avg, colorscale=[[0, SEQUENTIAL[1]], [1, SEQUENTIAL[6]]],
+                color=avg, colorscale=[[0, SEQUENTIAL[1]], [1, SEQUENTIAL[-1]]],
                 line=dict(color=SURFACE, width=2), showscale=False))
             st.plotly_chart(fig, use_container_width=True)
             with st.expander("جدول گلوگاه‌ها"):

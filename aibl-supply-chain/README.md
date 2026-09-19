@@ -1,3 +1,14 @@
+# نسخه 28.0.0 — شروع از START_HERE_V28_FA.md
+
+معماری و رفتار جدید SQLite در ARCHITECTURE_V28_FA.md و نتایج در RELEASE_VALIDATION_V28_FA.md آمده است. متن زیر مستندات تاریخی بسته پایه است؛ در موارد تغییر ذخیره‌سازی و گزارش مخاطبان، راهنمای V28 ملاک است.
+
+# اصلاحیه ۲۷٫۲٫۱
+راهنمای رفع خطای cryptography و گلوگاه: RUNTIME_FIX_V27_2_1_FA.md
+
+# نسخه ۲۷٫۲ — مرکز مخاطبان و منابع
+
+راهنمای تغییرات و نصب: [RELEASE_NOTES_V27_2_FA.md](RELEASE_NOTES_V27_2_FA.md). محیط جدید از نوار کناری Studio قابل دسترس است. امکانات قدیمی پایین این سند مربوط به هسته قبلی و حفظ‌شده‌اند.
+
 # اصلاحیه شبکه و Outlook — V27.1.1
 
 راهنمای استقرار و محدودیت‌های آزمون: [NETWORK_OUTLOOK_RELEASE_FA.md](NETWORK_OUTLOOK_RELEASE_FA.md). Python 3.11+ لازم است.
@@ -38,7 +49,7 @@ V27 روی یک اصل بنا شده است: یک زنجیره داده واحد
 توکن‌های runtime و خروجی‌های تولیدی از `gsi/design/` می‌آیند؛ Figma مرجع visual/interaction specification است. اختلاف این دو نباید بی‌صدا با overwrite حل شود و باید در Release reconciliation شود.
 
 # GSI V27.1.1 — Personal Shared Store + Audience-aware Intelligence
-**767 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
+در اجرای یکپارچه این اصلاحیه: ۷۹۸ آزمون موفق و یک آزمون معماری ناموفق؛ اجرای جداگانه همان مجموعه معماری ۴۲ موفق داشت. گزارش دقیق در RUNTIME_FIX_V27_2_1_FA.md است.
 
 > **اول این را بزنید:** `python -m gsi.doctor`
 > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.

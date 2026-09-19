@@ -453,10 +453,11 @@ if _HAS_PLOTLY:
 
     with t3:
         bott = data["extras"].get("bottlenecks")
-        if bott is not None and not bott.empty:
-            b = bott.head(10).copy()
+        from gsi.studio_core.runtime_data import bottleneck_view
+        b, metric = bottleneck_view(bott, limit=10)
+        if not b.empty:
             b["گذار"] = b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str)
-            fig = px.bar(b, x="میانگین روز", y="گذار", orientation="h",
+            fig = px.bar(b, x=metric, y="گذار", orientation="h",
                          title="گلوگاه‌های فرآیند", color_discrete_sequence=[AQUA])
             fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                               paper_bgcolor="rgba(0,0,0,0)", height=480,

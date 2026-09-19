@@ -66,6 +66,9 @@ RES_COL = "مقاومت (روز)"
 @st.cache_data(show_spinner="در حال اجرای خط لوله…")
 def load_data(ref_date: str):
     # GSI_TODAY بیرون از این تابع ست می‌شود — در cache hit بدنه اجرا نمی‌شود.
+    from gsi.warehouse.service import last_report
+    stored = last_report(ref_date)
+    if stored is not None: return stored
     from gsi.pipeline import Pipeline
     r = Pipeline().run(build_report=True)
     return r.df, r.main, dict(r.extras), r.dashboard_path
@@ -92,6 +95,17 @@ st.sidebar.markdown("### ◆ GSI")
 st.sidebar.caption("Global Sourcing Intelligence")
 st.sidebar.markdown("<small>▦ Data &nbsp;•&nbsp; ⛓ Process &nbsp;•&nbsp; ◉ Decision</small>", unsafe_allow_html=True)
 
+_surface = st.sidebar.radio("محیط کاری", ["اتاق کنترل و گزارش جامع", "مخاطبان، کلاسترها و منابع", "دیتاورهوس"], key="gsi_surface")
+if _surface == "دیتاورهوس":
+    from app.warehouse_view import run as warehouse_run
+    warehouse_run()
+    st.stop()
+
+if _surface == "مخاطبان، کلاسترها و منابع":
+    from app.control_center import run as run_control_center
+    run_control_center()
+    st.stop()
+
 _default_ref = os.environ.get("GSI_TODAY") or str(date.today())
 ref_date = st.sidebar.text_input("تاریخ مرجع", value=_default_ref).strip()
 try:
@@ -102,6 +116,8 @@ except ValueError:
 os.environ["GSI_TODAY"] = ref_date
 
 if st.sidebar.button("↻ اجرای مجدد خط لوله", use_container_width=True):
+    from gsi.pipeline import Pipeline
+    Pipeline().run(build_report=True)
     st.cache_data.clear()
     st.rerun()
 
@@ -243,7 +259,7 @@ with tab_over:
         if {"KEY_MATERIAL", RES_COL} <= set(fdf.columns) and HAS_PLOTLY:
             x = fdf[["KEY_MATERIAL", RES_COL]].copy()
             x[RES_COL] = pd.to_numeric(x[RES_COL], errors="coerce")
-            x = x.dropna().nsmallest(15, RES_COL)
+            x = x.replace([float("inf"), -float("inf")], float("nan")).dropna().nsmallest(15, RES_COL)
             if not x.empty:
                 fig = go.Figure(go.Bar(
                     x=x[RES_COL], y=x["KEY_MATERIAL"], orientation="h",
@@ -259,7 +275,13 @@ with tab_over:
                                   yaxis=dict(autorange="reversed"))
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("مقاومت عددی برای این فیلتر محاسبه نشده است.")
+                from gsi.studio_core.runtime_data import resistance_diagnostic
+                st.info(resistance_diagnostic(fdf))
+        elif not HAS_PLOTLY:
+            st.info("کتابخانه Plotly برای نمایش نمودار نصب نیست.")
+        else:
+            from gsi.studio_core.runtime_data import resistance_diagnostic
+            st.info(resistance_diagnostic(fdf))
 
     c3, c4 = st.columns([1, 1])
     with c3, st.container(border=True):
@@ -479,6 +501,11 @@ with tab_quality:
 #  ۷) خروجی — سازنده گزارش با قالب، فرمت و کنترل صحت
 # ══════════════════════════════════════════════════════════════════════════
 with tab_export:
+    with st.expander('گزارش مخاطبان و کلاسترها — قالب‌های اختصاصی',expanded=True):
+        from gsi.control_center.core import CenterStore
+        from app.cluster_delivery import render as render_cluster_delivery
+        try: render_cluster_delivery(CenterStore().load(),'studio_delivery')
+        except Exception as ex: st.error(str(ex))
     from gsi.studio_core import templates as tpl
     from gsi.studio_core.grain import GRAIN_FA, column_grain, measure_kind, KIND_FA
     from gsi.studio_core.report_builder import ReportSpec, build as build_report

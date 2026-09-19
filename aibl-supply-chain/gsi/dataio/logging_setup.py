@@ -38,14 +38,8 @@ def get_logger() -> logging.Logger:
     sh.setFormatter(fmt)
     logger.addHandler(sh)
 
-    try:
-        os.makedirs(SETTINGS.LOG_DIR, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        fh = logging.FileHandler(os.path.join(SETTINGS.LOG_DIR, f"GSI_{stamp}.log"), encoding="utf-8")
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
-    except Exception as ex:  # مسیر لاگ در دسترس نیست → فقط کنسول
-        logger.warning(f"⚠️ فایل لاگ ساخته نشد ({ex}); فقط خروجی کنسول فعال است.")
+    from ..warehouse.log_sink import WarehouseHandler
+    logger.addHandler(WarehouseHandler())
 
     _configured = True
     return logger

@@ -26,15 +26,15 @@ class FxTransactionAdapter(SourceAdapter):
     key, prefix = "fx_transaction", "FX"
 
     COLUMN_MAP = {
-        "BUY_DATE":       ["تاریخ خرید ارز"],
+        "BUY_DATE":       ["تاریخ خرید", "تاریخ خرید ارز"],
         "BENEFICIARY":    ["نام ذینفع"],
         "GOODS_DESC":     ["شرح کالا"],
         "EXCHANGE":       ["نام صرافي", "نام صرافی"],
         "BANK":           ["نام بانک"],
-        "AMOUNT":         ["مبلغ خرید ارز"],
-        "CURRENCY":       ["نوع ارز"],
-        "RATE":           ["نرخ ارز"],
-        "EUR_VALUE":      ["معادل یورویی"],
+        "AMOUNT":         ["ارز خریداری شده", "مبلغ خرید ارز"],
+        "CURRENCY":       ["نوع ارز خریداری شده", "نوع ارز"],
+        "RATE":           ["نرخ ارز خریداری شده"],
+        "EUR_VALUE":      ["معادل یورویی خرید ارز"],
         "RIAL_VALUE":     ["مبلغ ریالی"],
         "STATUS":         ["وضعیت"],
         "ALLOC_VALIDITY": ["اعتبارتخصیص", "اعتبار تخصیص"],
@@ -42,11 +42,18 @@ class FxTransactionAdapter(SourceAdapter):
     }
 
     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
-        df = self._first(sheets)
+        from ..warehouse.numeric import number
+        num_safe = number
+        df = pd.concat(list(sheets.values()),ignore_index=True,sort=False) if sheets else None
         if df is None:
             return {}
         p = self.p
-        out = self.std(df, self.COLUMN_MAP, exclude=["توضیح"])
+        from ..warehouse.excel import header_normal
+        lookup={header_normal(col):col for col in df.columns}
+        out=pd.DataFrame(index=df.index)
+        for target,candidates in self.COLUMN_MAP.items():
+            col=next((lookup[header_normal(alias)] for alias in candidates if header_normal(alias) in lookup),None)
+            out[p(target)]=df[col] if col is not None else None
         out[p("CURRENCY")] = out[p("CURRENCY")].map(get_rulebook().normalize_currency)
         for f in ("AMOUNT", "RATE", "EUR_VALUE", "RIAL_VALUE"):
             out[p(f)] = out[p(f)].map(num_safe)
@@ -62,7 +69,7 @@ class FxTransactionAdapter(SourceAdapter):
         def opt(target, candidates, numeric=False):
             col = find_col(df, candidates, exclude=["توضیح کلی"])
             if col is None:
-                out[p(target)] = 0.0 if numeric else ""
+                out[p(target)] = float("nan") if numeric else ""
             else:
                 out[p(target)] = df[col].map(num_safe) if numeric else df[col]
 
@@ -86,13 +93,31 @@ class FxTransactionAdapter(SourceAdapter):
         for fld in ("ORIGINAL_ORDER", "TARGET_ORDER"):
             out[p(fld)] = out[p(fld)].map(clean_key)
 
+        # Preserve purchase/proforma/SWIFT currencies as distinct facts. SWIFT is not proof of receipt.
+        for field, raw in [('PROFORMA_AMOUNT','مبلغ ارز پروفرم'),('PROFORMA_CURRENCY','نوع ارز'),
+                           ('SWIFT_AMOUNT','ارز سوئیفت'),('SWIFT_CURRENCY','نوع ارز__2'),
+                           ('SWIFT_DATE','تاریخ سوئیفت'),('RECEIPT_DATE','تاریخ تایید وصول')]:
+            out[p(field)] = df[raw] if raw in df else None
+        for col in ('_SOURCE_ROW','_SOURCE_SHEET','_SOURCE_FILE_ID'):
+            if col in df: out[col] = df[col]
+        from ..warehouse.store import Warehouse
+        orphan=out[KEY_REG].fillna('').eq('') & out[KEY_ORDER].fillna('').eq('')
+        quarantine=df.loc[orphan].copy()
+        if orphan.any():
+            Warehouse().issue('FX_ORPHAN_ROWS',{'rows':quarantine.get('_SOURCE_ROW',quarantine.index.to_series()).tolist(),'reason':'no order or registration identifier; excluded from financial sums'})
+            out=out.loc[~orphan].copy()
+        bad = out[p('AMOUNT')].isna()
+        if bad.any():
+            Warehouse().issue('FX_INVALID_PURCHASE_AMOUNT', {'rows':out.index[bad].tolist()})
+            raise ValueError('مبلغ خرید ارز در بعضی ردیف‌ها معتبر نیست؛ داده خام محفوظ است و انتشار متوقف شد.')
+
         rates = out[[p("CURRENCY"), p("RATE")]].rename(
             columns={p("CURRENCY"): "CURRENCY", p("RATE"): "RATE"})
         rates = rates[(rates["CURRENCY"] != "") & (rates["RATE"] > 0)]
         rates = rates.groupby("CURRENCY", as_index=False)["RATE"].median()
         log.info(f"   💱 [fx] {len(rates)} ارز، "
                  f"{int(out[KEY_REG].astype(str).ne('').sum())} ردیف با کد ثبت سفارش")
-        return {"main": out, "rates": rates}
+        return {"main": out, "rates": rates, "quarantine": quarantine}
 
 
 @register

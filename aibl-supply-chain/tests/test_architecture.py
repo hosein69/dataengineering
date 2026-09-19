@@ -145,7 +145,9 @@ def test_order_guard() -> None:
 # ═══════════ ۳) افزودن قابلیت = یک فایل ═══════════
 def test_add_remove_feature() -> None:
     print("\n── ۳) افزودن و حذف قابلیت با یک فایل ──")
-    new_file = os.path.join(PKG, "stages", "s95_demo_feature.py")
+    isolated_root = tempfile.mkdtemp(prefix='gsi_plugin_test_')
+    shutil.copytree(PKG, os.path.join(isolated_root,'gsi'),ignore=shutil.ignore_patterns('__pycache__','s95_demo_feature.py'))
+    new_file = os.path.join(isolated_root, 'gsi', 'stages', 's95_demo_feature.py')
     content = '''# -*- coding: utf-8 -*-
 """مرحله آزمایشی — اثبات اینکه یک قابلیت فقط یک فایل است."""
 from __future__ import annotations
@@ -195,8 +197,8 @@ class DemoStage(Stage):
             "ex = load_workbook(r.dashboard_path)['۱. خلاصه اجرایی']\n"
             "vals = [ex.cell(row=i, column=1).value for i in range(6, ex.max_row + 1)]\n"
             "print('KPI_OK', any(v and 'فشار تأمین' in str(v) for v in vals))\n"
-        ) % ROOT
-        r = subprocess.run([sys.executable, "-c", code], cwd=ROOT,
+        ) % isolated_root
+        r = subprocess.run([sys.executable, "-c", code], cwd=isolated_root,
                            capture_output=True, text=True,
                            env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                            encoding="utf-8", errors="replace")
@@ -215,16 +217,16 @@ class DemoStage(Stage):
     # پس baseline یکی بیشتر از واقعیت درمی‌آمد و تست کاذب قرمز می‌شد.
     code0 = ("import sys; sys.path.insert(0, r'%s')\n"
              "from gsi.stages import discover\n"
-             "print('BASE', len(discover()))\n") % ROOT
-    r0 = subprocess.run([sys.executable, "-c", code0], cwd=ROOT,
+             "print('BASE', len(discover()))\n") % isolated_root
+    r0 = subprocess.run([sys.executable, "-c", code0], cwd=isolated_root,
                         capture_output=True, text=True,
                         env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                         encoding="utf-8", errors="replace")
     baseline = int(r0.stdout.split("BASE")[1].split()[0]) if "BASE" in r0.stdout else -1
     code2 = ("import sys; sys.path.insert(0, r'%s')\n"
              "from gsi.stages import discover\n"
-             "print('STAGES', len(discover()))\n") % ROOT
-    r2 = subprocess.run([sys.executable, "-c", code2], cwd=ROOT,
+             "print('STAGES', len(discover()))\n") % isolated_root
+    r2 = subprocess.run([sys.executable, "-c", code2], cwd=isolated_root,
                         capture_output=True, text=True,
                         env=dict(os.environ, PYTHONIOENCODING="utf-8"),
                         encoding="utf-8", errors="replace")
@@ -357,13 +359,13 @@ def test_eventlog():
           var is not None and "سهم (٪)" in var.columns,
           f"{len(var)} مسیر متمایز" if var is not None else "")
 
-    csv_path = os.path.join(DIRS["output"], "GSI_EventLog.csv")
-    check("فایل CSV آماده بارگذاری در Celonis ذخیره شد",
-          os.path.exists(csv_path), csv_path)
-    if os.path.exists(csv_path):
-        head = pd.read_csv(csv_path, nrows=1)
-        check("سرستون CSV مطابق استاندارد Celonis است",
-              all(c in head.columns for c in required), str(list(head.columns)[:5]))
+    from gsi.warehouse.store import Warehouse
+    wh=Warehouse()
+    with wh.db() as c:
+        saved=c.execute("SELECT id FROM wh_frame WHERE run_id=? AND name='extras/eventlog'",(res.extras['warehouse_run_id'],)).fetchone()
+    check("لاگ رویداد فقط در دیتاورهوس ثبت شد", saved is not None)
+    stored=wh.read_frame(saved[0]) if saved else pd.DataFrame()
+    check("ستون‌های استاندارد Celonis در دیتاورهوس حفظ شد",all(col in stored for col in required))
 
     from openpyxl import load_workbook
     wb = load_workbook(res.dashboard_path)

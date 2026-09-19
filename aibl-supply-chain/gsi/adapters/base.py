@@ -100,13 +100,19 @@ class SourceAdapter(ABC):
             log.error(f"❌ خطا در adapter «{self.key}»: {ex}", exc_info=True)
             health.current().find("سورس", health.ERROR,
                                   f"adapter «{self.key}» خطا داد", rec.error)
-            if self.spec.required or os.environ.get("GSI_STRICT_ADAPTERS") == "1":
+            if True:  # v28: adapter errors block publication; raw input remains recoverable
+
                 raise
             log.critical(
                 f"🚨 سورس «{self.key}» به دلیل خطای بالا از خط لوله حذف شد. "
                 f"خروجی این اجرا ناقص است — برای توقف در چنین حالتی "
                 f"GSI_STRICT_ADAPTERS=1 را تنظیم کنید.")
             return {}
+        from ..warehouse.store import Warehouse
+        wh = Warehouse()
+        for name, data in out.items():
+            frame_id = wh.frame(data, 'standardized', self.key + '/' + name)
+            out[name] = wh.read_frame(frame_id)
         rec.elapsed_s = round(time.time() - t0, 3)
         rec.frames = len(out)
         rec.rows = int(sum(len(f) for f in out.values()))

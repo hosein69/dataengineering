@@ -327,3 +327,9 @@ def audit_report() -> str:
     for b in bad:
         lines.append(f"FAIL  {b.name} — {b.ratio} < {b.floor}")
     return "\n".join(lines)
+
+# Report-cluster accents: identity only; status colors retain their existing meaning.
+CLUSTER_ACCENTS = {
+    "purchase_1": "#08675F", "purchase_2": "#07564F", "logistics": "#195C75",
+    "finance": "#515589", "followup": "#785A22", "process": "#326257", "custom": "#455B68",
+}
