@@ -72,9 +72,13 @@ def main() -> None:
         try:
             df = fetch_raw(s, RESOLUTION, LOOKBACK_DAYS)
             cov = df.attrs["coverage"]
-            if cov["coverage_ratio"] < MIN_COVERAGE:
+            if cov["coverage_ratio"] < MIN_COVERAGE and not extra:
                 skipped.append({"symbol": s, "why": f"coverage {cov['coverage_ratio']:.0%}"})
                 continue
+            if cov["coverage_ratio"] < MIN_COVERAGE:
+                print(f"  {s}: only {cov['coverage_ratio']:.0%} coverage "
+                      f"({cov['delivered_bars']} bars) — kept because it was "
+                      f"asked for by name", file=sys.stderr)
             df.to_csv(out / f"{s}.csv.gz", compression="gzip")
             kept.append({"symbol": s, **cov})
             print(f"  {s}: {cov['delivered_bars']} bars, "
@@ -82,6 +86,17 @@ def main() -> None:
         except Exception as exc:  # noqa: BLE001
             skipped.append({"symbol": s, "why": f"{type(exc).__name__}: {exc}"})
             print(f"  {s}: FAILED {type(exc).__name__}: {exc}", file=sys.stderr)
+
+    # Named symbols extend the snapshot; they must not replace its record of
+    # what is already captured. Writing a fresh manifest for a two-symbol run
+    # erased the entry for all 63 already on disk, leaving the CSVs orphaned.
+    mf = out / "manifest.json"
+    if extra and mf.exists():
+        prev = json.loads(mf.read_text())
+        have = {r["symbol"] for r in kept}
+        kept = [r for r in prev.get("symbols", []) if r["symbol"] not in have] + kept
+        prev_skip = {r["symbol"] for r in skipped}
+        skipped = [r for r in prev.get("skipped", []) if r["symbol"] not in prev_skip] + skipped
 
     manifest = {
         "captured_utc": datetime.now(timezone.utc).isoformat(),

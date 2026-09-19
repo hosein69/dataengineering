@@ -1,22 +1,601 @@
 {
-  "captured_utc": "2026-09-19T04:52:36.090523+00:00",
-  "complete": false,
+  "captured_utc": "2026-09-19T01:10:52.284357+00:00",
   "resolution": "240",
   "lookback_days": 180,
-  "universe_source": "named on the command line",
+  "universe_source": "margin list alone: 68 pairs (coverage checked per symbol below)",
   "fee_per_side": 0.0005,
   "fee_source": "venue positionFeeRate, 64 pairs, range 0.0003-0.0005",
   "venue_leverage_cap": 5.0,
   "cap_source": "venue maxLeverage across 64 pairs",
-  "symbols": [],
-  "skipped": [
+  "symbols": [
     {
-      "symbol": "TAOIRT",
-      "why": "coverage 14%"
+      "symbol": "100K_FLOKIIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
     },
     {
-      "symbol": "TAOUSDT",
-      "why": "coverage 14%"
+      "symbol": "1B_BABYDOGEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "1K_SHIBIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "1M_PEPEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "AAVEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ADAIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "AIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "API3IRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "APTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ARBIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ASTERIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ATOMIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "AVAXIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "AXSIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "BCHIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "BICOIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "BNBIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "BTCIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "CAKEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "CHZIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "CRVIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "CVXIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "DEXEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "DOGEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "DOGSIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "DOTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "DYDXIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ENAIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ENSIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ETCIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ETHIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "FILIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "GMTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "GRAMIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "HBARIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "HMSTRIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "HYPEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "LDOIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "LINKIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "LTCIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "MAGICIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "NEARIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "NOTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ONDOIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ONEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "PENDLEIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "POLIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "RENDERIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "SIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "SKYIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "SLPIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "SOLIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "SUIIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "TIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "TRXIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "UNIIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "USDTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "WLDIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "XAUTIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "XLMIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "XRPIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ZECIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    },
+    {
+      "symbol": "ZRXIRT",
+      "requested_days": 180,
+      "expected_bars": 1080,
+      "delivered_bars": 1080,
+      "coverage_ratio": 1.0,
+      "pages_walked": 3,
+      "actual_span_days": 179.833
+    }
+  ],
+  "skipped": [
+    {
+      "symbol": "100KFLOKIIRT",
+      "why": "RuntimeError: 100KFLOKIIRT: 3 attempts failed: 400 Client Error: BAD REQUEST for url: https://apiv2.nobitex.ir/market/udf/history?symbol=100KFLOKIIRT&resolution=240&from=1774226774&to=1781412374&page=1"
+    },
+    {
+      "symbol": "1BBABYDOGEIRT",
+      "why": "RuntimeError: 1BBABYDOGEIRT: 3 attempts failed: 400 Client Error: BAD REQUEST for url: https://apiv2.nobitex.ir/market/udf/history?symbol=1BBABYDOGEIRT&resolution=240&from=1774226795&to=1781412395&page=1"
+    },
+    {
+      "symbol": "1KSHIBIRT",
+      "why": "RuntimeError: 1KSHIBIRT: 3 attempts failed: 400 Client Error: BAD REQUEST for url: https://apiv2.nobitex.ir/market/udf/history?symbol=1KSHIBIRT&resolution=240&from=1774226852&to=1781412452&page=1"
+    },
+    {
+      "symbol": "1MPEPEIRT",
+      "why": "RuntimeError: 1MPEPEIRT: 3 attempts failed: 400 Client Error: BAD REQUEST for url: https://apiv2.nobitex.ir/market/udf/history?symbol=1MPEPEIRT&resolution=240&from=1774226895&to=1781412495&page=1"
+    },
+    {
+      "symbol": "BANKIRT",
+      "why": "coverage 38%"
     }
   ]
 }
