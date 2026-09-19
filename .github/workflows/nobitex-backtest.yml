@@ -119,12 +119,22 @@ jobs:
           if git diff --cached --quiet; then
             echo "snapshot unchanged, nothing to commit"
           else
-            git commit -m "Capture Nobitex margin-universe history snapshot
-
-          Pins the data the parameter search reads so the search stops
-          depending on a rate-limited venue and returns the same answer each
-          time it runs."
-            git push origin HEAD:${{ github.ref_name }}
+            git commit -m "Capture Nobitex margin-universe history snapshot"
+            # The capture takes tens of minutes, so the branch can easily have
+            # moved on since checkout — it did once, and the rejected push threw
+            # away the whole capture. Rebase onto whatever landed meanwhile and
+            # retry rather than losing the data to a race.
+            for attempt in 1 2 3; do
+              git fetch origin ${{ github.ref_name }}
+              git rebase origin/${{ github.ref_name }} || { git rebase --abort; exit 1; }
+              if git push origin HEAD:${{ github.ref_name }}; then
+                echo "snapshot pushed on attempt $attempt"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "push failed after 3 attempts; the snapshot is still in the artifact"
+            exit 1
           fi
 
       - name: Search for the highest-return configuration, train/test split
@@ -154,4 +164,5 @@ jobs:
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/entry_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/universe_out
             Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/max_out
-          retention-days: 1
+            Vibe-Trading Backtest (Nobitex & Wallex)/nobitex_leveraged/data_snapshot
+          retention-days: 5
