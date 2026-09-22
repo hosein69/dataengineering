@@ -1,8 +1,9 @@
 const ints=(v,d)=>Number.isFinite(Number(v))?Number(v):d;
+const csv=(v,d='')=>String(v??d).split(',').map(x=>x.trim()).filter(Boolean);
 export const config={
-  apiBase:process.env.NOBITEX_API_BASE||'https://api.nobitex.ir',
-  wsUrl:process.env.NOBITEX_WS_URL||'wss://wss.nobitex.ir/connection/websocket',
-  markets:String(process.env.NOBITEX_MARKETS||'BTCIRT,ETHIRT,USDTIRT,ZECIRT').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),
+  apiBases:csv(process.env.NOBITEX_API_BASES,'https://api.nobitex.ir,https://api.nobitex.net').concat(csv(process.env.NOBITEX_RELAY_BASES)),
+  wsUrls:csv(process.env.NOBITEX_WS_URLS,'wss://wss.nobitex.ir/connection/websocket').concat(csv(process.env.NOBITEX_RELAY_WS_URLS)),
+  markets:csv(process.env.NOBITEX_MARKETS,'BTCIRT,ETHIRT,USDTIRT,ZECIRT').map(x=>x.toUpperCase()),
   httpTimeoutMs:ints(process.env.NOBITEX_HTTP_TIMEOUT_MS,10000),
   wsTimeoutMs:ints(process.env.NOBITEX_WS_TIMEOUT_MS,20000)
 };
