@@ -15,5 +15,5 @@ export const config={
   stablePerQuote:ints(process.env.NOBITEX_STABLE_PER_QUOTE,4),
   stableMaxTotal:ints(process.env.NOBITEX_STABLE_MAX_TOTAL,8),
   stableCycles:ints(process.env.NOBITEX_STABLE_CYCLES,3),
-  stableIntervalMs:ints(process.env.NOBITEX_STABLE_INTERVAL_MS,3000)
+  stableIntervalMs:ints(process.env.NOBITEX_STABLE_INTERVAL_MS,15000)
 };

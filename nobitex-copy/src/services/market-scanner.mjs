@@ -71,7 +71,7 @@ export async function enrichMarket(provider,row){
     price:row.book.lastTradePrice,bid:metrics.bestBid,ask:metrics.bestAsk,spreadBps:metrics.spreadBps,
     depthLiquidity:row.depthLiquidity,obImbalance:metrics.orderbookImbalance,tradeImbalance:metrics.tradeImbalance,
     m5:finite(frames['5']?.ret1),m30:finite(frames['30']?.ret1),d1:finite(frames.D?.ret1),
-    volume5Ratio:finite(frames['5']?.volumeRatio),bookAgeMs:row.book.quality?.ageMs,
+    volume5Ratio:finite(frames['5']?.volumeRatio),atr5Pct:finite(frames['5']?.atrPct),realizedVol5Pct:finite(frames['5']?.realizedVolPct),bookAgeMs:row.book.quality?.ageMs,
     route:row.book.route,dnsMode:row.book.dnsMode,tradesOk
   };
 }
@@ -118,13 +118,15 @@ export function temporalSummary(samples){
     return Math.max(pos,neg)/arr.length;
   };
   const flowAgreement=(agreement(tradeSigns)+agreement(obSigns))/2;
-  const actionable=new Set(['MOMENTUM_BUY_WATCH','PULLBACK_WATCH','REVERSAL_WATCH','REVERSAL_CANDIDATE_LOW_VOLUME','SELL_PRESSURE']);
+  const fresh=usable.filter(x=>x.freshMicrostructure!==false);
+  const freshRatio=fresh.length/usable.length;
+  const actionable=new Set(['MOMENTUM_BUY_WATCH','PULLBACK_WATCH','REVERSAL_WATCH','SELL_PRESSURE']);
   let temporalStatus='OBSERVE';
-  if(actionable.has(dominantState)&&persistence>=2/3&&flowAgreement>=2/3)temporalStatus='CONFIRMED';
+  if(actionable.has(dominantState)&&persistence>=2/3&&flowAgreement>=2/3&&freshRatio>=2/3)temporalStatus='CONFIRMED';
   else if(actionable.has(dominantState))temporalStatus='UNCONFIRMED';
   else if(dominantState==='NEUTRAL')temporalStatus='NEUTRAL';
   return {
-    temporalStatus,dominantState,persistence,flowAgreement,
+    temporalStatus,dominantState,persistence,flowAgreement,freshRatio,
     avgAttentionScore:avg(usable.map(x=>x.attentionScore)),
     avgSpreadBps:avg(usable.map(x=>x.spreadBps)),
     avgTradeImbalance:avg(usable.map(x=>x.tradeImbalance)),
@@ -137,7 +139,7 @@ export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote
   const first=await scanAllMarkets(provider,{quotes,perQuote,maxTotal});
   const symbols=first.shortlist.map(x=>x.symbol);
   const history=new Map(symbols.map(s=>[s,[]]));
-  for(const row of first.shortlist)history.get(row.symbol).push({...row,cycle:1});
+  for(const row of first.shortlist)history.get(row.symbol).push({...row,cycle:1,freshMicrostructure:true,tradeWatermark:null,bookWatermark:row.bookAgeMs});
   for(let cycle=2;cycle<=cycles;cycle++){
     if(intervalMs>0)await new Promise(r=>setTimeout(r,intervalMs));
     let books={},bulkError=null;
@@ -157,8 +159,12 @@ export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote
       try{
         const tr=await provider.trades(symbol);
         const trades=tr.items.slice(0,100),metrics=provider.metrics(book,trades,20);
+        const prev=history.get(symbol).at(-1);
+        const tradeWatermark=trades[0]?.id??trades[0]?.time??null;
+        const bookWatermark=book.lastUpdate??null;
+        const freshMicrostructure=tradeWatermark!==prev?.tradeWatermark||bookWatermark!==prev?.bookWatermark;
         const frames={
-          '5':{ret1:base.m5,volumeRatio:base.volume5Ratio},
+          '5':{ret1:base.m5,volumeRatio:base.volume5Ratio,atrPct:base.atr5Pct},
           '30':{ret1:base.m30},
           D:{ret1:base.d1}
         };
@@ -169,8 +175,8 @@ export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote
           symbol,rowQuote:base.rowQuote,state,attentionScore,preScore:base.preScore,price:book.lastTradePrice,
           bid:metrics.bestBid,ask:metrics.bestAsk,spreadBps:metrics.spreadBps,
           obImbalance:metrics.orderbookImbalance,tradeImbalance:metrics.tradeImbalance,
-          m5:base.m5,m30:base.m30,d1:base.d1,volume5Ratio:base.volume5Ratio,
-          bookAgeMs:book.quality?.ageMs,cycle
+          m5:base.m5,m30:base.m30,d1:base.d1,volume5Ratio:base.volume5Ratio,atr5Pct:base.atr5Pct,
+          bookAgeMs:book.quality?.ageMs,cycle,freshMicrostructure,tradeWatermark,bookWatermark
         });
       }catch(e){history.get(symbol).push({symbol,state:'NO_DATA',cycle,error:String(e?.message||e)})}
     }

@@ -118,18 +118,41 @@ export class NobitexProvider{
     return {bestBid,bestAsk,mid,microPrice,spread,spreadBps,bidNotional,askNotional,orderbookImbalance,buyNotional,sellNotional,tradeImbalance,bookAgeMs:book.quality?.ageMs??null};
   }
   candleFeatures(candles=[]){
-    const c=candles.filter(x=>x.c!=null),last=c.at(-1),prev=c.at(-2),back3=c.at(-4),ret=(a,b)=>a&&b&&b.c?((a.c/b.c)-1)*100:null,vols=c.slice(-10,-1).map(x=>x.v).filter(v=>v!=null&&v>=0),avgVol=vols.length?sum(vols,x=>x)/vols.length:null;
-    return {close:last?.c??null,ret1:ret(last,prev),ret3:ret(last,back3),volume:last?.v??null,volumeRatio:avgVol&&last?.v!=null?last.v/avgVol:null,lastCandleAt:last?.t??null};
+    const c=candles.filter(x=>x.c!=null),last=c.at(-1),prev=c.at(-2),back3=c.at(-4);
+    const ret=(a,b)=>a&&b&&b.c?((a.c/b.c)-1)*100:null;
+    const vols=c.slice(-10,-1).map(x=>x.v).filter(v=>v!=null&&v>=0),avgVol=vols.length?sum(vols,x=>x)/vols.length:null;
+    const recent=c.slice(-15);
+    const trs=recent.map((x,i)=>{
+      const pc=i?recent[i-1].c:x.o;
+      if(x.h==null||x.l==null||pc==null)return null;
+      return Math.max(x.h-x.l,Math.abs(x.h-pc),Math.abs(x.l-pc));
+    }).filter(Number.isFinite);
+    const atr=trs.length?sum(trs,x=>x)/trs.length:null;
+    const atrPct=atr!=null&&last?.c?atr/last.c*100:null;
+    const lrets=[];
+    for(let i=1;i<recent.length;i++)if(recent[i-1].c>0&&recent[i].c>0)lrets.push(Math.log(recent[i].c/recent[i-1].c));
+    const mean=lrets.length?sum(lrets,x=>x)/lrets.length:0;
+    const realizedVolPct=lrets.length>1?Math.sqrt(sum(lrets,x=>(x-mean)**2)/(lrets.length-1))*100:null;
+    return {close:last?.c??null,ret1:ret(last,prev),ret3:ret(last,back3),volume:last?.v??null,volumeRatio:avgVol&&last?.v!=null?last.v/avgVol:null,lastCandleAt:last?.t??null,atrPct,realizedVolPct};
   }
   classify({quality,metrics,tradesOk=true,frames={}}){
     if(!quality?.usable)return quality?.stale?'STALE_DATA':quality?.crossed?'CROSSED_BOOK':'INVALID_DATA';
     if(!tradesOk)return 'DATA_DEGRADED';
     const ob=metrics.orderbookImbalance??0,ti=metrics.tradeImbalance??0;
     const f5=frames['5']?.ret1??0,f30=frames['30']?.ret1??0,vr=frames['5']?.volumeRatio??0;
-    if(ob<=-0.15&&ti<=-0.10)return 'SELL_PRESSURE';
-    if(ob>=0.15&&ti>=0.10&&f5>=0.10&&vr>=0.80)return 'MOMENTUM_BUY_WATCH';
-    if(f30>=0.25&&f5<=-0.10&&ob>=0.08)return 'PULLBACK_WATCH';
-    if(f30<=-0.50&&f5>=0.10&&ti>=0.25)return vr>=0.50?'REVERSAL_WATCH':'REVERSAL_CANDIDATE_LOW_VOLUME';
+    const atr5=Math.abs(frames['5']?.atrPct??0);
+    const moveThr=Math.max(0.08,Math.min(0.50,atr5*0.20));
+    const volOk=vr>=0.60;
+    if(ob<=-0.15&&ti<=-0.10){
+      if(f5<=-moveThr&&volOk)return 'SELL_PRESSURE';
+      return 'FLOW_SELL_PRESSURE';
+    }
+    if(ob>=0.15&&ti>=0.10){
+      if(f5>=moveThr&&volOk)return 'MOMENTUM_BUY_WATCH';
+      return 'FLOW_BUY_PRESSURE';
+    }
+    if(f30>=Math.max(0.25,moveThr*2)&&f5<=-moveThr&&ob>=0.08&&volOk)return 'PULLBACK_WATCH';
+    if(f30<=-Math.max(0.50,moveThr*3)&&f5>=moveThr&&ti>=0.25)return volOk?'REVERSAL_WATCH':'REVERSAL_CANDIDATE_LOW_VOLUME';
     return 'NEUTRAL';
   }
   async snapshot(symbol,{tradeLimit=100,depth=20,withFrames=false}={}){
