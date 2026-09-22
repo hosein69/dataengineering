@@ -87,3 +87,84 @@ export async function scanAllMarkets(provider,{quotes=['IRT','USDT'],perQuote=8,
     shortlist:enriched.map((x,i)=>({rank:i+1,...x}))
   };
 }
+
+
+const sign=v=>v>0?1:v<0?-1:0;
+const avg=xs=>{const v=xs.filter(Number.isFinite);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null};
+
+export function temporalSummary(samples){
+  const usable=samples.filter(Boolean);
+  if(!usable.length)return {temporalStatus:'NO_DATA',persistence:0,flowAgreement:0};
+  const states=new Map();
+  for(const s of usable)states.set(s.state,(states.get(s.state)||0)+1);
+  const [dominantState,dominantCount]=[...states.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const persistence=dominantCount/usable.length;
+  const tradeSigns=usable.map(s=>sign(s.tradeImbalance??0)).filter(Boolean);
+  const obSigns=usable.map(s=>sign(s.obImbalance??0)).filter(Boolean);
+  const agreement=arr=>{
+    if(!arr.length)return 0;
+    const pos=arr.filter(x=>x>0).length,neg=arr.filter(x=>x<0).length;
+    return Math.max(pos,neg)/arr.length;
+  };
+  const flowAgreement=(agreement(tradeSigns)+agreement(obSigns))/2;
+  const actionable=new Set(['MOMENTUM_BUY_WATCH','PULLBACK_WATCH','REVERSAL_WATCH','REVERSAL_CANDIDATE_LOW_VOLUME','SELL_PRESSURE']);
+  let temporalStatus='OBSERVE';
+  if(actionable.has(dominantState)&&persistence>=2/3&&flowAgreement>=2/3)temporalStatus='CONFIRMED';
+  else if(actionable.has(dominantState))temporalStatus='UNCONFIRMED';
+  else if(dominantState==='NEUTRAL')temporalStatus='NEUTRAL';
+  return {
+    temporalStatus,dominantState,persistence,flowAgreement,
+    avgAttentionScore:avg(usable.map(x=>x.attentionScore)),
+    avgSpreadBps:avg(usable.map(x=>x.spreadBps)),
+    avgTradeImbalance:avg(usable.map(x=>x.tradeImbalance)),
+    avgObImbalance:avg(usable.map(x=>x.obImbalance)),
+    samples:usable.length
+  };
+}
+
+export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote=4,maxTotal=8,cycles=3,intervalMs=3000}={}){
+  const first=await scanAllMarkets(provider,{quotes,perQuote,maxTotal});
+  const symbols=first.shortlist.map(x=>x.symbol);
+  const history=new Map(symbols.map(s=>[s,[]]));
+  for(const row of first.shortlist)history.get(row.symbol).push({...row,cycle:1});
+  for(let cycle=2;cycle<=cycles;cycle++){
+    if(intervalMs>0)await new Promise(r=>setTimeout(r,intervalMs));
+    const all=await provider.orderbooksAll();
+    for(const symbol of symbols){
+      const base=first.shortlist.find(x=>x.symbol===symbol);
+      const book=all.books[symbol];
+      if(!book){history.get(symbol).push({symbol,state:'NO_DATA',cycle});continue}
+      try{
+        const tr=await provider.trades(symbol);
+        const trades=tr.items.slice(0,100),metrics=provider.metrics(book,trades,20);
+        const frames={
+          '5':{ret1:base.m5,volumeRatio:base.volume5Ratio},
+          '30':{ret1:base.m30},
+          D:{ret1:base.d1}
+        };
+        const state=provider.classify({quality:book.quality,metrics,tradesOk:true,frames});
+        const microActivity=Math.min(1,Math.abs(metrics.tradeImbalance??0)*0.55+Math.abs(metrics.orderbookImbalance??0)*0.25+Math.min(Math.abs(base.m5??0)/0.8,1)*0.20);
+        const attentionScore=100*(0.65*(base.preScore/100)+0.35*microActivity);
+        history.get(symbol).push({
+          symbol,rowQuote:base.rowQuote,state,attentionScore,preScore:base.preScore,price:book.lastTradePrice,
+          bid:metrics.bestBid,ask:metrics.bestAsk,spreadBps:metrics.spreadBps,
+          obImbalance:metrics.orderbookImbalance,tradeImbalance:metrics.tradeImbalance,
+          m5:base.m5,m30:base.m30,d1:base.d1,volume5Ratio:base.volume5Ratio,
+          bookAgeMs:book.quality?.ageMs,cycle
+        });
+      }catch(e){history.get(symbol).push({symbol,state:'NO_DATA',cycle,error:String(e?.message||e)})}
+    }
+  }
+  const stable=symbols.map(symbol=>{
+    const samples=history.get(symbol);
+    const summary=temporalSummary(samples);
+    const latest=[...samples].reverse().find(x=>x.state!=='NO_DATA')||samples.at(-1);
+    const stabilityScore=(summary.avgAttentionScore||0)*(0.55+0.45*summary.persistence)*(0.65+0.35*summary.flowAgreement);
+    return {symbol,...summary,stabilityScore,latest,samples};
+  }).sort((a,b)=>b.stabilityScore-a.stabilityScore).map((x,i)=>({rank:i+1,...x}));
+  return {
+    generatedAt:new Date().toISOString(),cycles,intervalMs,
+    universeCount:first.universeCount,shortlistCount:first.shortlistCount,
+    stableWatchlist:stable,routeHealth:provider.health()
+  };
+}

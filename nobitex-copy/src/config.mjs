@@ -11,5 +11,9 @@ export const config={
   dohFallback:bool(process.env.NOBITEX_DOH_FALLBACK,true),
   scanQuotes:csv(process.env.NOBITEX_SCAN_QUOTES,'IRT,USDT').map(x=>x.toUpperCase()),
   scanPerQuote:ints(process.env.NOBITEX_SCAN_PER_QUOTE,8),
-  scanMaxTotal:ints(process.env.NOBITEX_SCAN_MAX_TOTAL,16)
+  scanMaxTotal:ints(process.env.NOBITEX_SCAN_MAX_TOTAL,16),
+  stablePerQuote:ints(process.env.NOBITEX_STABLE_PER_QUOTE,4),
+  stableMaxTotal:ints(process.env.NOBITEX_STABLE_MAX_TOTAL,8),
+  stableCycles:ints(process.env.NOBITEX_STABLE_CYCLES,3),
+  stableIntervalMs:ints(process.env.NOBITEX_STABLE_INTERVAL_MS,3000)
 };

@@ -46,6 +46,12 @@ jobs:
         run: |
           set -o pipefail
           npm run scan | tee scanner-report.json
+      - id: stable
+        name: Temporal stability scanner
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run stable | tee stable-report.json
       - id: ws
         name: WebSocket live update
         continue-on-error: true
@@ -58,6 +64,7 @@ jobs:
           echo "REST outcome: ${{ steps.rest.outcome }}"
           echo "Watchlist outcome: ${{ steps.watch.outcome }}"
           echo "Scanner outcome: ${{ steps.scan.outcome }}"
+          echo "Stable scanner outcome: ${{ steps.stable.outcome }}"
           echo "WebSocket outcome: ${{ steps.ws.outcome }}"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -67,5 +74,6 @@ jobs:
             nobitex-copy/live-report.json
             nobitex-copy/watchlist-report.json
             nobitex-copy/scanner-report.json
+            nobitex-copy/stable-report.json
             nobitex-copy/ws-report.json
           retention-days: 1
