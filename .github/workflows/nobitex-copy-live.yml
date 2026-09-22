@@ -1,0 +1,42 @@
+name: Nobitex COPY live smoke
+
+on:
+  push:
+    branches: [nobitex-copy-live]
+    paths:
+      - 'nobitex-copy/**'
+      - '.github/workflows/nobitex-copy-live.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: nobitex-copy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: nobitex-copy/package-lock.json
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - run: npm test
+      - name: REST live snapshot
+        run: npm run live | tee live-report.json
+      - name: WebSocket live update
+        run: npm run ws | tee ws-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nobitex-live-reports
+          path: |
+            nobitex-copy/live-report.json
+            nobitex-copy/ws-report.json
+          retention-days: 1
