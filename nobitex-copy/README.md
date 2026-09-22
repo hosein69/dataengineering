@@ -1,43 +1,29 @@
-# Nobitex COPY Live
+# Nobitex COPY Live v0.3
 
-A Nobitex-specific live market adapter derived from the provider-oriented architecture of [lunarresearcher/copy](https://github.com/lunarresearcher/copy).
+Resilient Nobitex market-data adapter inspired by `lunarresearcher/copy`.
 
-## Data paths
+Current official documentation uses `https://apiv2.nobitex.ir` for public REST and `wss://ws.nobitex.ir/connection/websocket` for WebSocket. Legacy domains remain fallbacks only.
 
-The provider tries official/public Nobitex market-data routes left-to-right:
+Implemented:
+- REST route fallback and per-route health
+- system DNS first, DNS-over-HTTPS fallback on DNS failure
+- TLS remains bound to the true Nobitex hostname
+- order-book sorting, stale/crossed-book guards
+- recent trades with notional imbalance
+- spread, microprice and depth imbalance
+- 5m / 30m / daily OHLC features
+- independent REST and WebSocket diagnostics
+- monitoring labels without fabricating prices
+- no private account API and no order placement
 
-1. `https://api.nobitex.ir`
-2. `https://api.nobitex.net`
-3. Optional user-controlled relay(s) from `NOBITEX_RELAY_BASES`
-
-The legacy/public REST path shape remains:
-- Order book: `GET /v3/orderbook/{SYMBOL}`
-- Recent trades: `GET /v2/trades/{SYMBOL}`
-
-WebSocket uses `wss://wss.nobitex.ir/connection/websocket` and subscribes to `public:orderbook-{SYMBOL}`.
-
-`apiv2.nobitex.ir` is not treated as an interchangeable public order-book base because current examples use a different API surface (for example `/market/trades/list`) and may require authorization.
-
-## Reliability additions
-
-- Automatic REST fallback with per-route attempts
-- Independent WebSocket smoke test (does not depend on REST first)
-- Route health: successes, failures, latency, last error, last checked time
-- Optional Iran/self-hosted relay bases without changing normalization logic
-- Spread, spread bps, depth notional imbalance, recent trade imbalance
-- Watch states: `MOMENTUM_BUY_WATCH`, `PULLBACK_WATCH`, `REVERSAL_WATCH`, `SELL_PRESSURE`, `NEUTRAL`
-- No order placement or private account endpoint
-
-## Run
-
+Run:
 ```bash
 cd nobitex-copy
 npm install
 npm test
 npm run live
+npm run watch
 npm run ws
 ```
 
-Default markets: `BTCIRT,ETHIRT,USDTIRT,ZECIRT`.
-
-A live-data failure is reported as a route/network failure and never replaced with fabricated prices.
+Watch states are monitoring labels only, not trade recommendations.

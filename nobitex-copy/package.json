@@ -1,15 +1,1 @@
-{
-  "name": "nobitex-copy-live",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "description": "Nobitex live market adapter derived from lunarresearcher/copy provider architecture",
-  "scripts": {
-    "test": "node --test tests/*.test.mjs",
-    "live": "node src/cli/live-report.mjs",
-    "ws": "node src/cli/ws-smoke.mjs"
-  },
-  "dependencies": {
-    "ws": "^8.18.0"
-  }
-}
+{"name":"nobitex-copy-live","version":"0.3.0","private":true,"type":"module","description":"Resilient Nobitex live market adapter","scripts":{"test":"node --test tests/*.test.mjs","live":"node src/cli/live-report.mjs","watch":"node src/cli/watchlist.mjs","ws":"node src/cli/ws-smoke.mjs"},"dependencies":{"ws":"^8.18.0"}}
