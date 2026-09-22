@@ -115,11 +115,12 @@ export class NobitexProvider{
   classify({quality,metrics,tradesOk=true,frames={}}){
     if(!quality?.usable)return quality?.stale?'STALE_DATA':quality?.crossed?'CROSSED_BOOK':'INVALID_DATA';
     if(!tradesOk)return 'DATA_DEGRADED';
-    const ob=metrics.orderbookImbalance??0,ti=metrics.tradeImbalance??0,f5=frames['5']?.ret1??0,f30=frames['30']?.ret1??0;
-    if(ob>=0.15&&ti>=0.10&&f5>0)return 'MOMENTUM_BUY_WATCH';
-    if(f30>0&&f5<0&&ob>0.05)return 'PULLBACK_WATCH';
-    if(f30<0&&f5>0&&ti>0.08)return 'REVERSAL_WATCH';
+    const ob=metrics.orderbookImbalance??0,ti=metrics.tradeImbalance??0;
+    const f5=frames['5']?.ret1??0,f30=frames['30']?.ret1??0,vr=frames['5']?.volumeRatio??0;
     if(ob<=-0.15&&ti<=-0.10)return 'SELL_PRESSURE';
+    if(ob>=0.15&&ti>=0.10&&f5>=0.10&&vr>=0.80)return 'MOMENTUM_BUY_WATCH';
+    if(f30>=0.25&&f5<=-0.10&&ob>=0.08)return 'PULLBACK_WATCH';
+    if(f30<=-0.50&&f5>=0.10&&ti>=0.25)return vr>=0.50?'REVERSAL_WATCH':'REVERSAL_CANDIDATE_LOW_VOLUME';
     return 'NEUTRAL';
   }
   async snapshot(symbol,{tradeLimit=100,depth=20,withFrames=false}={}){
