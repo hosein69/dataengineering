@@ -5,6 +5,7 @@ export const config={
   apiBases:csv(process.env.NOBITEX_API_BASES,'https://apiv2.nobitex.ir,https://api.nobitex.ir,https://api.nobitex.net').concat(csv(process.env.NOBITEX_RELAY_BASES)),
   wsUrls:csv(process.env.NOBITEX_WS_URLS,'wss://ws.nobitex.ir/connection/websocket,wss://wss.nobitex.ir/connection/websocket').concat(csv(process.env.NOBITEX_RELAY_WS_URLS)),
   markets:csv(process.env.NOBITEX_MARKETS,'BTCIRT,ETHIRT,USDTIRT,ZECIRT').map(x=>x.toUpperCase()),
+  usdtWatch:csv(process.env.NOBITEX_USDT_WATCH,'XRPUSDT,DOGEUSDT,ETHUSDT,BTCUSDT,SOLUSDT,ZECUSDT').map(x=>x.toUpperCase()),
   httpTimeoutMs:ints(process.env.NOBITEX_HTTP_TIMEOUT_MS,10000),
   wsTimeoutMs:ints(process.env.NOBITEX_WS_TIMEOUT_MS,20000),
   maxBookAgeMs:ints(process.env.NOBITEX_MAX_BOOK_AGE_MS,60000),

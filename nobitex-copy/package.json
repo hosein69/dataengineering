@@ -1,6 +1,6 @@
 {
   "name": "nobitex-copy-live",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "type": "module",
   "description": "Resilient Nobitex live market adapter",
@@ -10,7 +10,8 @@
     "watch": "node src/cli/watchlist.mjs",
     "ws": "node src/cli/ws-smoke.mjs",
     "scan": "node src/cli/scan-all.mjs",
-    "stable": "node src/cli/scan-stable.mjs"
+    "stable": "node src/cli/scan-stable.mjs",
+    "usdt-watch": "node src/cli/usdt-watch.mjs"
   },
   "dependencies": {
     "ws": "^8.18.0"
