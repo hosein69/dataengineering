@@ -19,3 +19,14 @@ test('computes spread and depth imbalance deterministically',()=>{
   assert.ok(m.orderbookImbalance>0);
   assert.equal(m.tradeImbalance,0.5);
 });
+
+test('classifies aligned orderbook and trade pressure',()=>{
+  const p=new NobitexProvider();
+  assert.equal(p.classify({orderbookImbalance:.22,tradeImbalance:.3}),'MOMENTUM_BUY_WATCH');
+  assert.equal(p.classify({orderbookImbalance:-.3,tradeImbalance:-.2}),'SELL_PRESSURE');
+});
+
+test('deduplicates configured routes',()=>{
+  const p=new NobitexProvider({apiBases:['https://api.nobitex.ir/','https://api.nobitex.ir']});
+  assert.deepEqual(p.apiBases,['https://api.nobitex.ir']);
+});
