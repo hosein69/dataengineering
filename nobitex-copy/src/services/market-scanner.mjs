@@ -8,6 +8,17 @@ export function quoteOf(symbol){
   return 'OTHER';
 }
 
+export function baseOf(symbol){
+  const s=String(symbol||'').toUpperCase(),q=quoteOf(s);
+  return q==='OTHER'?s:s.slice(0,-q.length);
+}
+
+export function marketRole(symbol){
+  const base=baseOf(symbol);
+  const referenceBases=new Set(['USDT','USDC','DAI','TUSD','FDUSD','USDE','RLUSD']);
+  return referenceBases.has(base)?'REFERENCE':'OPPORTUNITY';
+}
+
 export function percentileRank(values,value){
   const xs=values.filter(Number.isFinite).sort((a,b)=>a-b);
   if(!xs.length||!Number.isFinite(value))return 0;
@@ -171,9 +182,14 @@ export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote
     const stabilityScore=(summary.avgAttentionScore||0)*(0.55+0.45*summary.persistence)*(0.65+0.35*summary.flowAgreement);
     return {symbol,...summary,stabilityScore,latest,samples};
   }).sort((a,b)=>b.stabilityScore-a.stabilityScore).map((x,i)=>({rank:i+1,...x}));
+  const classified=stable.map(x=>({...x,marketRole:marketRole(x.symbol)}));
+  const confirmedOpportunities=classified.filter(x=>x.marketRole==='OPPORTUNITY'&&x.temporalStatus==='CONFIRMED');
+  const monitorOnly=classified.filter(x=>x.marketRole==='OPPORTUNITY'&&x.temporalStatus!=='CONFIRMED');
+  const referenceMarkets=classified.filter(x=>x.marketRole==='REFERENCE');
   return {
     generatedAt:new Date().toISOString(),cycles,intervalMs,
     universeCount:first.universeCount,shortlistCount:first.shortlistCount,
-    stableWatchlist:stable,routeHealth:provider.health()
+    stableWatchlist:classified,confirmedOpportunities,monitorOnly,referenceMarkets,
+    routeHealth:provider.health()
   };
 }

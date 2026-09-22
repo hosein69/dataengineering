@@ -40,3 +40,6 @@ Watch states are monitoring labels only, not trade recommendations.
 `npm run stable` performs a full first-pass scan, then rechecks only the shortlisted symbols for several cycles. Slow OHLC features are reused from cycle 1; later cycles refresh market-wide order books plus recent trades. A state is promoted to `CONFIRMED` only when the actionable state persists for at least two-thirds of cycles and microstructure direction is sufficiently consistent.
 
 This reduces single-snapshot false positives while keeping API usage bounded.
+
+
+Stablecoin-base markets (for example USDC/USDT, DAI/USDT and USDT/IRT) are retained as `referenceMarkets` for liquidity/FX context but are separated from `confirmedOpportunities`.
