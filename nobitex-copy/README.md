@@ -2,20 +2,31 @@
 
 A Nobitex-specific live market adapter derived from the provider-oriented architecture of [lunarresearcher/copy](https://github.com/lunarresearcher/copy).
 
-## What changed
+## Data paths
 
-The Robinhood/DexScreener/Fomo market inputs are replaced by a dedicated `NobitexProvider`.
+The provider tries official/public Nobitex market-data routes left-to-right:
 
-- Public REST order book: `GET /v3/orderbook/{SYMBOL}`
-- Public recent trades: `GET /v2/trades/{SYMBOL}`
-- Public WebSocket: `wss://wss.nobitex.ir/connection/websocket`
-- WebSocket order-book channels: `public:orderbook-{SYMBOL}`
-- REST bootstrap + WebSocket live update
-- Correct v3 bid/ask semantics
-- Timeouts, explicit errors and freshness metrics
-- Spread, spread bps, top-depth notional imbalance and recent-trade imbalance
-- No API key required for the public market-data path
-- No order placement or private-account endpoint is implemented
+1. `https://api.nobitex.ir`
+2. `https://api.nobitex.net`
+3. Optional user-controlled relay(s) from `NOBITEX_RELAY_BASES`
+
+The legacy/public REST path shape remains:
+- Order book: `GET /v3/orderbook/{SYMBOL}`
+- Recent trades: `GET /v2/trades/{SYMBOL}`
+
+WebSocket uses `wss://wss.nobitex.ir/connection/websocket` and subscribes to `public:orderbook-{SYMBOL}`.
+
+`apiv2.nobitex.ir` is not treated as an interchangeable public order-book base because current examples use a different API surface (for example `/market/trades/list`) and may require authorization.
+
+## Reliability additions
+
+- Automatic REST fallback with per-route attempts
+- Independent WebSocket smoke test (does not depend on REST first)
+- Route health: successes, failures, latency, last error, last checked time
+- Optional Iran/self-hosted relay bases without changing normalization logic
+- Spread, spread bps, depth notional imbalance, recent trade imbalance
+- Watch states: `MOMENTUM_BUY_WATCH`, `PULLBACK_WATCH`, `REVERSAL_WATCH`, `SELL_PRESSURE`, `NEUTRAL`
+- No order placement or private account endpoint
 
 ## Run
 
@@ -27,8 +38,6 @@ npm run live
 npm run ws
 ```
 
-Default markets: `BTCIRT,ETHIRT,USDTIRT,ZECIRT`. Override with `NOBITEX_MARKETS`.
+Default markets: `BTCIRT,ETHIRT,USDTIRT,ZECIRT`.
 
-## Safety / scope
-
-This branch is market-data only. It deliberately does not submit trades. A live data feed proves connectivity and parsing; it is not evidence that a trading strategy is profitable.
+A live-data failure is reported as a route/network failure and never replaced with fabricated prices.
