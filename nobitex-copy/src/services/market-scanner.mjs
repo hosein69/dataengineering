@@ -129,11 +129,20 @@ export async function scanStableMarkets(provider,{quotes=['IRT','USDT'],perQuote
   for(const row of first.shortlist)history.get(row.symbol).push({...row,cycle:1});
   for(let cycle=2;cycle<=cycles;cycle++){
     if(intervalMs>0)await new Promise(r=>setTimeout(r,intervalMs));
-    const all=await provider.orderbooksAll();
+    let books={},bulkError=null;
+    try{
+      const all=await provider.orderbooksAll();
+      books=all.books;
+    }catch(e){
+      bulkError=String(e?.message||e);
+      for(const symbol of symbols){
+        try{books[symbol]=await provider.orderbook(symbol)}catch{}
+      }
+    }
     for(const symbol of symbols){
       const base=first.shortlist.find(x=>x.symbol===symbol);
-      const book=all.books[symbol];
-      if(!book){history.get(symbol).push({symbol,state:'NO_DATA',cycle});continue}
+      const book=books[symbol];
+      if(!book){history.get(symbol).push({symbol,state:'NO_DATA',cycle,error:bulkError||'book unavailable'});continue}
       try{
         const tr=await provider.trades(symbol);
         const trades=tr.items.slice(0,100),metrics=provider.metrics(book,trades,20);
