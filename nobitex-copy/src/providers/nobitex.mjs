@@ -89,6 +89,15 @@ export class NobitexProvider{
     symbol=upper(symbol);const r=await this.getJson(`/v3/orderbook/${encodeURIComponent(symbol)}`),book=this.normalizeOrderbook(symbol,r.data);
     return {...book,quality:this.validateBook(book),route:r.route,routeLatencyMs:r.latencyMs,routeAttempts:r.attempts,dnsMode:r.dnsMode,resolvedIp:r.resolvedIp||null};
   }
+  async orderbooksAll(){
+    const r=await this.getJson('/v3/orderbook/all'),books={};
+    for(const [symbol,data] of Object.entries(r.data||{})){
+      if(symbol==='status'||!data||typeof data!=='object')continue;
+      const book=this.normalizeOrderbook(symbol,data);
+      books[upper(symbol)]={...book,quality:this.validateBook(book),route:r.route,dnsMode:r.dnsMode,resolvedIp:r.resolvedIp||null};
+    }
+    return {books,route:r.route,dnsMode:r.dnsMode,resolvedIp:r.resolvedIp||null,latencyMs:r.latencyMs};
+  }
   async trades(symbol){
     symbol=upper(symbol);const r=await this.getJson(`/v2/trades/${encodeURIComponent(symbol)}`);
     const items=(Array.isArray(r.data?.trades)?r.data.trades:[]).map((t,i)=>({id:String(t.id??t.tradeId??`${symbol}:${t.time??i}:${t.price??''}`),symbol,time:tsMs(t.time??t.timestamp),price:num(t.price),volume:num(t.volume??t.amount),type:String(t.type??t.side??'').toLowerCase()||null}))

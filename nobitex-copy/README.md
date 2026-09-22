@@ -27,3 +27,9 @@ npm run ws
 ```
 
 Watch states are monitoring labels only, not trade recommendations.
+
+## Full-market scanner
+
+`npm run scan` discovers the live Nobitex universe from `/v3/orderbook/all`, ranks liquidity/spread within each quote currency, shortlists a configurable number per quote, then enriches only that shortlist with recent trades and 5m/30m/D OHLC. This avoids comparing IRT and USDT notionals directly and reduces API pressure.
+
+`attentionScore` is a monitoring-priority score, not a buy/sell score.

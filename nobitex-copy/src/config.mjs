@@ -8,5 +8,8 @@ export const config={
   httpTimeoutMs:ints(process.env.NOBITEX_HTTP_TIMEOUT_MS,10000),
   wsTimeoutMs:ints(process.env.NOBITEX_WS_TIMEOUT_MS,20000),
   maxBookAgeMs:ints(process.env.NOBITEX_MAX_BOOK_AGE_MS,60000),
-  dohFallback:bool(process.env.NOBITEX_DOH_FALLBACK,true)
+  dohFallback:bool(process.env.NOBITEX_DOH_FALLBACK,true),
+  scanQuotes:csv(process.env.NOBITEX_SCAN_QUOTES,'IRT,USDT').map(x=>x.toUpperCase()),
+  scanPerQuote:ints(process.env.NOBITEX_SCAN_PER_QUOTE,8),
+  scanMaxTotal:ints(process.env.NOBITEX_SCAN_MAX_TOTAL,16)
 };
