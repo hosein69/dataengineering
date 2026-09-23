@@ -1,0 +1,138 @@
+{
+  "tool_version": "2.0.0-reviewed",
+  "generated_at": "2026-09-23T08:20:23",
+  "config": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/sources_fixed.yaml",
+  "configured_sources": 6,
+  "profiled_frames": 8,
+  "coverage": [
+    {
+      "source": "SAP",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 3,
+      "required": false
+    },
+    {
+      "source": "Commercial_Expert",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 2,
+      "required": false
+    },
+    {
+      "source": "NTSW",
+      "status": "PROFILED",
+      "frames": 3,
+      "rows": 6,
+      "required": false
+    },
+    {
+      "source": "Oracle",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    },
+    {
+      "source": "FX_Transactions",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    },
+    {
+      "source": "Customs",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    }
+  ],
+  "errors": [],
+  "files": {
+    "coverage_report.json": {
+      "bytes": 852,
+      "sha256": "728af91b722877890df9f190a17e80df4d4e05d64c742deefebbfd9781e031e3"
+    },
+    "executive_summary.md": {
+      "bytes": 984,
+      "sha256": "cfd0a6acbfacbc21464c9efd85c8fb07b0ad598c335e8e4b193027fdd5c64cca"
+    },
+    "model_context_pack.md": {
+      "bytes": 15900,
+      "sha256": "e83172329d4d06fbacf823facfd443db37745deeb4895144c2ce64fb14810fda"
+    },
+    "process_key_index.json": {
+      "bytes": 7341,
+      "sha256": "c783b3be231e93f05edacbd0db7364a38a1d4546cf350db2ab299716f7766893"
+    },
+    "samples/Commercial_Expert__Expert_Data__sample.csv": {
+      "bytes": 578,
+      "sha256": "3da467451d181615377a9c24f5be6a3201257e220b556b0df2cf93feaa70e9d3"
+    },
+    "samples/Customs__SeaClearance__sample.csv": {
+      "bytes": 449,
+      "sha256": "0ba453f94e921798b83804cc3c4eccc8c9635ffc49285196ab28ef37e7372687"
+    },
+    "samples/FX_Transactions__Sheet1__sample.csv": {
+      "bytes": 527,
+      "sha256": "2399d707f8261f33db4e22c44983c3acf986dd33239d75eadb413cb5a1dbf85b"
+    },
+    "samples/NTSW__Allocation__sample.csv": {
+      "bytes": 548,
+      "sha256": "e72007ed009063d57ba1ee7cafebdfe69ad661fefd7746ab488ecf1a68d92815"
+    },
+    "samples/NTSW__Import_Licence__sample.csv": {
+      "bytes": 332,
+      "sha256": "b37d2b8979318d859dd9b25bbe8b3c31a8cdd35d709db0b5ad13f93c38d514b5"
+    },
+    "samples/NTSW__Release_Commitment__sample.csv": {
+      "bytes": 490,
+      "sha256": "7e1b0703e1a086085beb45812c3210af8800b4ec0b3d1e38159b517eeba02b4a"
+    },
+    "samples/Oracle__Total_Report_14050610__sample.csv": {
+      "bytes": 398,
+      "sha256": "92cbd7b12731d05935d7c2e466dd2adc289998da9c6fe268d9200bbd3635cce9"
+    },
+    "samples/SAP__Data__sample.csv": {
+      "bytes": 1171,
+      "sha256": "24ca1739542d6e7f9ce5108bb40c9c83ae9e728c61768aa34e68f37ca8c10067"
+    },
+    "schemas/Commercial_Expert__Expert_Data__schema.json": {
+      "bytes": 6600,
+      "sha256": "13f0fb7944bd214d1f4c2fc22e4a58fbf64c3cf1a50249dd76c1ff87121ece9e"
+    },
+    "schemas/Customs__SeaClearance__schema.json": {
+      "bytes": 5523,
+      "sha256": "6e412583a63fe183fd7a380c5853b35f3ee9fb834c311d8279b8fda32d6dc5f8"
+    },
+    "schemas/FX_Transactions__Sheet1__schema.json": {
+      "bytes": 6542,
+      "sha256": "c558208eee63a9ce3f13dfa5e979648bf20a05357b1ad68c1ec5f9fa8299d3ae"
+    },
+    "schemas/NTSW__Allocation__schema.json": {
+      "bytes": 6975,
+      "sha256": "064451f49394b8416961c26e86d77c48eecc25a0dc60d1bb827d8d8945c73eaa"
+    },
+    "schemas/NTSW__Import_Licence__schema.json": {
+      "bytes": 2535,
+      "sha256": "3e3c06a52e57f649754c3b069f7c99cbd027d144d3d4c46fcadbe7da12e53898"
+    },
+    "schemas/NTSW__Release_Commitment__schema.json": {
+      "bytes": 5371,
+      "sha256": "8a08be04d1c88d2abe73cabd32ed8fc3d16d4c979fb83566d87fe0683f1ec696"
+    },
+    "schemas/Oracle__Total_Report_14050610__schema.json": {
+      "bytes": 4643,
+      "sha256": "1011029c57ce519224854efcf1dab573a056f594ce300a11b081a4ebf76440db"
+    },
+    "schemas/SAP__Data__schema.json": {
+      "bytes": 13638,
+      "sha256": "23120bc8a11f40019519f296229fda52d2677a07bd88d26a1813626f62379b61"
+    },
+    "source_catalog.json": {
+      "bytes": 70502,
+      "sha256": "ed3ab9c606b0b5dea6d8aa2e1450a924ccd130b3f7e6421d4bc5b18ca1d2abed"
+    }
+  }
+}

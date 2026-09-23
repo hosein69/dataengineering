@@ -1,0 +1,216 @@
+{
+  "source": "Oracle",
+  "sheet": "Total_Report 14050610",
+  "row_count": 1,
+  "column_count": 10,
+  "columns": [
+    {
+      "column": "شماره فنی",
+      "key_role": "MATERIAL",
+      "measure_roles": [],
+      "roles": [
+        "MATERIAL"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "9654003280"
+      ]
+    },
+    {
+      "column": "کد جنس",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "K1"
+      ]
+    },
+    {
+      "column": "شرح جنس",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "واشر تخت"
+      ]
+    },
+    {
+      "column": "گروه تامین",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "G1"
+      ]
+    },
+    {
+      "column": "موجودی انبار ایران خودرو",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "12"
+      ]
+    },
+    {
+      "column": "موجودی انبار ساپکو",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "3"
+      ]
+    },
+    {
+      "column": "نیاز روزانه قطعات",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "4"
+      ]
+    },
+    {
+      "column": "تعداد خودرو کف",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "100"
+      ]
+    },
+    {
+      "column": "وضعیت",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.0,
+      "rows": 1,
+      "non_null": 0,
+      "nulls": 1,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "کارشناس خرید خارجی",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.0,
+      "rows": 1,
+      "non_null": 0,
+      "nulls": 1,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    }
+  ]
+}

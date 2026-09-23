@@ -1,0 +1,258 @@
+{
+  "source": "Customs",
+  "sheet": "SeaClearance",
+  "row_count": 1,
+  "column_count": 12,
+  "columns": [
+    {
+      "column": "پرونده ترخیص",
+      "key_role": "CUSTOMS_FILE",
+      "measure_roles": [],
+      "roles": [
+        "CUSTOMS_FILE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "CF-1"
+      ]
+    },
+    {
+      "column": "شماره بارنامه",
+      "key_role": "BL",
+      "measure_roles": [],
+      "roles": [
+        "BL"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "BL-777"
+      ]
+    },
+    {
+      "column": "شماره سفارش",
+      "key_role": "ORDER",
+      "measure_roles": [],
+      "roles": [
+        "ORDER"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "502805"
+      ]
+    },
+    {
+      "column": "نوع حمل",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "دریایی"
+      ]
+    },
+    {
+      "column": "کوتاژ",
+      "key_role": "COTTAGE",
+      "measure_roles": [],
+      "roles": [
+        "COTTAGE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "34138249"
+      ]
+    },
+    {
+      "column": "تاریخ  دریافت شماره کوتاژ",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/03/01"
+      ]
+    },
+    {
+      "column": "ترخیص کامل",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "*"
+      ]
+    },
+    {
+      "column": "ترخیص درصدی",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.0,
+      "rows": 1,
+      "non_null": 0,
+      "nulls": 1,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "تاریخ بارگیری 6 (کامل)",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/03/05"
+      ]
+    },
+    {
+      "column": "تعرفه",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "87085032"
+      ]
+    },
+    {
+      "column": "ارزش فاکتور",
+      "key_role": null,
+      "measure_roles": [
+        "AMOUNT"
+      ],
+      "roles": [
+        "AMOUNT"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1200"
+      ]
+    },
+    {
+      "column": "نوع ارز",
+      "key_role": null,
+      "measure_roles": [
+        "CURRENCY"
+      ],
+      "roles": [
+        "CURRENCY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "EUR"
+      ]
+    }
+  ]
+}

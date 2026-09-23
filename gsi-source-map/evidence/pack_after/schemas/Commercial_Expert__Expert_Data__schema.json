@@ -1,0 +1,311 @@
+{
+  "source": "Commercial_Expert",
+  "sheet": "Expert Data",
+  "row_count": 2,
+  "column_count": 14,
+  "columns": [
+    {
+      "column": "Order No. (Our Reference)",
+      "key_role": "ORDER",
+      "measure_roles": [],
+      "roles": [
+        "ORDER"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "502805",
+        "502805"
+      ]
+    },
+    {
+      "column": "Data type",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "Purchase Approval Data",
+        "Pre Purchase Approval Data"
+      ]
+    },
+    {
+      "column": "Material",
+      "key_role": "MATERIAL",
+      "measure_roles": [],
+      "roles": [
+        "MATERIAL"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "9654003280",
+        "9654003281"
+      ]
+    },
+    {
+      "column": "Material Description",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "واشر تخت",
+        "پيچ"
+      ]
+    },
+    {
+      "column": "Purchase Requisition",
+      "key_role": "PR",
+      "measure_roles": [],
+      "roles": [
+        "PR"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "6500029693",
+        "6500029700"
+      ]
+    },
+    {
+      "column": "Item of requisition",
+      "key_role": "PR_ITEM",
+      "measure_roles": [],
+      "roles": [
+        "PR_ITEM"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "00010",
+        "00020"
+      ]
+    },
+    {
+      "column": "BL No.",
+      "key_role": "BL",
+      "measure_roles": [],
+      "roles": [
+        "BL"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "TECHREF1",
+        "TECHREF2"
+      ]
+    },
+    {
+      "column": "نوع ارز",
+      "key_role": null,
+      "measure_roles": [
+        "CURRENCY"
+      ],
+      "roles": [
+        "CURRENCY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "EUR",
+        "USD"
+      ]
+    },
+    {
+      "column": "PI Line Value",
+      "key_role": null,
+      "measure_roles": [
+        "AMOUNT"
+      ],
+      "roles": [
+        "AMOUNT"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1200",
+        "800"
+      ]
+    },
+    {
+      "column": "Quantity In Order",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "100",
+        "5"
+      ]
+    },
+    {
+      "column": "وضعیت سفارش",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "مورد تایید",
+        "تایید نشده"
+      ]
+    },
+    {
+      "column": "نزد سازنده",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.825,
+      "rows": 2,
+      "non_null": 1,
+      "nulls": 1,
+      "null_pct": 50.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "10"
+      ]
+    },
+    {
+      "column": "در راه",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.825,
+      "rows": 2,
+      "non_null": 1,
+      "nulls": 1,
+      "null_pct": 50.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "5"
+      ]
+    },
+    {
+      "column": "گمرک",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.825,
+      "rows": 2,
+      "non_null": 1,
+      "nulls": 1,
+      "null_pct": 50.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "0"
+      ]
+    }
+  ]
+}

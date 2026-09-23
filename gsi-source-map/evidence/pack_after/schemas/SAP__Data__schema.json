@@ -1,0 +1,648 @@
+{
+  "source": "SAP",
+  "sheet": "Data",
+  "row_count": 3,
+  "column_count": 28,
+  "columns": [
+    {
+      "column": "Purchase Requisition",
+      "key_role": "PR",
+      "measure_roles": [],
+      "roles": [
+        "PR"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "6500029693",
+        "6500029693",
+        "6500029700"
+      ]
+    },
+    {
+      "column": "Item of requisition",
+      "key_role": "PR_ITEM",
+      "measure_roles": [],
+      "roles": [
+        "PR_ITEM"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "00010",
+        "00010",
+        "00020"
+      ]
+    },
+    {
+      "column": "Material",
+      "key_role": "MATERIAL",
+      "measure_roles": [],
+      "roles": [
+        "MATERIAL"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "9654003280",
+        "9654003280",
+        "9654003281"
+      ]
+    },
+    {
+      "column": "Material Description",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "واشر تخت",
+        "واشر تخت",
+        "پيچ"
+      ]
+    },
+    {
+      "column": "Material Group",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "MG-11",
+        "MG-11",
+        "MG-12"
+      ]
+    },
+    {
+      "column": "Purchase order",
+      "key_role": "PO",
+      "measure_roles": [],
+      "roles": [
+        "PO"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "4500000001",
+        "4500000002"
+      ]
+    },
+    {
+      "column": "Purchasing Group",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "P01",
+        "P01",
+        "P02"
+      ]
+    },
+    {
+      "column": "Requisition date",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "2026-01-05",
+        "2026-01-05",
+        "2026-03-01"
+      ]
+    },
+    {
+      "column": "Changed On",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "2026-01-10",
+        "2026-01-10",
+        "2026-03-15"
+      ]
+    },
+    {
+      "column": "Release Date",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "2026-01-06",
+        "2026-01-06",
+        "2026-03-02"
+      ]
+    },
+    {
+      "column": "Processing status",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 1.0,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 3,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "مورد تایید",
+        "تایید نشده",
+        "در گردش"
+      ]
+    },
+    {
+      "column": "Deletion Indicator",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7667,
+      "rows": 3,
+      "non_null": 1,
+      "nulls": 2,
+      "null_pct": 66.67,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "X"
+      ]
+    },
+    {
+      "column": "Quantity requested",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "100",
+        "100",
+        "5"
+      ]
+    },
+    {
+      "column": "Quantity ordered",
+      "key_role": null,
+      "measure_roles": [
+        "QUANTITY"
+      ],
+      "roles": [
+        "QUANTITY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "60",
+        "40"
+      ]
+    },
+    {
+      "column": "Name of Supplier",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.5583,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "ACME",
+        "ACME"
+      ]
+    },
+    {
+      "column": "WorkFlow ID",
+      "key_role": "WORKFLOW",
+      "measure_roles": [],
+      "roles": [
+        "WORKFLOW"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "WF-1",
+        "WF-1",
+        "WF-2"
+      ]
+    },
+    {
+      "column": "WorkFlow Status",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.7834,
+      "rows": 3,
+      "non_null": 3,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 66.67,
+      "examples": [
+        "RELEASED",
+        "RELEASED",
+        "IN PROCESS"
+      ]
+    },
+    {
+      "column": "Comparision ID",
+      "key_role": "COMPARISON",
+      "measure_roles": [],
+      "roles": [
+        "COMPARISON"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.5583,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "C-1",
+        "C-1"
+      ]
+    },
+    {
+      "column": "po.Purchasing Document",
+      "key_role": "PO",
+      "measure_roles": [],
+      "roles": [
+        "PO"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "4500000001",
+        "4500000002"
+      ]
+    },
+    {
+      "column": "po.Item",
+      "key_role": "PO_ITEM",
+      "measure_roles": [],
+      "roles": [
+        "PO_ITEM"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "00010",
+        "00020"
+      ]
+    },
+    {
+      "column": "po.Purchase Requisition",
+      "key_role": "PR",
+      "measure_roles": [],
+      "roles": [
+        "PR"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "6500029693",
+        "6500029999"
+      ]
+    },
+    {
+      "column": "po.Item of requisition",
+      "key_role": "PR_ITEM",
+      "measure_roles": [],
+      "roles": [
+        "PR_ITEM"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "00010",
+        "00090"
+      ]
+    },
+    {
+      "column": "po.Material",
+      "key_role": "MATERIAL",
+      "measure_roles": [],
+      "roles": [
+        "MATERIAL"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "9654003280",
+        "9111111111"
+      ]
+    },
+    {
+      "column": "po.Supplier",
+      "key_role": "SUPPLIER",
+      "measure_roles": [],
+      "roles": [
+        "SUPPLIER"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "V-900",
+        "V-901"
+      ]
+    },
+    {
+      "column": "po.Net Order Value",
+      "key_role": null,
+      "measure_roles": [
+        "AMOUNT"
+      ],
+      "roles": [
+        "AMOUNT"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1200",
+        "800"
+      ]
+    },
+    {
+      "column": "po.Currency",
+      "key_role": null,
+      "measure_roles": [
+        "CURRENCY"
+      ],
+      "roles": [
+        "CURRENCY"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.5583,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "EUR",
+        "EUR"
+      ]
+    },
+    {
+      "column": "po.Document Date",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.8833,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "2026-02-01",
+        "2026-02-02"
+      ]
+    },
+    {
+      "column": "po.شماره پرونده",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "po",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.5583,
+      "rows": 3,
+      "non_null": 2,
+      "nulls": 1,
+      "null_pct": 33.33,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "664823825",
+        "664823825"
+      ]
+    }
+  ]
+}

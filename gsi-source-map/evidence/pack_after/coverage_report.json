@@ -1,0 +1,48 @@
+{
+  "tool_version": "2.0.0-reviewed",
+  "coverage": [
+    {
+      "source": "SAP",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 3,
+      "required": false
+    },
+    {
+      "source": "Commercial_Expert",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 2,
+      "required": false
+    },
+    {
+      "source": "NTSW",
+      "status": "PROFILED",
+      "frames": 3,
+      "rows": 6,
+      "required": false
+    },
+    {
+      "source": "Oracle",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    },
+    {
+      "source": "FX_Transactions",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    },
+    {
+      "source": "Customs",
+      "status": "PROFILED",
+      "frames": 1,
+      "rows": 1,
+      "required": false
+    }
+  ],
+  "errors": []
+}

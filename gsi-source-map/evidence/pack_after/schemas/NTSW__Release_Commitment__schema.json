@@ -1,0 +1,258 @@
+{
+  "source": "NTSW",
+  "sheet": "Release Commitment",
+  "row_count": 2,
+  "column_count": 11,
+  "columns": [
+    {
+      "column": "ردیف",
+      "key_role": "EXPORT_ROW_NO",
+      "measure_roles": [],
+      "roles": [
+        "EXPORT_ROW_NO"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "column": "کد ثبت سفارش",
+      "key_role": "REG",
+      "measure_roles": [],
+      "roles": [
+        "REG"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "98404279",
+        "98404279"
+      ]
+    },
+    {
+      "column": "شماره ردیف تعهد",
+      "key_role": "NATIVE_ROW_ID",
+      "measure_roles": [],
+      "roles": [
+        "NATIVE_ROW_ID"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": true,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "7",
+        "7"
+      ]
+    },
+    {
+      "column": "شعبه",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "B1",
+        "B1"
+      ]
+    },
+    {
+      "column": "ارز",
+      "key_role": null,
+      "measure_roles": [
+        "CURRENCY"
+      ],
+      "roles": [
+        "CURRENCY"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "EUR",
+        "EUR"
+      ]
+    },
+    {
+      "column": "تعهد اولیه",
+      "key_role": null,
+      "measure_roles": [
+        "AMOUNT"
+      ],
+      "roles": [
+        "AMOUNT"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "100",
+        "100"
+      ]
+    },
+    {
+      "column": "مانده تعهد",
+      "key_role": null,
+      "measure_roles": [
+        "AMOUNT"
+      ],
+      "roles": [
+        "AMOUNT"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "50",
+        "50"
+      ]
+    },
+    {
+      "column": "تاریخ ایجاد تعهد",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "1405/01/01",
+        "1405/01/01"
+      ]
+    },
+    {
+      "column": "مهلت رفع تعهد",
+      "key_role": null,
+      "measure_roles": [
+        "DATE"
+      ],
+      "roles": [
+        "DATE"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "1405/06/01",
+        "1405/06/01"
+      ]
+    },
+    {
+      "column": "وضعیت رفع تعهد",
+      "key_role": null,
+      "measure_roles": [
+        "STATUS"
+      ],
+      "roles": [
+        "STATUS"
+      ],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "رفع تعهد نشده",
+        "رفع تعهد نشده"
+      ]
+    },
+    {
+      "column": "شرکت",
+      "key_role": null,
+      "measure_roles": [],
+      "roles": [],
+      "side": "header",
+      "dtype": "object",
+      "is_representative_key": false,
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "X",
+        "X"
+      ]
+    }
+  ]
+}

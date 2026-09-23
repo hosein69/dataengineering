@@ -1,0 +1,152 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  GSI Source Profiler — source registry
+#
+#  Aligned with gsi/config/sources.yaml of the GSI package (registry_version 3.0).
+#  The upstream map declared 7 sources; the real registry has 13 enabled, and
+#  the six that were missing include `oracle`, which is the basis for stock and
+#  the resistance calculation. Profiling without them would leave those domains
+#  with no evidence at all (MAP_DEFECTS M-10).
+#
+#  Set one variable and the paths resolve:
+#      Linux/macOS   export GSI_DATA_ROOT=/mnt/gsi/data
+#      Windows       set GSI_DATA_ROOT=D:\of\blstotal
+#
+#  `path` accepts ${VAR}. Point each entry at the real workbook; the filenames
+#  below follow the patterns the GSI registry matches on.
+# ═══════════════════════════════════════════════════════════════════════════
+
+sources:
+  # ── Tier 1: population builders ──────────────────────────────────────────
+  - name: Commercial_Expert
+    path: "${GSI_DATA_ROOT}/GS_Combine/OUTPUT/Commercial Expert Data.xlsx"
+    sheets: ["Expert Data"]
+    domain: "Commercial"
+    authority: "Tier 1 — population builder; purchase cycle plus expert-held stock"
+    required: true
+    notes: >
+      Multi-typed export: the `Data type` column carries Pre Purchase Approval Data
+      and Purchase Approval Data, so one workbook holds more than one grain.
+      `BL No.` holds a technical/proforma reference, NOT a shipping bill of lading;
+      the GSI package quarantines it. Do not accept a BL role here without asking
+      the source owner.
+
+  - name: NTSW
+    path: "${GSI_DATA_ROOT}/Foreign/NTSW.xlsx"
+    sheets: ["Release Commitment", "Allocation", "Import License", "Import Licence"]
+    domain: "Registration / FX allocation / commitment"
+    authority: "Tier 1 — population builder; import licence, FX commitment, FX allocation"
+    required: true
+    notes: >
+      Import Licence is the registration-file hub. `شماره پرونده ثبت سفارش` is the
+      9+ digit FILE number and `کد ثبت سفارش` is the 8-digit registration CODE:
+      they are different entities. Confusing them is recorded in the GSI registry
+      as the reason NTSW never connected in an earlier release.
+      `شماره ردیف تعهد` and `ردیف درخواست` are native line identifiers — whether a
+      repeated one is a new obligation or a re-observed snapshot is an open question.
+
+  # ── Tier 2: enrichment ───────────────────────────────────────────────────
+  - name: Abbasi_BL_Tracking
+    path: "${GSI_DATA_ROOT}/BLs_Total/BLs Tracking.xlsx"
+    sheets: ["BLs Tracking"]
+    domain: "Logistics"
+    authority: "Tier 2 — logistics enrichment; never creates business population"
+    required: false
+
+  - name: SATA
+    path: "${GSI_DATA_ROOT}/BLs_Total/SATA.xlsx"
+    sheets: ["Sata Tracking"]
+    domain: "Registration / logistics bridge"
+    authority: "Tier 2 — direct BL ↔ ORDER ↔ REG bridge, not the only registration path"
+    required: false
+    notes: >
+      Carries `دریافت اسناد` (documents received). Whether that is the same event as
+      a financial receipt is unresolved and must not be assumed.
+
+  # ── Domain evidence ──────────────────────────────────────────────────────
+  - name: Oracle
+    path: "${GSI_DATA_ROOT}/BLs_Total/Oracle.xlsx"
+    sheets: all
+    domain: "Inventory / demand"
+    authority: "Domain evidence — stock, daily need, basis of the resistance metric"
+    required: false
+    notes: >
+      Can contain more than one useful sheet describing the same part. The GSI
+      package treats the sheets as alternative observations, never additive.
+      Several headers are operator-excluded upstream (وضعیت, کارشناس خرید خارجی,
+      قطعه بحرانی …); profile the raw workbook so the exclusion stays visible.
+
+  - name: FX_Transactions
+    path: "${GSI_DATA_ROOT}/Foreign/Foreign Exchange Transaction.xlsx"
+    sheets: all
+    domain: "Treasury / FX"
+    authority: "Domain evidence — FX purchase, rate, beneficiary payment"
+    required: false
+    notes: >
+      May repeat the header `نوع ارز` for proforma and SWIFT currency. A positional
+      binding to the second occurrence is fragile; profile every occurrence.
+      SWIFT sent is not proof the beneficiary was paid.
+
+  - name: Credit
+    path: "${GSI_DATA_ROOT}/Foreign/Credit.xlsx"
+    sheets: ["PURCREDIT"]
+    domain: "Documentary credit"
+    authority: "Domain evidence — LC opening, proforma value, latest status"
+    required: false
+
+  - name: IL_Append
+    path: "${GSI_DATA_ROOT}/Foreign/IL.xlsx"
+    sheets: ["Append"]
+    domain: "Registration appendix"
+    authority: "Bridge from registration file to registration/order"
+    required: false
+    notes: >
+      Holds two similar columns: `شماره ثبت سفارش` (8-digit key) and
+      `شماره پرونده ثبت سفارش` (9-digit file number). Keep them apart.
+
+  - name: Clearance
+    path: "${GSI_DATA_ROOT}/Clearance/Sea Clearance.xlsx"
+    sheets: all
+    domain: "Customs clearance"
+    authority: "Domain evidence — sea/air/land/chabahar clearance"
+    required: false
+    notes: >
+      Four separate workbooks exist, each with its own sheet name and column count.
+      Add one entry per file. `ترخیص کامل` and `ترخیص درصدی` are flags ("*"), not
+      dates. No direction field distinguishes import from export clearance.
+
+  - name: Cotage
+    path: "${GSI_DATA_ROOT}/BLs_Total/Cottage Tracking.xlsx"
+    sheets: ["Cottage Tracking"]
+    domain: "Customs declaration"
+    authority: "Domain evidence — cotage number, entry border, destination customs"
+    required: false
+
+  - name: DocCheck
+    path: "${GSI_DATA_ROOT}/Mohamadi/Document Checking.xlsx"
+    sheets: ["Checking"]
+    domain: "Bank document checking"
+    authority: "Domain evidence — document level, not order-item level"
+    required: false
+    notes: >
+      Cardinality is the document, not the order line. The BL column has zero
+      fill and `Order Number` is fully populated.
+
+  - name: SAP
+    path: "${GSI_DATA_ROOT}/Foreign/SAP.xlsx"
+    sheets: ["Data"]
+    domain: "Planning / procurement"
+    authority: "Domain evidence — PR item, package/workflow and PO item"
+    required: false
+    notes: >
+      One physical row can carry PR-item, package/workflow and PO-item attributes
+      at once; these are different grains. The `po.` prefix marks PO-side columns.
+      `Purchase Requisition` (header) and `po.Purchase Requisition` may disagree on
+      the same row — the profiler reports that as a same-role key conflict.
+      `Purchase order` is the SAP purchasing document, NOT the commercial order.
+
+  - name: HR
+    path: "${GSI_DATA_ROOT}/HR/HR_Main_Updated.xlsx"
+    sheets: all
+    domain: "Organisation"
+    authority: "Employee and org hierarchy mapping"
+    required: false

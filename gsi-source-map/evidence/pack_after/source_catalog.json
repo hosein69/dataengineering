@@ -1,0 +1,2594 @@
+[
+  {
+    "source": "SAP",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/SAP.xlsx",
+    "sheet": "Data",
+    "domain": "Planning / Procurement",
+    "authority": "Domain evidence",
+    "required": false,
+    "notes": "",
+    "row_count": 3,
+    "column_count": 28,
+    "headers": [
+      "Purchase Requisition",
+      "Item of requisition",
+      "Material",
+      "Material Description",
+      "Material Group",
+      "Purchase order",
+      "Purchasing Group",
+      "Requisition date",
+      "Changed On",
+      "Release Date",
+      "Processing status",
+      "Deletion Indicator",
+      "Quantity requested",
+      "Quantity ordered",
+      "Name of Supplier",
+      "WorkFlow ID",
+      "WorkFlow Status",
+      "Comparision ID",
+      "po.Purchasing Document",
+      "po.Item",
+      "po.Purchase Requisition",
+      "po.Item of requisition",
+      "po.Material",
+      "po.Supplier",
+      "po.Net Order Value",
+      "po.Currency",
+      "po.Document Date",
+      "po.شماره پرونده"
+    ],
+    "semantic_columns": {
+      "PR": [
+        "Purchase Requisition",
+        "po.Purchase Requisition"
+      ],
+      "PR_ITEM": [
+        "Item of requisition",
+        "po.Item of requisition"
+      ],
+      "MATERIAL": [
+        "Material",
+        "po.Material"
+      ],
+      "PO": [
+        "Purchase order",
+        "po.Purchasing Document"
+      ],
+      "DATE": [
+        "Requisition date",
+        "Changed On",
+        "Release Date",
+        "po.Document Date"
+      ],
+      "STATUS": [
+        "Processing status",
+        "Deletion Indicator",
+        "WorkFlow Status"
+      ],
+      "QUANTITY": [
+        "Quantity requested",
+        "Quantity ordered"
+      ],
+      "WORKFLOW": [
+        "WorkFlow ID"
+      ],
+      "COMPARISON": [
+        "Comparision ID"
+      ],
+      "PO_ITEM": [
+        "po.Item"
+      ],
+      "SUPPLIER": [
+        "po.Supplier"
+      ],
+      "AMOUNT": [
+        "po.Net Order Value"
+      ],
+      "CURRENCY": [
+        "po.Currency"
+      ]
+    },
+    "representative_keys": {
+      "PR_ITEM": "Item of requisition",
+      "PO_ITEM": "po.Item",
+      "PR": "Purchase Requisition",
+      "PO": "Purchase order",
+      "MATERIAL": "Material",
+      "SUPPLIER": "po.Supplier",
+      "WORKFLOW": "WorkFlow ID",
+      "COMPARISON": "Comparision ID"
+    },
+    "unclassified_columns": [
+      "Material Description",
+      "Material Group",
+      "Purchasing Group",
+      "Name of Supplier",
+      "po.شماره پرونده"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "PO_ITEM",
+        "columns": [
+          "Purchase order",
+          "po.Item"
+        ],
+        "non_null_rows": 2,
+        "distinct_keys": 2,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 0.6667,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "PO_ITEM",
+          "columns": [
+            "Purchase order",
+            "po.Item"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 0.6667,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "PO",
+          "columns": [
+            "Purchase order"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 0.6667,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "PR_ITEM",
+          "columns": [
+            "Purchase Requisition",
+            "Item of requisition"
+          ],
+          "non_null_rows": 3,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 0.6667,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        },
+        {
+          "label": "PR",
+          "columns": [
+            "Purchase Requisition"
+          ],
+          "non_null_rows": 3,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 0.6667,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        },
+        {
+          "label": "MATERIAL",
+          "columns": [
+            "Material"
+          ],
+          "non_null_rows": 3,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 0.6667,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "Processing status": [
+        {
+          "value": "مورد تایید",
+          "normalised": "مورد تایید",
+          "count": 1,
+          "raw_variants": []
+        },
+        {
+          "value": "تایید نشده",
+          "normalised": "تایید نشده",
+          "count": 1,
+          "raw_variants": []
+        },
+        {
+          "value": "در گردش",
+          "normalised": "در گردش",
+          "count": 1,
+          "raw_variants": []
+        }
+      ],
+      "Deletion Indicator": [
+        {
+          "value": "X",
+          "normalised": "x",
+          "count": 1,
+          "raw_variants": []
+        }
+      ],
+      "WorkFlow Status": [
+        {
+          "value": "RELEASED",
+          "normalised": "released",
+          "count": 2,
+          "raw_variants": []
+        },
+        {
+          "value": "IN PROCESS",
+          "normalised": "in process",
+          "count": 1,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [
+        {
+          "role": "PR",
+          "column": "Purchase Requisition",
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "6500029693",
+              "count": 2
+            }
+          ]
+        },
+        {
+          "role": "MATERIAL",
+          "column": "Material",
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "9654003280",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "composite_grain": [
+        {
+          "grain_label": "PR_ITEM",
+          "columns": [
+            "Purchase Requisition",
+            "Item of requisition"
+          ],
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "6500029693 | 00010",
+              "count": 2
+            }
+          ],
+          "question": "repeated composite key: a second business event, or the same record re-observed in a later snapshot? the source owner decides"
+        }
+      ]
+    },
+    "key_conflicts": [
+      {
+        "role": "PR_ITEM",
+        "column_a": "Item of requisition",
+        "column_b": "po.Item of requisition",
+        "side_a": "header",
+        "side_b": "po",
+        "rows_both_present": 2,
+        "rows_disagreeing": 1,
+        "disagreement_pct": 50.0,
+        "examples": [
+          {
+            "Item of requisition": "00010",
+            "po.Item of requisition": "00090"
+          }
+        ],
+        "assertion": "same role, different value on the same native row; these are not interchangeable keys until the source owner says so"
+      },
+      {
+        "role": "PR",
+        "column_a": "Purchase Requisition",
+        "column_b": "po.Purchase Requisition",
+        "side_a": "header",
+        "side_b": "po",
+        "rows_both_present": 2,
+        "rows_disagreeing": 1,
+        "disagreement_pct": 50.0,
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Purchase Requisition": "6500029999"
+          }
+        ],
+        "assertion": "same role, different value on the same native row; these are not interchangeable keys until the source owner says so"
+      },
+      {
+        "role": "MATERIAL",
+        "column_a": "Material",
+        "column_b": "po.Material",
+        "side_a": "header",
+        "side_b": "po",
+        "rows_both_present": 2,
+        "rows_disagreeing": 1,
+        "disagreement_pct": 50.0,
+        "examples": [
+          {
+            "Material": "9654003280",
+            "po.Material": "9111111111"
+          }
+        ],
+        "assertion": "same role, different value on the same native row; these are not interchangeable keys until the source owner says so"
+      }
+    ],
+    "relation_examples": [
+      {
+        "from_role": "PR",
+        "to_role": "PO",
+        "from_column": "Purchase Requisition",
+        "to_column": "Purchase order",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "6500029693",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Purchase order": "4500000001"
+          },
+          {
+            "Purchase Requisition": "6500029693",
+            "Purchase order": "4500000002"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PO",
+        "from_column": "Purchase Requisition",
+        "to_column": "po.Purchasing Document",
+        "from_side": "header",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "6500029693",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Purchasing Document": "4500000001"
+          },
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Purchasing Document": "4500000002"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PO",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "Purchase order",
+        "from_side": "po",
+        "to_side": "header",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "Purchase order": "4500000001"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "Purchase order": "4500000002"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PO",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "po.Purchasing Document",
+        "from_side": "po",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "po.Purchasing Document": "4500000001"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "po.Purchasing Document": "4500000002"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "MATERIAL",
+        "from_column": "Purchase Requisition",
+        "to_column": "Material",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Material": "9654003280"
+          },
+          {
+            "Purchase Requisition": "6500029700",
+            "Material": "9654003281"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "MATERIAL",
+        "from_column": "Purchase Requisition",
+        "to_column": "po.Material",
+        "from_side": "header",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "6500029693",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Material": "9654003280"
+          },
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Material": "9111111111"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "MATERIAL",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "Material",
+        "from_side": "po",
+        "to_side": "header",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 2,
+        "cardinality": "N:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "Material": "9654003280"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "Material": "9654003280"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "MATERIAL",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "po.Material",
+        "from_side": "po",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "po.Material": "9654003280"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "po.Material": "9111111111"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PR_ITEM",
+        "from_column": "Purchase Requisition",
+        "to_column": "Item of requisition",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Item of requisition": "00010"
+          },
+          {
+            "Purchase Requisition": "6500029700",
+            "Item of requisition": "00020"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PR_ITEM",
+        "from_column": "Purchase Requisition",
+        "to_column": "po.Item of requisition",
+        "from_side": "header",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "6500029693",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Item of requisition": "00010"
+          },
+          {
+            "Purchase Requisition": "6500029693",
+            "po.Item of requisition": "00090"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PR_ITEM",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "Item of requisition",
+        "from_side": "po",
+        "to_side": "header",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 2,
+        "cardinality": "N:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "Item of requisition": "00010"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "Item of requisition": "00010"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PR_ITEM",
+        "from_column": "po.Purchase Requisition",
+        "to_column": "po.Item of requisition",
+        "from_side": "po",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchase Requisition": "6500029693",
+            "po.Item of requisition": "00010"
+          },
+          {
+            "po.Purchase Requisition": "6500029999",
+            "po.Item of requisition": "00090"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "MATERIAL",
+        "from_column": "Purchase order",
+        "to_column": "Material",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 2,
+        "cardinality": "N:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase order": "4500000001",
+            "Material": "9654003280"
+          },
+          {
+            "Purchase order": "4500000002",
+            "Material": "9654003280"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "MATERIAL",
+        "from_column": "Purchase order",
+        "to_column": "po.Material",
+        "from_side": "header",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase order": "4500000001",
+            "po.Material": "9654003280"
+          },
+          {
+            "Purchase order": "4500000002",
+            "po.Material": "9111111111"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "MATERIAL",
+        "from_column": "po.Purchasing Document",
+        "to_column": "Material",
+        "from_side": "po",
+        "to_side": "header",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 2,
+        "cardinality": "N:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchasing Document": "4500000001",
+            "Material": "9654003280"
+          },
+          {
+            "po.Purchasing Document": "4500000002",
+            "Material": "9654003280"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "MATERIAL",
+        "from_column": "po.Purchasing Document",
+        "to_column": "po.Material",
+        "from_side": "po",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchasing Document": "4500000001",
+            "po.Material": "9654003280"
+          },
+          {
+            "po.Purchasing Document": "4500000002",
+            "po.Material": "9111111111"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "PO_ITEM",
+        "from_column": "Purchase order",
+        "to_column": "po.Item",
+        "from_side": "header",
+        "to_side": "po",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase order": "4500000001",
+            "po.Item": "00010"
+          },
+          {
+            "Purchase order": "4500000002",
+            "po.Item": "00020"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PO",
+        "to_role": "PO_ITEM",
+        "from_column": "po.Purchasing Document",
+        "to_column": "po.Item",
+        "from_side": "po",
+        "to_side": "po",
+        "is_primary_pair": false,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "po.Purchasing Document": "4500000001",
+            "po.Item": "00010"
+          },
+          {
+            "po.Purchasing Document": "4500000002",
+            "po.Item": "00020"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "Processing status",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "Purchase order",
+        "score": 0.8833,
+        "key_role": "PO",
+        "side": "header"
+      },
+      {
+        "column": "Quantity ordered",
+        "score": 0.8833,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "po.Purchasing Document",
+        "score": 0.8833,
+        "key_role": "PO",
+        "side": "po"
+      },
+      {
+        "column": "po.Item",
+        "score": 0.8833,
+        "key_role": "PO_ITEM",
+        "side": "po"
+      },
+      {
+        "column": "po.Purchase Requisition",
+        "score": 0.8833,
+        "key_role": "PR",
+        "side": "po"
+      },
+      {
+        "column": "po.Item of requisition",
+        "score": 0.8833,
+        "key_role": "PR_ITEM",
+        "side": "po"
+      },
+      {
+        "column": "po.Material",
+        "score": 0.8833,
+        "key_role": "MATERIAL",
+        "side": "po"
+      },
+      {
+        "column": "po.Supplier",
+        "score": 0.8833,
+        "key_role": "SUPPLIER",
+        "side": "po"
+      },
+      {
+        "column": "po.Net Order Value",
+        "score": 0.8833,
+        "key_role": null,
+        "side": "po"
+      },
+      {
+        "column": "po.Document Date",
+        "score": 0.8833,
+        "key_role": null,
+        "side": "po"
+      }
+    ],
+    "sample_file": "samples/SAP__Data__sample.csv",
+    "schema_file": "schemas/SAP__Data__schema.json"
+  },
+  {
+    "source": "Commercial_Expert",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/experts.xlsx",
+    "sheet": "Expert Data",
+    "domain": "Commercial",
+    "authority": "Tier 1",
+    "required": false,
+    "notes": "",
+    "row_count": 2,
+    "column_count": 14,
+    "headers": [
+      "Order No. (Our Reference)",
+      "Data type",
+      "Material",
+      "Material Description",
+      "Purchase Requisition",
+      "Item of requisition",
+      "BL No.",
+      "نوع ارز",
+      "PI Line Value",
+      "Quantity In Order",
+      "وضعیت سفارش",
+      "نزد سازنده",
+      "در راه",
+      "گمرک"
+    ],
+    "semantic_columns": {
+      "ORDER": [
+        "Order No. (Our Reference)"
+      ],
+      "MATERIAL": [
+        "Material"
+      ],
+      "PR": [
+        "Purchase Requisition"
+      ],
+      "PR_ITEM": [
+        "Item of requisition"
+      ],
+      "BL": [
+        "BL No."
+      ],
+      "CURRENCY": [
+        "نوع ارز"
+      ],
+      "AMOUNT": [
+        "PI Line Value"
+      ],
+      "QUANTITY": [
+        "Quantity In Order"
+      ],
+      "STATUS": [
+        "وضعیت سفارش"
+      ]
+    },
+    "representative_keys": {
+      "PR_ITEM": "Item of requisition",
+      "PR": "Purchase Requisition",
+      "ORDER": "Order No. (Our Reference)",
+      "BL": "BL No.",
+      "MATERIAL": "Material"
+    },
+    "unclassified_columns": [
+      "Data type",
+      "Material Description",
+      "نزد سازنده",
+      "در راه",
+      "گمرک"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "PR_ITEM",
+        "columns": [
+          "Purchase Requisition",
+          "Item of requisition"
+        ],
+        "non_null_rows": 2,
+        "distinct_keys": 2,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "PR_ITEM",
+          "columns": [
+            "Purchase Requisition",
+            "Item of requisition"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER_MATERIAL",
+          "columns": [
+            "Order No. (Our Reference)",
+            "Material"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER_BL",
+          "columns": [
+            "Order No. (Our Reference)",
+            "BL No."
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "PR",
+          "columns": [
+            "Purchase Requisition"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "MATERIAL",
+          "columns": [
+            "Material"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "BL",
+          "columns": [
+            "BL No."
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER",
+          "columns": [
+            "Order No. (Our Reference)"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 0.5,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت سفارش": [
+        {
+          "value": "مورد تایید",
+          "normalised": "مورد تایید",
+          "count": 1,
+          "raw_variants": []
+        },
+        {
+          "value": "تایید نشده",
+          "normalised": "تایید نشده",
+          "count": 1,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [
+        {
+          "role": "ORDER",
+          "column": "Order No. (Our Reference)",
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "502805",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "PR",
+        "to_role": "ORDER",
+        "from_column": "Purchase Requisition",
+        "to_column": "Order No. (Our Reference)",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 2,
+        "cardinality": "N:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Order No. (Our Reference)": "502805"
+          },
+          {
+            "Purchase Requisition": "6500029700",
+            "Order No. (Our Reference)": "502805"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "MATERIAL",
+        "from_column": "Purchase Requisition",
+        "to_column": "Material",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Material": "9654003280"
+          },
+          {
+            "Purchase Requisition": "6500029700",
+            "Material": "9654003281"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "PR",
+        "to_role": "PR_ITEM",
+        "from_column": "Purchase Requisition",
+        "to_column": "Item of requisition",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "Purchase Requisition": "6500029693",
+            "Item of requisition": "00010"
+          },
+          {
+            "Purchase Requisition": "6500029700",
+            "Item of requisition": "00020"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "ORDER",
+        "to_role": "BL",
+        "from_column": "Order No. (Our Reference)",
+        "to_column": "BL No.",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "502805",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Order No. (Our Reference)": "502805",
+            "BL No.": "TECHREF1"
+          },
+          {
+            "Order No. (Our Reference)": "502805",
+            "BL No.": "TECHREF2"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "ORDER",
+        "to_role": "MATERIAL",
+        "from_column": "Order No. (Our Reference)",
+        "to_column": "Material",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "502805",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "Order No. (Our Reference)": "502805",
+            "Material": "9654003280"
+          },
+          {
+            "Order No. (Our Reference)": "502805",
+            "Material": "9654003281"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "Data type",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "Material",
+        "score": 1.0,
+        "key_role": "MATERIAL",
+        "side": "header"
+      },
+      {
+        "column": "Material Description",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "Purchase Requisition",
+        "score": 1.0,
+        "key_role": "PR",
+        "side": "header"
+      },
+      {
+        "column": "Item of requisition",
+        "score": 1.0,
+        "key_role": "PR_ITEM",
+        "side": "header"
+      },
+      {
+        "column": "BL No.",
+        "score": 1.0,
+        "key_role": "BL",
+        "side": "header"
+      },
+      {
+        "column": "نوع ارز",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "PI Line Value",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "Quantity In Order",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "وضعیت سفارش",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نزد سازنده",
+        "score": 0.825,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "در راه",
+        "score": 0.825,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "گمرک",
+        "score": 0.825,
+        "key_role": null,
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/Commercial_Expert__Expert_Data__sample.csv",
+    "schema_file": "schemas/Commercial_Expert__Expert_Data__schema.json"
+  },
+  {
+    "source": "NTSW",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/ntsw.xlsx",
+    "sheet": "Import Licence",
+    "domain": "Registration / FX",
+    "authority": "Tier 1",
+    "required": false,
+    "notes": "",
+    "row_count": 2,
+    "column_count": 5,
+    "headers": [
+      "شماره پرونده ثبت سفارش",
+      "کد ثبت سفارش",
+      "شماره سفارش",
+      "تاریخ صدور",
+      "وضعیت"
+    ],
+    "semantic_columns": {
+      "REG_FILE": [
+        "شماره پرونده ثبت سفارش"
+      ],
+      "REG": [
+        "کد ثبت سفارش"
+      ],
+      "ORDER": [
+        "شماره سفارش"
+      ],
+      "DATE": [
+        "تاریخ صدور"
+      ],
+      "STATUS": [
+        "وضعیت"
+      ]
+    },
+    "representative_keys": {
+      "REG_FILE": "شماره پرونده ثبت سفارش",
+      "REG": "کد ثبت سفارش",
+      "ORDER": "شماره سفارش"
+    },
+    "unclassified_columns": [],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "ORDER_REG",
+        "columns": [
+          "شماره سفارش",
+          "کد ثبت سفارش"
+        ],
+        "non_null_rows": 2,
+        "distinct_keys": 2,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "ORDER_REG",
+          "columns": [
+            "شماره سفارش",
+            "کد ثبت سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "REG_FILE_REG",
+          "columns": [
+            "شماره پرونده ثبت سفارش",
+            "کد ثبت سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "REG_FILE_ORDER",
+          "columns": [
+            "شماره پرونده ثبت سفارش",
+            "شماره سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "REG",
+          "columns": [
+            "کد ثبت سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER",
+          "columns": [
+            "شماره سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت": [
+        {
+          "value": "فعال",
+          "normalised": "فعال",
+          "count": 2,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "ORDER",
+        "to_role": "REG",
+        "from_column": "شماره سفارش",
+        "to_column": "کد ثبت سفارش",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره سفارش": "502805",
+            "کد ثبت سفارش": "98404279"
+          },
+          {
+            "شماره سفارش": "812211A",
+            "کد ثبت سفارش": "98404280"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "REG",
+        "to_role": "REG_FILE",
+        "from_column": "کد ثبت سفارش",
+        "to_column": "شماره پرونده ثبت سفارش",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "کد ثبت سفارش": "98404279",
+            "شماره پرونده ثبت سفارش": "664823825"
+          },
+          {
+            "کد ثبت سفارش": "98404280",
+            "شماره پرونده ثبت سفارش": "664823826"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "شماره پرونده ثبت سفارش",
+        "score": 1.0,
+        "key_role": "REG_FILE",
+        "side": "header"
+      },
+      {
+        "column": "کد ثبت سفارش",
+        "score": 1.0,
+        "key_role": "REG",
+        "side": "header"
+      },
+      {
+        "column": "شماره سفارش",
+        "score": 1.0,
+        "key_role": "ORDER",
+        "side": "header"
+      },
+      {
+        "column": "تاریخ صدور",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/NTSW__Import_Licence__sample.csv",
+    "schema_file": "schemas/NTSW__Import_Licence__schema.json"
+  },
+  {
+    "source": "NTSW",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/ntsw.xlsx",
+    "sheet": "Release Commitment",
+    "domain": "Registration / FX",
+    "authority": "Tier 1",
+    "required": false,
+    "notes": "",
+    "row_count": 2,
+    "column_count": 11,
+    "headers": [
+      "ردیف",
+      "کد ثبت سفارش",
+      "شماره ردیف تعهد",
+      "شعبه",
+      "ارز",
+      "تعهد اولیه",
+      "مانده تعهد",
+      "تاریخ ایجاد تعهد",
+      "مهلت رفع تعهد",
+      "وضعیت رفع تعهد",
+      "شرکت"
+    ],
+    "semantic_columns": {
+      "EXPORT_ROW_NO": [
+        "ردیف"
+      ],
+      "REG": [
+        "کد ثبت سفارش"
+      ],
+      "NATIVE_ROW_ID": [
+        "شماره ردیف تعهد"
+      ],
+      "CURRENCY": [
+        "ارز"
+      ],
+      "AMOUNT": [
+        "تعهد اولیه",
+        "مانده تعهد"
+      ],
+      "DATE": [
+        "تاریخ ایجاد تعهد",
+        "مهلت رفع تعهد"
+      ],
+      "STATUS": [
+        "وضعیت رفع تعهد"
+      ]
+    },
+    "representative_keys": {
+      "REG": "کد ثبت سفارش",
+      "NATIVE_ROW_ID": "شماره ردیف تعهد",
+      "EXPORT_ROW_NO": "ردیف"
+    },
+    "unclassified_columns": [
+      "شعبه",
+      "شرکت"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "REG_NATIVE_ROW",
+        "columns": [
+          "کد ثبت سفارش",
+          "شماره ردیف تعهد"
+        ],
+        "non_null_rows": 2,
+        "distinct_keys": 1,
+        "uniqueness_ratio": 0.5,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 1,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "REG_NATIVE_ROW",
+          "columns": [
+            "کد ثبت سفارش",
+            "شماره ردیف تعهد"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 0.5,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        },
+        {
+          "label": "REG",
+          "columns": [
+            "کد ثبت سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 0.5,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت رفع تعهد": [
+        {
+          "value": "رفع تعهد نشده",
+          "normalised": "رفع تعهد نشده",
+          "count": 2,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [
+        {
+          "role": "REG",
+          "column": "کد ثبت سفارش",
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "98404279",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "composite_grain": [
+        {
+          "grain_label": "REG_NATIVE_ROW",
+          "columns": [
+            "کد ثبت سفارش",
+            "شماره ردیف تعهد"
+          ],
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "98404279 | 7",
+              "count": 2
+            }
+          ],
+          "question": "repeated composite key: a second business event, or the same record re-observed in a later snapshot? the source owner decides"
+        }
+      ]
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "REG",
+        "to_role": "NATIVE_ROW_ID",
+        "from_column": "کد ثبت سفارش",
+        "to_column": "شماره ردیف تعهد",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "کد ثبت سفارش": "98404279",
+            "شماره ردیف تعهد": "7"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "ردیف",
+        "score": 1.0,
+        "key_role": "EXPORT_ROW_NO",
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/NTSW__Release_Commitment__sample.csv",
+    "schema_file": "schemas/NTSW__Release_Commitment__schema.json"
+  },
+  {
+    "source": "NTSW",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/ntsw.xlsx",
+    "sheet": "Allocation",
+    "domain": "Registration / FX",
+    "authority": "Tier 1",
+    "required": false,
+    "notes": "",
+    "row_count": 2,
+    "column_count": 15,
+    "headers": [
+      "ردیف",
+      "کد ثبت سفارش",
+      "ردیف درخواست",
+      "وضعیت",
+      "فرآیند فعلی",
+      "مبلغ درخواست",
+      "ارز درخواست",
+      "تاریخ ایجاد درخواست",
+      "تاریخ تخصیص",
+      "محل تامین ارز",
+      "نرخ ارز",
+      "نوع درخواست",
+      "شعبه",
+      "تاریخ تایید",
+      "شرکت"
+    ],
+    "semantic_columns": {
+      "EXPORT_ROW_NO": [
+        "ردیف"
+      ],
+      "REG": [
+        "کد ثبت سفارش"
+      ],
+      "NATIVE_ROW_ID": [
+        "ردیف درخواست"
+      ],
+      "STATUS": [
+        "وضعیت"
+      ],
+      "AMOUNT": [
+        "مبلغ درخواست",
+        "نرخ ارز"
+      ],
+      "CURRENCY": [
+        "ارز درخواست"
+      ],
+      "DATE": [
+        "تاریخ ایجاد درخواست",
+        "تاریخ تخصیص",
+        "تاریخ تایید"
+      ]
+    },
+    "representative_keys": {
+      "REG": "کد ثبت سفارش",
+      "NATIVE_ROW_ID": "ردیف درخواست",
+      "EXPORT_ROW_NO": "ردیف"
+    },
+    "unclassified_columns": [
+      "فرآیند فعلی",
+      "محل تامین ارز",
+      "نوع درخواست",
+      "شعبه",
+      "شرکت"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "REG_NATIVE_ROW",
+        "columns": [
+          "کد ثبت سفارش",
+          "ردیف درخواست"
+        ],
+        "non_null_rows": 2,
+        "distinct_keys": 2,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "REG_NATIVE_ROW",
+          "columns": [
+            "کد ثبت سفارش",
+            "ردیف درخواست"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 2,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "REG",
+          "columns": [
+            "کد ثبت سفارش"
+          ],
+          "non_null_rows": 2,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 0.5,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 1,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت": [
+        {
+          "value": "تایید نشده",
+          "normalised": "تایید نشده",
+          "count": 1,
+          "raw_variants": []
+        },
+        {
+          "value": "تخصيص يافته",
+          "normalised": "تخصیص یافته",
+          "count": 1,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [
+        {
+          "role": "REG",
+          "column": "کد ثبت سفارش",
+          "duplicate_rows": 2,
+          "examples": [
+            {
+              "key": "98404279",
+              "count": 2
+            }
+          ]
+        }
+      ],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "REG",
+        "to_role": "NATIVE_ROW_ID",
+        "from_column": "کد ثبت سفارش",
+        "to_column": "ردیف درخواست",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 2,
+        "max_to_per_from": 2,
+        "max_from_per_to": 1,
+        "cardinality": "1:N",
+        "many_from_examples": [
+          {
+            "key": "98404279",
+            "linked_count": 2
+          }
+        ],
+        "examples": [
+          {
+            "کد ثبت سفارش": "98404279",
+            "ردیف درخواست": "1"
+          },
+          {
+            "کد ثبت سفارش": "98404279",
+            "ردیف درخواست": "2"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "ردیف",
+        "score": 1.0,
+        "key_role": "EXPORT_ROW_NO",
+        "side": "header"
+      },
+      {
+        "column": "ردیف درخواست",
+        "score": 1.0,
+        "key_role": "NATIVE_ROW_ID",
+        "side": "header"
+      },
+      {
+        "column": "وضعیت",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ارز درخواست",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تاریخ ایجاد درخواست",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تاریخ تخصیص",
+        "score": 0.825,
+        "key_role": null,
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/NTSW__Allocation__sample.csv",
+    "schema_file": "schemas/NTSW__Allocation__schema.json"
+  },
+  {
+    "source": "Oracle",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/oracle.xlsx",
+    "sheet": "Total_Report 14050610",
+    "domain": "Inventory",
+    "authority": "Domain evidence",
+    "required": false,
+    "notes": "",
+    "row_count": 1,
+    "column_count": 10,
+    "headers": [
+      "شماره فنی",
+      "کد جنس",
+      "شرح جنس",
+      "گروه تامین",
+      "موجودی انبار ایران خودرو",
+      "موجودی انبار ساپکو",
+      "نیاز روزانه قطعات",
+      "تعداد خودرو کف",
+      "وضعیت",
+      "کارشناس خرید خارجی"
+    ],
+    "semantic_columns": {
+      "MATERIAL": [
+        "شماره فنی"
+      ],
+      "QUANTITY": [
+        "موجودی انبار ایران خودرو",
+        "موجودی انبار ساپکو",
+        "نیاز روزانه قطعات",
+        "تعداد خودرو کف"
+      ],
+      "STATUS": [
+        "وضعیت"
+      ]
+    },
+    "representative_keys": {
+      "MATERIAL": "شماره فنی"
+    },
+    "unclassified_columns": [
+      "کد جنس",
+      "شرح جنس",
+      "گروه تامین",
+      "کارشناس خرید خارجی"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "MATERIAL",
+        "columns": [
+          "شماره فنی"
+        ],
+        "non_null_rows": 1,
+        "distinct_keys": 1,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "MATERIAL",
+          "columns": [
+            "شماره فنی"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت": []
+    },
+    "duplicate_profile": {
+      "single_column": [],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [],
+    "candidate_keys": [
+      {
+        "column": "شماره فنی",
+        "score": 1.0,
+        "key_role": "MATERIAL",
+        "side": "header"
+      },
+      {
+        "column": "کد جنس",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "شرح جنس",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "گروه تامین",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "موجودی انبار ایران خودرو",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "موجودی انبار ساپکو",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نیاز روزانه قطعات",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تعداد خودرو کف",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/Oracle__Total_Report_14050610__sample.csv",
+    "schema_file": "schemas/Oracle__Total_Report_14050610__schema.json"
+  },
+  {
+    "source": "FX_Transactions",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/fx_transactions.xlsx",
+    "sheet": "Sheet1",
+    "domain": "Treasury",
+    "authority": "Domain evidence",
+    "required": false,
+    "notes": "",
+    "row_count": 1,
+    "column_count": 14,
+    "headers": [
+      "تاریخ خرید",
+      "ثبت سفارش",
+      "شماره سفارش",
+      "نام ذینفع",
+      "ارز خریداری شده",
+      "نوع ارز خریداری شده",
+      "نرخ ارز خریداری شده",
+      "مبلغ ارز پروفرم",
+      "نوع ارز",
+      "ارز سوئیفت",
+      "تاریخ سوئیفت",
+      "تاریخ تایید وصول",
+      "وضعیت",
+      "شماره بارنامه"
+    ],
+    "semantic_columns": {
+      "DATE": [
+        "تاریخ خرید",
+        "تاریخ سوئیفت",
+        "تاریخ تایید وصول"
+      ],
+      "REG": [
+        "ثبت سفارش"
+      ],
+      "ORDER": [
+        "شماره سفارش"
+      ],
+      "CURRENCY": [
+        "نوع ارز خریداری شده",
+        "نوع ارز"
+      ],
+      "AMOUNT": [
+        "نرخ ارز خریداری شده",
+        "مبلغ ارز پروفرم"
+      ],
+      "STATUS": [
+        "وضعیت"
+      ],
+      "BL": [
+        "شماره بارنامه"
+      ]
+    },
+    "representative_keys": {
+      "REG": "ثبت سفارش",
+      "ORDER": "شماره سفارش",
+      "BL": "شماره بارنامه"
+    },
+    "unclassified_columns": [
+      "نام ذینفع",
+      "ارز خریداری شده",
+      "ارز سوئیفت"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "ORDER_REG",
+        "columns": [
+          "شماره سفارش",
+          "ثبت سفارش"
+        ],
+        "non_null_rows": 1,
+        "distinct_keys": 1,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "ORDER_REG",
+          "columns": [
+            "شماره سفارش",
+            "ثبت سفارش"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER_BL",
+          "columns": [
+            "شماره سفارش",
+            "شماره بارنامه"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "REG",
+          "columns": [
+            "ثبت سفارش"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER",
+          "columns": [
+            "شماره سفارش"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "BL",
+          "columns": [
+            "شماره بارنامه"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {
+      "وضعیت": [
+        {
+          "value": "تایید شده",
+          "normalised": "تایید شده",
+          "count": 1,
+          "raw_variants": []
+        }
+      ]
+    },
+    "duplicate_profile": {
+      "single_column": [],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "ORDER",
+        "to_role": "REG",
+        "from_column": "شماره سفارش",
+        "to_column": "ثبت سفارش",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره سفارش": "502805",
+            "ثبت سفارش": "98404279"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "ORDER",
+        "to_role": "BL",
+        "from_column": "شماره سفارش",
+        "to_column": "شماره بارنامه",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره سفارش": "502805",
+            "شماره بارنامه": "BL-777"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "تاریخ خرید",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ثبت سفارش",
+        "score": 1.0,
+        "key_role": "REG",
+        "side": "header"
+      },
+      {
+        "column": "شماره سفارش",
+        "score": 1.0,
+        "key_role": "ORDER",
+        "side": "header"
+      },
+      {
+        "column": "نام ذینفع",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ارز خریداری شده",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نوع ارز خریداری شده",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نرخ ارز خریداری شده",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "مبلغ ارز پروفرم",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نوع ارز",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ارز سوئیفت",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تاریخ سوئیفت",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "وضعیت",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "شماره بارنامه",
+        "score": 1.0,
+        "key_role": "BL",
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/FX_Transactions__Sheet1__sample.csv",
+    "schema_file": "schemas/FX_Transactions__Sheet1__schema.json"
+  },
+  {
+    "source": "Customs",
+    "path": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/customs.xlsx",
+    "sheet": "SeaClearance",
+    "domain": "Customs",
+    "authority": "Domain evidence",
+    "required": false,
+    "notes": "",
+    "row_count": 1,
+    "column_count": 12,
+    "headers": [
+      "پرونده ترخیص",
+      "شماره بارنامه",
+      "شماره سفارش",
+      "نوع حمل",
+      "کوتاژ",
+      "تاریخ  دریافت شماره کوتاژ",
+      "ترخیص کامل",
+      "ترخیص درصدی",
+      "تاریخ بارگیری 6 (کامل)",
+      "تعرفه",
+      "ارزش فاکتور",
+      "نوع ارز"
+    ],
+    "semantic_columns": {
+      "CUSTOMS_FILE": [
+        "پرونده ترخیص"
+      ],
+      "BL": [
+        "شماره بارنامه"
+      ],
+      "ORDER": [
+        "شماره سفارش"
+      ],
+      "COTTAGE": [
+        "کوتاژ"
+      ],
+      "DATE": [
+        "تاریخ  دریافت شماره کوتاژ",
+        "تاریخ بارگیری 6 (کامل)"
+      ],
+      "AMOUNT": [
+        "ارزش فاکتور"
+      ],
+      "CURRENCY": [
+        "نوع ارز"
+      ]
+    },
+    "representative_keys": {
+      "CUSTOMS_FILE": "پرونده ترخیص",
+      "ORDER": "شماره سفارش",
+      "BL": "شماره بارنامه",
+      "COTTAGE": "کوتاژ"
+    },
+    "unclassified_columns": [
+      "نوع حمل",
+      "ترخیص کامل",
+      "ترخیص درصدی",
+      "تعرفه"
+    ],
+    "grain_inference": {
+      "best_candidate": {
+        "label": "ORDER_BL",
+        "columns": [
+          "شماره سفارش",
+          "شماره بارنامه"
+        ],
+        "non_null_rows": 1,
+        "distinct_keys": 1,
+        "uniqueness_ratio": 1.0,
+        "coverage_of_frame": 1.0,
+        "repeated_key_rows": 0,
+        "eligible": true
+      },
+      "candidates": [
+        {
+          "label": "ORDER_BL",
+          "columns": [
+            "شماره سفارش",
+            "شماره بارنامه"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "ORDER",
+          "columns": [
+            "شماره سفارش"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        },
+        {
+          "label": "BL",
+          "columns": [
+            "شماره بارنامه"
+          ],
+          "non_null_rows": 1,
+          "distinct_keys": 1,
+          "uniqueness_ratio": 1.0,
+          "coverage_of_frame": 1.0,
+          "repeated_key_rows": 0,
+          "eligible": true
+        }
+      ],
+      "min_coverage_required": 0.3,
+      "note": "Heuristic. A candidate below the coverage threshold is reported but never named best. Confirm against the source contract before use."
+    },
+    "status_profile": {},
+    "duplicate_profile": {
+      "single_column": [],
+      "composite_grain": []
+    },
+    "key_conflicts": [],
+    "relation_examples": [
+      {
+        "from_role": "ORDER",
+        "to_role": "BL",
+        "from_column": "شماره سفارش",
+        "to_column": "شماره بارنامه",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره سفارش": "502805",
+            "شماره بارنامه": "BL-777"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "BL",
+        "to_role": "COTTAGE",
+        "from_column": "شماره بارنامه",
+        "to_column": "کوتاژ",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره بارنامه": "BL-777",
+            "کوتاژ": "34138249"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      },
+      {
+        "from_role": "BL",
+        "to_role": "CUSTOMS_FILE",
+        "from_column": "شماره بارنامه",
+        "to_column": "پرونده ترخیص",
+        "from_side": "header",
+        "to_side": "header",
+        "is_primary_pair": true,
+        "distinct_pairs": 1,
+        "max_to_per_from": 1,
+        "max_from_per_to": 1,
+        "cardinality": "1:1",
+        "many_from_examples": [],
+        "examples": [
+          {
+            "شماره بارنامه": "BL-777",
+            "پرونده ترخیص": "CF-1"
+          }
+        ],
+        "assertion": "co-observed in the same native source row; not proof of a causal or authoritative relation"
+      }
+    ],
+    "candidate_keys": [
+      {
+        "column": "پرونده ترخیص",
+        "score": 1.0,
+        "key_role": "CUSTOMS_FILE",
+        "side": "header"
+      },
+      {
+        "column": "شماره بارنامه",
+        "score": 1.0,
+        "key_role": "BL",
+        "side": "header"
+      },
+      {
+        "column": "شماره سفارش",
+        "score": 1.0,
+        "key_role": "ORDER",
+        "side": "header"
+      },
+      {
+        "column": "نوع حمل",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "کوتاژ",
+        "score": 1.0,
+        "key_role": "COTTAGE",
+        "side": "header"
+      },
+      {
+        "column": "تاریخ  دریافت شماره کوتاژ",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ترخیص کامل",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تاریخ بارگیری 6 (کامل)",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "تعرفه",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "ارزش فاکتور",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      },
+      {
+        "column": "نوع ارز",
+        "score": 1.0,
+        "key_role": null,
+        "side": "header"
+      }
+    ],
+    "sample_file": "samples/Customs__SeaClearance__sample.csv",
+    "schema_file": "schemas/Customs__SeaClearance__schema.json"
+  }
+]

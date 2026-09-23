@@ -1,0 +1,302 @@
+{
+  "roles": {
+    "PR_ITEM": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Item of requisition",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Item of requisition",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Commercial"
+      }
+    ],
+    "PO_ITEM": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item",
+        "side": "po",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "PR": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Purchase Requisition",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Purchase Requisition",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Commercial"
+      }
+    ],
+    "PO": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Purchase order",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "MATERIAL": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Material",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Material",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Commercial"
+      },
+      {
+        "source": "Oracle",
+        "sheet": "Total_Report 14050610",
+        "column": "شماره فنی",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Inventory"
+      }
+    ],
+    "SUPPLIER": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Supplier",
+        "side": "po",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "WORKFLOW": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "WorkFlow ID",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "COMPARISON": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Comparision ID",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "ORDER": [
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Order No. (Our Reference)",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Commercial"
+      },
+      {
+        "source": "NTSW",
+        "sheet": "Import Licence",
+        "column": "شماره سفارش",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "شماره سفارش",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Treasury"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "شماره سفارش",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Customs"
+      }
+    ],
+    "BL": [
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "BL No.",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Commercial"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "شماره بارنامه",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Treasury"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "شماره بارنامه",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Customs"
+      }
+    ],
+    "REG_FILE": [
+      {
+        "source": "NTSW",
+        "sheet": "Import Licence",
+        "column": "شماره پرونده ثبت سفارش",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      }
+    ],
+    "REG": [
+      {
+        "source": "NTSW",
+        "sheet": "Import Licence",
+        "column": "کد ثبت سفارش",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      },
+      {
+        "source": "NTSW",
+        "sheet": "Release Commitment",
+        "column": "کد ثبت سفارش",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      },
+      {
+        "source": "NTSW",
+        "sheet": "Allocation",
+        "column": "کد ثبت سفارش",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "ثبت سفارش",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Treasury"
+      }
+    ],
+    "NATIVE_ROW_ID": [
+      {
+        "source": "NTSW",
+        "sheet": "Release Commitment",
+        "column": "شماره ردیف تعهد",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      },
+      {
+        "source": "NTSW",
+        "sheet": "Allocation",
+        "column": "ردیف درخواست",
+        "side": "header",
+        "authority": "Tier 1",
+        "domain": "Registration / FX"
+      }
+    ],
+    "CUSTOMS_FILE": [
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "پرونده ترخیص",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Customs"
+      }
+    ],
+    "COTTAGE": [
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "کوتاژ",
+        "side": "header",
+        "authority": "Domain evidence",
+        "domain": "Customs"
+      }
+    ]
+  },
+  "secondary_role_columns": {
+    "PR": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Purchase Requisition",
+        "side": "po"
+      }
+    ],
+    "PR_ITEM": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item of requisition",
+        "side": "po"
+      }
+    ],
+    "MATERIAL": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Material",
+        "side": "po"
+      }
+    ],
+    "PO": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Purchasing Document",
+        "side": "po"
+      }
+    ]
+  },
+  "candidate_cross_source_join_roles": [
+    "BL",
+    "MATERIAL",
+    "NATIVE_ROW_ID",
+    "ORDER",
+    "PR",
+    "PR_ITEM",
+    "REG"
+  ],
+  "warning": "A shared role is a join CANDIDATE only. Comparability must be confirmed per field; identical role names do not make two identifiers the same business entity."
+}
