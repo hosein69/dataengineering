@@ -1,58 +1,8 @@
-█  test_anythingllm_learning_v29
-█  test_cashflow_dwh_v29_7_2
-█  test_cashflow_hardening_v29_7_1
-█  test_cashflow_v29_7
-█  test_cluster_scope_v284
 ✅ همه ستون‌های اجزای مقاومت در خروجی موجودند  → []
 ✅ همه ردیف‌ها منتقل شده‌اند
-█  test_dashboard_criticality_repair_v28
 ✅ همه فاصله‌ها روی شبکه ۴ پیکسلی‌اند → [0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
 ✅ همه کلیدهای شناسنامه چاپ می‌شوند
-█  test_final_financial_contracts
-█  test_fullstack_v29_6_10
-█  test_fx_adapter_quarantine_v28
-█  test_fx_obligation_v28_1
-█  test_global_source_authority_v29_7_3
-█  test_html_payload_compaction_v285
-█  test_knowledge_desk_offline_v292
-█  test_knowledge_desk_self_index_guard_v2946
-█  test_knowledge_desk_static_v293
-█  test_material_dashboard_runtime_v29_6_8
-█  test_material_group_identity_v29_6_6
-█  test_material_html_advisory_only_v29_6_7
-█  test_material_html_export_v29_6_1
-█  test_material_html_export_v29_6_2
-█  test_material_html_export_v29_6_3
-█  test_material_runtime_visible_v29_6_4
-█  test_material_source_boundary_v29_6_9
-█  test_material_source_search_v2950
-█  test_material_supply_html_v29_6_5
-█  test_money_flow_v29_6
-█  test_opus_critical_and_cashflow
-█  test_opus_rc4_dashboard_startup
-█  test_opus_rc4_output_integrity
-█  test_opus_rc4_warehouse_reset
-█  test_oracle_union_v28_1
-█  test_population_cashflow_v29_7_4
-█  test_process_cockpit_v28
-█  test_process_integrity_v29_7_5
-█  test_rc_integrity
-█  test_report_composer_tab_isolation_v284
-█  test_report_composer_v28
-█  test_sap_semantic_dwh_v29_7_6
-█  test_source_roadmap
-✅ همه فایل‌های تست در run_all_tests ثبت شده‌اند  → 79 فایل
+✅ همه فایل‌های تست در run_all_tests ثبت شده‌اند  → 80 فایل
 ✅ همه سالم ⇒ وضعیت سالم  → سالم
-█  test_v29_4_1_runtime_diagnostics
-█  test_v29_4_2_diagnose_business_semantics
-█  test_v29_4_3_relation_health_contract
-█  test_v29_4_4_streamlit_load_performance
-█  test_v29_4_5_import_license_continuity
-█  test_v29_4_7_multi_pr_and_chatbot
-█  test_v29_4_8_sqlite_reader_isolation
-█  test_v29_4_9_material_text_search
-█  test_v29_4_resilience_editorial
-█  test_v29_business_dwh
-█  test_v29_reliability_gate
-جمع کل: 1118 تست موفق | 0 ناموفق
+جمع کل: 1136 تست موفق | 0 ناموفق
 ✅ همه مجموعه‌های تست اجراشده موفق بودند؛ اعتبارسنجی داده واقعی جداگانه لازم است.
