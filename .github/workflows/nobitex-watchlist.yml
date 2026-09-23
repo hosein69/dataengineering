@@ -1,0 +1,29 @@
+name: Nobitex Live Watchlist
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [claude/crypto-market-bayesian-analysis-a6rqj3]
+    paths:
+      - "crypto-watchlist-nobitex/**"
+      - ".github/workflows/nobitex-watchlist.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  watchlist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build watchlist from live apiv2.nobitex.ir data
+        working-directory: crypto-watchlist-nobitex
+        run: python watchlist.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nobitex-watchlist
+          path: crypto-watchlist-nobitex/output
+          retention-days: 3
