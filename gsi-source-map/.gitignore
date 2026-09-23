@@ -1,0 +1,6 @@
+# Real source evidence must never be committed: this repository is public.
+# Raw packs carry live business values (customers, suppliers, amounts, staff names).
+evidence.txt
+*_evidence_pack/
+gsi-source-map/private/
+**/samples/

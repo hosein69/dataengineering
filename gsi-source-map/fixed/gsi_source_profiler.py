@@ -94,7 +94,8 @@ def blank_mask(s: pd.Series) -> pd.Series:
 MEASURE_RULES: list[tuple[str, list[str], list[str]]] = [
     ("DATE", [r"\bdate\b", r"changed on", r"created on", r"تاریخ", r"مهلت", r"زمان"], []),
     ("STATUS", [r"\bstatus\b", r"\bstate\b", r"deletion indicator", r"overall release",
-                r"release strategy", r"وضعیت", r"مرحله", r"فرآیند فعلی"],
+                r"release strategy", r"movement type", r"reason for movement",
+                r"وضعیت", r"مرحله", r"فرآیند فعلی", r"نوع حرکت", r"حالت"],
      [r"\bdate\b", r"تاریخ"]),
     ("AMOUNT", [r"\bamount\b", r"\bvalue\b", r"\bprice\b", r"\bbalance\b",
                 r"مبلغ", r"ارزش", r"بها", r"مانده", r"تعهد اولیه", r"نرخ"],
@@ -119,27 +120,39 @@ KEY_RULES: list[tuple[str, list[str], list[str]]] = [
     # Registration FILE number is 9+ digits and is NOT the 8-digit registration
     # code. gsi/config/sources.yaml records that confusing the two is why NTSW
     # never connected in an earlier release.
-    ("REG_FILE", [r"شماره پرونده ثبت سفارش", r"پرونده ثبت سفارش", r"reg[ _]?file",
-                  r"registration file"], [r"ترخیص", r"clearance"]),
+    # The real NTSW Import Licence sheet labels this column just «شماره پرونده»;
+    # only IL Append spells it out. Both must reach REG_FILE, and neither may
+    # capture the customs file or the SAP file, which are different entities.
+    ("SAP_FILE", [r"شماره پرونده sap", r"sap file"], []),
+    ("REG_FILE", [r"شماره پرونده ثبت سفارش", r"پرونده ثبت سفارش", r"شماره پرونده",
+                  r"reg[ _]?file", r"registration file"],
+     [r"ترخیص", r"clearance", r"\bsap\b", r"برچسب"]),
     ("CUSTOMS_FILE", [r"پرونده ترخیص", r"clearance file"], []),
+    ("SATA", [r"شماره ساتا", r"\bsata\b", r"کد رهگیری ساتا"], []),
     ("REG", [r"کد ثبت سفارش", r"شماره ثبت سفارش", r"ثبت سفارش", r"\breg\b",
              r"registration"], [r"پرونده", r"file", r"\bdate\b", r"تاریخ"]),
     ("ORDER", [r"order no", r"order number", r"our reference", r"شماره سفارش",
                r"سفارش خارجی", r"\border\b"],
      [r"purchase order", r"purchasing", r"^po[ _.]", r"\bvalue\b", r"\bprice\b",
       r"\bamount\b", r"\bquantity\b", r"\bqty\b", r"\bunit\b", r"\bdate\b",
-      r"\btype\b", r"\bstatus\b", r"سفارش خرید", r"ثبت سفارش", r"مقدار",
-      r"تعداد", r"ارزش", r"مبلغ"]),
+      r"\btype\b", r"\bstatus\b", r"your reference", r"سفارش خرید", r"ثبت سفارش",
+      r"مقدار", r"تعداد", r"ارزش", r"مبلغ"]),
     ("BL", [r"bill of lading", r"شماره بارنامه", r"بارنامه", r"\bbl\b", r"\bawb\b"],
      [r"\bdate\b", r"تاریخ", r"\bstatus\b", r"وضعیت"]),
     ("COTTAGE", [r"\bcottage\b", r"\bcotage\b", r"کوتاژ", r"اظهارنامه"],
      [r"\bdate\b", r"تاریخ"]),
+    # A goods movement is identified by (material document, item), the same way a
+    # requisition is by (PR, item). Both halves need their own role or the GR
+    # grain cannot be stated.
+    ("MATERIAL_DOC_ITEM", [r"material doc\.?\s*item", r"material document item"], []),
+    ("MATERIAL_DOC", [r"material document", r"material doc", r"سند کالا"], []),
     ("MATERIAL", [r"\bmaterial\b", r"material code", r"کد کالا", r"کد قطعه",
                   r"شماره فنی", r"part no", r"part number", r"\bmpn\b"],
      [r"description", r"\bdesc\b", r"\bgroup\b", r"\btext\b", r"\bprofile\b",
+      r"document", r"\bdoc\b", r"سند",
       r"شرح", r"گروه", r"supplier", r"\bstatus\b"]),
     ("SUPPLIER", [r"\bsupplier\b", r"\bvendor\b", r"فروشنده", r"تامین کننده"],
-     [r"\bmat\b", r"material", r"\bcode\b", r"\bno\.?$", r"کد", r"\bname\b", r"نام"]),
+     [r"\bmat\b", r"material", r"\bno\.?$", r"\bname\b", r"نام", r"تغییر"]),
     ("WORKFLOW", [r"workflow", r"work flow", r"گردش کار"], [r"\bstatus\b", r"وضعیت"]),
     ("COMPARISON", [r"comparision id", r"comparison id", r"شماره مقایسه"], []),
     # Native line identifiers: the obligation/request line the business names.

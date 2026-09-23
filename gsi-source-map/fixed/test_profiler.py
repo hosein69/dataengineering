@@ -329,3 +329,67 @@ def test_export_row_number_never_reaches_the_join_map():
     assert "EXPORT_ROW_NO" not in idx["roles"]
     assert "EXPORT_ROW_NO" not in idx["candidate_cross_source_join_roles"]
     assert "REG" in idx["candidate_cross_source_join_roles"]
+
+
+# ── corrections found by running against the real 631k-row evidence pack ──────
+@pytest.mark.parametrize("header,expected", [
+    ("شماره پرونده", "REG_FILE"),             # how NTSW Import Licence really labels it
+    ("شماره پرونده ثبت سفارش", "REG_FILE"),
+    ("شماره پرونده SAP", "SAP_FILE"),         # a different file number entirely
+    ("پرونده ترخیص", "CUSTOMS_FILE"),
+    ("برچسب پرونده", None),                   # a file label, not a file number
+    ("Material Document", "MATERIAL_DOC"),    # goods-movement doc, not a material
+    ("Material Doc.Item", "MATERIAL_DOC_ITEM"),
+    ("Material", "MATERIAL"),
+    ("Movement Type", None),                  # a status that decides add vs reverse
+    ("شماره ساتا", "SATA"),
+    ("Our Reference", "ORDER"),               # the buyer's order reference
+    ("Your Reference", None),                 # the supplier's reference
+])
+def test_roles_found_by_real_data(header, expected):
+    assert classify_column(header)["key_role"] == expected
+
+
+def test_movement_type_is_a_status_not_a_key():
+    cls = classify_column("Movement Type")
+    assert cls["key_role"] is None and "STATUS" in cls["measure_roles"]
+
+
+def test_goods_receipt_sheet_does_not_publish_a_document_as_a_material():
+    headers = ["Posting Date", "Purchase order", "Item", "Material Document",
+               "Material Doc.Item", "Material", "Quantity", "Movement Type", "Supplier"]
+    df = pd.DataFrame([{h: "1" for h in headers}])
+    sem = semantic_columns(df)
+    assert sem.get("MATERIAL") == ["Material"]
+    assert sem.get("MATERIAL_DOC") == ["Material Document"]
+    assert sem.get("MATERIAL_DOC_ITEM") == ["Material Doc.Item"]
+
+
+def test_import_licence_hub_resolves_on_the_real_header_spelling():
+    df = pd.DataFrame([{"شماره پرونده": "664823825", "شماره ثبت سفارش": "98404279",
+                        "فروشنده خارجی": "ACME", "وضعیت": "فعال"}])
+    keys = representative_key_columns(df, semantic_columns(df))
+    assert keys["REG_FILE"] == "شماره پرونده"
+    assert keys["REG"] == "شماره ثبت سفارش"
+
+
+def test_goods_movement_grain_is_document_plus_item():
+    df = pd.DataFrame([{"Material Document": "500012345", "Material Doc.Item": str(i % 3 + 1),
+                        "Purchase order": "4500000001", "Material": "9654003280",
+                        "Movement Type": "101"} for i in range(9)])
+    keys = representative_key_columns(df, semantic_columns(df))
+    assert keys["MATERIAL_DOC"] == "Material Document"
+    assert keys["MATERIAL_DOC_ITEM"] == "Material Doc.Item"
+
+
+@pytest.mark.parametrize("header,expected", [
+    ("حالت ثبت سفارش", None),        # registration STATE, not the registration key
+    ("شماره ثبت سفارش", "REG"),
+    ("Vendor Code", "SUPPLIER"),     # a vendor code is the supplier key
+    ("Manufacturer Vendor Code", "SUPPLIER"),
+    ("Supplier Mat. No.", None),     # the supplier's material number, not a supplier
+    ("نام تامین کننده", None),        # a supplier name is not a key
+    ("تغییر فروشنده", None),          # a change flag is not a supplier
+])
+def test_supplier_and_state_roles_from_real_headers(header, expected):
+    assert classify_column(header)["key_role"] == expected

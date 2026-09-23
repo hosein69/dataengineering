@@ -1,0 +1,2698 @@
+{
+  "source_evidence": {
+    "format": "GSI_SOURCE_EVIDENCE_TEXT_V2",
+    "generated_at": "2026-09-23T11:10:22",
+    "profiled_frames": 41,
+    "total_native_rows": 631576,
+    "errors": []
+  },
+  "disclaimer": "Schema-level facts only. No business value from any sample row is included. Roles are heuristic until confirmed by the source owner.",
+  "corrected_key_index": {
+    "PR": [
+      {
+        "frame": "SAP/pr",
+        "column": "Purchase Requisition",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pr",
+        "column": "PR Type",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pack",
+        "column": "Purchase Requisition",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Purchase Requisition",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "PR No.",
+        "side": "header"
+      }
+    ],
+    "PR_ITEM": [
+      {
+        "frame": "SAP/pr",
+        "column": "Item of requisition",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pack",
+        "column": "Item of requisition",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Item of requisition",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "PR Item",
+        "side": "header"
+      }
+    ],
+    "MATERIAL": [
+      {
+        "frame": "SAP/pr",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pack",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pack",
+        "column": "MPN: Material",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Manufacturer Part No.",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/inbound",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/GR",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Material",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Manufacturer Part Number",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Part No.\n(شماره پارت در حمل پارشیالی)",
+        "side": "header"
+      },
+      {
+        "frame": "Oracle/1",
+        "column": "شماره فني",
+        "side": "header"
+      },
+      {
+        "frame": "Oracle/SAPCO_IK",
+        "column": "شماره فني",
+        "side": "header"
+      }
+    ],
+    "PO": [
+      {
+        "frame": "SAP/pr",
+        "column": "Purchase order",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Purchasing Document",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/GR",
+        "column": "Purchase order",
+        "side": "header"
+      }
+    ],
+    "PO_ITEM": [
+      {
+        "frame": "SAP/pr",
+        "column": "Purchase Order Item",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Document Item",
+        "side": "header"
+      }
+    ],
+    "ORDER": [
+      {
+        "frame": "SAP/pr",
+        "column": "Framework order item",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/pack",
+        "column": "order Num",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Our Reference",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Order No.\n(Our Reference)",
+        "side": "header"
+      },
+      {
+        "frame": "IL_Append/Append",
+        "column": "شماره سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Abbasi/BLs Tracking",
+        "column": "شماره سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Sea_Clearance/Sea Clearance",
+        "column": "شماره سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Land_Clearance/Land Clearance",
+        "column": "شماره سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Air_Clearance/Air Clearance",
+        "column": "شماره سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Credit_Dept/PURCREDIT",
+        "column": "شماره سفارش",
+        "side": "header"
+      }
+    ],
+    "SUPPLIER": [
+      {
+        "frame": "SAP/pr",
+        "column": "Desired Vendor",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/po",
+        "column": "Supplier",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/inbound",
+        "column": "Supplier",
+        "side": "header"
+      },
+      {
+        "frame": "SAP/GR",
+        "column": "Supplier",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Manufacturer Vendor Code ",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Vendor Code ",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "Vendor\nPI Number ",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Import License",
+        "column": "فروشنده خارجی",
+        "side": "header"
+      }
+    ],
+    "WORKFLOW": [
+      {
+        "frame": "SAP/pack",
+        "column": "WorkFlow ID",
+        "side": "header"
+      }
+    ],
+    "COMPARISON": [
+      {
+        "frame": "SAP/pack",
+        "column": "Comparision ID",
+        "side": "header"
+      }
+    ],
+    "REG_FILE": [
+      {
+        "frame": "SAP/po",
+        "column": "شماره پرونده",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Import License",
+        "column": "شماره پرونده",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Quota",
+        "column": "شماره پرونده",
+        "side": "header"
+      },
+      {
+        "frame": "IL_Append/Append",
+        "column": "شماره پرونده ثبت سفارش",
+        "side": "header"
+      }
+    ],
+    "BL": [
+      {
+        "frame": "SAP/inbound",
+        "column": "شماره بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Commercial_Expert/Expert Data",
+        "column": "BL No.",
+        "side": "header"
+      },
+      {
+        "frame": "Abbasi/BLs Tracking",
+        "column": "بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "SATA/Sata Tracking",
+        "column": "بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Sea_Clearance/Sea Clearance",
+        "column": "بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Land_Clearance/Land Clearance",
+        "column": "بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Air_Clearance/Air Clearance",
+        "column": "بارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Customs/Cottage Tracking",
+        "column": "بارنامه",
+        "side": "header"
+      }
+    ],
+    "MATERIAL_DOC": [
+      {
+        "frame": "SAP/GR",
+        "column": "Material Document",
+        "side": "header"
+      }
+    ],
+    "MATERIAL_DOC_ITEM": [
+      {
+        "frame": "SAP/GR",
+        "column": "Material Doc.Item",
+        "side": "header"
+      }
+    ],
+    "REG": [
+      {
+        "frame": "NTSW/Import License",
+        "column": "شماره ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Allocation",
+        "column": "کد ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Release Commitment",
+        "column": "کد ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Custom Declaration",
+        "column": "شماره ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "IL_Append/Append",
+        "column": "شماره ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "SATA/Sata Tracking",
+        "column": " ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "FX_Transactions_1405/خريد جاري1405",
+        "column": "ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "FX_Transactions_1405/خريد جاري1405",
+        "column": "معادل یورویی\n(ثبت سفارش)",
+        "side": "header"
+      },
+      {
+        "frame": "FX_Transactions_1405/خريد جاري1405",
+        "column": "معادل دلار\n(ثبت سفارش)",
+        "side": "header"
+      },
+      {
+        "frame": "FX_Transactions/Sheet1",
+        "column": "ثبت سفارش",
+        "side": "header"
+      },
+      {
+        "frame": "Credit_Dept/PURCREDIT",
+        "column": "شماره ثبت سفارش",
+        "side": "header"
+      }
+    ],
+    "NATIVE_ROW_ID": [
+      {
+        "frame": "NTSW/Allocation",
+        "column": "ردیف درخواست",
+        "side": "header"
+      },
+      {
+        "frame": "NTSW/Release Commitment",
+        "column": "شماره ردیف تعهد",
+        "side": "header"
+      }
+    ],
+    "COTTAGE": [
+      {
+        "frame": "NTSW/Custom Declaration",
+        "column": "سریال اظهارنامه",
+        "side": "header"
+      },
+      {
+        "frame": "Sea_Clearance/Sea Clearance",
+        "column": "کوتاژ",
+        "side": "header"
+      },
+      {
+        "frame": "Land_Clearance/Land Clearance",
+        "column": "کوتاژ",
+        "side": "header"
+      },
+      {
+        "frame": "Air_Clearance/Air Clearance",
+        "column": "کوتاژ",
+        "side": "header"
+      },
+      {
+        "frame": "Customs/Cottage Tracking",
+        "column": "کوتاژ",
+        "side": "header"
+      }
+    ],
+    "SATA": [
+      {
+        "frame": "NTSW/Custom Declaration",
+        "column": "شماره ساتا",
+        "side": "header"
+      }
+    ],
+    "SAP_FILE": [
+      {
+        "frame": "IL_Append/Append",
+        "column": "شماره پرونده SAP",
+        "side": "header"
+      }
+    ],
+    "CUSTOMS_FILE": [
+      {
+        "frame": "Sea_Clearance/Sea Clearance",
+        "column": "پرونده ترخیص",
+        "side": "header"
+      },
+      {
+        "frame": "Land_Clearance/Land Clearance",
+        "column": "پرونده ترخیص",
+        "side": "header"
+      },
+      {
+        "frame": "Air_Clearance/Air Clearance",
+        "column": "پرونده ترخیص",
+        "side": "header"
+      }
+    ]
+  },
+  "upstream_vs_reviewed": {
+    "BL": {
+      "published_by_upstream": 9,
+      "retained_after_review": 8,
+      "withdrawn": [
+        {
+          "frame": "Abbasi/BLs Tracking",
+          "column": "تاریخ تحویل بارنامه",
+          "why": "DATE"
+        }
+      ],
+      "added": []
+    },
+    "COMPARISON": {
+      "published_by_upstream": 0,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "SAP/pack",
+          "column": "Comparision ID"
+        }
+      ]
+    },
+    "COTTAGE": {
+      "published_by_upstream": 11,
+      "retained_after_review": 5,
+      "withdrawn": [
+        {
+          "frame": "Air_Clearance/Air Clearance",
+          "column": "تاریخ  دریافت شماره کوتاژ",
+          "why": "DATE"
+        },
+        {
+          "frame": "Customs/Cottage Tracking",
+          "column": "تاریخ دریافت شماره کوتاژ",
+          "why": "DATE"
+        },
+        {
+          "frame": "Land_Clearance/Land Clearance",
+          "column": "تاریخ  دریافت شماره کوتاژ",
+          "why": "DATE"
+        },
+        {
+          "frame": "NTSW/Custom Declaration",
+          "column": "تاریخ اظهارنامه",
+          "why": "DATE"
+        },
+        {
+          "frame": "NTSW/Custom Declaration",
+          "column": "وضعیت اظهارنامه",
+          "why": "STATUS"
+        },
+        {
+          "frame": "Sea_Clearance/Sea Clearance",
+          "column": "تاریخ  دریافت شماره کوتاژ",
+          "why": "DATE"
+        }
+      ],
+      "added": []
+    },
+    "CUSTOMS_FILE": {
+      "published_by_upstream": 0,
+      "retained_after_review": 3,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "Air_Clearance/Air Clearance",
+          "column": "پرونده ترخیص"
+        },
+        {
+          "frame": "Land_Clearance/Land Clearance",
+          "column": "پرونده ترخیص"
+        },
+        {
+          "frame": "Sea_Clearance/Sea Clearance",
+          "column": "پرونده ترخیص"
+        }
+      ]
+    },
+    "MATERIAL": {
+      "published_by_upstream": 15,
+      "retained_after_review": 12,
+      "withdrawn": [
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Material Description",
+          "why": "no role"
+        },
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Material Short Text",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/GR",
+          "column": "Material Description",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/GR",
+          "column": "Material Doc.Item",
+          "why": "reclassified to MATERIAL_DOC_ITEM"
+        },
+        {
+          "frame": "SAP/GR",
+          "column": "Material Document",
+          "why": "reclassified to MATERIAL_DOC"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Material Group",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Material Description",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Material Group",
+          "why": "no role"
+        }
+      ],
+      "added": [
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Manufacturer Part Number"
+        },
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Part No.\n(شماره پارت در حمل پارشیالی)"
+        },
+        {
+          "frame": "Oracle/1",
+          "column": "شماره فني"
+        },
+        {
+          "frame": "Oracle/SAPCO_IK",
+          "column": "شماره فني"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Manufacturer Part No."
+        }
+      ]
+    },
+    "MATERIAL_DOC": {
+      "published_by_upstream": 0,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "SAP/GR",
+          "column": "Material Document"
+        }
+      ]
+    },
+    "MATERIAL_DOC_ITEM": {
+      "published_by_upstream": 0,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "SAP/GR",
+          "column": "Material Doc.Item"
+        }
+      ]
+    },
+    "NATIVE_ROW_ID": {
+      "published_by_upstream": 0,
+      "retained_after_review": 2,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "NTSW/Allocation",
+          "column": "ردیف درخواست"
+        },
+        {
+          "frame": "NTSW/Release Commitment",
+          "column": "شماره ردیف تعهد"
+        }
+      ]
+    },
+    "ORDER": {
+      "published_by_upstream": 25,
+      "retained_after_review": 10,
+      "withdrawn": [
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Order Status",
+          "why": "STATUS"
+        },
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "Quantity In Order",
+          "why": "QUANTITY"
+        },
+        {
+          "frame": "SAP/GR",
+          "column": "Order Price Unit",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "SAP/GR",
+          "column": "Purchase order",
+          "why": "reclassified to PO"
+        },
+        {
+          "frame": "SAP/pack",
+          "column": "Order Unit",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Gross order value",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Net Order Price",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Net Order Value",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Order Price Unit",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Order Quantity",
+          "why": "QUANTITY"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Order Unit",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Order Unit.1",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Order Unit.2",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Purchase Order Date",
+          "why": "DATE"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Purchase Order Item",
+          "why": "reclassified to PO_ITEM"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Purchase order",
+          "why": "reclassified to PO"
+        }
+      ],
+      "added": [
+        {
+          "frame": "SAP/po",
+          "column": "Our Reference"
+        }
+      ]
+    },
+    "PO": {
+      "published_by_upstream": 6,
+      "retained_after_review": 3,
+      "withdrawn": [
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": " PO Sent Date\n( با فرمت میلادی PO تاریخ ابلاغ فرم)",
+          "why": "DATE"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Purchase Order Date",
+          "why": "DATE"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Purchase Order Item",
+          "why": "reclassified to PO_ITEM"
+        }
+      ],
+      "added": []
+    },
+    "PO_ITEM": {
+      "published_by_upstream": 1,
+      "retained_after_review": 2,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "SAP/po",
+          "column": "Document Item"
+        }
+      ]
+    },
+    "PR": {
+      "published_by_upstream": 7,
+      "retained_after_review": 5,
+      "withdrawn": [
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "PR Item",
+          "why": "reclassified to PR_ITEM"
+        },
+        {
+          "frame": "Commercial_Expert/Expert Data",
+          "column": "PR Total Quantity",
+          "why": "QUANTITY"
+        }
+      ],
+      "added": []
+    },
+    "PR_ITEM": {
+      "published_by_upstream": 4,
+      "retained_after_review": 4,
+      "withdrawn": [],
+      "added": []
+    },
+    "REG": {
+      "published_by_upstream": 20,
+      "retained_after_review": 11,
+      "withdrawn": [
+        {
+          "frame": "Credit_Dept/PURCREDIT",
+          "column": "تاریخ ثبت سفارش",
+          "why": "DATE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "ارزش ثبت سفارش",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "تاریخ صدور ثبت سفارش",
+          "why": "DATE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "تغییر تاریخ اعتبار ثبت سفارش",
+          "why": "DATE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "حالت ثبت سفارش",
+          "why": "STATUS"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "شماره پرونده ثبت سفارش",
+          "why": "reclassified to REG_FILE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "مبلغ کارمزد ثبت سفارش (ریال)",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "NTSW/Import License",
+          "column": "تاریخ اعتبار ثبت سفارش",
+          "why": "DATE"
+        },
+        {
+          "frame": "NTSW/Import License",
+          "column": "تاریخ صدور ثبت سفارش",
+          "why": "DATE"
+        }
+      ],
+      "added": []
+    },
+    "REG_FILE": {
+      "published_by_upstream": 14,
+      "retained_after_review": 4,
+      "withdrawn": [
+        {
+          "frame": "Air_Clearance/Air Clearance",
+          "column": "پرونده ترخیص",
+          "why": "reclassified to CUSTOMS_FILE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "تاریخ ایجاد پرونده",
+          "why": "DATE"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "شماره پرونده SAP",
+          "why": "reclassified to SAP_FILE"
+        },
+        {
+          "frame": "Land_Clearance/Land Clearance",
+          "column": "پرونده ترخیص",
+          "why": "reclassified to CUSTOMS_FILE"
+        },
+        {
+          "frame": "NTSW/Import License",
+          "column": "برچسب پرونده",
+          "why": "no role"
+        },
+        {
+          "frame": "NTSW/Quota",
+          "column": "ارزش کالاهای مشمول سهمیه پرونده (با نوع ارز پرونده)",
+          "why": "AMOUNT; CURRENCY"
+        },
+        {
+          "frame": "NTSW/Quota",
+          "column": "معادل دلاری ارزش کالاهای مشمول سهمیه پرونده",
+          "why": "AMOUNT"
+        },
+        {
+          "frame": "NTSW/Quota",
+          "column": "نرخ تبدیل نوع ارز پرونده به دلار",
+          "why": "AMOUNT; CURRENCY"
+        },
+        {
+          "frame": "NTSW/Quota",
+          "column": "نوع ارز پرونده",
+          "why": "CURRENCY"
+        },
+        {
+          "frame": "Sea_Clearance/Sea Clearance",
+          "column": "پرونده ترخیص",
+          "why": "reclassified to CUSTOMS_FILE"
+        }
+      ],
+      "added": []
+    },
+    "SAP_FILE": {
+      "published_by_upstream": 0,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "IL_Append/Append",
+          "column": "شماره پرونده SAP"
+        }
+      ]
+    },
+    "SATA": {
+      "published_by_upstream": 0,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": [
+        {
+          "frame": "NTSW/Custom Declaration",
+          "column": "شماره ساتا"
+        }
+      ]
+    },
+    "SUPPLIER": {
+      "published_by_upstream": 13,
+      "retained_after_review": 8,
+      "withdrawn": [
+        {
+          "frame": "Credit_Dept/PURCREDIT",
+          "column": "نام تامین کننده",
+          "why": "no role"
+        },
+        {
+          "frame": "IL_Append/Append",
+          "column": "تغییر فروشنده",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/po",
+          "column": "Supplier Mat. No.",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Name of Supplier",
+          "why": "no role"
+        },
+        {
+          "frame": "SAP/pr",
+          "column": "Supplier Mat. No.",
+          "why": "no role"
+        }
+      ],
+      "added": []
+    },
+    "WORKFLOW": {
+      "published_by_upstream": 1,
+      "retained_after_review": 1,
+      "withdrawn": [],
+      "added": []
+    }
+  },
+  "topology_gap": [
+    {
+      "frame": "SAP/GR",
+      "source": "SAP",
+      "sheet": "GR",
+      "rows": 380909,
+      "columns": 21,
+      "adapter_reads": [
+        "Data"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "SAP/po",
+      "source": "SAP",
+      "sheet": "po",
+      "rows": 69608,
+      "columns": 46,
+      "adapter_reads": [
+        "Data"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "SAP/inbound",
+      "source": "SAP",
+      "sheet": "inbound",
+      "rows": 50301,
+      "columns": 16,
+      "adapter_reads": [
+        "Data"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/DATES",
+      "source": "Abbasi",
+      "sheet": "DATES",
+      "rows": 40151,
+      "columns": 18,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "SAP/pr",
+      "source": "SAP",
+      "sheet": "pr",
+      "rows": 17029,
+      "columns": 47,
+      "adapter_reads": [
+        "Data"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "SAP/pack",
+      "source": "SAP",
+      "sheet": "pack",
+      "rows": 9141,
+      "columns": 14,
+      "adapter_reads": [
+        "Data"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Commercial_Expert/Expert Data",
+      "source": "Commercial_Expert",
+      "sheet": "Expert Data",
+      "rows": 7483,
+      "columns": 35,
+      "adapter_reads": [
+        "Expert Data"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "Abbasi/BLs Tracking",
+      "source": "Abbasi",
+      "sheet": "BLs Tracking",
+      "rows": 7402,
+      "columns": 23,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "Customs/Cottage Tracking",
+      "source": "Customs",
+      "sheet": "Cottage Tracking",
+      "rows": 7037,
+      "columns": 23,
+      "adapter_reads": [
+        "Cottage Tracking"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "SATA/Sata Tracking",
+      "source": "SATA",
+      "sheet": "Sata Tracking",
+      "rows": 6199,
+      "columns": 25,
+      "adapter_reads": [
+        "Sata Tracking"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "Credit_Dept/PURCREDIT",
+      "source": "Credit_Dept",
+      "sheet": "PURCREDIT",
+      "rows": 5060,
+      "columns": 37,
+      "adapter_reads": [
+        "PURCREDIT"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "NTSW/Release Commitment",
+      "source": "NTSW",
+      "sheet": "Release Commitment",
+      "rows": 4859,
+      "columns": 11,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "NTSW/Allocation",
+      "source": "NTSW",
+      "sheet": "Allocation",
+      "rows": 4755,
+      "columns": 15,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "NTSW/Assistant",
+      "source": "NTSW",
+      "sheet": "Assistant",
+      "rows": 3634,
+      "columns": 15,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Air_Clearance/Air Clearance",
+      "source": "Air_Clearance",
+      "sheet": "Air Clearance",
+      "rows": 3424,
+      "columns": 29,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "IL_Append/Append",
+      "source": "IL_Append",
+      "sheet": "Append",
+      "rows": 2884,
+      "columns": 87,
+      "adapter_reads": [
+        "Append"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "NTSW/Import License",
+      "source": "NTSW",
+      "sheet": "Import License",
+      "rows": 2403,
+      "columns": 15,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "CONSUMED"
+    },
+    {
+      "frame": "FX_Transactions/Sheet1",
+      "source": "FX_Transactions",
+      "sheet": "Sheet1",
+      "rows": 1743,
+      "columns": 18,
+      "adapter_reads": [
+        "<all sheets, physical-cell reader>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Sea_Clearance/Sea Clearance",
+      "source": "Sea_Clearance",
+      "sheet": "Sea Clearance",
+      "rows": 1633,
+      "columns": 44,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Oracle/1",
+      "source": "Oracle",
+      "sheet": "1",
+      "rows": 1415,
+      "columns": 21,
+      "adapter_reads": [
+        "<all sheets, physical-cell reader>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "NTSW/Custom Declaration",
+      "source": "NTSW",
+      "sheet": "Custom Declaration",
+      "rows": 1000,
+      "columns": 9,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "NTSW/Quota",
+      "source": "NTSW",
+      "sheet": "Quota",
+      "rows": 978,
+      "columns": 10,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Land_Clearance/Land Clearance",
+      "source": "Land_Clearance",
+      "sheet": "Land Clearance",
+      "rows": 923,
+      "columns": 34,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "FX_Transactions_1405/خريد جاري1405",
+      "source": "FX_Transactions_1405",
+      "sheet": "خريد جاري1405",
+      "rows": 513,
+      "columns": 28,
+      "adapter_reads": [
+        "<not in registry>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Oracle/SAPCO_IK",
+      "source": "Oracle",
+      "sheet": "SAPCO_IK",
+      "rows": 418,
+      "columns": 18,
+      "adapter_reads": [
+        "<all sheets, physical-cell reader>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Customs/Data",
+      "source": "Customs",
+      "sheet": "Data",
+      "rows": 198,
+      "columns": 5,
+      "adapter_reads": [
+        "Cottage Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/FP",
+      "source": "Abbasi",
+      "sheet": "FP",
+      "rows": 196,
+      "columns": 48,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "FX_Transactions_1405/گزارش اخذ سوئيفت",
+      "source": "FX_Transactions_1405",
+      "sheet": "گزارش اخذ سوئيفت",
+      "rows": 31,
+      "columns": 11,
+      "adapter_reads": [
+        "<not in registry>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Abbasi/HDM-35",
+      "source": "Abbasi",
+      "sheet": "HDM-35",
+      "rows": 25,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/HDM-36",
+      "source": "Abbasi",
+      "sheet": "HDM-36",
+      "rows": 25,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/HDM-37",
+      "source": "Abbasi",
+      "sheet": "HDM-37",
+      "rows": 25,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/HDM-33 ",
+      "source": "Abbasi",
+      "sheet": "HDM-33 ",
+      "rows": 24,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/HDM-34",
+      "source": "Abbasi",
+      "sheet": "HDM-34",
+      "rows": 24,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/HDM-38",
+      "source": "Abbasi",
+      "sheet": "HDM-38",
+      "rows": 24,
+      "columns": 12,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Sea_Clearance/Sheet2",
+      "source": "Sea_Clearance",
+      "sheet": "Sheet2",
+      "rows": 23,
+      "columns": 3,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Land_Clearance/Data",
+      "source": "Land_Clearance",
+      "sheet": "Data",
+      "rows": 23,
+      "columns": 3,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "Air_Clearance/data",
+      "source": "Air_Clearance",
+      "sheet": "data",
+      "rows": 23,
+      "columns": 3,
+      "adapter_reads": [
+        "<largest data sheet>"
+      ],
+      "status": "CONSUMED_BY_STRATEGY"
+    },
+    {
+      "frame": "SATA/Data",
+      "source": "SATA",
+      "sheet": "Data",
+      "rows": 13,
+      "columns": 4,
+      "adapter_reads": [
+        "Sata Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "NTSW/Overall Quota",
+      "source": "NTSW",
+      "sheet": "Overall Quota",
+      "rows": 8,
+      "columns": 6,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "NTSW/Quota Season",
+      "source": "NTSW",
+      "sheet": "Quota Season",
+      "rows": 8,
+      "columns": 4,
+      "adapter_reads": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "status": "NOT_CONSUMED"
+    },
+    {
+      "frame": "Abbasi/Data",
+      "source": "Abbasi",
+      "sheet": "Data",
+      "rows": 4,
+      "columns": 3,
+      "adapter_reads": [
+        "BLs Tracking"
+      ],
+      "status": "NOT_CONSUMED"
+    }
+  ],
+  "same_role_conflict_candidates": [
+    {
+      "frame": "SAP/pr",
+      "role": "PR",
+      "columns": [
+        "Purchase Requisition",
+        "PR Type"
+      ],
+      "sides": [
+        "header"
+      ]
+    },
+    {
+      "frame": "SAP/pack",
+      "role": "MATERIAL",
+      "columns": [
+        "Material",
+        "MPN: Material"
+      ],
+      "sides": [
+        "header"
+      ]
+    },
+    {
+      "frame": "SAP/po",
+      "role": "MATERIAL",
+      "columns": [
+        "Material",
+        "Manufacturer Part No."
+      ],
+      "sides": [
+        "header"
+      ]
+    },
+    {
+      "frame": "Commercial_Expert/Expert Data",
+      "role": "MATERIAL",
+      "columns": [
+        "Material",
+        "Manufacturer Part Number",
+        "Part No.\n(شماره پارت در حمل پارشیالی)"
+      ],
+      "sides": [
+        "header"
+      ]
+    },
+    {
+      "frame": "Commercial_Expert/Expert Data",
+      "role": "SUPPLIER",
+      "columns": [
+        "Manufacturer Vendor Code ",
+        "Vendor Code ",
+        "Vendor\nPI Number "
+      ],
+      "sides": [
+        "header"
+      ]
+    },
+    {
+      "frame": "FX_Transactions_1405/خريد جاري1405",
+      "role": "REG",
+      "columns": [
+        "ثبت سفارش",
+        "معادل یورویی\n(ثبت سفارش)",
+        "معادل دلار\n(ثبت سفارش)"
+      ],
+      "sides": [
+        "header"
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "frame": "SAP/pr",
+      "source": "SAP",
+      "sheet": "pr",
+      "rows": 17029,
+      "columns": 47,
+      "key_roles": {
+        "PR": [
+          "Purchase Requisition",
+          "PR Type"
+        ],
+        "PR_ITEM": [
+          "Item of requisition"
+        ],
+        "MATERIAL": [
+          "Material"
+        ],
+        "PO": [
+          "Purchase order"
+        ],
+        "PO_ITEM": [
+          "Purchase Order Item"
+        ],
+        "ORDER": [
+          "Framework order item"
+        ],
+        "SUPPLIER": [
+          "Desired Vendor"
+        ]
+      },
+      "unclassified": [
+        "Document Type",
+        "Material Description",
+        "Short Text",
+        "Unit of Measure",
+        "Material Group",
+        "Purchasing Group",
+        "Purgroup Description",
+        "Requisitioner",
+        "Created By",
+        "Name of Supplier",
+        "Item Category",
+        "Acct Assignment Cat.",
+        "Purch. Organization",
+        "Supplier Mat. No.",
+        "Plant",
+        "Goods Receipt",
+        "Req. Tracking Number",
+        "GR Non-Valuated",
+        "Mfr Part Profile",
+        "Language Key",
+        "GR processing time",
+        "Manufacturer"
+      ]
+    },
+    {
+      "frame": "SAP/pack",
+      "source": "SAP",
+      "sheet": "pack",
+      "rows": 9141,
+      "columns": 14,
+      "key_roles": {
+        "PR": [
+          "Purchase Requisition"
+        ],
+        "PR_ITEM": [
+          "Item of requisition"
+        ],
+        "ORDER": [
+          "order Num"
+        ],
+        "WORKFLOW": [
+          "WorkFlow ID"
+        ],
+        "COMPARISON": [
+          "Comparision ID"
+        ],
+        "MATERIAL": [
+          "Material",
+          "MPN: Material"
+        ]
+      },
+      "unclassified": [
+        "Pack Number",
+        "Order Unit",
+        "Responsible",
+        "Packed",
+        "Commision No"
+      ]
+    },
+    {
+      "frame": "SAP/po",
+      "source": "SAP",
+      "sheet": "po",
+      "rows": 69608,
+      "columns": 46,
+      "key_roles": {
+        "PO": [
+          "Purchasing Document"
+        ],
+        "PO_ITEM": [
+          "Document Item"
+        ],
+        "MATERIAL": [
+          "Material",
+          "Manufacturer Part No."
+        ],
+        "PR": [
+          "Purchase Requisition"
+        ],
+        "PR_ITEM": [
+          "Item of requisition"
+        ],
+        "SUPPLIER": [
+          "Supplier"
+        ],
+        "REG_FILE": [
+          "شماره پرونده"
+        ],
+        "ORDER": [
+          "Our Reference"
+        ]
+      },
+      "unclassified": [
+        "Item",
+        "Short Text",
+        "Company Code",
+        "Plant",
+        "Storage Location",
+        "Req. Tracking Number",
+        "Material Group",
+        "Purchasing Info Rec.",
+        "Supplier Mat. No.",
+        "Order Unit",
+        "Order Unit.1",
+        "Order Unit.2",
+        "Equal To",
+        "Denominator",
+        "Delivery Completed",
+        "RFQ",
+        "Item.1",
+        "Purchasing Doc. Type",
+        "Created By",
+        "Your Reference",
+        "Purch. Organization",
+        "Purchasing Group"
+      ]
+    },
+    {
+      "frame": "SAP/inbound",
+      "source": "SAP",
+      "sheet": "inbound",
+      "rows": 50301,
+      "columns": 16,
+      "key_roles": {
+        "MATERIAL": [
+          "Material"
+        ],
+        "SUPPLIER": [
+          "Supplier"
+        ],
+        "BL": [
+          "شماره بارنامه"
+        ]
+      },
+      "unclassified": [
+        "Delivery",
+        "Delivery Type",
+        "Created By",
+        "Item",
+        "Plant",
+        "Sales Unit",
+        "Reference Document",
+        "Reference Item",
+        "Shipment Number",
+        "Shipment Type",
+        "Service Agent"
+      ]
+    },
+    {
+      "frame": "SAP/GR",
+      "source": "SAP",
+      "sheet": "GR",
+      "rows": 380909,
+      "columns": 21,
+      "key_roles": {
+        "PO": [
+          "Purchase order"
+        ],
+        "MATERIAL_DOC": [
+          "Material Document"
+        ],
+        "MATERIAL_DOC_ITEM": [
+          "Material Doc.Item"
+        ],
+        "MATERIAL": [
+          "Material"
+        ],
+        "SUPPLIER": [
+          "Supplier"
+        ]
+      },
+      "unclassified": [
+        "Time of Entry",
+        "User Name",
+        "Item",
+        "Material Description",
+        "Base Unit of Measure",
+        "Batch",
+        "Storage Location",
+        "Reference",
+        "Plant",
+        "Cost Center"
+      ]
+    },
+    {
+      "frame": "Commercial_Expert/Expert Data",
+      "source": "Commercial_Expert",
+      "sheet": "Expert Data",
+      "rows": 7483,
+      "columns": 35,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "Row No."
+        ],
+        "ORDER": [
+          "Order No.\n(Our Reference)"
+        ],
+        "PR": [
+          "PR No."
+        ],
+        "PR_ITEM": [
+          "PR Item"
+        ],
+        "MATERIAL": [
+          "Material",
+          "Manufacturer Part Number",
+          "Part No.\n(شماره پارت در حمل پارشیالی)"
+        ],
+        "SUPPLIER": [
+          "Manufacturer Vendor Code ",
+          "Vendor Code ",
+          "Vendor\nPI Number "
+        ],
+        "BL": [
+          "BL No."
+        ]
+      },
+      "unclassified": [
+        "Material Description",
+        "Material Short Text",
+        "PGR",
+        "Unit Of Measure",
+        "Reference Letter No.\n(شماره نامه اتوماسیونی)",
+        "Data type ",
+        "Manufacturer\nPI Number ",
+        "PI Additional Costs",
+        "Mode of Transport",
+        "Transport No.",
+        "Carrier Name",
+        "Additional Data (Note , Brand etc.)",
+        "Employee Code"
+      ]
+    },
+    {
+      "frame": "Oracle/1",
+      "source": "Oracle",
+      "sheet": "1",
+      "rows": 1415,
+      "columns": 21,
+      "key_roles": {
+        "MATERIAL": [
+          "شماره فني"
+        ]
+      },
+      "unclassified": [
+        "کد جنس",
+        "شرح جنس",
+        "گروه تامين",
+        "گروه ساخت",
+        "گروه برنامه ريزي",
+        "گروه قطعه",
+        "رده بندي قطعه",
+        "درصد سهم خريد خارجي",
+        "قطعه بحراني",
+        "کد آلترناتيو",
+        "شماره نامه",
+        "توضيحات",
+        "شماره پرسنلي",
+        "کارشناس خريد خارجي"
+      ]
+    },
+    {
+      "frame": "Oracle/SAPCO_IK",
+      "source": "Oracle",
+      "sheet": "SAPCO_IK",
+      "rows": 418,
+      "columns": 18,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "رديف"
+        ],
+        "MATERIAL": [
+          "شماره فني"
+        ]
+      },
+      "unclassified": [
+        "Level-0",
+        "Level-1",
+        "شرح قطعه",
+        "آلترناتيو1",
+        "آلترناتيو2",
+        "آلترناتيو3",
+        "محصول",
+        "ضریب مصرف",
+        "EI / NEI",
+        "گروه تامين",
+        "گروه ساخت",
+        "گروه برنامه ریزی",
+        "درصد خرید خارجی",
+        "ریسک پذیری",
+        "Column18"
+      ]
+    },
+    {
+      "frame": "NTSW/Import License",
+      "source": "NTSW",
+      "sheet": "Import License",
+      "rows": 2403,
+      "columns": 15,
+      "key_roles": {
+        "REG_FILE": [
+          "شماره پرونده"
+        ],
+        "SUPPLIER": [
+          "فروشنده خارجی"
+        ],
+        "REG": [
+          "شماره ثبت سفارش"
+        ]
+      },
+      "unclassified": [
+        "شماره پیش فاکتور",
+        "کشور ذینفع",
+        "نوع عملیات ارزی",
+        "ثبت کننده",
+        "برچسب پرونده"
+      ]
+    },
+    {
+      "frame": "NTSW/Allocation",
+      "source": "NTSW",
+      "sheet": "Allocation",
+      "rows": 4755,
+      "columns": 15,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "REG": [
+          "کد ثبت سفارش"
+        ],
+        "NATIVE_ROW_ID": [
+          "ردیف درخواست"
+        ]
+      },
+      "unclassified": [
+        "فرآیند فعلی",
+        "محل تامین ارز",
+        "نوع درخواست",
+        "شعبه",
+        "شرکت"
+      ]
+    },
+    {
+      "frame": "NTSW/Release Commitment",
+      "source": "NTSW",
+      "sheet": "Release Commitment",
+      "rows": 4859,
+      "columns": 11,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "REG": [
+          "کد ثبت سفارش"
+        ],
+        "NATIVE_ROW_ID": [
+          "شماره ردیف تعهد"
+        ]
+      },
+      "unclassified": [
+        "شعبه",
+        "شرکت"
+      ]
+    },
+    {
+      "frame": "NTSW/Quota",
+      "source": "NTSW",
+      "sheet": "Quota",
+      "rows": 978,
+      "columns": 10,
+      "key_roles": {
+        "REG_FILE": [
+          "شماره پرونده"
+        ]
+      },
+      "unclassified": [
+        "نوع سهمیه",
+        "شرکت"
+      ]
+    },
+    {
+      "frame": "NTSW/Overall Quota",
+      "source": "NTSW",
+      "sheet": "Overall Quota",
+      "rows": 8,
+      "columns": 6,
+      "key_roles": {},
+      "unclassified": [
+        "نام شرکت",
+        "نوع سهمیه"
+      ]
+    },
+    {
+      "frame": "NTSW/Quota Season",
+      "source": "NTSW",
+      "sheet": "Quota Season",
+      "rows": 8,
+      "columns": 4,
+      "key_roles": {},
+      "unclassified": [
+        "نام شرکت",
+        "درصد سهمیه",
+        "Season ID"
+      ]
+    },
+    {
+      "frame": "NTSW/Custom Declaration",
+      "source": "NTSW",
+      "sheet": "Custom Declaration",
+      "rows": 1000,
+      "columns": 9,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "COTTAGE": [
+          "سریال اظهارنامه"
+        ],
+        "REG": [
+          "شماره ثبت سفارش"
+        ],
+        "SATA": [
+          "شماره ساتا"
+        ]
+      },
+      "unclassified": [
+        "گمرک ترخیص"
+      ]
+    },
+    {
+      "frame": "NTSW/Assistant",
+      "source": "NTSW",
+      "sheet": "Assistant",
+      "rows": 3634,
+      "columns": 15,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ]
+      },
+      "unclassified": [
+        "شرکت",
+        "نوع سهمیه",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11",
+        "Unnamed: 12",
+        "Unnamed: 13",
+        "Unnamed: 14"
+      ]
+    },
+    {
+      "frame": "IL_Append/Append",
+      "source": "IL_Append",
+      "sheet": "Append",
+      "rows": 2884,
+      "columns": 87,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ],
+        "SAP_FILE": [
+          "شماره پرونده SAP"
+        ],
+        "REG_FILE": [
+          "شماره پرونده ثبت سفارش"
+        ],
+        "REG": [
+          "شماره ثبت سفارش"
+        ]
+      },
+      "unclassified": [
+        "نوع درخواست",
+        "نام شرکت",
+        "نام کارشناس",
+        "نام تهیه‌کننده ",
+        "نام ثبت کننده",
+        "نام انبار",
+        "نوع عملیات ارزی",
+        "محل تامین ارز",
+        "اولویت پیگیری جهت اخذ مجوز ",
+        "اولویت کالایی",
+        "شماره پروفرم",
+        "دسته بندی محصول",
+        "نام محصول",
+        "نوع محصول",
+        "شرح کالا",
+        "HS Code",
+        "معادل میلیون دلار ",
+        "دفتر صنایع خودرو وزارت صمت",
+        "دفتر صنایع برق وزارت صمت",
+        "دفتر صنایع شیمیایی وزارت صمت",
+        "دفتر ماشین آلات وزارت صمت",
+        "دفتر تعمیر و نگهداری",
+        "دفتر مقررات صادرات و واردات",
+        "وزارت ارتباطات و فناوری اطلاعات",
+        "انجمن صنایع همگن",
+        "انجمن سازندگان قطعات",
+        "انجمن فیلترسازان",
+        "سایر انجمن ها ",
+        "IT گمرک",
+        "گمرک ایران",
+        "بانک",
+        "سایر",
+        "بانک عامل ",
+        "واحد مرتبط",
+        "توضیحات",
+        "واحد ",
+        "ماه\n(سفارش گذاری)",
+        "شماره اصلاحیه",
+        "تغییر وزن خالص کل",
+        "تغییر وزن ناخالص کل",
+        "تغییر ذینفع",
+        "تغییر فروشنده",
+        "تغییر شماره پروفرم",
+        "تغییر کشور مبدا حمل",
+        "تغییر نوع تامین ارز",
+        "تغییر واحد ارز",
+        "تغییر نوع حمل",
+        "تغییر ترم حمل",
+        "تغییر گمرک",
+        "تغییر تعرفه",
+        "تغییر شرح کالا",
+        "تغییر شناسه",
+        "تغییر شعبه بانک",
+        "تغییر بانک",
+        "Duplicate"
+      ]
+    },
+    {
+      "frame": "Abbasi/DATES",
+      "source": "Abbasi",
+      "sheet": "DATES",
+      "rows": 40151,
+      "columns": 18,
+      "key_roles": {},
+      "unclassified": [
+        "Miladi",
+        "Jalali_1",
+        "Jalali_2",
+        "Miladi.1",
+        "jyear",
+        "mmonthN",
+        "jmonthN",
+        "mmonthT",
+        "jmonthT",
+        "mnime",
+        "jnime",
+        "JquarterN",
+        "JQuarterT",
+        "MquarterN",
+        "JWeekDay",
+        "MWeekDay",
+        "MWeekNum",
+        "JWeekNum"
+      ]
+    },
+    {
+      "frame": "Abbasi/BLs Tracking",
+      "source": "Abbasi",
+      "sheet": "BLs Tracking",
+      "rows": 7402,
+      "columns": 23,
+      "key_roles": {
+        "BL": [
+          "بارنامه"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ]
+      },
+      "unclassified": [
+        "_شرح کالا_",
+        "FP",
+        "Column1",
+        "نوع سفر",
+        "کانتینر20",
+        "کانتینر40",
+        "شماره سفر",
+        "نام کشتی",
+        "پیش بینی رسیدن ",
+        "تلکس",
+        "توضیحات"
+      ]
+    },
+    {
+      "frame": "Abbasi/FP",
+      "source": "Abbasi",
+      "sheet": "FP",
+      "rows": 196,
+      "columns": 48,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ROW",
+          "NO"
+        ]
+      },
+      "unclassified": [
+        "VOYAGE",
+        "SHIP NAME",
+        "FORECAST",
+        "SITUATION",
+        "FP",
+        "BLS 20260731",
+        "TRUE-BLS",
+        "ROW.1",
+        "FP.1",
+        "BLS2026/09/08",
+        "TRUE-BLS.1",
+        "ROW.2",
+        "FP.2",
+        "BLS2026/09/08.1",
+        "TRUE-BLS.2",
+        "ROW.3",
+        "FP.3",
+        "BLS 2026/08/02",
+        "TRUE-BLS.3",
+        "ROW.4",
+        "FP.4",
+        "BLS 20260731.1",
+        "TRUE-BLS.4",
+        "ROW.5",
+        "FP.5",
+        "BLS 20260630",
+        "TRUE-BLS.5",
+        "ROW.6",
+        "FP.6",
+        "BLS 20260630.1",
+        "TRUE-BLS.6",
+        "ROW.7",
+        "FP.7",
+        "BLS 20260731.2",
+        "TRUE-BLS.7",
+        "ROW.8",
+        "FP.8",
+        "BLS 20260731.3",
+        "TRUE-BLS.8",
+        "ROW.9",
+        "FP.9",
+        "BLS 20260601",
+        "TRUE-BLS.9",
+        "MIN",
+        "7d3ea216"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-33 ",
+      "source": "Abbasi",
+      "sheet": "HDM-33 ",
+      "rows": 24,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-34",
+      "source": "Abbasi",
+      "sheet": "HDM-34",
+      "rows": 24,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-35",
+      "source": "Abbasi",
+      "sheet": "HDM-35",
+      "rows": 25,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-36",
+      "source": "Abbasi",
+      "sheet": "HDM-36",
+      "rows": 25,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-37",
+      "source": "Abbasi",
+      "sheet": "HDM-37",
+      "rows": 25,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/HDM-38",
+      "source": "Abbasi",
+      "sheet": "HDM-38",
+      "rows": 24,
+      "columns": 12,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "Unnamed: 1",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9",
+        "Unnamed: 10",
+        "Unnamed: 11"
+      ]
+    },
+    {
+      "frame": "Abbasi/Data",
+      "source": "Abbasi",
+      "sheet": "Data",
+      "rows": 4,
+      "columns": 3,
+      "key_roles": {},
+      "unclassified": [
+        "شرکت ",
+        "نوع سفر"
+      ]
+    },
+    {
+      "frame": "SATA/Sata Tracking",
+      "source": "SATA",
+      "sheet": "Sata Tracking",
+      "rows": 6199,
+      "columns": 25,
+      "key_roles": {
+        "BL": [
+          "بارنامه"
+        ],
+        "REG": [
+          " ثبت سفارش"
+        ]
+      },
+      "unclassified": [
+        "Unnamed: 0",
+        " سفارش",
+        " دریافت اسناد",
+        " ارسال به بانک",
+        " تائیدیه ذینفع ",
+        " مختومه شدن",
+        " عودت اسناد",
+        "کد رهگیری",
+        "کد ابزار پرداخت",
+        "بانک",
+        "_شرح کالا_",
+        "محل تامین ارز",
+        "روش پرداخت",
+        "کارشناس اعتبارات",
+        "توضیحات",
+        "Column1",
+        "Unnamed: 23",
+        "Unnamed: 24"
+      ]
+    },
+    {
+      "frame": "SATA/Data",
+      "source": "SATA",
+      "sheet": "Data",
+      "rows": 13,
+      "columns": 4,
+      "key_roles": {},
+      "unclassified": [
+        "روش پرداخت",
+        "کارشناس اعتبارات",
+        "محل تامین ارز"
+      ]
+    },
+    {
+      "frame": "FX_Transactions_1405/گزارش اخذ سوئيفت",
+      "source": "FX_Transactions_1405",
+      "sheet": "گزارش اخذ سوئيفت",
+      "rows": 31,
+      "columns": 11,
+      "key_roles": {},
+      "unclassified": [
+        "Unnamed: 0",
+        "گزارش ميانگين اخذ سوئيفت سفارشات ارزي ايران خودرو نزد بانكهاي عامل در سال1403 و 1404 :",
+        "Unnamed: 2",
+        "Unnamed: 3",
+        "Unnamed: 4",
+        "Unnamed: 5",
+        "Unnamed: 6",
+        "Unnamed: 7",
+        "Unnamed: 8",
+        "Unnamed: 9"
+      ]
+    },
+    {
+      "frame": "FX_Transactions_1405/خريد جاري1405",
+      "source": "FX_Transactions_1405",
+      "sheet": "خريد جاري1405",
+      "rows": 513,
+      "columns": 28,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "REG": [
+          "ثبت سفارش",
+          "معادل یورویی\n(ثبت سفارش)",
+          "معادل دلار\n(ثبت سفارش)"
+        ]
+      },
+      "unclassified": [
+        "هفته",
+        "ص جلسه",
+        "اتوماسيون",
+        "سفارش",
+        "نام ذینفع",
+        "شرح کالا",
+        "نام بانک",
+        "ريت يورو",
+        "ريت دلار",
+        "ارز خريداري شده",
+        "ارز سوئيفت",
+        "ريت دلار\nسوئيفت",
+        "معادل دلاري\nسوئيفت",
+        "نوع تخصيص"
+      ]
+    },
+    {
+      "frame": "FX_Transactions/Sheet1",
+      "source": "FX_Transactions",
+      "sheet": "Sheet1",
+      "rows": 1743,
+      "columns": 18,
+      "key_roles": {
+        "REG": [
+          "ثبت سفارش"
+        ]
+      },
+      "unclassified": [
+        "سفارش",
+        "نام ذینفع",
+        "شرح کالا",
+        "نام صرافي ",
+        "نام بانک",
+        "معادل یورویی",
+        "اعتبارتخصیص",
+        "لیست هفتگی\nاولویت پرداخت",
+        "اتوماسیون\nلیست هفتگی",
+        "تاييد ذينفع"
+      ]
+    },
+    {
+      "frame": "Sea_Clearance/Sea Clearance",
+      "source": "Sea_Clearance",
+      "sheet": "Sea Clearance",
+      "rows": 1633,
+      "columns": 44,
+      "key_roles": {
+        "CUSTOMS_FILE": [
+          "پرونده ترخیص"
+        ],
+        "BL": [
+          "بارنامه"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ],
+        "COTTAGE": [
+          "کوتاژ"
+        ]
+      },
+      "unclassified": [
+        "شرح کالا",
+        "نوع حمل",
+        "کارشناس ترخیص",
+        "تعرفه",
+        "ماخذ",
+        "نوع حقوق و عوارض گمرکی",
+        "نوع بسته ترخیص شده1",
+        "نوع بسته ترخیص شده2",
+        "نوع بسته ترخیص شده3",
+        "نوع بسته ترخیص شده4",
+        "نوع بسته ترخیص شده5",
+        "نوع بسته ترخیص شده6",
+        "درصد آسیب دیده",
+        "ترخیص درصدی",
+        "ترخیص کامل",
+        "توضیحات"
+      ]
+    },
+    {
+      "frame": "Sea_Clearance/Sheet2",
+      "source": "Sea_Clearance",
+      "sheet": "Sheet2",
+      "rows": 23,
+      "columns": 3,
+      "key_roles": {},
+      "unclassified": [
+        "نوع حقوق و عوارض گمرکی",
+        "کارشناس ترخیص",
+        "نوع سفر"
+      ]
+    },
+    {
+      "frame": "Land_Clearance/Land Clearance",
+      "source": "Land_Clearance",
+      "sheet": "Land Clearance",
+      "rows": 923,
+      "columns": 34,
+      "key_roles": {
+        "EXPORT_ROW_NO": [
+          "ردیف"
+        ],
+        "BL": [
+          "بارنامه"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ],
+        "CUSTOMS_FILE": [
+          "پرونده ترخیص"
+        ],
+        "COTTAGE": [
+          "کوتاژ"
+        ]
+      },
+      "unclassified": [
+        "شرح کالا",
+        "نوع حمل",
+        "کارشناس ترخیص",
+        "تعرفه",
+        "ماخذ",
+        "نوع حقوق و عوارض گمرکی",
+        "درصد آسیب دیده",
+        "ترخیص درصدی",
+        "ترخیص کامل",
+        "توضیحات"
+      ]
+    },
+    {
+      "frame": "Land_Clearance/Data",
+      "source": "Land_Clearance",
+      "sheet": "Data",
+      "rows": 23,
+      "columns": 3,
+      "key_roles": {},
+      "unclassified": [
+        "نوع حقوق و عوارض گمرکی",
+        "کارشناس ترخیص",
+        "نوع سفر"
+      ]
+    },
+    {
+      "frame": "Air_Clearance/Air Clearance",
+      "source": "Air_Clearance",
+      "sheet": "Air Clearance",
+      "rows": 3424,
+      "columns": 29,
+      "key_roles": {
+        "BL": [
+          "بارنامه"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ],
+        "CUSTOMS_FILE": [
+          "پرونده ترخیص"
+        ],
+        "COTTAGE": [
+          "کوتاژ"
+        ]
+      },
+      "unclassified": [
+        "شرح کالا",
+        "نوع حمل",
+        "کارشناس ترخیص",
+        "تعرفه",
+        "ماخذ",
+        "نوع حقوق و عوارض گمرکی",
+        "درصد آسیب دیده",
+        "ترخیص درصدی ",
+        "ترخیص کامل",
+        "توضیحات"
+      ]
+    },
+    {
+      "frame": "Air_Clearance/data",
+      "source": "Air_Clearance",
+      "sheet": "data",
+      "rows": 23,
+      "columns": 3,
+      "key_roles": {},
+      "unclassified": [
+        "نوع حقوق و عوارض گمرکی",
+        "کارشناس ترخیص",
+        "نوع سفر"
+      ]
+    },
+    {
+      "frame": "Customs/Cottage Tracking",
+      "source": "Customs",
+      "sheet": "Cottage Tracking",
+      "rows": 7037,
+      "columns": 23,
+      "key_roles": {
+        "BL": [
+          "بارنامه"
+        ],
+        "COTTAGE": [
+          "کوتاژ"
+        ]
+      },
+      "unclassified": [
+        "Unnamed: 3",
+        "معادل یورویی",
+        "نوع بسته بندی",
+        "وزن خالص",
+        "وزن ناخالص",
+        "مرز ورودی",
+        "گمرک مقصد",
+        "درصد ترخیص 1",
+        "درصد ترخیص 2",
+        "توضیحات",
+        "Unnamed: 22"
+      ]
+    },
+    {
+      "frame": "Customs/Data",
+      "source": "Customs",
+      "sheet": "Data",
+      "rows": 198,
+      "columns": 5,
+      "key_roles": {},
+      "unclassified": [
+        "گمرک",
+        "مرز ورودی",
+        "نوع بسته بندی"
+      ]
+    },
+    {
+      "frame": "Credit_Dept/PURCREDIT",
+      "source": "Credit_Dept",
+      "sheet": "PURCREDIT",
+      "rows": 5060,
+      "columns": 37,
+      "key_roles": {
+        "REG": [
+          "شماره ثبت سفارش"
+        ],
+        "ORDER": [
+          "شماره سفارش"
+        ]
+      },
+      "unclassified": [
+        "مشتری",
+        "سال گشايش",
+        "شرح محموله",
+        "اداره",
+        "کارشناس خرید خارجی",
+        "کارشناس اعتبارات",
+        "مسئول",
+        "نام تامین کننده",
+        "نوع پرداخت",
+        "معادل یوروئی",
+        "بانك عامل شعبه",
+        "درصد گشايش",
+        "پیش پرداخت اعتبار",
+        "اولویت ارزی",
+        "شماره تعرفه",
+        "شماره اعتبار/حواله",
+        "گروه کالایی",
+        "معادل یوروئی2",
+        "ملاحظات",
+        "Column7"
+      ]
+    }
+  ]
+}
