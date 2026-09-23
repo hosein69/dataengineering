@@ -1,0 +1,449 @@
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_cashflow_v29_7.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_cashflow_v29_7.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_cashflow_v29_7.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_cashflow_v29_7.py	2026-09-23 13:21:38.664854880 +0000
+@@ -182,8 +182,29 @@
+ 
+ 
+ def test_of_missing_payment_ids_never_becomes_cash():
++    """OF بدون شماره پرداخت هرگز نباید «گردش نقدی» شود.
++
++    نسخهٔ قبلی این تست با «هیچ رویدادی پذیرفته نشود» این را می‌سنجید. اندازه‌گیری
++    روی فایل واقعی OF نشان داد آن قاعده ۱۰۰٪ ردیف‌ها را با کد UNVERIFIED_EVIDENCE
++    بیرون می‌اندازد و گزارش جریان وجوه کاملاً خالی می‌شود — یعنی تنها منبع موجود
++    کاربر بی‌استفاده می‌ماند. بنابراین همان ناوردای واقعی سنجیده می‌شود، نه یک
++    نمایندهٔ سخت‌گیرانه‌تر از آن: ردیف OF می‌تواند «شاهد منبع» باشد ولی
++    هیچ‌وقت نباید حساب بانکی، گردش حساب یا مانده حساب بسازد.
++    """
+     source=pd.DataFrame([{'CB No.':'R1','Payment':100,'Fx Payment':'EUR','Date of Buying Currency':'1402/07/03'}]*3)
+-    r=build_cashflow(legacy_of(source));assert r['events'].empty;assert len(r['observations'])==9
++    ev=legacy_of(source)
++    assert set(ev['status'])=={'SOURCE_FACT'}
++    assert not ev['from_account'].fillna('').astype(str).str.strip().any()
++    assert not ev['to_account'].fillna('').astype(str).str.strip().any()
++    assert all('شماره پرداخت' not in str(d) for d in ev['document'])
++    r=build_cashflow(ev)
++    assert r['movements'].empty and r['accounts'].empty
++    paid=r['events'][r['events']['kind']=='PAYMENT']
++    assert len(paid)==1                      # سه ردیف یکسان، یک شناسه پایدار
++    assert not str(paid.iloc[0]['from_account'] or '').strip()
++    assert not str(paid.iloc[0]['to_account'] or '').strip()
++    assert 'گزارش مشتق' in paid.iloc[0]['note']
++    assert (r['issues']['code']=='ACCOUNT_DETAIL_GAP').any()
+ 
+ 
+ def test_html_and_excel_safely_escape_and_keep_long_ids():
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_dashboard_startup.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_dashboard_startup.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_dashboard_startup.py	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_dashboard_startup.py	2026-09-23 13:32:09.221138177 +0000
+@@ -0,0 +1,91 @@
++# -*- coding: utf-8 -*-
++"""سرعت بالا آمدن داشبورد.
++
++اندازه‌گیری روی همین بسته (۶ ردیف): اجرای کامل خط لوله با ساخت گزارش ۳٫۵۴
++ثانیه، بدون ساخت گزارش ۱٫۷۳ ثانیه، و خواندن Snapshot منتشرشده ۰٫۰۰۵ ثانیه.
++روی دادهٔ واقعی نسبت این سه بسیار بزرگ‌تر است. ``app/studio.py`` از ابتدا
++Snapshot را اول می‌خواند؛ ``app/dashboard.py`` این کار را نمی‌کرد.
++"""
++from __future__ import annotations
++
++import ast
++import re
++from pathlib import Path
++
++import pandas as pd
++import pytest
++
++ROOT = Path(__file__).resolve().parents[1]
++DASHBOARD = (ROOT / "app" / "dashboard.py").read_text(encoding="utf-8")
++
++
++def test_dashboard_reads_the_published_snapshot_before_running_the_pipeline():
++    assert "def load_published(" in DASHBOARD
++    order = DASHBOARD.index("data = None if _rerun else load_published(ref_date)")
++    assert DASHBOARD.index("data = load_pipeline(ref_date)", order) > order, (
++        "خط لوله فقط باید وقتی اجرا شود که Snapshot منتشرشده‌ای نباشد")
++
++
++def test_explicit_button_still_forces_a_fresh_pipeline_run():
++    assert '_rerun = st.sidebar.button("اجرای مجدد خط لوله"' in DASHBOARD
++    assert "if _rerun:\n    st.cache_data.clear()" in DASHBOARD
++
++
++def test_dashboard_caches_are_bounded():
++    """کش بدون سقف و بدون انقضا، حافظه را در یک نشست طولانی پر می‌کند."""
++    decorators = re.findall(r"@st\.cache_data\(([^)]*)\)", DASHBOARD)
++    assert decorators, "داشبورد باید کش داشته باشد"
++    for d in decorators:
++        assert "max_entries" in d and "ttl" in d, f"کش بی‌سقف: {d}"
++
++
++def test_dashboard_never_materializes_lazy_extras_eagerly():
++    tree = ast.parse(DASHBOARD)
++    for node in ast.walk(tree):
++        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
++                and node.func.id == "dict" and node.args
++                and isinstance(node.args[0], ast.Name)
++                and node.args[0].id == "extras"):
++            pytest.fail("dict(extras) نگاشت تنبل را کامل باز می‌کند و همان کندی برمی‌گردد")
++
++
++# ═════════ محدودکردن دامنه باید تنبل بماند و همچنان اعمال شود ═════════
++
++def test_scoping_stays_lazy_but_is_still_enforced(tmp_path, monkeypatch):
++    monkeypatch.setenv("GSI_DWH_PATH", str(tmp_path / "wh.sqlite"))
++    from gsi.warehouse.service import LazyFrameExtras
++    from gsi.warehouse.store import Warehouse
++    from gsi.studio_core.report_builder import _filtered_process_extras
++
++    wh = Warehouse()
++    wide = pd.DataFrame({"KEY_REG": ["R1", "R2", "R3"], "V": [1, 2, 3]})
++    with wh.run({"reference_date": "2026-09-21"}):
++        fid = wh.frame(wide, "mart", "extras/process_evidence")
++    extras = LazyFrameExtras(wh.path, {"flag": True}, {"process_evidence": fid})
++    assert "process_evidence" not in extras.materialized_keys()
++
++    scoped = _filtered_process_extras(extras, pd.DataFrame({"KEY_REG": ["R1"]}))
++    assert isinstance(scoped, LazyFrameExtras)
++    assert "process_evidence" not in scoped.materialized_keys(), (
++        "فریمی که هیچ نمایی نخواسته نباید همان لحظه از SQLite ساخته شود")
++
++    got = scoped["process_evidence"]
++    assert list(got["KEY_REG"]) == ["R1"], "دامنه باید هنگام دسترسی تنبل هم اعمال شود"
++
++
++def test_already_materialized_frames_are_scoped_too(tmp_path, monkeypatch):
++    monkeypatch.setenv("GSI_DWH_PATH", str(tmp_path / "wh.sqlite"))
++    from gsi.warehouse.service import LazyFrameExtras
++    from gsi.studio_core.report_builder import _filtered_process_extras
++    eager = pd.DataFrame({"KEY_REG": ["R1", "R9"], "V": [1, 9]})
++    extras = LazyFrameExtras(tmp_path / "wh.sqlite", {"eventlog": eager})
++    scoped = _filtered_process_extras(extras, pd.DataFrame({"KEY_REG": ["R1"]}))
++    assert list(scoped["eventlog"]["KEY_REG"]) == ["R1"]
++
++
++def test_plain_dict_extras_still_work_unchanged():
++    from gsi.studio_core.report_builder import _filtered_process_extras
++    extras = {"eventlog": pd.DataFrame({"KEY_REG": ["R1", "R9"]}), "scalar": 3}
++    out = _filtered_process_extras(extras, pd.DataFrame({"KEY_REG": ["R1"]}))
++    assert isinstance(out, dict)
++    assert list(out["eventlog"]["KEY_REG"]) == ["R1"] and out["scalar"] == 3
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_output_integrity.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_output_integrity.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_output_integrity.py	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_output_integrity.py	2026-09-23 13:28:21.815273834 +0000
+@@ -0,0 +1,208 @@
++# -*- coding: utf-8 -*-
++"""ناوردای کیفیت خروجی — RC4.
++
++هر تست اینجا یک نقص **اندازه‌گیری‌شده روی خروجی واقعی** را قفل می‌کند، نه یک
++سلیقهٔ معماری. منبع اندازه‌گیری: بستهٔ RC3 و فایل OF پیوست خودِ بسته.
++"""
++from __future__ import annotations
++
++import io
++import json
++import re
++
++import pandas as pd
++import pytest
++from openpyxl import load_workbook
++
++from gsi.cashflow.engine import build_cashflow
++from gsi.cashflow.inputs import legacy_of
++from gsi.cashflow.report import excel_bytes, html_report, empty_reason
++from gsi.design import tokens as T
++from gsi.studio_core.html_export import build_dynamic_html
++
++
++# ═════════ ۱) هستهٔ HTML چیزی را بی‌اعلام حذف نکند ═════════
++
++def _wide_frame(rows: int = 40, extra: int = 30) -> pd.DataFrame:
++    data = {"KEY_MATERIAL": [f"M{i}" for i in range(rows)],
++            "ORG_DEPT": ["A"] * rows,
++            "مانده تعهد": range(rows)}
++    for j in range(extra):
++        data[f"EVIDENCE_{j}"] = [f"v{j}_{i}" for i in range(rows)]
++    return pd.DataFrame(data)
++
++
++def _report_meta(html: str) -> dict:
++    m = re.search(r"const REPORT_META=(\{.*?\});\n", html, re.S)
++    assert m, "REPORT_META در خروجی نیست"
++    return json.loads(m.group(1))
++
++
++def test_html_keeps_every_row_in_the_payload():
++    df = _wide_frame(rows=137)
++    meta = _report_meta(build_dynamic_html(df, "2026-09-15"))
++    assert meta["payload_rows"] == 137
++    assert meta["embedded_rows"] == 137, "هیچ ردیفی نباید در payload حذف شود"
++
++
++def test_html_declares_every_column_it_left_out():
++    df = _wide_frame()
++    html = build_dynamic_html(df, "2026-09-15")
++    meta = _report_meta(html)
++    assert meta["source_columns"] == len(df.columns)
++    assert meta["payload_columns"] < meta["source_columns"], "این سناریو باید ستون حذف‌شده داشته باشد"
++    excluded = meta["excluded_columns"]
++    assert len(excluded) == meta["source_columns"] - meta["payload_columns"]
++    # فهرست باید دقیق باشد، نه فقط یک عدد
++    assert set(excluded) == {c for c in df.columns if c not in set(excluded)} ^ set(df.columns)
++    # و باید برای انسان هم دیده شود، نه فقط داخل JS
++    assert 'id="gsi_manifest"' in html
++    assert f"{len(excluded):,}" in html
++    for name in excluded[:3]:
++        assert name in html, f"نام ستون حذف‌شده «{name}» در فهرست محتوای خروجی نیست"
++
++
++def test_html_does_not_claim_excel_carries_columns_it_drops():
++    html = build_dynamic_html(_wide_frame(), "2026-09-15")
++    assert "خروجی Excel شامل همه نتایج است" not in html, (
++        "این ادعا از نظر ستون نادرست بود: دکمه Excel فقط ستون‌های تب فعال را می‌دهد")
++    assert "ستون‌های همین تب" in html
++
++
++def test_html_discloses_fx_ledger_truncation():
++    # دفتر ارزی پیش از تعبیه به دامنهٔ همان گزارش محدود می‌شود، پس KEY_REG باید
++    # در هر دو طرف باشد؛ وگرنه اصلاً چیزی برای بریدن نمی‌ماند.
++    df = _wide_frame(rows=400)
++    df["KEY_REG"] = [f"R{i}" for i in range(400)]
++    ledger = pd.DataFrame({"KEY_REG": [f"R{i}" for i in range(400)],
++                           "FX_MONEY_STAGE": ["ALLOCATION"] * 400,
++                           "FX_NTSW_BALANCE": range(400)})
++    meta = _report_meta(build_dynamic_html(df, "2026-09-15",
++                                           process_extras={"fx_ledger": ledger}))
++    trunc = {t["section"]: t for t in meta["truncated_sections"]}
++    assert "fx_ledger" in trunc, "برش ۲۵۰ ردیفی دفتر ارزی باید اعلام شود"
++    assert trunc["fx_ledger"]["source_rows"] == 400
++    assert trunc["fx_ledger"]["embedded_rows"] == 250
++
++
++# ═════════ ۲) OF: نه گزارش خالی، نه دوبارشماری ═════════
++
++def _of_frame() -> pd.DataFrame:
++    """دو CB با دانهٔ مخلوط، دقیقاً مثل فایل واقعی.
++
++    CB1: سه بارنامه، یک ارزش ثبت سفارش و یک پرداخت که در هر سه ردیف تکرار شده.
++    CB2: یک بارنامه.
++    """
++    rows = []
++    for bl, blv in [("BL1", "100"), ("BL2", "200"), ("BL3", "300")]:
++        rows.append({"CB No.": "CB1", "CB Date": "1402/02/25", "CB Value": "1000", "Fx": "EUR",
++                     "BL": bl, "BL Value": blv, "Date of Sending Documents": "1403-03-09",
++                     "Payment": "900", "Fx Payment": "EUR", "Date of Buying Currency": "1402/07/03",
++                     "Payment Number": "", "OF Deadline": "1403/04/07",
++                     "Punishment Value": "50", "Punishment Fx": "EUR",
++                     "Punishment Date to Bank": "1403/05/03",
++                     "Date of Finance Receipt": "1403-04-19", "Date of Clearance": "1403-04-19"})
++    rows.append({"CB No.": "CB2", "CB Date": "1402/03/01", "CB Value": "700", "Fx": "EUR",
++                 "BL": "BL9", "BL Value": "700", "Date of Sending Documents": "1403-03-20",
++                 "Payment": "700", "Fx Payment": "EUR", "Date of Buying Currency": "1402/08/01",
++                 "Payment Number": "PN-9", "OF Deadline": "1403/05/07",
++                 "Punishment Value": "", "Punishment Fx": "", "Punishment Date to Bank": "",
++                 "Date of Finance Receipt": "", "Date of Clearance": ""})
++    return pd.DataFrame(rows)
++
++
++def _summary(result: dict, case: str) -> pd.Series:
++    s = result["summary"]
++    return s[s["case_id"] == case].iloc[0]
++
++
++def test_of_workbook_is_not_rejected_wholesale():
++    """قبل از این اصلاح، ۱۰۰٪ ردیف‌های OF واقعی UNVERIFIED_EVIDENCE می‌شدند."""
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    assert not r["events"].empty, "گزارش نباید کاملاً خالی باشد"
++    assert "UNVERIFIED_EVIDENCE" not in set(r["issues"]["code"])
++
++
++def test_of_case_level_columns_are_not_fanned_out():
++    """ارزش ثبت سفارش در سه ردیف تکرار شده؛ جمع آن باید ۱۰۰۰ بماند نه ۳۰۰۰."""
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    row = _summary(r, "CB1")
++    assert row["registration_value"] == pytest.approx(1000)
++    assert row["paid"] == pytest.approx(900), "پرداخت تکرارشده نباید سه برابر شود"
++    assert row["fees"] == pytest.approx(50), "جریمهٔ سطح CB نباید سه برابر شود"
++
++
++def test_of_row_level_columns_keep_their_own_grain():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    assert _summary(r, "CB1")["shipment_value"] == pytest.approx(600)  # 100+200+300
++    assert _summary(r, "CB2")["shipment_value"] == pytest.approx(700)
++
++
++def test_of_keeps_row_traceability_after_dedup():
++    ev = legacy_of(_of_frame())
++    reg = ev[(ev["kind"] == "REGISTRATION") & (ev["case_id"] == "CB1")]
++    assert len(reg) == 1
++    assert "ردیف‌های منبع: 2, 3, 4" in reg.iloc[0]["note"]
++
++
++def test_of_never_creates_bank_movements():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    assert r["movements"].empty and r["accounts"].empty
++    assert (r["issues"]["code"] == "ACCOUNT_DETAIL_GAP").any()
++
++
++def test_of_names_the_missing_identifier_column():
++    ev = legacy_of(_of_frame())
++    pay = ev[(ev["kind"] == "PAYMENT") & (ev["case_id"] == "CB1")].iloc[0]
++    assert "Payment Number" in pay["note"], "خالی‌بودن شماره پرداخت باید اعلام شود"
++    paid2 = ev[(ev["kind"] == "PAYMENT") & (ev["case_id"] == "CB2")].iloc[0]
++    assert paid2["document"] == "PN-9"
++
++
++# ═════════ ۳) بخش خالی باید علت داشته باشد ═════════
++
++def test_empty_html_section_states_why_not_just_that_it_is_empty():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    html = html_report(r, excel_bytes(r))
++    assert r["rate_register"].empty
++    assert empty_reason("rate_register") in html
++    assert "navgroup" in html, "بخش‌های بدون شاهد باید زیر عنوان جدا گروه شوند"
++    assert 'class="blank"' in html
++
++
++def test_empty_excel_sheet_states_why_instead_of_bare_headers():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    wb = load_workbook(io.BytesIO(excel_bytes(r)))
++    ws = wb["شناسنامه نرخ‌ها"]
++    assert ws.max_row == 2, "شیت خالی باید یک ردیف توضیح داشته باشد"
++    assert [c.value for c in ws[1]][:2] == ["وضعیت", "علت"]
++    assert ws.cell(2, 2).value == empty_reason("rate_register")
++
++
++def test_filled_sections_come_before_empty_ones():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    html = html_report(r, excel_bytes(r))
++    tabs = re.findall(r'<button role="tab" class="([a-z]*)"', html)
++    first_blank = tabs.index("blank")
++    assert "blank" not in tabs[:first_blank]
++    assert all(t == "blank" for t in tabs[first_blank:])
++
++
++def test_cashflow_report_uses_the_package_font_stack():
++    r = build_cashflow(legacy_of(_of_frame()), as_of="2026-08-31")
++    html = html_report(r, excel_bytes(r))
++    assert T.FONT_STACK in html
++    assert "font:14px Tahoma,Arial,sans-serif" not in html
++
++
++def test_manifest_is_scope_disclosure_not_a_data_quality_metric():
++    """فهرست محتوا نباید واژگان «کیفیت داده» را وارد نمای عملیاتی کند.
++
++    قرارداد مخاطب (test_v27_audience_and_voice) می‌گوید سنجه‌های کیفیت داده در
++    نمای کارشناس/مدیر فقط تردید می‌سازند و جایشان شیت سلامت سیستم است. این بخش
++    یک سنجهٔ کیفیت نیست؛ اعلام دامنهٔ همین فایل است و باید همیشه دیده شود.
++    """
++    html = build_dynamic_html(_wide_frame(), "2026-09-15")
++    for banned in ("پوشش داده", "درصد صحت", "شکاف اسکیما", "سلامت سورس", "کیفیت داده"):
++        assert banned not in html, f"واژه «{banned}» قرارداد مخاطب را می‌شکند"
++    assert 'id="gsi_manifest"' in html
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_warehouse_reset.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_warehouse_reset.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/tests/test_opus_rc4_warehouse_reset.py	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/tests/test_opus_rc4_warehouse_reset.py	2026-09-23 13:27:05.551767275 +0000
+@@ -0,0 +1,104 @@
++# -*- coding: utf-8 -*-
++"""پاک‌کردن و ساخت دوبارهٔ انبار داده.
++
++تا پیش از این هیچ مسیر پشتیبانی‌شده‌ای برای «از اول ساختن» نبود و تنها راه،
++پاک‌کردن دستی فایل بود؛ کارِ دستی کش فریم و قفل نویسنده را جا می‌گذاشت.
++"""
++from __future__ import annotations
++
++import sqlite3
++import subprocess
++import sys
++from pathlib import Path
++
++import pandas as pd
++import pytest
++
++from gsi.warehouse.store import Warehouse
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def _seeded(tmp_path: Path) -> Warehouse:
++    wh = Warehouse(tmp_path / "wh.sqlite")
++    with wh.run({"kind": "test"}):
++        wh.frame(pd.DataFrame({"a": [1, 2, 3]}), "standardized", "demo")
++    return wh
++
++
++def test_reset_refuses_without_explicit_confirmation(tmp_path):
++    wh = _seeded(tmp_path)
++    with pytest.raises(ValueError):
++        wh.reset()
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 1
++
++
++def test_reset_refuses_a_database_that_is_not_a_gsi_warehouse(tmp_path):
++    alien = tmp_path / "alien.sqlite"
++    with sqlite3.connect(alien) as c:
++        c.execute("CREATE TABLE payroll(id INTEGER)")
++        c.execute("INSERT INTO payroll VALUES (1)")
++    wh = Warehouse(alien, initialize=False)
++    with pytest.raises(ValueError):
++        wh.reset(confirm=True)
++    with sqlite3.connect(alien) as c:
++        assert c.execute("SELECT count(*) FROM payroll").fetchone()[0] == 1
++
++
++def test_reset_backs_up_before_deleting(tmp_path):
++    wh = _seeded(tmp_path)
++    report = wh.reset(confirm=True)
++    backup = Path(report["backup"])
++    assert backup.exists()
++    with sqlite3.connect(backup) as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 1
++
++
++def test_reset_clears_runs_frames_cache_and_lock(tmp_path):
++    wh = _seeded(tmp_path)
++    cache = wh.path.with_suffix(wh.path.suffix + ".frame_cache")
++    lock = wh.path.with_suffix(".writer.lock")
++    assert cache.is_dir() and lock.exists()
++    wh.reset(confirm=True, keep_backup=False)
++    assert not cache.exists(), "کش فریم باید پاک شود"
++    assert not lock.exists(), "قفل نویسنده نباید جا بماند"
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 0
++        assert c.execute("SELECT count(*) FROM wh_frame").fetchone()[0] == 0
++        assert c.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
++
++
++def test_warehouse_is_usable_again_right_after_reset(tmp_path):
++    wh = _seeded(tmp_path)
++    wh.reset(confirm=True, keep_backup=False)
++    with wh.run({"kind": "rebuild"}):
++        wh.frame(pd.DataFrame({"b": [9]}), "standardized", "rebuilt")
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 1
++        assert c.execute("SELECT name FROM wh_frame").fetchone()[0] == "rebuilt"
++
++
++def test_reset_on_a_missing_file_creates_an_empty_warehouse(tmp_path):
++    wh = Warehouse(tmp_path / "absent.sqlite", initialize=False)
++    report = wh.reset(confirm=True)
++    assert report["existed"] is False and report["backup"] is None
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 0
++
++
++def test_cli_requires_yes_and_reports_what_it_removed(tmp_path):
++    wh = _seeded(tmp_path)
++    env = {"GSI_DWH_PATH": str(wh.path), "PYTHONPATH": str(ROOT), "PYTHONUTF8": "1"}
++    import os
++    env = {**os.environ, **env}
++    dry = subprocess.run([sys.executable, "-m", "gsi.warehouse", "reset"],
++                         capture_output=True, text=True, cwd=ROOT, env=env)
++    assert dry.returncode == 2 and "--yes" in dry.stdout
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 1
++    done = subprocess.run([sys.executable, "-m", "gsi.warehouse", "reset", "--yes"],
++                          capture_output=True, text=True, cwd=ROOT, env=env)
++    assert done.returncode == 0 and '"recreated": true' in done.stdout
++    with wh.db() as c:
++        assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 0

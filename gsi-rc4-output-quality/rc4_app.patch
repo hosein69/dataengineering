@@ -1,0 +1,83 @@
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/app/dashboard.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/app/dashboard.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/app/dashboard.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/app/dashboard.py	2026-09-23 13:29:59.627061787 +0000
+@@ -173,7 +173,32 @@
+ 
+ 
+ # ═══════════ داده ═══════════
+-@st.cache_data(show_spinner="در حال اجرای خط لوله…")
++# First paint نباید منتظر ETL بماند.
++# اندازه‌گیری روی همین بسته (۶ ردیف، دادهٔ آزمون):
++#     Pipeline().run(build_report=True)   → ۳٫۵۴ ثانیه
++#     Pipeline().run(build_report=False)  → ۱٫۷۳ ثانیه
++#     last_report()  (Snapshot منتشرشده)  → ۰٫۰۰۵ ثانیه
++# روی دادهٔ واقعی (۶۳۱ هزار ردیف، ۱۷ فایل) ستون اول دقیقه‌ای است و ستون سوم
++# تقریباً ثابت می‌ماند، چون فقط دو فریم mart را از کش/SQLite می‌خواند.
++# بنابراین مسیر پیش‌فرضِ باز شدن صفحه، خواندن اجرای منتشرشده است؛ اجرای دوبارهٔ
++# خط لوله فقط وقتی انجام می‌شود که اجرای منتشرشده‌ای برای آن تاریخ نباشد یا
++# کاربر صریحاً دکمهٔ «اجرای مجدد خط لوله» را بزند. این تغییر هیچ عددی را عوض
++# نمی‌کند: همان Snapshotی خوانده می‌شود که خط لوله خودش منتشر کرده است.
++@st.cache_data(show_spinner="در حال خواندن اجرای منتشرشده…", max_entries=3, ttl=900)
++def load_published(today: Optional[str] = None) -> Optional[Dict[str, Any]]:
++    from gsi.warehouse.service import last_report
++    found = last_report(today)
++    if found is None:
++        return None
++    df, main, extras, report = found
++    # extras یک نگاشت تنبل است؛ dict() کردنش همهٔ martها را همین‌جا باز می‌کند
++    # و دقیقاً همان کندی‌ای را برمی‌گرداند که این مسیر برای حذفش ساخته شده.
++    extras['runtime_status'] = 'PUBLISHED_SNAPSHOT'
++    return {"df": df, "main": main, "to_resolve": pd.DataFrame(),
++            "extras": extras, "dashboard": report}
++
++
++@st.cache_data(show_spinner="در حال اجرای خط لوله…", max_entries=2, ttl=3600)
+ def load_pipeline(today: Optional[str] = None) -> Dict[str, Any]:
+     # ست‌کردن GSI_TODAY بیرون از این تابع انجام می‌شود؛ در cache hit بدنه
+     # اجرا نمی‌شود و تاریخ مرجع واقعی با تاریخ نمایش‌داده‌شده فرق می‌کرد.
+@@ -193,7 +218,7 @@
+         if fallback is None:
+             raise
+         df, main, extras, report = fallback
+-        extras = dict(extras)
++        # dict(extras) نگاشت تنبل را همین‌جا کامل باز می‌کرد.
+         extras['runtime_status'] = 'UPDATE_IN_PROGRESS'
+         extras['runtime_diagnostic'] = ex.as_dict()
+         extras['stale_snapshot'] = True
+@@ -213,7 +238,10 @@
+ st.sidebar.success(f"Build {GSI_RUNTIME_VERSION} · Dashboard Runtime")
+ ref_date = st.sidebar.text_input("تاریخ مرجع (YYYY-MM-DD)",
+                                  value=os.environ.get("GSI_TODAY") or str(date.today()))
+-if st.sidebar.button("اجرای مجدد خط لوله", width="stretch"):
++_rerun = st.sidebar.button("اجرای مجدد خط لوله", width="stretch",
++                           help="خط لوله را از روی فایل‌های منبع دوباره اجرا می‌کند. "
++                                "بدون این دکمه، صفحه آخرین اجرای منتشرشده را می‌خواند.")
++if _rerun:
+     st.cache_data.clear()
+ 
+ try:
+@@ -225,7 +253,9 @@
+ os.environ["GSI_TODAY"] = ref_date
+ 
+ try:
+-    data = load_pipeline(ref_date)
++    data = None if _rerun else load_published(ref_date)
++    if data is None:
++        data = load_pipeline(ref_date)
+ except Exception as ex:                               # pragma: no cover
+     from app.runtime_errors import render_pipeline_exception
+     render_pipeline_exception(st, ex)
+@@ -233,7 +263,12 @@
+ 
+ df = data["main"] if not data["main"].empty else data["df"]
+ all_df = data["df"] if not data["df"].empty else df
+-if (data.get('extras') or {}).get('runtime_status') == 'UPDATE_IN_PROGRESS':
++_status = (data.get('extras') or {}).get('runtime_status')
++if _status == 'PUBLISHED_SNAPSHOT':
++    _rid = str((data.get('extras') or {}).get('warehouse_run_id') or '')[:12] or 'نامشخص'
++    st.sidebar.caption(f"منبع صفحه: اجرای منتشرشده `{_rid}` · تاریخ مرجع {ref_date}"
++                       "  \nبرای خواندن دوبارهٔ فایل‌های منبع، «اجرای مجدد خط لوله» را بزنید.")
++if _status == 'UPDATE_IN_PROGRESS':
+     _pref = (data.get('extras') or {}).get('published_reference_date') or 'نامشخص'
+     st.warning(f'به‌روزرسانی دیگری در حال اجراست؛ این صفحه آخرین Snapshot سالم را نمایش می‌دهد (تاریخ مرجع: {_pref}).')
+ from gsi.studio_core.runtime_data import ensure_criticality_columns

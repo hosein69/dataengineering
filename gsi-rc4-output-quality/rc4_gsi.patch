@@ -1,0 +1,843 @@
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/cashflow/inputs.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/cashflow/inputs.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/cashflow/inputs.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/cashflow/inputs.py	2026-09-23 13:23:45.199972919 +0000
+@@ -1,4 +1,5 @@
+ """Explicit input contracts and conservative bridges from legacy report snapshots."""
++from hashlib import sha256
+ from pathlib import Path
+ import pandas as pd
+ from .engine import EVENT_COLUMNS, LINK_COLUMNS, RATE_COLUMNS, MEASUREMENT_COLUMNS, RULE_COLUMNS, text, day
+@@ -17,17 +18,86 @@
+     raise ValueError('شیت Events یا ساختار شناخته‌شده OF موجود نیست')
+ 
+ 
++#: نگاشت ستون‌های OF به رویدادهای دارای مبلغ.
++#: (kind, ستون مبلغ, ستون ارز, ستون تاریخ, ستون سند, دانه)
++#: دانه از روی خود فایل واقعی اندازه‌گیری شده است، نه از روی حدس:
++#:   CB Value / CB Date / Fx / Punishment* در هر CB ثابت‌اند و در همهٔ ردیف‌های
++#:   همان CB تکرار می‌شوند؛ BL / BL Value / تاریخ ارسال اسناد در سطح ردیف‌اند.
++OF_VALUED = [('PAYMENT','Payment','Fx Payment','Date of Buying Currency','Payment Number','case'),
++             ('SHIPMENT','BL Value','Fx','Date of Sending Documents','BL','bl'),
++             ('REGISTRATION','CB Value','Fx','CB Date','CB No.','case'),
++             ('FEE','Punishment Value','Punishment Fx','Punishment Date to Bank','CB No.','case')]
++#: مراحلی که OF فقط تاریخ‌شان را ثبت می‌کند. موتور برای این نوع‌ها مبلغ لازم ندارد،
++#: پس ثبت‌شان «اختراع مبلغ» نیست و پیوستگی فرایند را از همان منبع می‌سازد.
++OF_DATED = [('BANK_DOCS','Date of Finance Receipt','دریافت اسناد مالی','bl'),
++            ('CLEARANCE','Date of Clearance','ترخیص','bl')]
++
++_OF_NOTE = ('گزارش مشتق تخصیص است، نه دفتر بانکی: حساب بانکی و سند اصلی در آن نیست. '
++            'به همین دلیل SOURCE_FACT ثبت می‌شود و گردش حساب نمی‌سازد. '
++            'ارز بارنامه نیازمند تأیید مستقل است.')
++
++
+ def legacy_of(df):
+-    """OF is a derived allocation report, not a bank journal. Never invent payment IDs."""
+-    rows=[]
++    """OF is a derived allocation report, not a bank journal. Never invent payment IDs.
++
++    ## دو نقصِ اندازه‌گیری‌شده که اینجا بسته می‌شود
++
++    **۱) گزارش کاملاً خالی.** موتور فقط ``POSTED`` و ``SOURCE_FACT`` را قابل
++    احتساب می‌داند و ``document`` خالی را رد می‌کند. نسخهٔ قبلی این تابع
++    ``status='OBSERVED'`` با ``document=''`` می‌ساخت، بنابراین **۱۰۰٪** ردیف‌های
++    فایل واقعی OF با کد ``UNVERIFIED_EVIDENCE`` بیرون می‌افتادند و شیت
++    «رویدادهای پذیرفته‌شده» صفر ردیف داشت. ردیف OF یک شاهد منبع مستند است
++    (نه یک ثبت بانکی)، پس جای درستش ``SOURCE_FACT`` با ارجاع سندی است که خود
++    فایل دارد: شماره پرداخت، بارنامه یا شماره ثبت سفارش. هیچ شناسه‌ای ساخته
++    نمی‌شود؛ اگر ستون سند خالی باشد، مرجع ردیف فایل ثبت می‌شود و در یادداشت
++    صریحاً گفته می‌شود کدام ستون خالی بوده است.
++
++    **۲) دوبار‌شماری ناشی از دانهٔ مخلوط (fan-out).** OF یک گزارش تخت است که
++    ستون‌های سطح CB را در کنار ستون‌های سطح بارنامه می‌گذارد. اندازه‌گیری روی
++    فایل واقعی: ``CB1`` پنج ردیف دارد و ``CB Value`` در هر پنج ردیف تکرار شده
++    است. ساخت یک رویداد به‌ازای هر ردیف یعنی ارزش ثبت سفارش ۵ برابر شود
++    (۶۰٬۷۳۷ → ۳۰۳٬۶۸۶). بنابراین شناسهٔ رویداد از **محتوا** ساخته می‌شود نه از
++    شمارهٔ ردیف: تکرارِ یک واقعیتِ واحد در چند ردیف، یک رویداد است. شماره‌های
++    ردیفِ مشارکت‌کننده در یادداشت حفظ می‌شوند تا ردیابی از بین نرود.
++    """
++    events={}
+     for i,r in df.iterrows():
+-        for kind,amt,cur,dt in [('PAYMENT','Payment','Fx Payment','Date of Buying Currency'),
+-                                ('SHIPMENT','BL Value','Fx','Date of Sending Documents'),
+-                                ('REGISTRATION','CB Value','Fx','CB Date')]:
+-            rows.append(dict(event_id=f'OF:row:{i+2}:{kind}',case_id=text(r.get('CB No.')),bl_id=text(r.get('BL')),
+-                kind=kind,date=text(r.get(dt)),amount=text(r.get(amt)),currency=text(r.get(cur)),
+-                source=f'OF / row {i+2}',document='',status='OBSERVED',
+-                due_date=text(r.get('OF Deadline')),note='گزارش مشتق؛ شماره پرداخت/حساب و سند اصلی موجود نیست. ارز بارنامه نیازمند تأیید مستقل است.'))
++        case=text(r.get('CB No.'));bl=text(r.get('BL'));row_no=i+2
++        deadline=text(r.get('OF Deadline'))
++
++        def add(kind,scope,amount,currency,when,doc_col,note_extra=''):
++            ref=text(r.get(doc_col)) if doc_col else ''
++            scoped_bl=bl if scope=='bl' else ''
++            # مهلت در فایل واقعی در سطح ردیف/بارنامه تغییر می‌کند، پس فقط روی
++            # رویداد بارنامه‌ای می‌نشیند؛ روی رویداد سطح CB باعث تکثیر می‌شد.
++            due=deadline if scope=='bl' and kind=='SHIPMENT' else ''
++            key='|'.join([case,scoped_bl,kind,text(amount),text(currency),text(when),ref,due])
++            eid='OF:'+sha256(key.encode('utf-8')).hexdigest()[:24]
++            prev=events.get(eid)
++            if prev is not None:
++                prev['_rows'].append(row_no);return
++            missing=('' if ref or not doc_col
++                     else f' ستون «{doc_col}» در این ردیف خالی است؛ شناسه‌ای ساخته نشد.')
++            events[eid]=dict(event_id=eid,source_event_id=key,case_id=case,bl_id=scoped_bl,
++                kind=kind,date=text(when),amount=text(amount),currency=text(currency),
++                source='OF',document=ref,status='SOURCE_FACT',due_date=due,
++                note=(_OF_NOTE+missing+note_extra).strip(),_rows=[row_no])
++
++        for kind,amt,cur,dt,doc,scope in OF_VALUED:
++            add(kind,scope,r.get(amt),r.get(cur),r.get(dt),doc)
++        for kind,dt,label,scope in OF_DATED:
++            if not text(r.get(dt)):continue
++            add(kind,scope,'','',r.get(dt),'CB No.',
++                f' {label}: OF فقط تاریخ این مرحله را دارد؛ مبلغی برای آن در منبع نیست.')
++
++    rows=[]
++    for e in events.values():
++        refs=sorted(set(e.pop('_rows')))
++        shown=', '.join(str(n) for n in refs[:12])+('، …' if len(refs)>12 else '')
++        e['source']=f'OF / {len(refs)} ردیف'
++        e['note']=f"{e['note']} ردیف‌های منبع: {shown}."
++        if not e['document']:e['document']=f'OF:rows:{refs[0]}'
++        rows.append(e)
+     return pd.DataFrame(rows,columns=EVENT_COLUMNS)
+ 
+ 
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/cashflow/report.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/cashflow/report.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/cashflow/report.py	2026-09-23 09:46:20.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/cashflow/report.py	2026-09-23 13:19:56.655093600 +0000
+@@ -13,6 +13,36 @@
+         'links':'مسیر مستند پول','movements':'گردش حساب','valuation':'ارزش‌گذاری تاریخی','timeline':'زنجیره اسناد',
+         'measurements':'Snapshot سامانه‌ها','reconciliation':'تطبیق دفتر و سامانه','rate_register':'شناسنامه نرخ‌ها','rule_register':'شناسنامه قواعد',
+         'deadlines':'مهلت‌های اعلامی','observations':'شواهد نیازمند تکمیل','issues':'مغایرت‌ها','source_diagnostics':'تشخیص تعارض سورس DWH','source_data':'داده ورودی اصلی'}
++#: چرا یک بخش خالی است. «خالی» یعنی شاهدِ لازم در منبع نبود، نه اینکه آن مرحله
++#: انجام نشده باشد. بدون این جمله، کاربر یک تبِ صفرردیفی را «نبودِ عملیات»
++#: می‌خواند و این دقیقاً همان اشتباهِ تصمیم است که باید جلویش گرفته شود.
++EMPTY_REASONS={
++ 'chain':'هیچ پرونده‌ای با شاهد قابل احتساب در این محدوده نیست.',
++ 'periods':'رویداد نقدی پذیرفته‌شده‌ای با تاریخ معتبر برای تجمیع ماهانه وجود ندارد.',
++ 'summary':'رویدادی با کد ثبت سفارش و ارز مشخص پذیرفته نشد.',
++ 'documents':'ستون سفارش یا بارنامه در شواهد پذیرفته‌شده پر نبود.',
++ 'conversions':'تبدیل ارز فقط با دو سند هم‌پرونده/هم‌تاریخ (FX_BUY و FX_SELL با group_id یکسان) ساخته می‌شود؛ چنین جفتی در منبع نبود.',
++ 'accounts':'منبع، شمارهٔ حساب «:OWN» ندارد؛ بدون حساب، منابع و مصارف ساخته نمی‌شود.',
++ 'links':'جدول ارتباط‌های مستند (Links) در ورودی نبود؛ ارتباط حدسی ساخته نمی‌شود.',
++ 'movements':'گردش حساب به رویداد نقدیِ دارای حساب مبدأ و مقصد نیاز دارد؛ شواهد این منبع حساب بانکی ندارند.',
++ 'valuation':'نرخ تأییدشده برای ارزش‌گذاری تاریخی موجود نیست؛ بدون نرخ، تبدیل انجام نمی‌شود.',
++ 'timeline':'رویداد دارای تاریخ معتبری برای ساخت زنجیره اسناد وجود ندارد.',
++ 'measurements':'مانده‌ای از سامانه‌ها (Snapshot) در ورودی ثبت نشده است.',
++ 'reconciliation':'تطبیق به هر دو طرف نیاز دارد: مانده گزارش‌شده سامانه و مانده دفتر رویداد؛ یکی از دو طرف موجود نیست.',
++ 'rate_register':'هیچ نرخ تأییدشده‌ای وارد نشده است؛ نرخ بدون تأیید در محاسبه به کار نمی‌رود.',
++ 'rule_register':'جدول قواعد (بخشنامه/مهلت) تأییدشده وارد نشده است؛ مهلت قانونی فرض نمی‌شود.',
++ 'deadlines':'مهلتی در ستون OF Deadline یا قواعد وارد نشده است.',
++ 'observations':'همهٔ شواهد قابل احتساب بودند؛ موردی برای تکمیل نماند.',
++ 'issues':'کنترل‌های اجراشده موردی ثبت نکردند.',
++ 'source_diagnostics':'تعارض سورسی در انبار داده گزارش نشد.',
++ 'source_data':'داده ورودی اصلی همراه این گزارش ذخیره نشده است.'}
++DEFAULT_EMPTY_REASON='شاهد لازم برای ساخت این بخش در منابع ورودی وجود نداشت.'
++
++
++def empty_reason(key):
++    return EMPTY_REASONS.get(key, DEFAULT_EMPTY_REASON)
++
++
+ LABELS={'matched_in_shipment_currency':'وجه مرتبط به ارز بارنامه','unfunded_shipment':'بارنامه بدون وجه مرتبط','warehouse_evidence':'شاهد انبار','rate_regime':'رژیم نرخ','reference_rate':'نرخ مرجع','reference_difference':'اختلاف با نرخ مرجع؛ نه سود قطعی','period':'ماه میلادی','fx_in':'ورودی تبدیل ارز','fx_out':'خروجی تبدیل ارز','case_id':'کد ثبت سفارش / شناسه دفتر مستقل','order_id':'سفارش','bl_id':'بارنامه','currency':'ارز','paid':'پرداخت',
+  'registration_value':'ارزش PI/ثبت تجاری','allocation_requested':'مبلغ درخواست تخصیص','funding':'تأمین وجه','purchased':'ارز خریداری‌شده','refund':'برگشت وجه','fees':'کارمزد',
+  'allocation':'تخصیص مصوب','allocation_used':'مصرف تخصیص','allocation_remaining':'مانده تخصیص ثبت‌شده',
+@@ -59,7 +89,11 @@
+             # Full-precision Decimal source remains in HTML; Excel supports 15 significant digits.
+             for col in df:
+                 df[col]=df[col].map(lambda v:float(v) if isinstance(v,Decimal) and len(v.as_tuple().digits)<=15 else (str(v) if isinstance(v,Decimal) else v))
+-            if not len(df.columns):df=pd.DataFrame({'وضعیت':['داده قابل احتساب موجود نیست']})
++            if df.empty:
++                # شیت با فقط سرستون، برای کاربر «خرابی» است. علت را می‌نویسیم.
++                df=pd.DataFrame({'وضعیت':['شاهدی برای این بخش ساخته نشد'],
++                                 'علت':[empty_reason(key)],
++                                 'ستون‌های این بخش':[' · '.join(str(LABELS.get(str(c),c)) for c in df.columns) or '—']})
+             df.rename(columns=LABELS).to_excel(writer,sheet_name=title[:31],index=False)
+         for ws in writer.book:
+             _style_sheet(ws);ws.sheet_view.rightToLeft=True
+@@ -75,11 +109,19 @@
+     meta=result['meta']; tables=[]; buttons=[]
+     preferred=['summary','chain','reconciliation','deadlines','events','measurements','observations','issues']
+     ordered=preferred+[k for k in TITLES if k not in preferred]
++    present=[k for k in ordered if result.get(k) is not None]
++    # بخش‌های بدون شاهد حذف نمی‌شوند (سند ممیزی باید کامل بماند) ولی جلوی
++    # بخش‌های دارای داده را هم نمی‌گیرند: به انتهای فهرست و زیر یک عنوان جدا می‌روند.
++    filled=[k for k in present if len(result[k])>0]
++    blank=[k for k in present if len(result[k])==0]
++    ordered=filled+blank
+     for key in ordered:
+         df=result.get(key)
+         if df is None:continue
+         i=len(tables); title=TITLES[key]
+-        buttons.append(f'<button role="tab" aria-controls="pane{i}" aria-selected="{str(i==0).lower()}" onclick="tab({i})">{escape(title)}<span>{len(df)}</span></button>')
++        if blank and key==blank[0]:
++            buttons.append(f'<div class="navgroup">بخش‌های بدون شاهد ({len(blank)})</div>')
++        buttons.append(f'<button role="tab" class="{"blank" if df.empty else ""}" aria-controls="pane{i}" aria-selected="{str(i==0).lower()}" onclick="tab({i})">{escape(title)}<span>{len(df)}</span></button>')
+         heads=''.join('<th scope="col">'+escape(LABELS.get(str(c),str(c)))+'</th>' for c in df.columns)
+         rows=[]
+         for row in df.to_dict('records'):
+@@ -94,14 +136,17 @@
+                 if col=='status':cell='<span class="fin-status '+tone+'">'+cell+'</span>'
+                 cells.append('<td>'+cell+'</td>')
+             rows.append('<tr data-case="'+escape(str(row.get('case_id','')),quote=True)+'" data-currency="'+escape(str(row.get('currency','')),quote=True)+'">'+''.join(cells)+'</tr>')
+-        note='دانه: کد ثبت سفارش × ارز؛ مبلغ‌ها قابل جمع بین ارزها نیستند.' if key=='summary' else 'مانده سامانه، مشاهده است؛ اختلاف آن با دفتر، به‌تنهایی اثبات رفع تعهد نیست.' if key=='reconciliation' else 'شواهد و شناسه‌های ممیزی، بدون حذف ستون‌های اصلی.'
+-        tables.append(f'<section role="tabpanel" id="pane{i}" {"hidden" if i else ""}><div class="section-title"><div><h2>{escape(title)}</h2><p>{note}</p></div><span class="count">{len(df)} ردیف</span></div><div class="scroll"><table><thead><tr>{heads}</tr></thead><tbody>{"".join(rows)}</tbody></table></div><p class="empty" {"" if df.empty else "hidden"}>شاهدی در این محدوده نمایش داده نمی‌شود؛ این به معنی انجام‌نشدن مرحله نیست.</p></section>')
++        note=empty_reason(key) if df.empty else ('دانه: کد ثبت سفارش × ارز؛ مبلغ‌ها قابل جمع بین ارزها نیستند.' if key=='summary' else 'مانده سامانه، مشاهده است؛ اختلاف آن با دفتر، به‌تنهایی اثبات رفع تعهد نیست.' if key=='reconciliation' else 'شواهد و شناسه‌های ممیزی، بدون حذف ستون‌های اصلی.')
++        tables.append(f'<section role="tabpanel" id="pane{i}" {"hidden" if i else ""}><div class="section-title"><div><h2>{escape(title)}</h2><p>{note}</p></div><span class="count">{len(df)} ردیف</span></div><div class="scroll"><table><thead><tr>{heads}</tr></thead><tbody>{"".join(rows)}</tbody></table></div><p class="empty" {"" if df.empty else "hidden"}>{escape(empty_reason(key))}<br><small>این پیام دربارهٔ <b>نبودِ شاهد در منبع</b> است، نه دربارهٔ انجام‌نشدن آن مرحله.</small></p></section>')
+     opts=''.join('<option value="'+escape(c,quote=True)+'">'+escape(c)+'</option>' for c in cases(result))
+     ev=len(result.get('events',[]));obs=len(result.get('observations',[]));n=len(result.get('issues',[]))
+     run=escape(str(meta.get('warehouse_run_id') or 'دفتر مستقل / بدون اجرای منتشرشده'))
+     download=f'<a class="primary" download="GSI_Cashflow.xlsx" href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{base64.b64encode(xlsx).decode()}">دریافت Excel</a>' if xlsx else ''
+     css=CSS+"""
+-    *{box-sizing:border-box}body{margin:0;background:#f2f5f5;color:#18373f;font:14px Tahoma,Arial,sans-serif;line-height:1.8}
++    *{box-sizing:border-box}body{margin:0;background:#f2f5f5;color:#18373f;font-size:14px;font-family:__GSI_FONT__;line-height:1.8}
++    .navgroup{margin:14px 0 4px;padding:0 12px;font-size:10px;letter-spacing:1px;color:#8aa1a6}
++    nav button.blank{opacity:.72}nav button.blank span{background:#f0f3f3;border-radius:10px;padding:1px 6px}
++    .empty small{display:block;margin-top:6px;color:#8aa1a6}
+     .shell{display:grid;grid-template-columns:242px minmax(0,1fr);min-height:100vh;direction:rtl}aside{background:#fff;border-left:1px solid #dce5e7;padding:26px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+     .brand{font-size:27px;font-weight:bold;color:#163d46;padding:0 12px 28px}.brand small{display:block;font-size:10px;letter-spacing:1.2px;color:#68868c;font-weight:normal}
+     nav{display:flex;flex-direction:column;gap:5px}button,a{font:inherit;text-decoration:none;cursor:pointer}nav button{display:flex;justify-content:space-between;align-items:center;text-align:right;border:0;background:transparent;border-radius:9px;padding:10px 12px;color:#506a70;font-size:12px}
+@@ -113,7 +158,7 @@
+     section{background:white;border:1px solid #dce5e7;border-radius:14px;overflow:hidden}.section-title{padding:20px 24px;display:flex;justify-content:space-between;align-items:center;gap:10px}.section-title h2{font-size:18px;margin:0}.section-title p{font-size:11px;color:#687f85;margin:5px 0}.count{white-space:nowrap;background:#f1f5f5;padding:5px 10px;border-radius:20px;font-size:11px;color:#698187}.scroll{overflow:auto;max-height:540px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f1f6f5;color:#56747a;text-align:right;padding:14px 18px;white-space:nowrap;font-weight:normal;position:sticky;top:0}td{padding:15px 18px;border-bottom:1px solid #edf2f2;white-space:nowrap}tbody tr:hover{background:#f6faf9}.empty{padding:20px;color:#71878d}footer{margin:18px 0;color:#798e93;font-size:10px}
+     @media(max-width:900px){.shell{grid-template-columns:1fr}aside{position:static;height:auto;padding:12px;border-left:0}.brand{padding:4px 8px 12px;font-size:21px}.brand small{display:inline;margin-right:15px}nav{flex-direction:row;overflow:auto}nav button{flex-shrink:0;gap:10px}main{padding:18px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.filters input,.filters select{min-width:0;width:100%}.filters label{flex:1;min-width:130px}.topline{flex-wrap:wrap}.fin-hero h1{font-size:24px}.section-title{padding:16px}.section-title .count{display:none}}
+     @media print{aside,.actions,.filters{display:none}.shell{display:block}main{padding:0}section[hidden]{display:block}.scroll{max-height:none;overflow:visible}table{font-size:9px}.metrics{grid-template-columns:repeat(4,1fr)}}
+-    """
++    """.replace('__GSI_FONT__', T.FONT_STACK)
+     js="""let active=0;function norm(s){return s.toLowerCase().replace(/[۰-۹]/g,c=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(c)).replace(/ي/g,'ی').replace(/ك/g,'ک')}function applyFilters(){const q=norm(document.getElementById('search').value),c=document.getElementById('case').value;document.querySelectorAll('[role=tabpanel]').forEach(p=>{let n=0;p.querySelectorAll('tbody tr').forEach(r=>{r.hidden=!(norm(r.textContent).includes(q)&&(!c||!r.dataset.case||r.dataset.case===c));if(!r.hidden)n++});p.querySelector('.count').textContent=n+' ردیف';p.querySelector('.empty').hidden=n!==0})}function tab(i){active=i;document.querySelectorAll('[role=tabpanel]').forEach(s=>s.hidden=s.id!=='pane'+i);document.querySelectorAll('[role=tab]').forEach((b,j)=>b.setAttribute('aria-selected',j===i?'true':'false'));applyFilters()}document.querySelector('[role=tablist]').addEventListener('keydown',e=>{const bs=[...document.querySelectorAll('[role=tab]')];if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const j=(active+(e.key==='ArrowLeft'?1:-1)+bs.length)%bs.length;tab(j);bs[j].focus()}});"""
+     title='جریان وجوه و رفع تعهد'
+     return f'''<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GSI | {title}</title><style>{css}</style></head><body><div class="shell"><aside><div class="brand">GSI<small>FINANCIAL WORKSPACE</small></div><nav role="tablist" aria-label="بخش‌های گزارش">{''.join(buttons)}</nav></aside><main><div class="topline"><span>فضای مالی / گزارش مبتنی بر شواهد</span><div class="actions">{download}<button onclick="print()">چاپ گزارش</button></div></div><header class="fin-hero"><div class="fin-eyebrow">EVIDENCE / CASH FLOW / COMMITMENT</div><h1>{title}</h1><p>هر مبلغ، یک مسیر روشن؛ از درخواست تخصیص تا مانده تعهد.</p><div class="provenance"><span>تاریخ گزارش <b>{escape(str(meta['as_of']))}</b></span><span>منبع <b>{escape(str(meta.get('input_origin','دفتر مستقل')))}</b></span><span>اجرای مبنا <b>{run}</b></span></div></header><div class="metrics"><div class="metric"><small>ثبت سفارش</small><strong>{len(cases(result))}</strong><em>شناسه مستقل از شماره پرونده</em></div><div class="metric"><small>رویداد پذیرفته‌شده</small><strong>{ev}</strong><em>با منشأ و سند ثبت‌شده</em></div><div class="metric"><small>شاهد نیازمند تکمیل</small><strong>{obs}</strong><em>خارج از جمع قطعی</em></div><div class="metric"><small>کنترل و مغایرت</small><strong>{n}</strong><em>در کل محدوده گزارش</em></div></div><div class="fin-note">مانده سامانه ≠ تراکنش مالی. کاهش مانده به‌تنهایی اثبات رفع تعهد نیست؛ مبلغ ارزهای مختلف با هم جمع نمی‌شود. «—» یعنی نامعلوم.</div><div class="filters"><label>کد ثبت سفارش<select id="case" onchange="applyFilters()"><option value="">همه ثبت سفارش‌ها</option>{opts}</select></label><label>جست‌وجو در شواهد<input id="search" oninput="applyFilters()" placeholder="سفارش، سند یا نام منبع"></label></div>{''.join(tables)}<footer>GSI {PACKAGE_VERSION} · خروجی Excel شامل کل گزارش است. فیلتر نمایشی، داده ممیزی را حذف نمی‌کند. کنترل‌های عمومی ممکن است به کل گزارش مربوط باشند.<br>{escape(str(meta.get('legal_status','')))}</footer></main></div><script>{js}</script></body></html>'''
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/report/process_insights.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/report/process_insights.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/report/process_insights.py	1970-01-01 00:00:00.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/report/process_insights.py	2026-09-23 13:34:17.735294991 +0000
+@@ -0,0 +1,331 @@
++# -*- coding: utf-8 -*-
++"""سنجه‌های فرآیندی Kanban/Scrum از روی Event Log و جدول پرونده‌ها.
++
++## چرا این ماژول جدا است
++
++نماهای فرآیندی موجود (نقشه جریان، Aging، گلوگاه، Heatmap، Variant، Conformance،
++Funnel، Timeline) وضعیت *لحظه‌ای* را خوب نشان می‌دهند ولی سه پرسش تصمیم‌سازِ
++کانبان/اسکرام را جواب نمی‌دادند:
++
++  * روند WIP در زمان چطور بوده؟            → Cumulative Flow
++  * چند پرونده در هفته واقعاً بسته می‌شود؟  → Throughput
++  * پروندهٔ بازِ امروز چقدر پیر است و کجای  → Aging WIP
++    توزیع تاریخی قرار دارد؟
++
++هر تابع اینجا **خالص** است: DataFrame می‌گیرد و DataFrame می‌دهد، به Streamlit
++یا HTML وابسته نیست و هیچ مقداری را حدس نمی‌زند.
++
++## قاعدهٔ صداقت
++
++هیچ‌کدام از این توابع «هدف» یا SLA نمی‌سازند. صدک‌ها از رفتار **مشاهده‌شدهٔ**
++گذشته می‌آیند؛ یک صدک ۸۵ درصدیِ ۴۰ روزه یعنی «تاکنون ۸۵٪ پرونده‌ها ظرف ۴۰ روز
++بسته شده‌اند»، نه «هدف ۴۰ روز است». جایی که داده کافی نیست، ستون خالی برمی‌گردد
++و صفر جای «نامعلوم» نمی‌نشیند.
++"""
++from __future__ import annotations
++
++from typing import Iterable, Optional, Sequence
++
++import pandas as pd
++
++#: کمینهٔ تعداد مشاهده برای گزارش صدک. زیر این عدد، صدک گمراه‌کننده است.
++MIN_SAMPLE_FOR_PERCENTILE = 3
++
++
++def _col(frame: pd.DataFrame, names: Sequence[str]) -> Optional[str]:
++    for n in names:
++        if n in frame.columns:
++            return n
++    return None
++
++
++def _empty(columns: Iterable[str]) -> pd.DataFrame:
++    return pd.DataFrame(columns=list(columns))
++
++
++def _usable(frame) -> bool:
++    return isinstance(frame, pd.DataFrame) and not frame.empty
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۱) Cumulative Flow — انباشت پرونده در هر مرحله، در طول زمان
++# ══════════════════════════════════════════════════════════════════════════
++CFD_COLUMNS = ("دوره", "مرحله", "ترتیب", "پرونده رسیده (انباشتی)")
++
++
++def cumulative_flow(eventlog, freq: str = "W", max_periods: int = 16) -> pd.DataFrame:
++    """چند پرونده تا پایان هر دوره به هر مرحله رسیده بود.
++
++    این «انباشتی» است، نه «حاضر در مرحله»: یک پرونده که از مرحله عبور کرده هم
++    شمرده می‌شود. فاصلهٔ عمودی بین دو منحنی، معنی WIP آن مرحله را می‌دهد.
++    """
++    if not _usable(eventlog):
++        return _empty(CFD_COLUMNS)
++    act = _col(eventlog, ["ACTIVITY_FA", "ACTIVITY_EN", "STAGE_FA"])
++    case = _col(eventlog, ["_CASE_KEY", "CASE_KEY"])
++    when = _col(eventlog, ["EVENTTIME", "EVENT_DATE"])
++    if not (act and case and when):
++        return _empty(CFD_COLUMNS)
++    x = eventlog[[c for c in {act, case, when, "_SORTING"} if c in eventlog.columns]].copy()
++    x[when] = pd.to_datetime(x[when], errors="coerce")
++    x = x.dropna(subset=[when, act, case])
++    if x.empty:
++        return _empty(CFD_COLUMNS)
++    order = {}
++    if "_SORTING" in x.columns:
++        z = x[[act, "_SORTING"]].dropna().sort_values("_SORTING").drop_duplicates(act)
++        order = {str(a): i for i, a in enumerate(z[act].astype(str))}
++    # اولین رسیدن هر پرونده به هر مرحله؛ رسیدن دوباره دوبار شمرده نمی‌شود.
++    first = (x.groupby([x[act].astype(str), x[case].astype(str)])[when].min()
++             .reset_index().rename(columns={act: "مرحله", case: "_case", when: "_at"}))
++    first["دوره"] = first["_at"].dt.to_period(freq).dt.start_time
++    periods = sorted(first["دوره"].unique())[-max_periods:]
++    stages = sorted(first["مرحله"].unique(), key=lambda a: (order.get(a, 999), a))
++    rows = []
++    for stage in stages:
++        seen = 0
++        sub = first[first["مرحله"] == stage]
++        per = sub.groupby("دوره")["_case"].nunique().to_dict()
++        for p in periods:
++            seen += int(per.get(p, 0))
++            rows.append({"دوره": pd.Timestamp(p).date().isoformat(), "مرحله": stage,
++                         "ترتیب": order.get(stage, 999),
++                         "پرونده رسیده (انباشتی)": seen})
++    return pd.DataFrame(rows, columns=list(CFD_COLUMNS))
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۲) Throughput — چند پرونده در هر دوره بسته شد
++# ══════════════════════════════════════════════════════════════════════════
++THROUGHPUT_COLUMNS = ("دوره", "پرونده بسته‌شده", "میانه متحرک ۴ دوره")
++
++
++def throughput(case_table, freq: str = "W", max_periods: int = 16) -> pd.DataFrame:
++    if not _usable(case_table):
++        return _empty(THROUGHPUT_COLUMNS)
++    state = _col(case_table, ["CASE_STATE"])
++    last = _col(case_table, ["LAST_EVENT"])
++    key = _col(case_table, ["CASE_KEY", "_CASE_KEY"])
++    if not (state and last and key):
++        return _empty(THROUGHPUT_COLUMNS)
++    x = case_table[[state, last, key]].copy()
++    x[last] = pd.to_datetime(x[last], errors="coerce")
++    closed = x[x[state].astype(str).ne("OPEN")].dropna(subset=[last])
++    if closed.empty:
++        return _empty(THROUGHPUT_COLUMNS)
++    g = (closed.assign(دوره=closed[last].dt.to_period(freq).dt.start_time)
++         .groupby("دوره")[key].nunique().rename("پرونده بسته‌شده").reset_index()
++         .sort_values("دوره"))
++    g = g.tail(max_periods).reset_index(drop=True)
++    g["میانه متحرک ۴ دوره"] = (g["پرونده بسته‌شده"].rolling(4, min_periods=2)
++                                .median().round(1))
++    g["دوره"] = g["دوره"].map(lambda d: pd.Timestamp(d).date().isoformat())
++    return g[list(THROUGHPUT_COLUMNS)]
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۳) Aging WIP — پروندهٔ باز، سن آن، و جای آن در توزیع تاریخی
++# ══════════════════════════════════════════════════════════════════════════
++AGING_COLUMNS = ("پرونده", "مرحله جاری", "سن (روز)", "انتظار جاری (روز)",
++                 "صدک ۵۰ تاریخی", "صدک ۸۵ تاریخی", "هشدار")
++
++
++def aging_wip(case_table, limit: int = 60) -> pd.DataFrame:
++    """پرونده‌های باز کنار صدک تاریخیِ همان مرحله.
++
++    «هشدار» یک قاعدهٔ اختراعی نیست: فقط می‌گوید سن این پروندهٔ باز از صدکی که
++    خودِ همین سازمان تاکنون داشته گذشته است یا نه.
++    """
++    if not _usable(case_table):
++        return _empty(AGING_COLUMNS)
++    state = _col(case_table, ["CASE_STATE"])
++    stage = _col(case_table, ["LAST_ACTIVITY", "CURRENT_FOCUS_STAGE_FA"])
++    key = _col(case_table, ["CASE_KEY", "_CASE_KEY"])
++    age = _col(case_table, ["CASE_AGE_DAYS"])
++    wait = _col(case_table, ["CURRENT_WAIT_DAYS"])
++    thr = _col(case_table, ["THROUGHPUT_DAYS"])
++    if not (state and stage and key and age):
++        return _empty(AGING_COLUMNS)
++    x = case_table.copy()
++    x[age] = pd.to_numeric(x[age], errors="coerce")
++    bench = {}
++    if thr:
++        done = x[x[state].astype(str).ne("OPEN")].copy()
++        done[thr] = pd.to_numeric(done[thr], errors="coerce")
++        done = done.dropna(subset=[thr])
++        for name, grp in done.groupby(done[stage].astype(str)):
++            if len(grp) >= MIN_SAMPLE_FOR_PERCENTILE:
++                bench[name] = (round(float(grp[thr].quantile(.50)), 1),
++                               round(float(grp[thr].quantile(.85)), 1))
++    openc = x[x[state].astype(str).eq("OPEN")].dropna(subset=[age])
++    rows = []
++    for r in openc.sort_values(age, ascending=False).head(limit).to_dict("records"):
++        st = str(r.get(stage) or "نامشخص")
++        p50, p85 = bench.get(st, (None, None))
++        a = float(r.get(age) or 0)
++        alert = ("بیش از صدک ۸۵ تاریخی همین مرحله" if p85 is not None and a > p85
++                 else "بیش از میانه تاریخی همین مرحله" if p50 is not None and a > p50
++                 else "" if p50 is not None else "مبنای تاریخی کافی نیست")
++        rows.append({"پرونده": str(r.get(key) or ""), "مرحله جاری": st,
++                     "سن (روز)": round(a, 1),
++                     "انتظار جاری (روز)": (round(float(r.get(wait)), 1)
++                                            if wait and pd.notna(r.get(wait)) else None),
++                     "صدک ۵۰ تاریخی": p50, "صدک ۸۵ تاریخی": p85, "هشدار": alert})
++    return pd.DataFrame(rows, columns=list(AGING_COLUMNS))
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۴) توزیع زمان چرخه — صدک‌های مشاهده‌شده، نه هدف
++# ══════════════════════════════════════════════════════════════════════════
++CYCLE_COLUMNS = ("گروه", "پرونده بسته", "صدک ۵۰ (روز)", "صدک ۸۵ (روز)",
++                 "صدک ۹۵ (روز)", "بیشینه (روز)")
++
++
++def cycle_time_percentiles(case_table, by: str = "VARIANT") -> pd.DataFrame:
++    if not _usable(case_table):
++        return _empty(CYCLE_COLUMNS)
++    thr = _col(case_table, ["THROUGHPUT_DAYS"])
++    grp = _col(case_table, [by, "VARIANT", "LAST_ACTIVITY"])
++    key = _col(case_table, ["CASE_KEY", "_CASE_KEY"])
++    if not (thr and grp and key):
++        return _empty(CYCLE_COLUMNS)
++    x = case_table[[thr, grp, key]].copy()
++    x[thr] = pd.to_numeric(x[thr], errors="coerce")
++    x = x.dropna(subset=[thr])
++    if x.empty:
++        return _empty(CYCLE_COLUMNS)
++    rows = []
++    for name, g in x.groupby(x[grp].astype(str)):
++        if len(g) < MIN_SAMPLE_FOR_PERCENTILE:
++            rows.append({"گروه": name, "پرونده بسته": len(g), "صدک ۵۰ (روز)": None,
++                         "صدک ۸۵ (روز)": None, "صدک ۹۵ (روز)": None,
++                         "بیشینه (روز)": round(float(g[thr].max()), 1)})
++            continue
++        rows.append({"گروه": name, "پرونده بسته": len(g),
++                     "صدک ۵۰ (روز)": round(float(g[thr].quantile(.50)), 1),
++                     "صدک ۸۵ (روز)": round(float(g[thr].quantile(.85)), 1),
++                     "صدک ۹۵ (روز)": round(float(g[thr].quantile(.95)), 1),
++                     "بیشینه (روز)": round(float(g[thr].max()), 1)})
++    out = pd.DataFrame(rows, columns=list(CYCLE_COLUMNS))
++    return out.sort_values("پرونده بسته", ascending=False).reset_index(drop=True)
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۵) دوباره‌کاری — پرونده‌ای که به مرحله‌ای برمی‌گردد
++# ══════════════════════════════════════════════════════════════════════════
++REWORK_COLUMNS = ("فعالیت", "پرونده با تکرار", "کل تکرار اضافه", "بیشترین تکرار در یک پرونده")
++
++
++def rework_loops(eventlog) -> pd.DataFrame:
++    if not _usable(eventlog):
++        return _empty(REWORK_COLUMNS)
++    act = _col(eventlog, ["ACTIVITY_FA", "ACTIVITY_EN", "STAGE_FA"])
++    case = _col(eventlog, ["_CASE_KEY", "CASE_KEY"])
++    if not (act and case):
++        return _empty(REWORK_COLUMNS)
++    x = eventlog[[act, case]].dropna().astype(str)
++    if x.empty:
++        return _empty(REWORK_COLUMNS)
++    counts = x.groupby([act, case]).size().rename("n").reset_index()
++    repeats = counts[counts["n"] > 1]
++    if repeats.empty:
++        return _empty(REWORK_COLUMNS)
++    out = (repeats.groupby(act)
++           .agg(**{"پرونده با تکرار": (case, "nunique"),
++                   "کل تکرار اضافه": ("n", lambda s: int((s - 1).sum())),
++                   "بیشترین تکرار در یک پرونده": ("n", "max")})
++           .reset_index().rename(columns={act: "فعالیت"}))
++    return (out[list(REWORK_COLUMNS)]
++            .sort_values("کل تکرار اضافه", ascending=False).reset_index(drop=True))
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۶) تحویل بین واحدها — کار کجا دست‌به‌دست می‌شود
++# ══════════════════════════════════════════════════════════════════════════
++HANDOFF_COLUMNS = ("از", "به", "تعداد تحویل", "پرونده", "میانه فاصله (روز)")
++
++
++def handoff_matrix(eventlog, top: int = 20) -> pd.DataFrame:
++    if not _usable(eventlog):
++        return _empty(HANDOFF_COLUMNS)
++    who = _col(eventlog, ["ORG_UNIT", "RESOURCE"])
++    case = _col(eventlog, ["_CASE_KEY", "CASE_KEY"])
++    when = _col(eventlog, ["EVENTTIME", "EVENT_DATE"])
++    if not (who and case and when):
++        return _empty(HANDOFF_COLUMNS)
++    x = eventlog[[who, case, when]].copy()
++    x[when] = pd.to_datetime(x[when], errors="coerce")
++    x = x.dropna(subset=[when])
++    x[who] = x[who].fillna("").astype(str).str.strip()
++    x = x[x[who].ne("")]
++    if x.empty:
++        return _empty(HANDOFF_COLUMNS)
++    x = x.sort_values([case, when])
++    x["_next_who"] = x.groupby(case)[who].shift(-1)
++    x["_next_at"] = x.groupby(case)[when].shift(-1)
++    moves = x.dropna(subset=["_next_who", "_next_at"])
++    moves = moves[moves["_next_who"].astype(str).ne(moves[who])]
++    if moves.empty:
++        return _empty(HANDOFF_COLUMNS)
++    moves = moves.assign(_gap=(moves["_next_at"] - moves[when]).dt.total_seconds() / 86400.0)
++    out = (moves.groupby([who, "_next_who"])
++           .agg(**{"تعداد تحویل": (case, "size"), "پرونده": (case, "nunique"),
++                   "میانه فاصله (روز)": ("_gap", "median")})
++           .reset_index().rename(columns={who: "از", "_next_who": "به"}))
++    out["میانه فاصله (روز)"] = out["میانه فاصله (روز)"].round(1)
++    return (out[list(HANDOFF_COLUMNS)]
++            .sort_values("تعداد تحویل", ascending=False).head(top).reset_index(drop=True))
++
++
++# ══════════════════════════════════════════════════════════════════════════
++#  ۷) پوشش مرحله‌ای — کدام مرحله اصلاً شاهد ندارد
++# ══════════════════════════════════════════════════════════════════════════
++COVERAGE_COLUMNS = ("مرحله", "ترتیب", "پرونده دارای شاهد", "پرونده بدون شاهد", "پوشش (٪)")
++
++
++def stage_evidence_coverage(stage_matrix) -> pd.DataFrame:
++    """چند درصد پرونده‌ها برای هر مرحله شاهد دارند.
++
++    «بدون شاهد» یعنی اندازه‌گیری نشده، نه «انجام نشده». تفکیک این دو، همان چیزی
++    است که یک تصمیم اشتباه را جلوگیری می‌کند.
++    """
++    if not _usable(stage_matrix):
++        return _empty(COVERAGE_COLUMNS)
++    stage = _col(stage_matrix, ["STAGE_FA", "STAGE_CODE"])
++    order = _col(stage_matrix, ["STAGE_ORDER"])
++    case = _col(stage_matrix, ["PROCESS_CASE_ID", "CASE_KEY", "_CASE_KEY"])
++    obs = _col(stage_matrix, ["OBSERVATION_COUNT"])
++    if not (stage and case):
++        return _empty(COVERAGE_COLUMNS)
++    x = stage_matrix.copy()
++    x["_has"] = (pd.to_numeric(x[obs], errors="coerce").fillna(0) > 0) if obs else False
++    rows = []
++    for name, g in x.groupby(x[stage].astype(str)):
++        total = int(g[case].nunique())
++        with_ev = int(g[g["_has"]][case].nunique())
++        rows.append({"مرحله": name,
++                     "ترتیب": int(pd.to_numeric(g[order], errors="coerce").min()) if order else 999,
++                     "پرونده دارای شاهد": with_ev,
++                     "پرونده بدون شاهد": total - with_ev,
++                     "پوشش (٪)": round(with_ev / total * 100, 1) if total else None})
++    return (pd.DataFrame(rows, columns=list(COVERAGE_COLUMNS))
++            .sort_values("ترتیب").reset_index(drop=True))
++
++
++def build_all(extras) -> dict:
++    """همهٔ سنجه‌های این ماژول از روی extras موجود.
++
++    کلیدی که داده‌اش نیست، DataFrame خالی می‌گیرد؛ حذف نمی‌شود تا نبودِ آن هم
++    در خروجی دیده شود.
++    """
++    get = (extras.get if hasattr(extras, "get") else (lambda k, d=None: d))
++    ev, ct = get("eventlog"), get("case_table")
++    return {
++        "cfd": cumulative_flow(ev),
++        "throughput": throughput(ct),
++        "aging_wip": aging_wip(ct),
++        "cycle_percentiles": cycle_time_percentiles(ct),
++        "rework": rework_loops(ev),
++        "handoff": handoff_matrix(ev),
++        "stage_coverage": stage_evidence_coverage(get("process_stage_matrix")),
++    }
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/studio_core/html_export.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/studio_core/html_export.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/studio_core/html_export.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/studio_core/html_export.py	2026-09-23 13:28:08.849207587 +0000
+@@ -575,6 +575,16 @@
+     # transparently supports both this compact form and legacy object records.
+     records = _inline_json(data.to_numpy(dtype=object).tolist(), default=str)
+ 
++    # ── شفافیت پوشش داده ──
++    # payload همه ردیف‌ها را نگه می‌دارد، ولی فقط ستون‌های لازمِ تب‌ها/نمودارها را.
++    # اگر این انتخاب اعلام نشود، خواننده نمی‌داند چه شواهدی در فایل نیست و ممکن
++    # است نبودِ یک ستون را «نبودِ داده» بخواند. هر حذف باید در خود فایل اعلام شود.
++    _source_columns = [str(c) for c in df.columns]
++    _payload_columns = [str(c) for c in all_needed]
++    _payload_set = set(_payload_columns)
++    excluded_columns = [c for c in _source_columns if c not in _payload_set]
++    coverage_truncations: List[Dict[str, object]] = []
++
+     # The Streamlit “Supply View — Material” is a derived decision view, not just
+     # the KEY_MATERIAL column.  Carry that exact view as a dedicated per-artifact
+     # dataset so HTML can render it as one real, filterable tab without polluting
+@@ -830,6 +840,9 @@
+             keep = [c for c in runtime_columns.get(key, []) if c in t.columns]
+             x = t[keep].copy() if keep else t.iloc[:, :0].copy()
+             if key == "fx_ledger" and len(x) > 250:
++                # سقف نمایشی دفتر ارزی. حذف بی‌اعلام ممنوع است: در مانیفست پوشش ثبت می‌شود.
++                coverage_truncations.append({"section": key, "source_rows": int(len(x)),
++                                             "embedded_rows": 250})
+                 x = x.head(250).copy()
+             if x.empty and len(t):
+                 continue
+@@ -848,6 +861,51 @@
+ 
+     runtime = _runtime(chart_json, proc_json, series_json, band_fill_json, band_ink_json)
+ 
++    # ── بخش «فهرست محتوای این خروجی» ──
++    # این بخش چاپ می‌شود و پشت تب پنهان نیست: تصمیم‌گیرنده باید بدون باز کردن
++    # کد منبع بداند این فایل چه چیزی دارد و چه چیزی ندارد.
++    _cov_rows = [
++        ("ردیف در این خروجی", f"{len(data):,} از {len(df):,}"),
++        ("ستون در این خروجی", f"{len(_payload_columns):,} از {len(_source_columns):,}"),
++        ("نمای تأمین متریال", f"{len(material_view):,} ردیف"),
++        ("تاریخ مرجع", str(ref_date)),
++    ]
++    _cov_cells = "".join(
++        f'<div class="kpi"><div class="l">{html.escape(k)}</div><b>{html.escape(v)}</b></div>'
++        for k, v in _cov_rows)
++    _trunc_html = ""
++    if coverage_truncations:
++        _items = "".join(
++            f'<li>{html.escape(str(t["section"]))}: '
++            f'{int(t["embedded_rows"]):,} از {int(t["source_rows"]):,} ردیف در فایل است</li>'
++            for t in coverage_truncations)
++        _trunc_html = ('<p class="note" style="color:var(--warn-ink,#8a5a12)">'
++                       'بخش‌های زیر سقف نمایشی دارند و کامل در فایل نیستند:</p>'
++                       f'<ul class="note">{_items}</ul>')
++    _excl_html = ""
++    if excluded_columns:
++        _chips = "".join(f'<code class="cov-col">{html.escape(c)}</code>' for c in excluded_columns)
++        _excl_html = (
++            f'<details class="stack stack-xs"><summary class="t-overline">'
++            f'{len(excluded_columns):,} ستون در این خروجی نیست — فهرست کامل</summary>'
++            f'<p class="note">این ستون‌ها در انبار داده موجودند ولی در تب‌های این artifact '
++            f'انتخاب نشده‌اند. نبودِ یک ستون در اینجا به معنای نبودِ داده در سامانه نیست.</p>'
++            f'<div class="cluster cluster-xs" style="max-height:240px;overflow:auto">{_chips}</div>'
++            f'</details>')
++    coverage_html = (
++        '<section id="gsi_manifest" class="card stack stack-sm" data-section="coverage" '
++        'aria-labelledby="gsi_manifest_h">'
++        '<style>#gsi_manifest .cov-col{display:inline-block;margin:2px;padding:2px 7px;'
++        'border:1px solid var(--border,#dbe3e7);border-radius:6px;background:var(--surface,#f7f9fa);'
++        'font:11px/1.7 ui-monospace,Consolas,monospace;direction:ltr;unicode-bidi:plaintext}'
++        '#gsi_manifest summary{cursor:pointer}</style>'
++        '<div class="t-overline">◈ فهرست محتوای این خروجی</div>'
++        '<h2 class="t-h2" id="gsi_manifest_h" style="margin:2px 0 6px">چه چیزی در این فایل هست و چه چیزی نیست</h2>'
++        '<p class="note">ردیف‌ها کامل‌اند؛ جدول‌ها فقط تعداد محدودی را هم‌زمان نشان می‌دهند و '
++        'خروجی Excel همان ستون‌های تب فعال را برای همه ردیف‌های فیلترشده می‌دهد.</p>'
++        f'<div class="grid-auto" style="--col:200px">{_cov_cells}</div>'
++        f'{_trunc_html}{_excl_html}</section>')
++
+     lesson_html = ""
+     embed_script = ""
+     chat_href = ""
+@@ -949,6 +1007,7 @@
+ <span id="story" hidden></span><span id="story_scr" hidden></span><span id="process_variants" hidden></span><span id="process_roots" hidden></span>
+ {''.join(panes)}
+ {lesson_html}
++{coverage_html}
+ </main>
+ <footer class="note" style="padding:8px 0 0">
+ <span id="aud_closing"></span>
+@@ -960,7 +1019,7 @@
+ const MATERIAL_SUPPLY_DATA={material_records};
+ const COL_INDEX={_inline_json({c:i for i,c in enumerate(all_needed)})};
+ const PAGE_SIZE=100; /* compatibility/default; audience profile may override at render time */
+-const REPORT_META={_inline_json({**(lineage or {}), "payload_rows": len(df), "embedded_rows": len(data), "payload_encoding": "row_array_v1", "material_supply_embedded_rows": len(material_view), "ref_date": ref_date, "gsi_build": GSI_RUNTIME_VERSION})};
++const REPORT_META={_inline_json({**(lineage or {}), "payload_rows": len(df), "embedded_rows": len(data), "payload_encoding": "row_array_v1", "material_supply_embedded_rows": len(material_view), "ref_date": ref_date, "gsi_build": GSI_RUNTIME_VERSION, "source_columns": len(_source_columns), "payload_columns": len(_payload_columns), "excluded_columns": excluded_columns, "truncated_sections": coverage_truncations})};
+ const TAB_META={_inline_json(metas)};
+ const LABELS={_inline_json({c: labels.get(c, c) for c in all_needed})};
+ const AUDIENCES={aud_json};
+@@ -1435,7 +1494,7 @@
+  const start=PAGE[i]*PAGE_SIZE,view=visible.slice(start,start+PAGE_SIZE);
+  const cnt=document.getElementById('cnt_'+i);
+  if(cnt)cnt.textContent=a.length.toLocaleString('fa-IR')+' ردیف · صفحه '
+-  +(PAGE[i]+1).toLocaleString('fa-IR')+' از '+pages.toLocaleString('fa-IR')+(a.length>visible.length?' · نمایش محدود به '+visible.length.toLocaleString('fa-IR')+'؛ خروجی Excel شامل همه نتایج است':'');
++  +(PAGE[i]+1).toLocaleString('fa-IR')+' از '+pages.toLocaleString('fa-IR')+(a.length>visible.length?' · جدول فقط '+visible.length.toLocaleString('fa-IR')+' ردیف را نشان می‌دهد؛ دکمه Excel همین تب، همه '+a.length.toLocaleString('fa-IR')+' ردیف فیلترشده را با ستون‌های همین تب می‌دهد':'');
+  const tb=document.getElementById('tb_'+i);
+  if(tb)tb.innerHTML=view.map(r=>'<tr>'+t.fields.map(c=>'<td>'+esc2(S(r,c))+'</td>').join('')+'</tr>').join('');
+  const mobile=document.getElementById('mc_'+i);
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/studio_core/report_builder.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/studio_core/report_builder.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/studio_core/report_builder.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/studio_core/report_builder.py	2026-09-23 13:31:29.401504633 +0000
+@@ -152,8 +152,6 @@
+     registration/material universe; otherwise a manager/expert export can leak
+     organisation-wide process/action data even though its table is scoped.
+     """
+-    out = dict(extras or {})
+-
+     def _values(frame: pd.DataFrame, names) -> set[str]:
+         vals: set[str] = set()
+         for c in names:
+@@ -171,16 +169,25 @@
+               (("KEY_ORDER", "CANONICAL_ORDER", "ORDER_NO", "order_no"), orders),
+               (("KEY_REG", "CANONICAL_REG", "REGISTRATION_NO", "import_reg_no"), regs),
+               (("KEY_MATERIAL", "CANONICAL_MATERIAL", "MATERIAL", "material_code"), mats)]
+-    for name, frame in list(out.items()):
+-        if not isinstance(frame, pd.DataFrame):
+-            continue
++    def _scope(_name, frame: pd.DataFrame) -> pd.DataFrame:
+         scoped = frame.iloc[0:0].copy()
+         for names, allowed in groups:
+             common = next((c for c in names if c in frame.columns), None)
+             if common is not None and allowed:
+                 scoped = frame[frame[common].fillna("").astype(str).str.strip().isin(allowed)].copy()
+                 break
+-        out[name] = scoped
++        return scoped
++
++    # محدودکردن دامنه باید روی همهٔ فریم‌ها اعمال شود، ولی خواندن‌شان از SQLite
++    # نباید همین‌جا اتفاق بیفتد. اگر extras تنبل باشد، همان قاعده به‌صورت تنبل
++    # روی آن می‌نشیند و فقط فریمی که واقعاً خوانده می‌شود ساخته می‌شود.
++    if hasattr(extras, "with_frame_transform"):
++        out = extras.with_frame_transform(_scope)
++    else:
++        out = dict(extras or {})
++        for name, frame in list(out.items()):
++            if isinstance(frame, pd.DataFrame):
++                out[name] = _scope(name, frame)
+ 
+     # Rebuild every derived process view from the scoped case/event population.
+     cases = out.get("case_table")
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/__main__.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/__main__.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/__main__.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/__main__.py	2026-09-23 13:26:22.512224217 +0000
+@@ -1,4 +1,5 @@
+ import argparse
++import json
+ from pathlib import Path
+ from .store import Warehouse
+ from .service import ingest_file
+@@ -7,9 +8,23 @@
+ i=s.add_parser('ingest');i.add_argument('source',choices=['oracle','ntsw','fx_transaction','headers_map']);i.add_argument('file')
+ b=s.add_parser('backup');b.add_argument('destination')
+ s.add_parser('check')
++r=s.add_parser('reset',help='پاک‌کردن کامل انبار داده و ساخت دوباره از صفر')
++r.add_argument('--yes',action='store_true',help='تأیید صریح حذف؛ بدون آن چیزی پاک نمی‌شود')
++r.add_argument('--backup-to',help='مسیر نسخه پشتیبان؛ پیش‌فرض کنار همان فایل با مهر زمان')
++r.add_argument('--no-backup',action='store_true',help='بدون پشتیبان — فقط وقتی پشتیبان جداگانه دارید')
+ a=p.parse_args()
+ if a.command=='ingest':print(ingest_file(a.file,a.source))
+ elif a.command=='backup':print(Warehouse().backup(a.destination))
++elif a.command=='reset':
++    wh=Warehouse(initialize=False)
++    if not a.yes:
++        print(f'انبار داده: {wh.path}')
++        print('این دستور همه اجراها، فریم‌ها، snapshotها و خروجی‌های منتشرشده را پاک می‌کند.')
++        print('برای اجرا: python -m gsi.warehouse reset --yes')
++        raise SystemExit(2)
++    out=wh.reset(confirm=True,backup_to=a.backup_to,keep_backup=not a.no_backup)
++    print(json.dumps(out,ensure_ascii=False,indent=2))
++    print('انبار داده خالی و آمادهٔ ساخت دوباره است. اجرای بعدی خط لوله آن را پر می‌کند.')
+ else:
+  with Warehouse().db() as c:
+   print('integrity_check:',c.execute('PRAGMA integrity_check').fetchone()[0])
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/service.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/service.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/service.py	2026-09-22 19:25:54.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/service.py	2026-09-23 13:31:29.377571597 +0000
+@@ -3,6 +3,7 @@
+ from .numeric import decimal_text
+ from collections.abc import MutableMapping
+ import logging
++import pandas as pd
+ import sqlite3
+ 
+ _LOG = logging.getLogger(__name__)
+@@ -20,6 +21,7 @@
+         self._values = dict(values or {})
+         self._frame_ids = dict(frame_ids or {})
+         self._load_errors = {}
++        self._transform = None
+ 
+     def __getitem__(self, key):
+         if key in self._values:
+@@ -38,6 +40,8 @@
+             self._load_errors[key] = {'code':'DWH_READ_BUSY','detail':str(ex)}
+             _LOG.warning('Lazy mart %s unavailable because warehouse is busy: %s', key, ex)
+             value = None
++        if self._transform is not None and isinstance(value, pd.DataFrame):
++            value = self._transform(key, value)
+         self._values[key] = value
+         return value
+ 
+@@ -56,6 +60,24 @@
+     def __len__(self):
+         return len(set(self._values) | set(self._frame_ids))
+ 
++    def with_frame_transform(self, fn):
++        """نگاشت تنبلِ تازه که هر فریم را هنگام اولین دسترسی از ``fn`` می‌گذراند.
++
++        محدودکردن دامنهٔ دسترسی (scope) باید روی **همهٔ** فریم‌ها اعمال شود، ولی
++        لازم نیست همان لحظه همهٔ آن‌ها از SQLite باز شوند. بدون این متد،
++        ``dict(extras)`` در مسیر رندر، ده‌ها mart را می‌ساخت — یعنی همان کندی‌ای
++        که Snapshot منتشرشده برای حذفش وجود دارد.
++
++        ``fn(name, frame)`` باید فریمِ محدودشده را برگرداند. مقادیری که همین حالا
++        ساخته شده‌اند هم از همان تابع می‌گذرند تا هیچ فریمی بدون scope نماند.
++        """
++        clone = LazyFrameExtras(self._warehouse_path)
++        clone._frame_ids = dict(self._frame_ids)
++        clone._transform = fn
++        for key, value in self._values.items():
++            clone._values[key] = fn(key, value) if isinstance(value, pd.DataFrame) else value
++        return clone
++
+     def materialized_keys(self):
+         return tuple(self._values.keys())
+ 
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/store.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/store.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc3/gsi_rc3/gsi/warehouse/store.py	2026-09-22 19:38:14.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc4/gsi/warehouse/store.py	2026-09-23 13:26:07.129563775 +0000
+@@ -4,6 +4,7 @@
+ import json
+ import math
+ import os
++import shutil
+ import sqlite3
+ import uuid
+ from contextlib import contextmanager
+@@ -324,6 +325,51 @@
+         df.attrs.update(meta.get('attrs', {}))
+         self._write_frame_cache(fid,df)
+         return df
++    def reset(self, *, confirm=False, backup_to=None, keep_backup=True):
++        """پاک‌کردن کامل انبار داده و ساخت دوبارهٔ آن از صفر.
++
++        چرا این متد لازم است: تا پیش از این هیچ مسیر پشتیبانی‌شده‌ای برای
++        «از اول ساختن» وجود نداشت و تنها راه، پاک‌کردن دستی فایل بود. پاک‌کردن
++        دستی سه چیز را جا می‌گذارد که بعداً به شکل خطای گمراه‌کننده برمی‌گردند:
++        کش فریم‌ها، فایل قفل نویسنده و فایل متادیتای قفل.
++
++        قواعد ایمنی — هر سه عمدی‌اند:
++          * ``confirm=True`` اجباری است. حذف داده هرگز پیش‌فرض نیست.
++          * اگر فایل، انبار دادهٔ GSI نباشد، هیچ چیز پاک نمی‌شود.
++          * پیش از حذف، یک نسخهٔ پشتیبان ساخته می‌شود مگر صریحاً رد شود.
++
++        خروجی: گزارشی از آنچه واقعاً حذف شد، برای ثبت در سابقه.
++        """
++        if not confirm:
++            raise ValueError('reset نیازمند confirm=True است؛ حذف انبار داده پیش‌فرض نیست.')
++        report={'path':str(self.path),'existed':self.path.exists(),'backup':None,'removed':[]}
++        if self.path.exists() and self.path.stat().st_size:
++            # نگذار یک فایل غیر-GSI با این دستور نابود شود.
++            with sqlite3.connect(f'file:{self.path.as_posix()}?mode=ro',uri=True,timeout=5) as c:
++                c.execute('PRAGMA query_only=ON')
++                tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
++            if tables and 'wh_meta' not in tables:
++                raise ValueError('فایل انتخابی دیتاورهوس GSI نیست؛ پاک نمی‌شود.')
++            if keep_backup:
++                dest=local_path(backup_to) if backup_to else self.path.with_suffix(
++                    self.path.suffix+f'.{datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")}.bak')
++                report['backup']=str(self.backup(dest))
++        cache=self.path.with_suffix(self.path.suffix+'.frame_cache')
++        lock=self.path.with_suffix('.writer.lock')
++        for extra in (self.path,
++                      self.path.with_suffix(self.path.suffix+'-wal'),
++                      self.path.with_suffix(self.path.suffix+'-shm'),
++                      lock, lock.with_suffix(lock.suffix+'.meta.json')):
++            if extra.exists():
++                extra.unlink();report['removed'].append(extra.name)
++        if cache.is_dir():
++            shutil.rmtree(cache,ignore_errors=True);report['removed'].append(cache.name+'/')
++        self.path.parent.mkdir(parents=True,exist_ok=True)
++        self._ensure_schema()
++        report['recreated']=True
++        self.audit('warehouse_reset',report)
++        return report
++
+     def backup(self,path):
+         dest=local_path(path)
+         if dest==self.path or dest.exists(): raise ValueError('Backup destination must be a new local file')
