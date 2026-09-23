@@ -1,0 +1,244 @@
+{
+  "source": "FX_Transactions",
+  "sheet": "Sheet1",
+  "row_count": 1,
+  "column_count": 14,
+  "columns": [
+    {
+      "column": "تاریخ خرید",
+      "roles": [
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/02/10"
+      ]
+    },
+    {
+      "column": "ثبت سفارش",
+      "roles": [
+        "REG"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "98404279"
+      ]
+    },
+    {
+      "column": "شماره سفارش",
+      "roles": [
+        "ORDER"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "502805"
+      ]
+    },
+    {
+      "column": "نام ذینفع",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "ACME"
+      ]
+    },
+    {
+      "column": "ارز خریداری شده",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1000"
+      ]
+    },
+    {
+      "column": "نوع ارز خریداری شده",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "EUR"
+      ]
+    },
+    {
+      "column": "نرخ ارز خریداری شده",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "60000"
+      ]
+    },
+    {
+      "column": "مبلغ ارز پروفرم",
+      "roles": [
+        "AMOUNT",
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1200"
+      ]
+    },
+    {
+      "column": "نوع ارز",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "EUR"
+      ]
+    },
+    {
+      "column": "ارز سوئیفت",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1000"
+      ]
+    },
+    {
+      "column": "تاریخ سوئیفت",
+      "roles": [
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/02/11"
+      ]
+    },
+    {
+      "column": "تاریخ تایید وصول",
+      "roles": [
+        "DATE",
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 1,
+      "non_null": 0,
+      "nulls": 1,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "وضعیت",
+      "roles": [
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "تایید شده"
+      ]
+    },
+    {
+      "column": "شماره بارنامه",
+      "roles": [
+        "BL"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "BL-777"
+      ]
+    }
+  ]
+}

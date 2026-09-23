@@ -1,0 +1,358 @@
+{
+  "roles": {
+    "PR": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Purchase Requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Purchase Requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Purchase Requisition",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      }
+    ],
+    "PR_ITEM": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Item of requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item of requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Item of requisition",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      }
+    ],
+    "MATERIAL": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Material",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Material Description",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Material Group",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Material",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Material",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Material Description",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      }
+    ],
+    "ORDER": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Purchase order",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Net Order Value",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Order No. (Our Reference)",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      },
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "Quantity In Order",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "شماره سفارش",
+        "authority": "Domain evidence",
+        "domain": "Treasury / FX / Payment"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "شماره سفارش",
+        "authority": "Domain evidence",
+        "domain": "Customs / Clearance"
+      }
+    ],
+    "PO": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Purchase order",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Purchasing Document",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Purchase Requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item of requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Material",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Supplier",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Net Order Value",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Currency",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Document Date",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.شماره پرونده",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "SUPPLIER": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "Name of Supplier",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Supplier",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "WORKFLOW": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "WorkFlow ID",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "WorkFlow Status",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "PO_ITEM": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.Item of requisition",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      }
+    ],
+    "REG_FILE": [
+      {
+        "source": "SAP",
+        "sheet": "Data",
+        "column": "po.شماره پرونده",
+        "authority": "Domain authority for SAP PR/PO/workflow evidence",
+        "domain": "Planning / Procurement"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "پرونده ترخیص",
+        "authority": "Domain evidence",
+        "domain": "Customs / Clearance"
+      }
+    ],
+    "BL": [
+      {
+        "source": "Commercial_Expert",
+        "sheet": "Expert Data",
+        "column": "BL No.",
+        "authority": "Tier 1 commercial source",
+        "domain": "Commercial"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "شماره بارنامه",
+        "authority": "Domain evidence",
+        "domain": "Treasury / FX / Payment"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "شماره بارنامه",
+        "authority": "Domain evidence",
+        "domain": "Customs / Clearance"
+      }
+    ],
+    "REG": [
+      {
+        "source": "NTSW",
+        "sheet": "Release Commitment",
+        "column": "کد ثبت سفارش",
+        "authority": "Tier 1 commercial/registration source",
+        "domain": "Registration / FX allocation / commitment"
+      },
+      {
+        "source": "NTSW",
+        "sheet": "Allocation",
+        "column": "کد ثبت سفارش",
+        "authority": "Tier 1 commercial/registration source",
+        "domain": "Registration / FX allocation / commitment"
+      },
+      {
+        "source": "FX_Transactions",
+        "sheet": "Sheet1",
+        "column": "ثبت سفارش",
+        "authority": "Domain evidence",
+        "domain": "Treasury / FX / Payment"
+      }
+    ],
+    "COTTAGE": [
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "کوتاژ",
+        "authority": "Domain evidence",
+        "domain": "Customs / Clearance"
+      },
+      {
+        "source": "Customs",
+        "sheet": "SeaClearance",
+        "column": "تاریخ  دریافت شماره کوتاژ",
+        "authority": "Domain evidence",
+        "domain": "Customs / Clearance"
+      }
+    ]
+  },
+  "candidate_cross_source_join_roles": [
+    "BL",
+    "COTTAGE",
+    "MATERIAL",
+    "ORDER",
+    "PO",
+    "PO_ITEM",
+    "PR",
+    "PR_ITEM",
+    "REG",
+    "REG_FILE",
+    "SUPPLIER",
+    "WORKFLOW"
+  ],
+  "warning": "Shared role across sources is a join candidate only; not proof of authoritative comparability."
+}

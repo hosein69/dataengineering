@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-09-23T08:10:38",
+  "config": "/tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/sources_local.yaml",
+  "profiled_frames": 6,
+  "errors": [
+    "NTSW/Import Licence: AttributeError: 'DataFrame' object has no attribute 'str'",
+    "Missing source: Abbasi -> /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/abbasi.xlsx",
+    "Missing source: SATA -> /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/maptest/data/sata.xlsx"
+  ],
+  "files": {
+    "executive_summary.md": {
+      "bytes": 445,
+      "sha256": "4c73deece23f0080938d5e6439f7c660045390804209137f9aee0ea6ab8bce65"
+    },
+    "model_context_pack.md": {
+      "bytes": 11607,
+      "sha256": "67f75108a69eadac18fac6a985c77ffe2a65346e34d2e86ef83135b9d2fcaf55"
+    },
+    "process_key_index.json": {
+      "bytes": 10386,
+      "sha256": "9f8fdc783e102aa3061ebf9a1161f91c42b728466261960a2ca5c96eccd08a30"
+    },
+    "samples/Commercial_Expert__Expert_Data__sample.csv": {
+      "bytes": 485,
+      "sha256": "19f19a8e5b6195eb86b56bc2d8ab9d9e02146b13850fa8e9e7fe7af956b257d8"
+    },
+    "samples/Customs__SeaClearance__sample.csv": {
+      "bytes": 382,
+      "sha256": "686e1984993a4992d66b8e3ed759cfe3e98defd7bd9bddc785ba3397b2d189ce"
+    },
+    "samples/FX_Transactions__Sheet1__sample.csv": {
+      "bytes": 458,
+      "sha256": "fd4d31e3a17706f777e56ac7c0e354dad966eeb1fcb8cec7aa25580f77832429"
+    },
+    "samples/NTSW__Allocation__sample.csv": {
+      "bytes": 463,
+      "sha256": "972c12ce96f61b25491f5a9d628fb14179818f64539b31717850af466918df8a"
+    },
+    "samples/NTSW__Import_Licence__sample.csv": {
+      "bytes": 239,
+      "sha256": "0b7ab1383fe374f6dddb4810763d0fac022aec9364a2eb5f7edff83eedc11dc4"
+    },
+    "samples/NTSW__Release_Commitment__sample.csv": {
+      "bytes": 389,
+      "sha256": "9c8b6602a4f2ee6e495ae7b4b2d76b5ee4eebb8d499b0846f0cde7c0421ef785"
+    },
+    "samples/SAP__Data__sample.csv": {
+      "bytes": 1084,
+      "sha256": "37b9d88d15cd40230e9cafecb4ae590a5fef2e00157b9688dcdf6b80dfae4f76"
+    },
+    "schemas/Commercial_Expert__Expert_Data__schema.json": {
+      "bytes": 4952,
+      "sha256": "5f22feb5ba1aeccff73e3fd9674db72ccb6253dc73563d4e93704a133f91b224"
+    },
+    "schemas/Customs__SeaClearance__schema.json": {
+      "bytes": 4160,
+      "sha256": "dbd313647adc0e2681e0313a23b43be22fc275f0bb3e5de3801701164322c4e1"
+    },
+    "schemas/FX_Transactions__Sheet1__schema.json": {
+      "bytes": 4861,
+      "sha256": "5c795fb16f4f52ca9f29d4282887e5d8cb3626194caf14df55a6ea8598ab16dc"
+    },
+    "schemas/NTSW__Allocation__schema.json": {
+      "bytes": 5080,
+      "sha256": "4adcec9ae9fc4dd082790dc65d3feedeea35ae4544fdefcb8574ef10c9bed704"
+    },
+    "schemas/NTSW__Import_Licence__schema.json": {
+      "bytes": 1932,
+      "sha256": "a082cb4d5ecd6744bfb15c234ce1e3267efea881f3ab7f8a4d282914873e7b65"
+    },
+    "schemas/NTSW__Release_Commitment__schema.json": {
+      "bytes": 3858,
+      "sha256": "3f6cf558ff0eb841bdc0b1611f45029c97e58e100e17fcc7b010339e2fe14bc4"
+    },
+    "schemas/SAP__Data__schema.json": {
+      "bytes": 10506,
+      "sha256": "17b5fff72d44bef32b7fed8dce4bcd5e46b56a323ffea74553fc038e5422851d"
+    },
+    "source_catalog.json": {
+      "bytes": 35267,
+      "sha256": "0069b20c8108b1553d1dd3258f3eed5c6e79bad6d198e286ca8662c0f3139ac2"
+    }
+  }
+}

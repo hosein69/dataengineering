@@ -1,0 +1,254 @@
+{
+  "source": "NTSW",
+  "sheet": "Allocation",
+  "row_count": 2,
+  "column_count": 15,
+  "columns": [
+    {
+      "column": "ردیف",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "column": "کد ثبت سفارش",
+      "roles": [
+        "REG"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "98404279",
+        "98404279"
+      ]
+    },
+    {
+      "column": "ردیف درخواست",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "column": "وضعیت",
+      "roles": [
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "تایید نشده",
+        "تخصيص يافته"
+      ]
+    },
+    {
+      "column": "فرآیند فعلی",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 2,
+      "non_null": 0,
+      "nulls": 2,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "مبلغ درخواست",
+      "roles": [
+        "AMOUNT"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "100",
+        "100"
+      ]
+    },
+    {
+      "column": "ارز درخواست",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "USD",
+        "EUR"
+      ]
+    },
+    {
+      "column": "تاریخ ایجاد درخواست",
+      "roles": [
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 2,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/01/01",
+        "1405/01/02"
+      ]
+    },
+    {
+      "column": "تاریخ تخصیص",
+      "roles": [
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.825,
+      "rows": 2,
+      "non_null": 1,
+      "nulls": 1,
+      "null_pct": 50.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/02/02"
+      ]
+    },
+    {
+      "column": "محل تامین ارز",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 2,
+      "non_null": 0,
+      "nulls": 2,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "نرخ ارز",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 2,
+      "non_null": 0,
+      "nulls": 2,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "نوع درخواست",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "A",
+        "A"
+      ]
+    },
+    {
+      "column": "شعبه",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "B1",
+        "B1"
+      ]
+    },
+    {
+      "column": "تاریخ تایید",
+      "roles": [
+        "DATE",
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 2,
+      "non_null": 0,
+      "nulls": 2,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "شرکت",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 0.675,
+      "rows": 2,
+      "non_null": 2,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 50.0,
+      "examples": [
+        "X",
+        "X"
+      ]
+    }
+  ]
+}

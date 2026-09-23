@@ -1,0 +1,209 @@
+{
+  "source": "Customs",
+  "sheet": "SeaClearance",
+  "row_count": 1,
+  "column_count": 12,
+  "columns": [
+    {
+      "column": "پرونده ترخیص",
+      "roles": [
+        "REG_FILE",
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "CF-1"
+      ]
+    },
+    {
+      "column": "شماره بارنامه",
+      "roles": [
+        "BL"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "BL-777"
+      ]
+    },
+    {
+      "column": "شماره سفارش",
+      "roles": [
+        "ORDER"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "502805"
+      ]
+    },
+    {
+      "column": "نوع حمل",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "دریایی"
+      ]
+    },
+    {
+      "column": "کوتاژ",
+      "roles": [
+        "COTTAGE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "34138249"
+      ]
+    },
+    {
+      "column": "تاریخ  دریافت شماره کوتاژ",
+      "roles": [
+        "COTTAGE",
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/03/01"
+      ]
+    },
+    {
+      "column": "ترخیص کامل",
+      "roles": [
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "*"
+      ]
+    },
+    {
+      "column": "ترخیص درصدی",
+      "roles": [
+        "STATUS"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 0.0,
+      "rows": 1,
+      "non_null": 0,
+      "nulls": 1,
+      "null_pct": 100.0,
+      "unique": 0,
+      "unique_pct_of_non_null": 0,
+      "examples": []
+    },
+    {
+      "column": "تاریخ بارگیری 6 (کامل)",
+      "roles": [
+        "DATE"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1405/03/05"
+      ]
+    },
+    {
+      "column": "تعرفه",
+      "roles": [],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "87085032"
+      ]
+    },
+    {
+      "column": "ارزش فاکتور",
+      "roles": [
+        "AMOUNT",
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "1200"
+      ]
+    },
+    {
+      "column": "نوع ارز",
+      "roles": [
+        "CURRENCY"
+      ],
+      "dtype": "object",
+      "candidate_key_score": 1.0,
+      "rows": 1,
+      "non_null": 1,
+      "nulls": 0,
+      "null_pct": 0.0,
+      "unique": 1,
+      "unique_pct_of_non_null": 100.0,
+      "examples": [
+        "EUR"
+      ]
+    }
+  ]
+}
