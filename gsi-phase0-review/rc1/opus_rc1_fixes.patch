@@ -1,0 +1,136 @@
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=output' rc1/gsi_2977_rc1/gsi/resolve/process_evidence.py rcfix/gsi/resolve/process_evidence.py
+--- a/gsi/resolve/process_evidence.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/resolve/process_evidence.py	2026-09-23 02:05:18.153408933 +0000
+@@ -51,6 +51,10 @@
+     ("COMMITMENT", "تعهد ارزی", "FX_COMMITMENT"),
+     ("FX_PURCHASE", "خرید ارز", "TREASURY"),
+     ("FUNDING", "تأمین وجه", "TREASURY"),
++    # SWIFT is an outgoing instruction, not proof that the beneficiary was paid.
++    # It is a registered stage so the evidence stays visible in the matrix; emitting
++    # it without registration silently dropped it from every case projection.
++    ("SWIFT_SENT", "ارسال سوئیفت", "TREASURY"),
+     ("PAYMENT", "پرداخت / وصول ذی‌نفع", "TREASURY"),
+     ("SHIPMENT", "حمل", "LOGISTICS"),
+     ("CUSTOMS", "اظهار / کوتاژ", "CUSTOMS"),
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=output' rc1/gsi_2977_rc1/gsi/stages/s20_derive.py rcfix/gsi/stages/s20_derive.py
+--- a/gsi/stages/s20_derive.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/stages/s20_derive.py	2026-09-23 02:06:13.452473950 +0000
+@@ -154,13 +154,30 @@
+ }
+ 
+ 
++#: فیلدهای پولی/مقداری که adapter در RC می‌تواند عمداً «نامعلوم» (NaN) بدهد —
++#: مثلاً تعهد چندارزی یا ردیف قرنطینه‌شده. قرارداد عددی legacy این ستون‌ها
++#: (پیش‌فرض صفر) اینجا عوض نمی‌شود، چون مصرف‌کننده‌های قدیمی روی float حساب
++#: می‌کنند؛ اما یک پرچم همزاد ساخته می‌شود تا «صفر واقعی» از «نامعلومِ
++#: صفرشده» قابل تفکیک باشد. تکمیل کامل قرارداد unknown/zero همچنان F031 است.
++UNKNOWN_SENSITIVE = (
++    "CB_VALUE", "BALANCE",
++    "ALLOCATED_AMOUNT", "OPEN_QUEUE_AMOUNT",
++    "REJECTED_ALLOC_AMOUNT", "ALLOC_REQUESTED_GROSS",
++)
++
++#: اهدافی که در این پکیج هیچ تولیدکننده‌ای ندارند و عمداً نامعلوم می‌مانند.
++#: اینجا صریح اعلام می‌شوند تا «مرده و فراموش‌شده» با «تصمیم‌گرفته‌شده» یکی نشود.
++#: FIN_RECEIPT_DATE تا تعیین ستون رسید مالی توسط مالک منبع (B3) نامعلوم است.
++DECLARED_UNMEASURED = ("FIN_RECEIPT_DATE",)
++
++
+ @register
+ class DeriveStage(Stage):
+     name = "derive"
+     title = "ترجمه ستون‌های سورس به ستون‌های دامنه‌ای"
+     order = 20
+     requires = []
+-    provides = list(DERIVED) + list(BOOLS)
++    provides = list(DERIVED) + [t + "_IS_UNKNOWN" for t in UNKNOWN_SENSITIVE] + list(BOOLS)
+ 
+     @staticmethod
+     def _inventory_pipeline(df: pd.DataFrame, ctx: PipelineContext) -> pd.DataFrame:
+@@ -223,9 +240,21 @@
+         # می‌سازد. این تغییر فقط مسیر ساخت حافظه را عوض می‌کند؛ معنا و ترتیب
+         # اولویت کاندیدها دقیقاً همان DERIVED/BOOLS است.
+         derived = {}
++        unknown_counts: dict = {}
+         for target, (candidates, default, numeric) in DERIVED.items():
+-            series = self._first_nonempty(df, sort_columns(candidates), default)
++            ordered = sort_columns(candidates)
++            series = self._first_nonempty(df, ordered, default)
+             derived[target] = series.map(num_safe) if numeric else series
++            if target in UNKNOWN_SENSITIVE:
++                # «نامعلوم» یعنی هیچ کاندیدی برای این ردیف مقدار قابل‌استفاده نداد،
++                # پس عددِ نهایی از default آمده است نه از شاهد منبع. با default=None
++                #  «صفرِ واقعی منبع» از «نبودِ مقدار» جدا می‌ماند؛ treat_zero_as_empty
++                # اینجا عمداً False است تا صفر معتبر نامعلوم شمرده نشود.
++                probe = self._first_nonempty(df, ordered, None)
++                unknown = probe.map(lambda v: is_empty_val(v, treat_zero_as_empty=False))
++                derived[target + "_IS_UNKNOWN"] = unknown
++                if bool(unknown.any()):
++                    unknown_counts[target] = int(unknown.sum())
+ 
+         bools = {}
+         for target, src in BOOLS.items():
+@@ -245,6 +274,20 @@
+                    if not any(x in df.columns for x in c)]
+         if missing:
+             ctx.extras.setdefault("derive_missing", []).extend(missing)
++        # این سیگنال تا نسخه قبل فقط نوشته می‌شد و هیچ مصرف‌کننده‌ای نداشت؛
++        # حالا bridge آن را به یک Check تبدیل می‌کند تا ستونِ بی‌تولیدکننده
++        # بی‌صدا به‌صورت مقدار پیش‌فرض در گزارش رسمی ننشیند.
++        ctx.extras["derive_coverage"] = {
++            "unreachable_targets": sorted(set(missing) - set(DECLARED_UNMEASURED)),
++            "declared_unmeasured": [t for t in DECLARED_UNMEASURED if t in missing],
++            "unknown_defaulted_to_zero": unknown_counts,
++            "rows": int(len(df)),
++        }
++        if unknown_counts:
++            log.warning(
++                "⚠️ [derive] مقادیر «نامعلوم» منبع در ستون‌های مالی legacy به صفر تبدیل شدند: "
++                + str(unknown_counts)
++                + " — ستون همزاد *_IS_UNKNOWN برای تفکیک اضافه شد (F031 همچنان باز است).")
+         return df
+ 
+     @staticmethod
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=output' rc1/gsi_2977_rc1/gsi/stages/s54_process_integrity.py rcfix/gsi/stages/s54_process_integrity.py
+--- a/gsi/stages/s54_process_integrity.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/stages/s54_process_integrity.py	2026-09-23 02:05:18.153636386 +0000
+@@ -29,7 +29,7 @@
+             "EXPERT_INTAKE": ("moghavemat",), "ORDER_CREATED": ("moghavemat",),
+             "REGISTRATION": ("ntsw",), "ALLOCATION_REQUEST": ("ntsw",),
+             "ALLOCATION": ("ntsw",), "COMMITMENT": ("ntsw",), "SETTLEMENT": ("ntsw",),
+-            "FX_PURCHASE": ("fx_transaction",), "FUNDING": ("credit",),
++            "FX_PURCHASE": ("fx_transaction",), "FUNDING": ("credit",), "SWIFT_SENT": ("credit",),
+             "PAYMENT": ("fx_transaction", "credit"), "SHIPMENT": ("abbasi", "sata"),
+             "CUSTOMS": ("cotage", "clearance"), "CLEARANCE": ("cotage", "clearance"),
+             "BANK_DOCS": ("doccheck", "credit"),
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=output' rc1/gsi_2977_rc1/gsi/warehouse/bridge.py rcfix/gsi/warehouse/bridge.py
+--- a/gsi/warehouse/bridge.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/warehouse/bridge.py	2026-09-23 02:06:24.790364856 +0000
+@@ -2,7 +2,7 @@
+ from pathlib import Path
+ import pandas as pd
+ from .store import Warehouse
+-from .reliability import validate_sources, schema_drift_checks, source_runtime_checks, Check, BLOCK
++from .reliability import validate_sources, schema_drift_checks, source_runtime_checks, Check, BLOCK, DEGRADED
+ from .quality_gate import sqlite_checks, evaluate
+ from .business_dwh import build as build_business_dwh
+ 
+@@ -32,6 +32,18 @@
+                                 {'expected_native_rows':ps.get('expected_native_rows',0),
+                                  'preserved_source_observations':ps.get('preserved_source_observations',0),
+                                  'orphan_no_business_key':ps.get('orphan_no_business_key',0)}))
++        # A derived business field whose candidates have no producer silently becomes a
++        # default value in the official report. The signal already existed in extras and
++        # had no consumer; it is a quality check now so the gap is visible per run.
++        dc = result.extras.get('derive_coverage', {}) or {}
++        if dc:
++            checks.append(Check('derive/coverage','DERIVED_SOURCE_COVERAGE',DEGRADED,
++                                not dc.get('unreachable_targets'),
++                                {k: dc.get(k) for k in ('unreachable_targets','declared_unmeasured','rows')}))
++            if dc.get('unknown_defaulted_to_zero'):
++                checks.append(Check('derive/unknown','UNKNOWN_COERCED_TO_ZERO',DEGRADED,False,
++                                    {'targets':dc['unknown_defaulted_to_zero'],
++                                     'note':'legacy numeric contract keeps 0; companion *_IS_UNKNOWN marks the rows'}))
+         dwh_counts=build_business_dwh(wh,pipeline.sources,rid)
+         result.extras['business_dwh_counts']=dwh_counts
+         result.extras['warehouse_run_id']=rid
