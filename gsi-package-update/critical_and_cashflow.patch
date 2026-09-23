@@ -1,0 +1,730 @@
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/adapters/a60_finance.py rcfinal/gsi/adapters/a60_finance.py
+--- a/gsi/adapters/a60_finance.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/adapters/a60_finance.py	2026-09-23 09:43:07.084052655 +0000
+@@ -369,6 +369,90 @@
+         "PO_OUR_REFERENCE": ["po.Our Reference"],
+     }
+ 
++    # ── Native multi-sheet export ────────────────────────────────────────
++    # The real SAP export separates its grains into sheets instead of prefixing
++    # the PO side with "po.". Each sheet maps onto the same standardized names
++    # the single-sheet layout produces, so every downstream consumer is unchanged.
++    PR_SHEET = "pr"; PO_SHEET = "po"; PACK_SHEET = "pack"
++    INBOUND_SHEET = "inbound"; GR_SHEET = "gr"
++
++    PO_SHEET_MAP = {
++        "PO_ITEM": ["Item"],
++        "PO_DOCUMENT_ITEM": ["Document Item"],
++        "PO_DELETION_IND": ["Deletion Indicator"],
++        "PO_LAST_CHANGED": ["Last Changed on"],
++        "PO_SHORT_TEXT": ["Short Text"],
++        "PO_MATERIAL": ["Material"],
++        "PO_COMPANY_CODE": ["Company Code"],
++        "PO_PLANT": ["Plant"],
++        "PO_STORAGE_LOCATION": ["Storage Location"],
++        "PO_REQ_TRACKING_NO": ["Req. Tracking Number"],
++        "PO_MATERIAL_GROUP": ["Material Group"],
++        "PO_INFO_REC": ["Purchasing Info Rec."],
++        "PO_SUPPLIER_MATERIAL": ["Supplier Mat. No."],
++        "PO_TARGET_QTY": ["Target Quantity"],
++        "PO_ORDER_UNIT": ["Order Unit"],
++        "PO_ORDER_QTY": ["Order Quantity"],
++        "PO_ORDER_PRICE_UNIT": ["Order Price Unit"],
++        "PO_QTY_CONVERSION": ["Quantity Conversion"],
++        "PO_DENOMINATOR": ["Denominator"],
++        "PO_NET_PRICE": ["Net Order Price"],
++        "PO_CURRENCY": ["Currency"],
++        "PO_PRICE_UNIT": ["Price Unit"],
++        "PO_NET_VALUE": ["Net Order Value"],
++        "PO_GROSS_VALUE": ["Gross order value"],
++        "PO_DELIVERY_COMPLETED": ["Delivery Completed"],
++        "PO_RFQ": ["RFQ"],
++        "PO_PR": ["Purchase Requisition"],
++        "PO_PR_ITEM": ["Item of requisition"],
++        "PO_MFR_PART_NO": ["Manufacturer Part No."],
++        "PO_DOC_TYPE": ["Purchasing Doc. Type"],
++        "PO_SUPPLIER": ["Supplier"],
++        "PO_DOCUMENT_DATE": ["Document Date"],
++        "PO_CREATED_BY": ["Created By"],
++        "PO_REG_FILE": ["شماره پرونده"],
++        "PO_YOUR_REFERENCE": ["Your Reference"],
++        "PO_PURCH_ORG": ["Purch. Organization"],
++        "PO_PURCH_GROUP": ["Purchasing Group"],
++        "PO_OUR_REFERENCE": ["Our Reference"],
++    }
++    PACK_SHEET_MAP = {
++        "PACK_NO": ["Pack Number"], "PACK_PR": ["Purchase Requisition"],
++        "PACK_PR_ITEM": ["Item of requisition"], "PACK_QTY": ["Quantity"],
++        "PACK_ORDER_UNIT": ["Order Unit"], "PACK_ORDER_NO": ["order Num"],
++        "PACK_RESPONSIBLE": ["Responsible"], "PACK_PACKED": ["Packed"],
++        "WORKFLOW_ID": ["WorkFlow ID"], "COMPARISON_ID": ["Comparision ID", "Comparison ID"],
++        "COMMISSION_NO": ["Commision No", "Commission No"],
++        "COMMISSION_DATE": ["Commision Date", "Commission Date"],
++        "PACK_MATERIAL": ["Material"], "PACK_MPN_MATERIAL": ["MPN: Material"],
++    }
++    INBOUND_MAP = {
++        "IB_DELIVERY": ["Delivery"], "IB_DELIVERY_TYPE": ["Delivery Type"],
++        "IB_CREATED_BY": ["Created By"], "IB_CREATED_ON": ["Created On"],
++        "IB_ITEM": ["Item"], "IB_MATERIAL": ["Material"], "IB_PLANT": ["Plant"],
++        "IB_QTY": ["Delivery Quantity"], "IB_UNIT": ["Sales Unit"],
++        "IB_REFERENCE_DOC": ["Reference Document"], "IB_REFERENCE_ITEM": ["Reference Item"],
++        "IB_SHIPMENT_NO": ["Shipment Number"], "IB_SUPPLIER": ["Supplier"],
++        "IB_SHIPMENT_TYPE": ["Shipment Type"], "IB_SERVICE_AGENT": ["Service Agent"],
++    }
++    GR_MAP = {
++        "GR_POSTING_DATE": ["Posting Date"], "GR_ENTRY_TIME": ["Time of Entry"],
++        "GR_USER": ["User Name"], "GR_DOCUMENT_DATE": ["Document Date"],
++        "GR_ITEM": ["Item"], "GR_MATERIAL_DOC": ["Material Document"],
++        "GR_MATERIAL_DOC_ITEM": ["Material Doc.Item"], "GR_MATERIAL": ["Material"],
++        "GR_MATERIAL_DESC": ["Material Description"], "GR_QTY": ["Quantity"],
++        "GR_BASE_UNIT": ["Base Unit of Measure"], "GR_PRICE_UNIT": ["Order Price Unit"],
++        "GR_MOVEMENT_TYPE": ["Movement Type"], "GR_SUPPLIER": ["Supplier"],
++        "GR_BATCH": ["Batch"], "GR_STORAGE_LOCATION": ["Storage Location"],
++        "GR_REFERENCE": ["Reference"], "GR_PLANT": ["Plant"],
++        "GR_MOVEMENT_REASON": ["Reason for Movement"], "GR_COST_CENTER": ["Cost Center"],
++    }
++    #: SAP goods movements against a purchase order. A reversal carries the same
++    #: quantity with the opposite meaning, so summing quantity without splitting
++    #: on movement type counts a reversed receipt twice.
++    GR_RECEIPT_TYPES = {"101", "103", "105", "123", "161"}
++    GR_REVERSAL_TYPES = {"102", "104", "106", "122", "124", "162"}
++
+     DATE_FIELDS = (
+         "REQUISITION_DATE", "CHANGED_ON", "RELEASE_DATE", "DELIVERY_DATE",
+         "PURCHASE_ORDER_DATE", "COMMISSION_DATE", "PO_LAST_CHANGED", "PO_DOCUMENT_DATE",
+@@ -410,7 +494,164 @@
+         v = clean_key(value)
+         return v.lstrip("0") or ("0" if v else "")
+ 
++    @staticmethod
++    def _sheet(sheets: Dict[str, pd.DataFrame], name: str):
++        """Case-insensitive sheet lookup; the export spells GR and gr both ways."""
++        for key, df in (sheets or {}).items():
++            if str(key).strip().lower() == name and isinstance(df, pd.DataFrame) and not df.empty:
++                return df
++        return None
++
++    def _native_sheets(self, sheets):
++        return {n: self._sheet(sheets, n) for n in
++                (self.PR_SHEET, self.PO_SHEET, self.PACK_SHEET,
++                 self.INBOUND_SHEET, self.GR_SHEET)}
++
++    def _gr_direction(self, value) -> str:
++        code = clean_key(value).lstrip("0") or clean_key(value)
++        if code in self.GR_RECEIPT_TYPES:
++            return "RECEIPT"
++        if code in self.GR_REVERSAL_TYPES:
++            return "REVERSAL"
++        return "UNCLASSIFIED"
++
++    def _transform_native(self, found: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
++        """Build the frames from an export that separates grains into sheets.
++
++        Every frame keeps the standardized names the single-sheet layout produces,
++        so business_dwh, the chatbot and the report consume them unchanged. What
++        changes is that PR and PO identity can no longer be conflated: they arrive
++        from different sheets.
++        """
++        p = self.p
++        out: Dict[str, pd.DataFrame] = {}
++        raw_parts = []
++
++        pr_sheet = found.get(self.PR_SHEET)
++        if pr_sheet is not None:
++            pr = self.std(pr_sheet, self.COLUMN_MAP)
++            pr["SAP_SOURCE_ROW"] = range(1, len(pr) + 1)
++            pr["SAP_SOURCE_SHEET"] = self.PR_SHEET
++            self.add_pr_key(pr, pr_sheet, ["Purchase Requisition"])
++            pr[KEY_PO] = ""
++            mcol = find_col(pr_sheet, ["Material"], exclude=["description", "group", "short text"])
++            pr[KEY_MATERIAL] = pr_sheet[mcol].map(clean_part_no) if mcol is not None else ""
++            pr[KEY_REG_FILE] = ""
++            pr["SAP_PR_ITEM"] = pr[p("PR_ITEM")].map(self._clean_item)
++            pr["SAP_PO_ITEM"] = ""
++            self._normalise(pr)
++            pr = pr[pr[KEY_PR].astype(str).str.strip().ne("")].reset_index(drop=True)
++            pr["__SORT"] = pr[p("CHANGED_ON_ISO")].where(pr[p("CHANGED_ON_ISO")].ne(""),
++                                                         pr[p("RELEASE_DATE_ISO")])
++            pr = pr.sort_values([KEY_PR, "SAP_PR_ITEM", "__SORT", "SAP_SOURCE_ROW"], kind="stable")
++            out["pr_items"] = (pr.groupby([KEY_PR, "SAP_PR_ITEM"], dropna=False, as_index=False)
++                                 .tail(1).drop(columns=["__SORT"], errors="ignore")
++                                 .reset_index(drop=True))
++            raw_parts.append(pr.drop(columns=["__SORT"], errors="ignore"))
++
++        po_sheet = found.get(self.PO_SHEET)
++        if po_sheet is not None:
++            po = self.std(po_sheet, self.PO_SHEET_MAP)
++            po["SAP_SOURCE_ROW"] = range(1, len(po) + 1)
++            po["SAP_SOURCE_SHEET"] = self.PO_SHEET
++            self.add_po_key(po, po_sheet, ["Purchasing Document"])
++            # PO-side identity only. The PR on this sheet is the PO's own
++            # requisition reference, never a header PR borrowed from elsewhere.
++            po[KEY_PR] = po[p("PO_PR")].map(clean_key)
++            po[KEY_MATERIAL] = po[p("PO_MATERIAL")].map(clean_part_no)
++            po[KEY_REG_FILE] = po[p("PO_REG_FILE")].map(clean_key)
++            self.add_order_key(po, po_sheet, ["Our Reference"])
++            po["SAP_PO_ITEM"] = po[p("PO_ITEM")].map(self._clean_item)
++            po["SAP_PR_ITEM"] = po[p("PO_PR_ITEM")].map(self._clean_item)
++            self._normalise(po)
++            po = po[po[KEY_PO].astype(str).str.strip().ne("")].reset_index(drop=True)
++            po["__SORT"] = po[p("PO_LAST_CHANGED_ISO")].where(
++                po[p("PO_LAST_CHANGED_ISO")].ne(""), po[p("PO_DOCUMENT_DATE_ISO")])
++            po = po.sort_values([KEY_PO, "SAP_PO_ITEM", "__SORT", "SAP_SOURCE_ROW"], kind="stable")
++            out["po_items"] = (po.groupby([KEY_PO, "SAP_PO_ITEM"], dropna=False, as_index=False)
++                                 .tail(1).drop(columns=["__SORT"], errors="ignore")
++                                 .reset_index(drop=True))
++            raw_parts.append(po.drop(columns=["__SORT"], errors="ignore"))
++
++        pack_sheet = found.get(self.PACK_SHEET)
++        if pack_sheet is not None:
++            pack = self.std(pack_sheet, self.PACK_SHEET_MAP)
++            pack["SAP_SOURCE_ROW"] = range(1, len(pack) + 1)
++            pack["SAP_SOURCE_SHEET"] = self.PACK_SHEET
++            pack[KEY_PR] = pack[p("PACK_PR")].map(clean_key)
++            pack["SAP_PR_ITEM"] = pack[p("PACK_PR_ITEM")].map(self._clean_item)
++            pack[KEY_PO] = ""
++            pack[KEY_MATERIAL] = pack[p("PACK_MATERIAL")].map(clean_part_no)
++            pack[KEY_REG_FILE] = ""
++            self._normalise(pack)
++            pack = pack[pack[KEY_PR].astype(str).str.strip().ne("")].reset_index(drop=True)
++            pack["SAP_WORKFLOW_SEQ"] = pack.groupby(KEY_PR).cumcount() + 1
++            out["workflow_rows"] = pack
++            raw_parts.append(pack)
++
++        inbound_sheet = found.get(self.INBOUND_SHEET)
++        if inbound_sheet is not None:
++            ib = self.std(inbound_sheet, self.INBOUND_MAP)
++            ib["SAP_SOURCE_ROW"] = range(1, len(ib) + 1)
++            ib["SAP_SOURCE_SHEET"] = self.INBOUND_SHEET
++            ib[KEY_MATERIAL] = ib[p("IB_MATERIAL")].map(clean_part_no)
++            # Direct SAP↔bill-of-lading evidence, co-observed on one native row.
++            self.add_bl_key(ib, inbound_sheet, ["شماره بارنامه", "Bill of Lading", "BL"])
++            self._normalise(ib)
++            out["inbound_deliveries"] = ib.reset_index(drop=True)
++
++        gr_sheet = found.get(self.GR_SHEET)
++        if gr_sheet is not None:
++            gr = self.std(gr_sheet, self.GR_MAP)
++            gr["SAP_SOURCE_ROW"] = range(1, len(gr) + 1)
++            gr["SAP_SOURCE_SHEET"] = self.GR_SHEET
++            self.add_po_key(gr, gr_sheet, ["Purchase order"])
++            gr[KEY_MATERIAL] = gr[p("GR_MATERIAL")].map(clean_part_no)
++            gr["SAP_GR_DOC_ITEM"] = gr[p("GR_MATERIAL_DOC_ITEM")].map(self._clean_item)
++            # A reversal carries the same quantity with the opposite meaning.
++            # An unknown movement type yields NaN rather than a guessed sign, so a
++            # consumer cannot silently add a movement nobody has classified.
++            gr[p("GR_DIRECTION")] = gr[p("GR_MOVEMENT_TYPE")].map(self._gr_direction)
++            qty = pd.to_numeric(gr[p("GR_QTY")], errors="coerce")
++            sign = gr[p("GR_DIRECTION")].map({"RECEIPT": 1.0, "REVERSAL": -1.0})
++            gr[p("GR_SIGNED_QTY")] = qty * sign
++            gr[p("GR_QTY")] = qty
++            self._normalise(gr)
++            out["goods_receipts"] = gr.reset_index(drop=True)
++            unknown = int(gr[p("GR_DIRECTION")].eq("UNCLASSIFIED").sum())
++            if unknown:
++                log.warning(f"   ⚠️ [sap] {unknown} حرکت کالا با نوع نامشخص؛ مقدار علامت‌دار "
++                            "برای آن‌ها NaN ماند و در هیچ جمعی وارد نمی‌شود.")
++
++        if raw_parts:
++            out["raw_rows"] = pd.concat(raw_parts, ignore_index=True, sort=False)
++        if "pr_items" in out and not out["pr_items"].empty:
++            latest = out["pr_items"].copy()
++            latest["__SORT"] = latest[p("CHANGED_ON_ISO")].where(
++                latest[p("CHANGED_ON_ISO")].ne(""), latest[p("RELEASE_DATE_ISO")])
++            latest = latest.sort_values([KEY_PR, "__SORT", "SAP_SOURCE_ROW"], kind="stable")
++            out["main"] = (latest.groupby(KEY_PR, as_index=False).tail(1)
++                                 .drop(columns=["__SORT"], errors="ignore").reset_index(drop=True))
++        elif "po_items" in out:
++            out["main"] = out["po_items"].head(0).copy()
++        log.info("   ⚙️ [sap] native multi-sheet export — " +
++                 " | ".join(f"{k}={len(v)}" for k, v in out.items()))
++        return out
++
++    def _normalise(self, frame: pd.DataFrame) -> None:
++        """Shared date/number normalisation for every SAP frame."""
++        p = self.p
++        for f in self.DATE_FIELDS:
++            if p(f) in frame:
++                frame[p(f + "_ISO")] = frame[p(f)].map(self._iso_date)
++        for f in self.NUMERIC_FIELDS:
++            if p(f) in frame:
++                frame[p(f)] = pd.to_numeric(frame[p(f)], errors="coerce")
++
+     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
++        native = self._native_sheets(sheets)
++        if any(v is not None for v in native.values()):
++            return self._transform_native(native)
+         df = self._first(sheets)
+         if df is None or df.empty:
+             return {}
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/config/sources.yaml rcfinal/gsi/config/sources.yaml
+--- a/gsi/config/sources.yaml	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/config/sources.yaml	2026-09-23 09:41:39.196701229 +0000
+@@ -168,7 +168,10 @@
+   sap:
+     folder: "${FOREIGN_DIR}"
+     pattern: "*SAP*"
+-    sheets: ["Data"]
++    # The real export separates its grains into sheets. "Data" is the legacy
++    # single-sheet layout where the PO side is carried by "po." prefixed columns;
++    # both are accepted and the adapter detects which one it was given.
++    sheets: ["Data", "pr", "po", "pack", "inbound", "GR"]
+     join_on: PR
+     weight: 0.82
+     role: "برنامه‌ریزی و خرید SAP — PR Item / Workflow / PO Item"
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/resolve/process_evidence.py rcfinal/gsi/resolve/process_evidence.py
+--- a/gsi/resolve/process_evidence.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/resolve/process_evidence.py	2026-09-23 09:41:31.274989646 +0000
+@@ -51,6 +51,10 @@
+     ("COMMITMENT", "تعهد ارزی", "FX_COMMITMENT"),
+     ("FX_PURCHASE", "خرید ارز", "TREASURY"),
+     ("FUNDING", "تأمین وجه", "TREASURY"),
++    # SWIFT is an outgoing instruction, not proof that the beneficiary was paid.
++    # It is a registered stage so the evidence stays visible in the matrix; emitting
++    # it without registration silently dropped it from every case projection.
++    ("SWIFT_SENT", "ارسال سوئیفت", "TREASURY"),
+     ("PAYMENT", "پرداخت / وصول ذی‌نفع", "TREASURY"),
+     ("SHIPMENT", "حمل", "LOGISTICS"),
+     ("CUSTOMS", "اظهار / کوتاژ", "CUSTOMS"),
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/stages/s20_derive.py rcfinal/gsi/stages/s20_derive.py
+--- a/gsi/stages/s20_derive.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/stages/s20_derive.py	2026-09-23 09:41:31.274989646 +0000
+@@ -154,13 +154,30 @@
+ }
+ 
+ 
++#: فیلدهای پولی/مقداری که adapter در RC می‌تواند عمداً «نامعلوم» (NaN) بدهد —
++#: مثلاً تعهد چندارزی یا ردیف قرنطینه‌شده. قرارداد عددی legacy این ستون‌ها
++#: (پیش‌فرض صفر) اینجا عوض نمی‌شود، چون مصرف‌کننده‌های قدیمی روی float حساب
++#: می‌کنند؛ اما یک پرچم همزاد ساخته می‌شود تا «صفر واقعی» از «نامعلومِ
++#: صفرشده» قابل تفکیک باشد. تکمیل کامل قرارداد unknown/zero همچنان F031 است.
++UNKNOWN_SENSITIVE = (
++    "CB_VALUE", "BALANCE",
++    "ALLOCATED_AMOUNT", "OPEN_QUEUE_AMOUNT",
++    "REJECTED_ALLOC_AMOUNT", "ALLOC_REQUESTED_GROSS",
++)
++
++#: اهدافی که در این پکیج هیچ تولیدکننده‌ای ندارند و عمداً نامعلوم می‌مانند.
++#: اینجا صریح اعلام می‌شوند تا «مرده و فراموش‌شده» با «تصمیم‌گرفته‌شده» یکی نشود.
++#: FIN_RECEIPT_DATE تا تعیین ستون رسید مالی توسط مالک منبع (B3) نامعلوم است.
++DECLARED_UNMEASURED = ("FIN_RECEIPT_DATE",)
++
++
+ @register
+ class DeriveStage(Stage):
+     name = "derive"
+     title = "ترجمه ستون‌های سورس به ستون‌های دامنه‌ای"
+     order = 20
+     requires = []
+-    provides = list(DERIVED) + list(BOOLS)
++    provides = list(DERIVED) + [t + "_IS_UNKNOWN" for t in UNKNOWN_SENSITIVE] + list(BOOLS)
+ 
+     @staticmethod
+     def _inventory_pipeline(df: pd.DataFrame, ctx: PipelineContext) -> pd.DataFrame:
+@@ -223,9 +240,21 @@
+         # می‌سازد. این تغییر فقط مسیر ساخت حافظه را عوض می‌کند؛ معنا و ترتیب
+         # اولویت کاندیدها دقیقاً همان DERIVED/BOOLS است.
+         derived = {}
++        unknown_counts: dict = {}
+         for target, (candidates, default, numeric) in DERIVED.items():
+-            series = self._first_nonempty(df, sort_columns(candidates), default)
++            ordered = sort_columns(candidates)
++            series = self._first_nonempty(df, ordered, default)
+             derived[target] = series.map(num_safe) if numeric else series
++            if target in UNKNOWN_SENSITIVE:
++                # «نامعلوم» یعنی هیچ کاندیدی برای این ردیف مقدار قابل‌استفاده نداد،
++                # پس عددِ نهایی از default آمده است نه از شاهد منبع. با default=None
++                #  «صفرِ واقعی منبع» از «نبودِ مقدار» جدا می‌ماند؛ treat_zero_as_empty
++                # اینجا عمداً False است تا صفر معتبر نامعلوم شمرده نشود.
++                probe = self._first_nonempty(df, ordered, None)
++                unknown = probe.map(lambda v: is_empty_val(v, treat_zero_as_empty=False))
++                derived[target + "_IS_UNKNOWN"] = unknown
++                if bool(unknown.any()):
++                    unknown_counts[target] = int(unknown.sum())
+ 
+         bools = {}
+         for target, src in BOOLS.items():
+@@ -245,6 +274,20 @@
+                    if not any(x in df.columns for x in c)]
+         if missing:
+             ctx.extras.setdefault("derive_missing", []).extend(missing)
++        # این سیگنال تا نسخه قبل فقط نوشته می‌شد و هیچ مصرف‌کننده‌ای نداشت؛
++        # حالا bridge آن را به یک Check تبدیل می‌کند تا ستونِ بی‌تولیدکننده
++        # بی‌صدا به‌صورت مقدار پیش‌فرض در گزارش رسمی ننشیند.
++        ctx.extras["derive_coverage"] = {
++            "unreachable_targets": sorted(set(missing) - set(DECLARED_UNMEASURED)),
++            "declared_unmeasured": [t for t in DECLARED_UNMEASURED if t in missing],
++            "unknown_defaulted_to_zero": unknown_counts,
++            "rows": int(len(df)),
++        }
++        if unknown_counts:
++            log.warning(
++                "⚠️ [derive] مقادیر «نامعلوم» منبع در ستون‌های مالی legacy به صفر تبدیل شدند: "
++                + str(unknown_counts)
++                + " — ستون همزاد *_IS_UNKNOWN برای تفکیک اضافه شد (F031 همچنان باز است).")
+         return df
+ 
+     @staticmethod
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/stages/s54_process_integrity.py rcfinal/gsi/stages/s54_process_integrity.py
+--- a/gsi/stages/s54_process_integrity.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/stages/s54_process_integrity.py	2026-09-23 09:41:31.275040109 +0000
+@@ -29,7 +29,7 @@
+             "EXPERT_INTAKE": ("moghavemat",), "ORDER_CREATED": ("moghavemat",),
+             "REGISTRATION": ("ntsw",), "ALLOCATION_REQUEST": ("ntsw",),
+             "ALLOCATION": ("ntsw",), "COMMITMENT": ("ntsw",), "SETTLEMENT": ("ntsw",),
+-            "FX_PURCHASE": ("fx_transaction",), "FUNDING": ("credit",),
++            "FX_PURCHASE": ("fx_transaction",), "FUNDING": ("credit",), "SWIFT_SENT": ("credit",),
+             "PAYMENT": ("fx_transaction", "credit"), "SHIPMENT": ("abbasi", "sata"),
+             "CUSTOMS": ("cotage", "clearance"), "CLEARANCE": ("cotage", "clearance"),
+             "BANK_DOCS": ("doccheck", "credit"),
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/warehouse/bridge.py rcfinal/gsi/warehouse/bridge.py
+--- a/gsi/warehouse/bridge.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/warehouse/bridge.py	2026-09-23 09:41:31.275040109 +0000
+@@ -2,7 +2,7 @@
+ from pathlib import Path
+ import pandas as pd
+ from .store import Warehouse
+-from .reliability import validate_sources, schema_drift_checks, source_runtime_checks, Check, BLOCK
++from .reliability import validate_sources, schema_drift_checks, source_runtime_checks, Check, BLOCK, DEGRADED
+ from .quality_gate import sqlite_checks, evaluate
+ from .business_dwh import build as build_business_dwh
+ 
+@@ -32,6 +32,18 @@
+                                 {'expected_native_rows':ps.get('expected_native_rows',0),
+                                  'preserved_source_observations':ps.get('preserved_source_observations',0),
+                                  'orphan_no_business_key':ps.get('orphan_no_business_key',0)}))
++        # A derived business field whose candidates have no producer silently becomes a
++        # default value in the official report. The signal already existed in extras and
++        # had no consumer; it is a quality check now so the gap is visible per run.
++        dc = result.extras.get('derive_coverage', {}) or {}
++        if dc:
++            checks.append(Check('derive/coverage','DERIVED_SOURCE_COVERAGE',DEGRADED,
++                                not dc.get('unreachable_targets'),
++                                {k: dc.get(k) for k in ('unreachable_targets','declared_unmeasured','rows')}))
++            if dc.get('unknown_defaulted_to_zero'):
++                checks.append(Check('derive/unknown','UNKNOWN_COERCED_TO_ZERO',DEGRADED,False,
++                                    {'targets':dc['unknown_defaulted_to_zero'],
++                                     'note':'legacy numeric contract keeps 0; companion *_IS_UNKNOWN marks the rows'}))
+         dwh_counts=build_business_dwh(wh,pipeline.sources,rid)
+         result.extras['business_dwh_counts']=dwh_counts
+         result.extras['warehouse_run_id']=rid
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/warehouse/fx_obligation.py rcfinal/gsi/warehouse/fx_obligation.py
+--- a/gsi/warehouse/fx_obligation.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/warehouse/fx_obligation.py	2026-09-23 09:44:56.290426990 +0000
+@@ -162,13 +162,54 @@
+     return out
+ 
+ 
+-def totals_by_currency(wh: Optional[Warehouse] = None) -> List[Dict[str, Any]]:
+-    """جمع تعهد و مانده، فقط درون هر ارز. هیچ تبدیلی انجام نمی‌شود."""
++def _scoped_file_ids(conn, run_id: Optional[str]) -> tuple[list[str], str]:
++    """The file versions a total may legitimately cover.
++
++    ``wh_measure`` is an append-only archive: every ingested version of the NTSW
++    workbook is still in it. Summing the table means summing yesterday's balance
++    on top of today's. A total must therefore be scoped to one run's files, or —
++    when nothing has been published yet — to the newest ingest per source.
++    """
++    if run_id is None:
++        row = (conn.execute("SELECT run_id FROM wh_current WHERE slot='dwh'").fetchone()
++               or conn.execute("SELECT run_id FROM wh_current WHERE slot='report'").fetchone())
++        run_id = row[0] if row else None
++    if run_id:
++        ids = [r[0] for r in conn.execute(
++            "SELECT DISTINCT file_id FROM wh_ingest WHERE run_id=?", (run_id,)).fetchall()]
++        if ids:
++            return ids, f"published_run:{run_id}"
++    ids = [r[0] for r in conn.execute(
++        "SELECT file_id FROM wh_ingest WHERE id IN "
++        "(SELECT max(id) FROM wh_ingest GROUP BY source)").fetchall()]
++    return ids, "latest_ingest_per_source"
++
++
++def totals_by_currency(wh: Optional[Warehouse] = None, run_id: Optional[str] = None,
++                       all_versions: bool = False) -> List[Dict[str, Any]]:
++    """جمع تعهد و مانده، فقط درون هر ارز و فقط روی نسخه جاری فایل‌ها.
++
++    ``wh_measure`` آرشیو است و همه نسخه‌های ingest‌شده در آن می‌مانند؛ جمع بدون
++    دامنه یعنی جمع‌زدن مانده دیروز روی مانده امروز. پیش‌فرض، فایل‌های اجرای
++    منتشرشده است. ``all_versions=True`` عمداً کل آرشیو را جمع می‌زند و نتیجه با
++    همان برچسب دامنه برمی‌گردد تا با «مانده جاری» اشتباه نشود.
++    """
+     wh = wh or Warehouse()
+     with wh.db() as c:
+-        rows = c.execute(
+-            "SELECT measure,currency,amount_decimal,status FROM wh_measure "
+-            "WHERE measure IN ('تعهد اولیه','مانده تعهد')").fetchall()
++        if all_versions:
++            scope, ids = "all_archived_versions", None
++            rows = c.execute(
++                "SELECT measure,currency,amount_decimal,status FROM wh_measure "
++                "WHERE measure IN ('تعهد اولیه','مانده تعهد')").fetchall()
++        else:
++            ids, scope = _scoped_file_ids(c, run_id)
++            if not ids:
++                return []
++            marks = ",".join("?" * len(ids))
++            rows = c.execute(
++                "SELECT measure,currency,amount_decimal,status FROM wh_measure "
++                f"WHERE measure IN ('تعهد اولیه','مانده تعهد') AND file_id IN ({marks})",
++                ids).fetchall()
+     known = defaultdict(Decimal)
+     unknown = defaultdict(int)
+     for measure, currency, amount, status in rows:
+@@ -178,5 +219,6 @@
+         else:
+             unknown[key] += 1
+     return [{"سنجه": k[0], "ارز": k[1], "جمع معلوم": format(known[k], "f"),
+-             "سطر نامعلوم": unknown[k]}
++             "سطر نامعلوم": unknown[k], "دامنه": scope,
++             "نسخه‌های شمرده‌شده": len(ids) if ids is not None else "کل آرشیو"}
+             for k in sorted(set(known) | set(unknown))]
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/gsi/warehouse/reliability.py rcfinal/gsi/warehouse/reliability.py
+--- a/gsi/warehouse/reliability.py	2026-09-23 00:00:00.000000000 +0000
++++ b/gsi/warehouse/reliability.py	2026-09-23 09:45:44.008104273 +0000
+@@ -137,6 +137,28 @@
+         nullable_key=False,
+         description="History-preserving workflow evidence; repeated PRs are expected and must not be deduplicated globally.",
+     ),
++    "sap/inbound_deliveries": GrainContract(
++        name="sap/inbound_deliveries",
++        grain="inbound delivery item",
++        natural_key=("SAP_IB_DELIVERY", "SAP_IB_ITEM"),
++        required_columns=("SAP_IB_DELIVERY",),
++        nullable_key=True,
++        duplicate_policy="warn",
++        description="Direct SAP↔bill-of-lading evidence co-observed on one native row; "
++                    "the shipping link is observed here, not inferred downstream.",
++    ),
++    "sap/goods_receipts": GrainContract(
++        name="sap/goods_receipts",
++        grain="goods movement line (material document × item)",
++        natural_key=("SAP_GR_MATERIAL_DOC", "SAP_GR_DOC_ITEM"),
++        required_columns=("SAP_GR_MATERIAL_DOC", "SAP_GR_MOVEMENT_TYPE"),
++        nullable_key=True,
++        duplicate_policy="forbid",
++        additive_measures=("SAP_GR_SIGNED_QTY",),
++        non_additive_measures=("SAP_GR_QTY",),
++        description="A reversal repeats the quantity with the opposite meaning. Only "
++                    "SAP_GR_SIGNED_QTY is additive; SAP_GR_QTY must never be summed.",
++    ),
+     "hr/main": GrainContract(
+         name="hr/main",
+         grain="one active HR mapping row per employee code",
+@@ -287,9 +309,28 @@
+     fallbacks = getattr(pipeline, "source_fallbacks", {}) or {}
+     merge_failures = getattr(pipeline, "merge_failures", []) or []
+     critical_sources = {"ntsw", "ilappend"}
++    # A workbook that was found but whose expected sheets are absent is a broken
++    # contract, not an availability gap: the file is there and the pipeline still
++    # gets nothing. Left at DEGRADED this publishes a fresh report with a whole
++    # source silently missing, which is how an SAP export that renamed its sheets
++    # could contribute zero rows and still pass the gate.
++    from .. import health as _health
++    try:
++        health_sources = dict(_health.current().sources)
++    except Exception:
++        health_sources = {}
+     for source, frames in (getattr(pipeline, 'sources', {}) or {}).items():
+         if not any(isinstance(df, pd.DataFrame) and not df.empty for df in frames.values()):
+-            out.append(Check(f"source/{source}", "SOURCE_COVERAGE_GAP", DEGRADED, False, {"state":"NOT_OBSERVED"}))
++            rec = health_sources.get(source)
++            gaps = list(getattr(rec, "schema_gaps", []) or [])
++            if gaps:
++                out.append(Check(f"source/{source}", "SOURCE_SCHEMA_CONTRACT_BROKEN", BLOCK, False, {
++                    "state": "FILE_PRESENT_EXPECTED_SHEET_MISSING", "schema_gaps": gaps[:10],
++                    "action": "the workbook was located but no configured sheet was found; fix the "
++                              "sheet list in config/sources.yaml or the export, then re-run"}))
++            else:
++                out.append(Check(f"source/{source}", "SOURCE_COVERAGE_GAP", DEGRADED, False,
++                                 {"state": "NOT_OBSERVED"}))
+         for name, df in frames.items():
+             if 'quarantine' in name and isinstance(df, pd.DataFrame) and not df.empty:
+                 out.append(Check(f"{source}/{name}", "QUARANTINED_SOURCE_ROWS", DEGRADED, False, {"rows":len(df)}))
+diff -u -r --new-file '--exclude=__pycache__' '--exclude=*.pyc' '--exclude=*.sqlite*' '--exclude=.pytest_cache' rcw/gsi_2977_rc1/tests/test_opus_critical_and_cashflow.py rcfinal/tests/test_opus_critical_and_cashflow.py
+--- a/tests/test_opus_critical_and_cashflow.py	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/test_opus_critical_and_cashflow.py	2026-09-23 09:45:57.431664811 +0000
+@@ -0,0 +1,183 @@
++# -*- coding: utf-8 -*-
++"""Critical and cash-flow fixes applied to the main package.
++
++Pins the real-export SAP format, the gate that made a missing sheet invisible,
++the goods-receipt reversal double-count, and the obligation totals scope.
++"""
++import pandas as pd
++import pytest
++
++from gsi.adapters.a60_finance import SapAdapter
++from gsi.warehouse.store import Warehouse
++from gsi.warehouse.reliability import source_runtime_checks, validate_frame, BLOCK
++from gsi.warehouse.marts import stage
++from gsi.warehouse.fx_obligation import totals_by_currency
++from gsi import health
++
++
++def pr_sheet():
++    return pd.DataFrame([
++        {"Purchase Requisition": "6500029693", "Item of requisition": "00010",
++         "Material": "9654003280", "Purchase order": "4500000001",
++         "Changed On": "2026-01-10", "Release Date": "2026-01-06",
++         "Quantity requested": "100", "Processing status": "مورد تایید"}])
++
++
++def po_sheet():
++    return pd.DataFrame([
++        {"Purchasing Document": "4500000001", "Item": "00010", "Document Item": "00010",
++         "Material": "9111111111", "Purchase Requisition": "6500029999",
++         "Item of requisition": "00090", "شماره پرونده": "664823825",
++         "Our Reference": "502805", "Your Reference": "SUP-9",
++         "Net Order Value": "1200", "Currency": "EUR", "Supplier": "V-900",
++         "Document Date": "2026-02-01", "Last Changed on": "2026-02-05"}])
++
++
++# ── the real export separates grains into sheets ──────────────────────────────
++def test_native_multi_sheet_export_is_recognised():
++    out = SapAdapter().transform({"pr": pr_sheet(), "po": po_sheet()})
++    assert {"pr_items", "po_items", "raw_rows", "main"} <= set(out)
++    assert len(out["pr_items"]) == 1 and len(out["po_items"]) == 1
++
++
++def test_po_identity_comes_from_the_po_sheet_not_the_pr_sheet():
++    """The PO sheet carries its own requisition; nothing may borrow the PR header."""
++    out = SapAdapter().transform({"pr": pr_sheet(), "po": po_sheet()})
++    row = out["po_items"].iloc[0]
++    assert row["KEY_PO"] == "4500000001"
++    assert row["KEY_PR"] == "6500029999"        # not 6500029693 from the pr sheet
++    assert row["SAP_PR_ITEM"] == "90"
++    assert row["KEY_MATERIAL"] == "9111111111"
++
++
++def test_po_sheet_yields_the_native_registration_file_and_order_bridges():
++    out = SapAdapter().transform({"pr": pr_sheet(), "po": po_sheet()})
++    row = out["po_items"].iloc[0]
++    assert row["KEY_REG_FILE"] == "664823825"   # شماره پرونده, observed not inferred
++    assert row["KEY_ORDER"] == "502805"         # Our Reference is the buyer's order
++    assert row["SAP_PO_YOUR_REFERENCE"] == "SUP-9"   # the supplier's ref stays separate
++
++
++def test_inbound_sheet_gives_a_native_sap_to_bill_of_lading_link():
++    inbound = pd.DataFrame([{"Delivery": "D1", "Item": "10", "Material": "9654003280",
++                             "Delivery Quantity": "60", "Shipment Number": "SH-1",
++                             "Supplier": "V-900", "شماره بارنامه": "BL-777"}])
++    out = SapAdapter().transform({"inbound": inbound})
++    assert out["inbound_deliveries"].iloc[0]["KEY_BL"] == "BL777"
++
++
++def test_legacy_single_sheet_export_still_works():
++    legacy = pd.DataFrame([{
++        "Purchase Requisition": "6500029693", "Item of requisition": "00010",
++        "Material": "PRMAT", "Changed On": "2026-01-10",
++        "po.Purchasing Document": "4500000001", "po.Item": "00010",
++        "po.Purchase Requisition": "6500029693", "po.Material": "POMAT"}])
++    out = SapAdapter().transform({"Data": legacy})
++    assert len(out["po_items"]) == 1
++    assert out["po_items"].iloc[0]["KEY_PO"] == "4500000001"
++
++
++# ── goods receipt: a reversal must not be counted as a second receipt ──────────
++def gr_sheet():
++    return pd.DataFrame([
++        {"Posting Date": "2026-04-01", "Purchase order": "4500000001",
++         "Material Document": "5000123", "Material Doc.Item": "1",
++         "Material": "9654003280", "Quantity": "60", "Movement Type": "101"},
++        {"Posting Date": "2026-04-05", "Purchase order": "4500000001",
++         "Material Document": "5000124", "Material Doc.Item": "1",
++         "Material": "9654003280", "Quantity": "60", "Movement Type": "102"},
++        {"Posting Date": "2026-04-07", "Purchase order": "4500000001",
++         "Material Document": "5000125", "Material Doc.Item": "1",
++         "Material": "9654003280", "Quantity": "5", "Movement Type": "999"}])
++
++
++def test_reversed_receipt_cancels_instead_of_double_counting():
++    gr = SapAdapter().transform({"GR": gr_sheet()})["goods_receipts"]
++    assert gr["SAP_GR_QTY"].sum() == 125          # what a naive sum would report
++    assert gr["SAP_GR_SIGNED_QTY"].sum() == 0.0   # receipt 60 cancelled by reversal 60
++
++
++def test_unknown_movement_type_is_never_given_a_sign():
++    gr = SapAdapter().transform({"GR": gr_sheet()})["goods_receipts"]
++    row = gr[gr["SAP_GR_MOVEMENT_TYPE"].eq("999")].iloc[0]
++    assert row["SAP_GR_DIRECTION"] == "UNCLASSIFIED"
++    assert pd.isna(row["SAP_GR_SIGNED_QTY"])
++
++
++def test_goods_receipt_contract_marks_only_the_signed_quantity_additive():
++    gr = SapAdapter().transform({"GR": gr_sheet()})["goods_receipts"]
++    checks = {c.code: c for c in validate_frame("sap/goods_receipts", gr)}
++    assert checks["REQUIRED_COLUMNS"].passed
++    from gsi.warehouse.reliability import CONTRACTS
++    c = CONTRACTS["sap/goods_receipts"]
++    assert c.additive_measures == ("SAP_GR_SIGNED_QTY",)
++    assert "SAP_GR_QTY" in c.non_additive_measures
++
++
++# ── a workbook found but with no expected sheet must block, not degrade ───────
++class _Pipeline:
++    def __init__(self, sources):
++        self.sources = sources
++        self.source_failures = {}
++        self.source_fallbacks = {}
++        self.merge_failures = []
++
++
++def test_missing_expected_sheet_blocks_publication():
++    health.reset()
++    rec = health.current().source("sap", title="SAP", required=False)
++    health.current().schema_gap("sap", "شیت «Data» در SAP.xlsx نیست (شیت‌های موجود: ['pr','po'])")
++    checks = source_runtime_checks(_Pipeline({"sap": {}}))
++    broken = [c for c in checks if c.code == "SOURCE_SCHEMA_CONTRACT_BROKEN"]
++    assert broken and broken[0].severity == BLOCK and not broken[0].passed
++    assert rec is not None
++
++
++def test_source_simply_absent_still_only_degrades():
++    health.reset()
++    health.current().source("doccheck", title="DocCheck", required=False)
++    checks = source_runtime_checks(_Pipeline({"doccheck": {}}))
++    codes = {c.code for c in checks}
++    assert "SOURCE_COVERAGE_GAP" in codes
++    assert "SOURCE_SCHEMA_CONTRACT_BROKEN" not in codes
++
++
++# ── cash flow: obligation totals must not sum every archived file version ─────
++def _stage_commitment(wh, balance, tag):
++    df = pd.DataFrame([{"_SOURCE_ROW": 2, "کد ثبت سفارش": "R1",
++                        "تاریخ ایجاد تعهد": "1405/06/24",
++                        "وضعیت رفع تعهد": "رفع تعهد نشده", "تعهد اولیه": balance,
++                        "مانده تعهد": balance, "ارز": "یورو"}])
++    fid = wh.blob(tag.encode(), f"ntsw_{tag}.xlsx", "ntsw", f"/tmp/ntsw_{tag}.xlsx")
++    stage(df, "ntsw", "Release Commitment", fid)
++    return fid
++
++
++def test_totals_use_the_published_run_not_every_archived_version(tmp_path, monkeypatch):
++    monkeypatch.setenv("GSI_DWH_PATH", str(tmp_path / "w.sqlite"))
++    wh = Warehouse(tmp_path / "w.sqlite")
++    with wh.run({"t": 1}):
++        _stage_commitment(wh, "50", "v1")
++    with wh.run({"t": 2}) as rid2:
++        _stage_commitment(wh, "50", "v2")
++    with wh.db() as c:
++        c.execute("INSERT INTO wh_current(slot,run_id) VALUES('dwh',?) "
++                  "ON CONFLICT(slot) DO UPDATE SET run_id=excluded.run_id", (rid2,))
++    scoped = {(t["سنجه"], t["ارز"]): t for t in totals_by_currency(wh)}
++    assert scoped[("مانده تعهد", "یورو")]["جمع معلوم"] == "50"
++    assert scoped[("مانده تعهد", "یورو")]["دامنه"].startswith("published_run:")
++    archive = {(t["سنجه"], t["ارز"]): t for t in totals_by_currency(wh, all_versions=True)}
++    assert archive[("مانده تعهد", "یورو")]["جمع معلوم"] == "100"      # the old behaviour
++    assert archive[("مانده تعهد", "یورو")]["دامنه"] == "all_archived_versions"
++
++
++def test_totals_without_a_publication_use_the_newest_ingest(tmp_path, monkeypatch):
++    monkeypatch.setenv("GSI_DWH_PATH", str(tmp_path / "w2.sqlite"))
++    wh = Warehouse(tmp_path / "w2.sqlite")
++    with wh.run({"t": 1}):
++        _stage_commitment(wh, "50", "a")
++    with wh.run({"t": 2}):
++        _stage_commitment(wh, "50", "b")
++    totals = {(t["سنجه"], t["ارز"]): t for t in totals_by_currency(wh)}
++    assert totals[("مانده تعهد", "یورو")]["جمع معلوم"] == "50"
++    assert totals[("مانده تعهد", "یورو")]["دامنه"] == "latest_ingest_per_source"
