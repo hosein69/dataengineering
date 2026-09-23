@@ -30,6 +30,7 @@ WATCHLIST = [
     ("POL", ["POL", "MATIC"], 0.075, "claimed higher lows above ~0.075"),
     ("ARB", ["ARB"], None, "claimed ~+10% day"),
     ("WLD", ["WLD"], None, "needs resistance breakout"),
+    ("TRX", ["TRX"], None, "added for comparison"),
 ]
 LEADERS = [("BTC", ["BTC"]), ("ETH", ["ETH"])]
 
@@ -278,35 +279,33 @@ def analyse(name, candidates, stats):
             "candles": len(candles), "lastCandle": candles[-1]["t"], **view}
 
 
+HEADER = ("| Asset | Nobitex (USDT) | 24h % | Binance | Kumo (bottom–top) | Tenkan/Kijun | EMA20 | "
+          "RSI14 | MACD hist | ATR14 | 20d range | Structure | P(up) prior→post | Score | Bias |")
+SEP = "|" + "---|" * 15
+
+
+def row(r):
+    if "error" in r:
+        return f"| {r['name']} | {r['error']} |" + " |" * 13
+    l, p = r["last"], r["price"]
+    bn = f"{fmt(r['binance'], p)} ({(p / r['binance'] - 1) * 100:+.2f}%)" if r["binance"] else "n/a"
+    return (
+        f"| {r['name']} | {fmt(p)} | {r['dayChange']:+.2f}% | {bn} | {r['kumo']} "
+        f"({fmt(r['kumoBottom'], p)}–{fmt(r['kumoTop'], p)}) | {fmt(l.get('tenkan'), p)}/"
+        f"{fmt(l.get('kijun'), p)} | {fmt(l.get('ema20'), p)} | {l.get('rsi', 0):.1f} | "
+        f"{fmt(l.get('macdHist'), p)} | {fmt(l.get('atr'), p)} | {fmt(r['low20'], p)}–{fmt(r['high20'], p)} | "
+        f"{r['structure']} | {r['prior']:.2f}→{r['posterior']:.2f} | {r['score']:+d} | {r['bias']} |")
+
+
 def render(results, leaders):
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines = [f"# Live Nobitex watchlist — {now}", "",
              "Source: apiv2.nobitex.ir (market/stats + daily UDF candles). Indicators "
              "ported from aria-futures-demo-source. Binance cross-check as in the Aria demo.", "",
-             "## Leaders", "", "| Asset | Nobitex (USDT) | 24h % | Kumo | EMA20 | RSI14 | Bias |",
-             "|---|---|---|---|---|---|---|"]
-    for r in leaders:
-        if "error" in r:
-            lines.append(f"| {r['name']} | {r['error']} | | | | | |")
-            continue
-        lines.append(f"| {r['name']} | {fmt(r['price'])} | {r['dayChange']:+.2f}% | {r['kumo']} | "
-                     f"{fmt(r['last'].get('ema20'), r['price'])} | {r['last'].get('rsi', 0):.1f} | {r['bias']} |")
-    lines += ["", "## Watchlist", "",
-              "| Asset | Nobitex (USDT) | 24h % | Binance | Kumo (bottom–top) | Tenkan/Kijun | "
-              "RSI14 | MACD hist | ATR14 | 20d range | Structure | P(up) prior→post | Score | Bias |",
-              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
-    for r in results:
-        if "error" in r:
-            lines.append(f"| {r['name']} | {r['error']} |" + " |" * 12)
-            continue
-        l, p = r["last"], r["price"]
-        bn = f"{fmt(r['binance'], p)} ({(p / r['binance'] - 1) * 100:+.2f}%)" if r["binance"] else "n/a"
-        lines.append(
-            f"| {r['name']} | {fmt(p)} | {r['dayChange']:+.2f}% | {bn} | {r['kumo']} "
-            f"({fmt(r['kumoBottom'], p)}–{fmt(r['kumoTop'], p)}) | {fmt(l.get('tenkan'), p)}/"
-            f"{fmt(l.get('kijun'), p)} | {l.get('rsi', 0):.1f} | {fmt(l.get('macdHist'), p)} | "
-            f"{fmt(l.get('atr'), p)} | {fmt(r['low20'], p)}–{fmt(r['high20'], p)} | {r['structure']} | "
-            f"{r['prior']:.2f}→{r['posterior']:.2f} | {r['score']:+d} | {r['bias']} |")
+             "## Leaders", "", HEADER, SEP]
+    lines += [row(r) for r in leaders]
+    lines += ["", "## Watchlist", "", HEADER, SEP]
+    lines += [row(r) for r in results]
     lines += ["", "## Claims from the previous write-up vs live data", ""]
     for (name, _, level, claim), r in zip(WATCHLIST, results):
         if "error" in r:
@@ -316,6 +315,8 @@ def render(results, leaders):
             verdict = f"price {'ABOVE' if r['price'] > level else 'BELOW'} {level} ({(r['price'] / level - 1) * 100:+.1f}%)"
         elif name == "ARB":
             verdict = f"24h change is {r['dayChange']:+.2f}%"
+        elif name == "TRX":
+            verdict = f"20d range {fmt(r['low20'])}–{fmt(r['high20'])}; {r['structure']}"
         elif name == "WLD":
             verdict = f"20d high (resistance) {fmt(r['high20'])}; {r['structure']}"
         lines.append(f"- **{name}** — {claim}: {verdict}; Kumo {r['kumo']}, bias {r['bias']}.")
