@@ -1,0 +1,127 @@
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/factsheet.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/factsheet.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/factsheet.py	2026-09-23 11:32:44.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/factsheet.py	2026-09-24 19:24:24.990378018 +0000
+@@ -37,7 +37,7 @@
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+ VERSION = "29.8.2"
+-RELEASE_CHANNEL = "rc4-opt1"
++RELEASE_CHANNEL = "rc4-opt2-h1"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 17
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/knowledge_desk/indexer.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/knowledge_desk/indexer.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/knowledge_desk/indexer.py	2026-09-23 11:32:44.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/knowledge_desk/indexer.py	2026-09-24 19:25:03.104578713 +0000
+@@ -191,6 +191,20 @@
+             if row["path"] not in seen and any(Path(row["path"]).is_relative_to(root) for root in scanned_roots):
+                 conn.execute("UPDATE kb_documents SET status='DELETED' WHERE document_id=?",(row["document_id"],)); stats["deleted"]+=1
+         conn.execute("INSERT OR REPLACE INTO kb_meta(key,value) VALUES('last_indexed_at', datetime('now'))")
++        # Composition of the resulting index, so a single file dominating the
++        # knowledge base is visible before anything is published. A raw business
++        # dump dropped into the knowledge folder indexes silently today and can
++        # become almost the whole published chatbot.
++        top = conn.execute(
++            "SELECT d.path, count(*) AS n FROM kb_chunks c "
++            "JOIN kb_documents d ON d.document_id=c.document_id "
++            "WHERE d.status='ACTIVE' GROUP BY d.path ORDER BY n DESC LIMIT 1").fetchone()
++        total = conn.execute(
++            "SELECT count(*) FROM kb_chunks c JOIN kb_documents d ON d.document_id=c.document_id "
++            "WHERE d.status='ACTIVE'").fetchone()[0]
++        if top and total:
++            stats["largest_source"] = Path(top["path"]).name
++            stats["largest_source_share"] = round(top["n"] / total, 3)
+     conn.close(); return stats
+ 
+ 
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/learning/anythingllm.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/learning/anythingllm.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/learning/anythingllm.py	2026-09-23 11:32:44.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/learning/anythingllm.py	2026-09-24 19:24:24.990236012 +0000
+@@ -69,6 +69,16 @@
+         return self._call("GET", "/api/v1/workspaces")
+ 
+     def ask(self, question: str, lesson: Optional[Dict] = None, mode: str = "chat") -> Dict:
++        """Ask the configured workspace a question.
++
++        ``mode`` is what actually constrains the answer. The prompt below tells
++        the model to answer only from the lesson and the workspace, but a prompt
++        is a request, not an enforcement: in ``"chat"`` mode the underlying model
++        may still answer from its own general knowledge. Pass ``mode="query"``
++        when the grounding claim has to hold, and check the result with
++        :meth:`has_sources` before showing it as an evidence-backed answer.
++        Confirm the mode semantics against your own AnythingLLM version.
++        """
+         if not self.cfg.workspace_slug:
+             raise RuntimeError("ANYTHINGLLM_WORKSPACE_SLUG تنظیم نشده است.")
+         message = question.strip()
+@@ -88,6 +98,20 @@
+         return data
+ 
+     @staticmethod
++    def has_sources(data: Dict) -> bool:
++        """True when the answer carried workspace citations.
++
++        Without this, nothing in the pipeline distinguishes a grounded answer
++        from one the model produced on its own - the instruction in ``ask`` is
++        the only guarantee, and nothing checks it.
++        """
++        for key in ("sources", "citations", "sourceDocuments"):
++            val = data.get(key)
++            if isinstance(val, list) and val:
++                return True
++        return False
++
++    @staticmethod
+     def answer_text(data: Dict) -> str:
+         for key in ("textResponse", "response", "text", "message"):
+             val = data.get(key)
+diff -ruN -x __pycache__ -x '*.pyc' /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/tests/test_fullstack_v29_6_10.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/tests/test_fullstack_v29_6_10.py
+--- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/tests/test_fullstack_v29_6_10.py	2026-09-23 11:32:44.000000000 +0000
++++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/tests/test_fullstack_v29_6_10.py	2026-09-24 19:24:24.990487504 +0000
+@@ -49,21 +49,43 @@
+ 
+ 
+ def test_real_dashboard_runs_through_html_download(tmp_path):
++    """The dashboard renders from the published snapshot, not from a fresh run.
++
++    This test used to patch ``Pipeline.run`` and expect the page to build. The
++    29.8.2 runtime contract is ``ui_default_mode: published_snapshot_only`` /
++    ``refresh_mode: explicit_only``: with no published snapshot the page now
++    stops with an instruction instead of starting an ETL, so patching the
++    pipeline no longer drives it. Drive the snapshot path the page actually
++    takes.
++    """
+     from streamlit.testing.v1 import AppTest
+     import streamlit as st
+     df=pd.DataFrame({'KEY_MATERIAL':['M1'],'CANONICAL_ORDER':['O1'],'CANONICAL_BL':['B1'],
+                      'KEY_REG':['R1'],'ORG_DEPT':['D1'],'NTSW_BALANCE':[5],
+                      'مقاومت (روز)':[5.0],'بحرانی (کوتاه)':['بحرانی'],'کد طبقه بحرانی':['CRITICAL']})
+     excel=tmp_path/'official.xlsx';df.to_excel(excel,index=False)
+-    res=SimpleNamespace(df=df,main=df,to_resolve=pd.DataFrame(),extras={},dashboard_path=str(excel))
+     st.cache_data.clear()
+-    with patch('gsi.pipeline.Pipeline.run',return_value=res):
+-        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app/dashboard.py')).run(timeout=40)
++    with patch('gsi.warehouse.service.last_report',
++               return_value=(df, df, {'warehouse_run_id':'run-test'}, str(excel))):
++        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app/dashboard.py')).run(timeout=60)
+     assert not app.exception, [e.message for e in app.exception]
+     assert any('HTML' in b.label for b in app.get('download_button'))
+     st.cache_data.clear()
+ 
+ 
++def test_dashboard_refuses_to_start_an_etl_when_nothing_is_published(tmp_path):
++    """The other half of the same contract: no snapshot means stop, not rebuild."""
++    from streamlit.testing.v1 import AppTest
++    import streamlit as st
++    st.cache_data.clear()
++    with patch('gsi.warehouse.service.last_report', return_value=None), \
++         patch('gsi.pipeline.Pipeline.run', side_effect=AssertionError('ETL must not run on page load')):
++        app=AppTest.from_file(str(Path(__file__).resolve().parents[1]/'app/dashboard.py')).run(timeout=60)
++    assert not app.exception, [e.message for e in app.exception]
++    assert any('Snapshot' in str(e.value) for e in app.get('error'))
++    st.cache_data.clear()
++
++
+ def test_financial_card_deduplicates_and_never_adds_currencies():
+     from gsi.report.financial_summary import commitment_display
+     df=pd.DataFrame({'KEY_REG':['R1','R1','R2'], 'NTSW_CURRENCY':['EUR','EUR','USD'], 'NTSW_BALANCE':[10,10,20]})
