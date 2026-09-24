@@ -1,391 +1,6 @@
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/.gitignore /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/.gitignore
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/.gitignore	2026-09-24 19:17:57.464397787 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/.gitignore	1970-01-01 00:00:00.000000000 +0000
-@@ -1,2 +0,0 @@
--# Created by pytest automatically.
--*
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/CACHEDIR.TAG /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/CACHEDIR.TAG
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/CACHEDIR.TAG	2026-09-24 19:17:57.464451024 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/CACHEDIR.TAG	1970-01-01 00:00:00.000000000 +0000
-@@ -1,4 +0,0 @@
--Signature: 8a477f597d28d172789f06886806bc55
--# This file is a cache directory tag created by pytest.
--# For information about cache directory tags, see:
--#	https://bford.info/cachedir/spec.html
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/README.md /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/README.md
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/README.md	2026-09-24 19:17:57.464275798 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/README.md	1970-01-01 00:00:00.000000000 +0000
-@@ -1,8 +0,0 @@
--# pytest cache directory #
--
--This directory contains data from the pytest's cache plugin,
--which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
--
--**Do not** commit this to version control.
--
--See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/v/cache/lastfailed /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/v/cache/lastfailed
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/v/cache/lastfailed	2026-09-24 19:18:48.496552331 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/v/cache/lastfailed	1970-01-01 00:00:00.000000000 +0000
-@@ -1,3 +0,0 @@
--{
--  "tests/test_fullstack_v29_6_10.py::test_real_dashboard_runs_through_html_download": true
--}
-\ No newline at end of file
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/v/cache/nodeids /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/v/cache/nodeids
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/.pytest_cache/v/cache/nodeids	2026-09-24 19:20:09.592246455 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/.pytest_cache/v/cache/nodeids	1970-01-01 00:00:00.000000000 +0000
-@@ -1,346 +0,0 @@
--[
--  "tests/test_anythingllm_learning_v29.py::test_html_weekly_lesson_and_embed_are_optional_and_safe",
--  "tests/test_anythingllm_learning_v29.py::test_html_without_embed_stays_offline_for_qa",
--  "tests/test_anythingllm_learning_v29.py::test_public_embed_never_exposes_api_key",
--  "tests/test_business_key_alias_contract_v29_8_2.py::test_ntsw_registration_number_and_code_are_one_reg_identity",
--  "tests/test_business_key_alias_contract_v29_8_2.py::test_order_number_and_our_reference_are_one_order_identity",
--  "tests/test_business_key_alias_contract_v29_8_2.py::test_registration_file_is_distinct_from_registration_identity",
--  "tests/test_cashflow_dwh_v29_7_2.py::test_native_dwh_prefers_ntsw_and_commercial_expert_over_sata",
--  "tests/test_cashflow_dwh_v29_7_2.py::test_pipeline_bridge_no_longer_quarantines_every_dwh_fact",
--  "tests/test_cashflow_hardening_v29_7_1.py::test_payment_and_obligation_links_have_separate_capacity",
--  "tests/test_cashflow_hardening_v29_7_1.py::test_reversed_payment_links_are_not_counted",
--  "tests/test_cashflow_hardening_v29_7_1.py::test_snapshot_conflict_and_date_gap",
--  "tests/test_cashflow_hardening_v29_7_1.py::test_source_replay_account_conflict_is_quarantined",
--  "tests/test_cashflow_hardening_v29_7_1.py::test_transfer_reversal_does_not_create_external_cashflow",
--  "tests/test_cashflow_v29_7.py::test_allocation_and_quota_excess",
--  "tests/test_cashflow_v29_7.py::test_bad_reversal_is_quarantined",
--  "tests/test_cashflow_v29_7.py::test_cash_links_need_actual_account_and_currency_path",
--  "tests/test_cashflow_v29_7.py::test_conflicting_payment_quarantines_all_versions",
--  "tests/test_cashflow_v29_7.py::test_cross_case_needs_authorization",
--  "tests/test_cashflow_v29_7.py::test_cross_currency_obligation_needs_basis_and_authorization",
--  "tests/test_cashflow_v29_7.py::test_currencies_never_added",
--  "tests/test_cashflow_v29_7.py::test_dashboard_financial_panel_build_and_scope",
--  "tests/test_cashflow_v29_7.py::test_duplicate_payment_does_not_fanout",
--  "tests/test_cashflow_v29_7.py::test_exact_cash_and_opening",
--  "tests/test_cashflow_v29_7.py::test_exact_documented_fx_valuation",
--  "tests/test_cashflow_v29_7.py::test_fx_requires_both_legs",
--  "tests/test_cashflow_v29_7.py::test_html_and_excel_safely_escape_and_keep_long_ids",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change0-MISSING_AMOUNT_CURRENCY]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change1-MISSING_AMOUNT_CURRENCY]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change2-MISSING_AMOUNT_CURRENCY]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change3-UNVERIFIED_EVIDENCE]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change4-FUTURE_EVENT]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change5-MISSING_DATE]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change6-MISSING_ID]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change7-MISSING_CASE]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change8-MISSING_ACCOUNTS]",
--  "tests/test_cashflow_v29_7.py::test_invalid_cash_does_not_count[change9-INVALID_CASH_DIRECTION]",
--  "tests/test_cashflow_v29_7.py::test_invalid_report_date_rejected",
--  "tests/test_cashflow_v29_7.py::test_links_split_payment_and_preserve_capacity",
--  "tests/test_cashflow_v29_7.py::test_missing_opening_is_not_zero",
--  "tests/test_cashflow_v29_7.py::test_noncash_does_not_spend_money",
--  "tests/test_cashflow_v29_7.py::test_of_missing_payment_ids_never_becomes_cash",
--  "tests/test_cashflow_v29_7.py::test_old_pdf_rule_not_applied",
--  "tests/test_cashflow_v29_7.py::test_overallocation_never_clamped_or_hidden",
--  "tests/test_cashflow_v29_7.py::test_partial_bl_and_customs_currency_remain_distinct",
--  "tests/test_cashflow_v29_7.py::test_rate_conflict_blocks_valuation",
--  "tests/test_cashflow_v29_7.py::test_rate_regime_must_match",
--  "tests/test_cashflow_v29_7.py::test_rates_historical_no_future_no_mixed_purpose",
--  "tests/test_cashflow_v29_7.py::test_refund_not_automatic_commitment_release",
--  "tests/test_cashflow_v29_7.py::test_repeated_snapshots_do_not_multiply_balance",
--  "tests/test_cashflow_v29_7.py::test_reversal_is_immutable_opposite_cash_event",
--  "tests/test_cashflow_v29_7.py::test_snapshot_is_reconciliation_not_event",
--  "tests/test_cashflow_v29_7.py::test_source_event_id_replay_and_conflict",
--  "tests/test_cashflow_v29_7.py::test_toman_is_never_silently_treated_as_rial",
--  "tests/test_cashflow_v29_7.py::test_transfer_does_not_inflate_period_cash",
--  "tests/test_cashflow_v29_7.py::test_unlinked_settlement_never_reduces_obligation",
--  "tests/test_cluster_scope_v284.py::test_executive_cluster_scope_is_all_active_cluster_members",
--  "tests/test_cluster_scope_v284.py::test_expert_cluster_scope_is_self_only",
--  "tests/test_cluster_scope_v284.py::test_explicit_scope_augments_cluster_scope",
--  "tests/test_cluster_scope_v284.py::test_manager_cluster_scope_is_active_experts_plus_self",
--  "tests/test_currency_normalization_ntsw_v29_8_2.py::test_currency_normalization_handles_arabic_persian_glyph_variants",
--  "tests/test_currency_normalization_ntsw_v29_8_2.py::test_ntsw_currency_label_with_repeated_whitespace_maps_to_iso",
--  "tests/test_dashboard_criticality_repair_v28.py::test_dashboard_and_cockpit_counts_follow_repaired_band",
--  "tests/test_dashboard_criticality_repair_v28.py::test_existing_valid_band_is_not_overwritten",
--  "tests/test_dashboard_criticality_repair_v28.py::test_unknown_bands_are_repaired_from_official_resistance",
--  "tests/test_final_financial_contracts.py::test_commitment_status_conflict_quarantined",
--  "tests/test_final_financial_contracts.py::test_corruption_is_not_empty",
--  "tests/test_final_financial_contracts.py::test_equal_date_conflict_order_independent",
--  "tests/test_final_financial_contracts.py::test_identical_request_counted_once",
--  "tests/test_final_financial_contracts.py::test_newer_status_requires_date",
--  "tests/test_final_financial_contracts.py::test_opus_unknown_flags",
--  "tests/test_final_financial_contracts.py::test_registration_is_never_order",
--  "tests/test_final_financial_contracts.py::test_repeated_license_status_preserved",
--  "tests/test_final_financial_contracts.py::test_scope_does_not_expand",
--  "tests/test_final_financial_contracts.py::test_swift_stage_visible_without_payment",
--  "tests/test_final_runtime_rewrite_20260924.py::test_business_dwh_archives_sap_raw_once_and_still_builds_semantic_facts",
--  "tests/test_final_runtime_rewrite_20260924.py::test_dashboard_default_path_is_snapshot_only_not_automatic_etl",
--  "tests/test_final_runtime_rewrite_20260924.py::test_early_quality_gate_skips_business_dwh_for_known_blocking_source_error",
--  "tests/test_final_runtime_rewrite_20260924.py::test_f031_unknown_financial_values_remain_missing_while_real_zero_remains_zero",
--  "tests/test_final_runtime_rewrite_20260924.py::test_process_evidence_counts_sap_physical_rows_once_but_keeps_pr_stage_evidence",
--  "tests/test_final_runtime_rewrite_20260924.py::test_safe_merge_namespaces_rhs_physical_lineage_instead_of_dropping_it",
--  "tests/test_final_runtime_rewrite_20260924.py::test_sap_native_reader_uses_one_excel_handle_per_workbook",
--  "tests/test_final_runtime_rewrite_20260924.py::test_sap_raw_rows_grain_is_sheet_plus_row_and_allows_row_number_restart",
--  "tests/test_final_runtime_rewrite_20260924.py::test_snapshot_excel_export_module_never_imports_or_runs_pipeline",
--  "tests/test_fullstack_v29_6_10.py::test_column_scope_blocks_material_and_hidden_fields",
--  "tests/test_fullstack_v29_6_10.py::test_empty_scope_never_leaks_process_or_fx",
--  "tests/test_fullstack_v29_6_10.py::test_financial_card_deduplicates_and_never_adds_currencies",
--  "tests/test_fullstack_v29_6_10.py::test_historical_material_status_uses_report_date",
--  "tests/test_fullstack_v29_6_10.py::test_missing_department_column_does_not_expand_scope",
--  "tests/test_fullstack_v29_6_10.py::test_oracle_resistance_survives_advisory_boundary",
--  "tests/test_fullstack_v29_6_10.py::test_real_dashboard_runs_through_html_download",
--  "tests/test_fullstack_v29_6_10.py::test_scope_keys_do_not_match_other_identity_types",
--  "tests/test_fullstack_v29_6_10.py::test_studio_starts_with_published_snapshot",
--  "tests/test_fx_adapter_quarantine_v28.py::test_fx_invalid_amount_is_quarantined_not_fatal",
--  "tests/test_fx_adapter_quarantine_v28.py::test_fx_orphan_and_invalid_reasons_both_preserved",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_allocation_rate_missing_identity_cannot_value_other_case[KEY_REG]",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_allocation_rate_missing_identity_cannot_value_other_case[NTSW_REQ_CURRENCY]",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_commitment_irr_falls_back_to_ntsw_allocation_same_case_rate_only",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_commitment_uses_same_reg_same_currency_reported_equivalent_rates",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_conflicted_registration_remains_in_coverage_denominator",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_credit_conflicting_same_lc_equivalent_is_not_guessed",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_credit_direct_equivalents_dedupe_same_lc_snapshot",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_equivalent_portfolio_summary_deduplicates_bl_material_fanout",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_eur_commitment_has_identity_eur_equivalent_without_inventing_irr",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_fx_stage_mixed_purchase_currency_has_no_naked_native_total_and_values_commitment",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_purchase_equivalent_coverage_is_explicit_not_silently_zero_filled",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_purchase_rate_missing_identity_cannot_value_other_case[FX_CURRENCY]",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_purchase_rate_missing_identity_cannot_value_other_case[KEY_REG]",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_purchase_summary_keeps_native_currencies_separate_but_sums_reported_equivalents",
--  "tests/test_fx_equivalent_authority_v29_8_2.py::test_stage_exposes_credit_source_equivalents_without_recalculating_them",
--  "tests/test_global_source_authority_v29_7_3.py::test_canonical_conflict_uses_expert_over_abbasi_and_oracle",
--  "tests/test_global_source_authority_v29_7_3.py::test_canonical_reg_uses_ntsw_over_sata",
--  "tests/test_global_source_authority_v29_7_3.py::test_derive_stage_applies_policy_to_whole_report_fields",
--  "tests/test_global_source_authority_v29_7_3.py::test_derived_global_sort_primary_then_secondary_then_fallback",
--  "tests/test_global_source_authority_v29_7_3.py::test_full_report_base_uses_ntsw_reg_over_conflicting_sata",
--  "tests/test_global_source_authority_v29_7_3.py::test_ntsw_reg_file_hub_builds_primary_order_reg_without_sata",
--  "tests/test_global_source_authority_v29_7_3.py::test_order_format_cannot_override_higher_authority_expert",
--  "tests/test_global_source_authority_v29_7_3.py::test_policy_is_full_report_and_primary_sources_are_expert_ntsw",
--  "tests/test_global_source_authority_v29_7_3.py::test_secondary_only_fills_primary_blank",
--  "tests/test_html_payload_compaction_v285.py::test_main_payload_is_row_array_not_repeated_record_objects",
--  "tests/test_html_payload_compaction_v285.py::test_process_runtime_does_not_duplicate_eventlog_or_action_queue",
--  "tests/test_knowledge_desk_offline_v292.py::test_html_uses_static_chatbot_without_http_api",
--  "tests/test_knowledge_desk_offline_v292.py::test_native_http_service_chat",
--  "tests/test_knowledge_desk_offline_v292.py::test_offline_kb_index_and_answer",
--  "tests/test_knowledge_desk_self_index_guard_v2946.py::test_empty_knowledge_does_not_publish_false_success",
--  "tests/test_knowledge_desk_self_index_guard_v2946.py::test_exact_publish_source_overlap_blocked",
--  "tests/test_knowledge_desk_self_index_guard_v2946.py::test_generated_chatbot_is_never_lesson",
--  "tests/test_knowledge_desk_self_index_guard_v2946.py::test_publish_child_of_knowledge_is_safe_and_not_reindexed",
--  "tests/test_knowledge_desk_static_v293.py::test_report_opens_static_chatbot_with_question",
--  "tests/test_knowledge_desk_static_v293.py::test_static_bundle_zero_server_and_source_privacy",
--  "tests/test_knowledge_desk_static_v293.py::test_unc_path_to_file_uri",
--  "tests/test_material_dashboard_runtime_v29_6_8.py::test_dashboard_style_call_auto_builds_material_advisory_tab",
--  "tests/test_material_group_identity_v29_6_6.py::test_material_description_is_separate_filterable_attribute",
--  "tests/test_material_group_identity_v29_6_6.py::test_material_identity_is_key_not_description",
--  "tests/test_material_html_advisory_only_v29_6_7.py::test_expert_and_ntsw_are_advisory_only_in_html_material_view",
--  "tests/test_material_html_advisory_only_v29_6_7.py::test_material_html_payload_is_not_cut_before_search",
--  "tests/test_material_html_export_v29_6_1.py::test_material_identity_is_kept_in_main_tab_table_even_if_saved_tab_omits_it",
--  "tests/test_material_html_export_v29_6_2.py::test_high_cardinality_material_gets_tab_scoped_text_filter",
--  "tests/test_material_html_export_v29_6_2.py::test_material_filter_is_part_of_same_runtime_slice_as_table",
--  "tests/test_material_html_export_v29_6_2.py::test_no_global_static_material_supply_table_is_injected_above_tabs",
--  "tests/test_material_html_export_v29_6_3.py::test_authoritative_version_bumped",
--  "tests/test_material_html_export_v29_6_3.py::test_material_is_in_each_tab_and_each_tab_owns_filter",
--  "tests/test_material_runtime_visible_v29_6_4.py::test_html_exposes_build_and_material_filter_in_every_tab",
--  "tests/test_material_source_boundary_v29_6_9.py::test_advisory_fanout_and_mutation_leave_operational_values_identical",
--  "tests/test_material_source_boundary_v29_6_9.py::test_composer_financial_data_is_preserved",
--  "tests/test_material_source_boundary_v29_6_9.py::test_excluded_dates_never_assign_next_activity_or_missing_date",
--  "tests/test_material_source_boundary_v29_6_9.py::test_expert_only_identity_is_not_operational_material",
--  "tests/test_material_source_boundary_v29_6_9.py::test_missing_material_and_duplicate_index_preserve_comment_alignment",
--  "tests/test_material_source_boundary_v29_6_9.py::test_old_precomputed_view_cannot_bypass_boundary",
--  "tests/test_material_source_boundary_v29_6_9.py::test_real_aliases_and_material_link_do_not_control_position",
--  "tests/test_material_source_search_v2950.py::test_material_identifier_is_text_and_supports_letters_and_persian_digits",
--  "tests/test_material_source_search_v2950.py::test_same_material_code_returns_all_rows_despite_description_pr_order_changes",
--  "tests/test_material_supply_html_v29_6_5.py::test_html_contains_one_filterable_material_supply_tab",
--  "tests/test_money_flow_v29_6.py::test_end_to_end_money_ledger_preserves_grain_and_unknown",
--  "tests/test_money_flow_v29_6.py::test_same_currency_reconciliation_and_obligation_equation",
--  "tests/test_money_flow_v29_6.py::test_supplier_receipt_closes_swift_conversion_stage_evidence",
--  "tests/test_opus_critical_and_cashflow.py::test_goods_receipt_contract_marks_only_the_signed_quantity_additive",
--  "tests/test_opus_critical_and_cashflow.py::test_inbound_sheet_gives_a_native_sap_to_bill_of_lading_link",
--  "tests/test_opus_critical_and_cashflow.py::test_legacy_single_sheet_export_still_works",
--  "tests/test_opus_critical_and_cashflow.py::test_missing_expected_sheet_blocks_publication",
--  "tests/test_opus_critical_and_cashflow.py::test_native_multi_sheet_export_is_recognised",
--  "tests/test_opus_critical_and_cashflow.py::test_po_identity_comes_from_the_po_sheet_not_the_pr_sheet",
--  "tests/test_opus_critical_and_cashflow.py::test_po_sheet_yields_the_native_registration_file_and_order_bridges",
--  "tests/test_opus_critical_and_cashflow.py::test_reversed_receipt_cancels_instead_of_double_counting",
--  "tests/test_opus_critical_and_cashflow.py::test_source_simply_absent_still_only_degrades",
--  "tests/test_opus_critical_and_cashflow.py::test_totals_use_the_published_run_not_every_archived_version",
--  "tests/test_opus_critical_and_cashflow.py::test_totals_without_a_publication_stay_empty",
--  "tests/test_opus_critical_and_cashflow.py::test_unknown_movement_type_is_never_given_a_sign",
--  "tests/test_opus_rc4_dashboard_startup.py::test_already_materialized_frames_are_scoped_too",
--  "tests/test_opus_rc4_dashboard_startup.py::test_dashboard_caches_are_bounded",
--  "tests/test_opus_rc4_dashboard_startup.py::test_dashboard_never_materializes_lazy_extras_eagerly",
--  "tests/test_opus_rc4_dashboard_startup.py::test_dashboard_reads_the_published_snapshot_before_running_the_pipeline",
--  "tests/test_opus_rc4_dashboard_startup.py::test_explicit_button_still_forces_a_fresh_pipeline_run",
--  "tests/test_opus_rc4_dashboard_startup.py::test_plain_dict_extras_still_work_unchanged",
--  "tests/test_opus_rc4_dashboard_startup.py::test_scoping_stays_lazy_but_is_still_enforced",
--  "tests/test_opus_rc4_output_integrity.py::test_cashflow_report_uses_the_package_font_stack",
--  "tests/test_opus_rc4_output_integrity.py::test_empty_excel_sheet_states_why_instead_of_bare_headers",
--  "tests/test_opus_rc4_output_integrity.py::test_empty_html_section_states_why_not_just_that_it_is_empty",
--  "tests/test_opus_rc4_output_integrity.py::test_filled_sections_come_before_empty_ones",
--  "tests/test_opus_rc4_output_integrity.py::test_html_declares_every_column_it_left_out",
--  "tests/test_opus_rc4_output_integrity.py::test_html_discloses_fx_ledger_truncation",
--  "tests/test_opus_rc4_output_integrity.py::test_html_does_not_claim_excel_carries_columns_it_drops",
--  "tests/test_opus_rc4_output_integrity.py::test_html_keeps_every_row_in_the_payload",
--  "tests/test_opus_rc4_output_integrity.py::test_manifest_is_scope_disclosure_not_a_data_quality_metric",
--  "tests/test_opus_rc4_output_integrity.py::test_of_case_level_columns_are_not_fanned_out",
--  "tests/test_opus_rc4_output_integrity.py::test_of_keeps_row_traceability_after_dedup",
--  "tests/test_opus_rc4_output_integrity.py::test_of_names_the_missing_identifier_column",
--  "tests/test_opus_rc4_output_integrity.py::test_of_never_creates_bank_movements",
--  "tests/test_opus_rc4_output_integrity.py::test_of_row_level_columns_keep_their_own_grain",
--  "tests/test_opus_rc4_output_integrity.py::test_of_workbook_is_not_rejected_wholesale",
--  "tests/test_opus_rc4_process_views.py::test_aging_wip_lists_only_open_cases_with_historic_benchmark",
--  "tests/test_opus_rc4_process_views.py::test_an_empty_view_states_its_reason_instead_of_a_blank_box",
--  "tests/test_opus_rc4_process_views.py::test_catalog_grew_and_every_view_has_a_renderer",
--  "tests/test_opus_rc4_process_views.py::test_cumulative_flow_counts_each_case_once_per_stage",
--  "tests/test_opus_rc4_process_views.py::test_cumulative_flow_is_monotonic_per_stage",
--  "tests/test_opus_rc4_process_views.py::test_every_metric_degrades_to_an_empty_frame_not_a_crash",
--  "tests/test_opus_rc4_process_views.py::test_handoff_ignores_staying_in_the_same_unit",
--  "tests/test_opus_rc4_process_views.py::test_kanban_action_code_mode_groups_by_work_type",
--  "tests/test_opus_rc4_process_views.py::test_kanban_evidence_mode_separates_ready_from_blocked",
--  "tests/test_opus_rc4_process_views.py::test_kanban_offers_the_new_work_mix_and_blocked_lanes",
--  "tests/test_opus_rc4_process_views.py::test_kanban_says_so_when_there_is_no_action_queue",
--  "tests/test_opus_rc4_process_views.py::test_no_view_presents_an_observation_as_a_target",
--  "tests/test_opus_rc4_process_views.py::test_percentiles_appear_once_there_is_enough_history",
--  "tests/test_opus_rc4_process_views.py::test_percentiles_are_withheld_below_the_minimum_sample",
--  "tests/test_opus_rc4_process_views.py::test_rework_reports_the_repeated_activity_only",
--  "tests/test_opus_rc4_process_views.py::test_stage_coverage_separates_unmeasured_from_not_done",
--  "tests/test_opus_rc4_process_views.py::test_throughput_counts_only_closed_cases",
--  "tests/test_opus_rc4_process_views.py::test_views_render_real_svg_and_reach_the_exported_html",
--  "tests/test_opus_rc4_warehouse_reset.py::test_cli_requires_yes_and_reports_what_it_removed",
--  "tests/test_opus_rc4_warehouse_reset.py::test_reset_backs_up_before_deleting",
--  "tests/test_opus_rc4_warehouse_reset.py::test_reset_clears_runs_frames_cache_and_lock",
--  "tests/test_opus_rc4_warehouse_reset.py::test_reset_on_a_missing_file_creates_an_empty_warehouse",
--  "tests/test_opus_rc4_warehouse_reset.py::test_reset_refuses_a_database_that_is_not_a_gsi_warehouse",
--  "tests/test_opus_rc4_warehouse_reset.py::test_reset_refuses_without_explicit_confirmation",
--  "tests/test_opus_rc4_warehouse_reset.py::test_warehouse_is_usable_again_right_after_reset",
--  "tests/test_population_cashflow_v29_7_4.py::test_cashflow_chain_exposes_missing_funding_and_settlement_without_inference",
--  "tests/test_population_cashflow_v29_7_4.py::test_complete_obligation_link_reconciles_remaining_commitment",
--  "tests/test_population_cashflow_v29_7_4.py::test_dwh_same_fx_source_row_creates_documented_purchase_to_payment_link",
--  "tests/test_population_cashflow_v29_7_4.py::test_ntsw_only_primary_row_is_main_population_not_to_resolve",
--  "tests/test_population_cashflow_v29_7_4.py::test_one_primary_order_can_keep_multiple_abbasi_bls_without_abbasi_population",
--  "tests/test_population_cashflow_v29_7_4.py::test_primary_population_is_expert_plus_ntsw_not_abbasi",
--  "tests/test_process_cockpit_v28.py::test_action_board_priority_order",
--  "tests/test_process_cockpit_v28.py::test_critical_materials_unique_and_sorted",
--  "tests/test_process_cockpit_v28.py::test_owner_and_quality_unknown_not_zero",
--  "tests/test_process_cockpit_v28.py::test_stage_counts_use_latest_real_event",
--  "tests/test_process_integrity_v29_7_5.py::test_attach_marks_ambiguous_instead_of_guessing",
--  "tests/test_process_integrity_v29_7_5.py::test_keyless_source_row_is_preserved_as_orphan_evidence",
--  "tests/test_process_integrity_v29_7_5.py::test_later_stage_never_hides_missing_predecessor",
--  "tests/test_process_integrity_v29_7_5.py::test_sap_only_pr_is_kept_in_process_inventory_without_entering_flat_population_contract",
--  "tests/test_process_integrity_v29_7_5.py::test_sap_preserves_workflow_history_and_latest_projection",
--  "tests/test_process_integrity_v29_7_5.py::test_tolerant_stage_exception_does_not_stop_independent_flow",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_commitment_display_dedupes_reg_splits_currency_and_respects_unknown",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_excel_commitment_total_is_not_raw_subtotal",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_history_keeps_legacy_numeric_but_refuses_cross_currency_number",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_numeric_financial_value_is_refused_for_mixed_currency",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_pipeline_kpi_becomes_currency_aware_when_currency_contract_exists",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_scorecard_finance_is_reg_grain_and_currency_aware",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_status_summary_never_turns_unknown_balance_into_settled",
--  "tests/test_rc4_financial_accuracy_hardening.py::test_studio_kpi_uses_shared_financial_summary_not_raw_sum",
--  "tests/test_rc4_performance_hardening.py::test_capture_cached_native_rows_are_rehydratable",
--  "tests/test_rc4_performance_hardening.py::test_capture_can_archive_without_retaining_physical_rows_and_reuses_exact_bytes",
--  "tests/test_rc4_performance_hardening.py::test_warehouse_frame_chunking_preserves_exact_roundtrip",
--  "tests/test_rc_integrity.py::test_backend_error_not_absence",
--  "tests/test_rc_integrity.py::test_balance_not_settlement[0]",
--  "tests/test_rc_integrity.py::test_balance_not_settlement[50]",
--  "tests/test_rc_integrity.py::test_blocked_run_isolation",
--  "tests/test_rc_integrity.py::test_blocked_schema_does_not_become_baseline",
--  "tests/test_rc_integrity.py::test_download_rerun_contract",
--  "tests/test_rc_integrity.py::test_downstream_gap",
--  "tests/test_rc_integrity.py::test_duplicate_orphan_preservation",
--  "tests/test_rc_integrity.py::test_kb_outage_then_restoration",
--  "tests/test_rc_integrity.py::test_legacy_schema_upgrade",
--  "tests/test_rc_integrity.py::test_missing_process_summary_blocks_before_files",
--  "tests/test_rc_integrity.py::test_mixed_currency_allocation_unknown_and_native_intact",
--  "tests/test_rc_integrity.py::test_no_hub_product",
--  "tests/test_rc_integrity.py::test_no_publication_no_public_evidence",
--  "tests/test_rc_integrity.py::test_null_and_delimiter_keys[left0-right0]",
--  "tests/test_rc_integrity.py::test_null_and_delimiter_keys[left1-right1]",
--  "tests/test_rc_integrity.py::test_null_and_delimiter_keys[left2-right2]",
--  "tests/test_rc_integrity.py::test_null_and_delimiter_keys[left3-right3]",
--  "tests/test_rc_integrity.py::test_nullable_uniqueness",
--  "tests/test_rc_integrity.py::test_po_own_identity",
--  "tests/test_rc_integrity.py::test_polarity[\\u062a\\u0627\\u06cc\\u06cc\\u062f \\u0646\\u0634\\u062f\\u0647-NEGATIVE_OBSERVED]",
--  "tests/test_rc_integrity.py::test_polarity[\\u062f\\u0631 \\u06af\\u0631\\u062f\\u0634-OBSERVED]",
--  "tests/test_rc_integrity.py::test_polarity[\\u0645\\u0648\\u0631\\u062f \\u0628\\u0631\\u0631\\u0633\\u06cc-OBSERVED]",
--  "tests/test_rc_integrity.py::test_polarity[\\u0645\\u0648\\u0631\\u062f \\u062a\\u0627\\u06cc\\u06cc\\u062f-POSITIVE_OBSERVED]",
--  "tests/test_rc_integrity.py::test_published_omission_preserves_history",
--  "tests/test_rc_integrity.py::test_replay_relation_counts",
--  "tests/test_rc_integrity.py::test_shared_dimensions_do_not_merge",
--  "tests/test_rc_integrity.py::test_snapshot_cannot_be_updated",
--  "tests/test_rc_integrity.py::test_swift_not_payment",
--  "tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated",
--  "tests/test_report_composer_tab_isolation_v284.py::test_legacy_global_charts_migrate_only_to_first_tab",
--  "tests/test_report_composer_tab_isolation_v284.py::test_process_and_actions_follow_authorized_scope",
--  "tests/test_report_composer_tab_isolation_v284.py::test_timeline_has_local_escape_runtime",
--  "tests/test_report_composer_v28.py::test_html_composer_process_kanban_order_and_header",
--  "tests/test_report_composer_v28.py::test_saved_design_persists_layout_persona_headers",
--  "tests/test_report_composer_v28.py::test_tab_blocks_keep_author_order",
--  "tests/test_sap_semantic_dwh_v29_7_6.py::test_business_dwh_persists_sap_facts_and_direct_pr_po_relations",
--  "tests/test_sap_semantic_dwh_v29_7_6.py::test_operational_chatbot_reads_published_semantic_dwh",
--  "tests/test_sap_semantic_dwh_v29_7_6.py::test_sap_adapter_separates_business_grains_and_normalizes_dates",
--  "tests/test_source_roadmap.py::test_actual_negative_return_keeps_negative_sign",
--  "tests/test_source_roadmap.py::test_clearance_all_contracted_sheets",
--  "tests/test_source_roadmap.py::test_clearance_three_layouts",
--  "tests/test_source_roadmap.py::test_credit_unknown_swift_currency",
--  "tests/test_source_roadmap.py::test_explicit_missing_run_does_not_expand",
--  "tests/test_source_roadmap.py::test_fx_discovery_keeps_two_sources_excludes_backups",
--  "tests/test_source_roadmap.py::test_fx_two_layouts",
--  "tests/test_source_roadmap.py::test_il_amendment_status",
--  "tests/test_source_roadmap.py::test_legacy_event_consumers_use_actual_swift_not_proforma",
--  "tests/test_source_roadmap.py::test_licence_status_reaches_process",
--  "tests/test_source_roadmap.py::test_mixed_reference_not_promoted_to_order",
--  "tests/test_source_roadmap.py::test_planned_purchase_is_not_process_completion",
--  "tests/test_source_roadmap.py::test_published_cashflow_excludes_plan_and_proforma_funding",
--  "tests/test_source_roadmap.py::test_rejected_historical_allocation",
--  "tests/test_source_roadmap.py::test_rial_proforma_not_funding",
--  "tests/test_source_roadmap.py::test_sap_five_grains_do_not_cross_join",
--  "tests/test_source_roadmap.py::test_sap_legacy_data",
--  "tests/test_source_roadmap.py::test_sap_po_bl_relationship_reaches_dwh",
--  "tests/test_source_roadmap.py::test_sap_reader_native_sheets",
--  "tests/test_v29_4_1_runtime_diagnostics.py::test_busy_lock_has_precise_diagnostic",
--  "tests/test_v29_4_1_runtime_diagnostics.py::test_runtime_classifier_does_not_prescribe_doctor_for_busy",
--  "tests/test_v29_4_1_runtime_diagnostics.py::test_source_path_error_does_prescribe_doctor",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_critical_diagnostic_uses_real_clearance_field_and_mogh_grains",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_derive_accepts_actual_clearance_adapter_column",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_order_material_duplicate_is_explicit_grain_violation",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_order_material_is_grain_contract_not_bl_join",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_reg_file_is_not_reg_and_ntsw_hub_is_used",
--  "tests/test_v29_4_2_diagnose_business_semantics.py::test_sap_is_diagnosed_by_pr_but_excluded_while_source_is_known_incomplete",
--  "tests/test_v29_4_3_relation_health_contract.py::test_incomplete_sap_is_informational_not_false_error",
--  "tests/test_v29_4_3_relation_health_contract.py::test_known_incomplete_zero_match_does_not_degrade_system_health",
--  "tests/test_v29_4_3_relation_health_contract.py::test_low_base_coverage_does_not_make_healthy_source_join_bad",
--  "tests/test_v29_4_3_relation_health_contract.py::test_mostly_matched_relation_is_info_not_error",
--  "tests/test_v29_4_3_relation_health_contract.py::test_order_unmatched_breakdown_is_forensic_not_auto_match",
--  "tests/test_v29_4_3_relation_health_contract.py::test_zero_overlap_is_unproven_relation_not_claimed_bad_format",
--  "tests/test_v29_4_4_streamlit_load_performance.py::test_frame_cache_is_disposable_and_sqlite_remains_authoritative",
--  "tests/test_v29_4_4_streamlit_load_performance.py::test_last_report_loads_only_df_main_and_keeps_extras_lazy",
--  "tests/test_v29_4_4_streamlit_load_performance.py::test_persist_result_does_not_roundtrip_by_default",
--  "tests/test_v29_4_5_import_license_continuity.py::test_import_license_no_complete_bridge_blocks",
--  "tests/test_v29_4_5_import_license_continuity.py::test_import_license_partial_blank_rows_warn_but_do_not_block",
--  "tests/test_v29_4_5_import_license_continuity.py::test_quality_gate_exception_is_typed_and_preserves_current",
--  "tests/test_v29_4_5_import_license_continuity.py::test_runtime_classifier_quality_gate_does_not_prescribe_doctor",
--  "tests/test_v29_4_7_multi_pr_and_chatbot.py::test_multi_pr_is_preserved_at_relation_grain",
--  "tests/test_v29_4_7_multi_pr_and_chatbot.py::test_report_html_renders_chatbot_without_optional_content",
--  "tests/test_v29_4_7_multi_pr_and_chatbot.py::test_static_chatbot_does_not_use_weekly_wording",
--  "tests/test_v29_4_8_sqlite_reader_isolation.py::test_cached_frame_reads_while_sqlite_has_exclusive_lock",
--  "tests/test_v29_4_8_sqlite_reader_isolation.py::test_last_report_reader_does_not_initialize_schema",
--  "tests/test_v29_4_8_sqlite_reader_isolation.py::test_lazy_extra_never_initializes_schema",
--  "tests/test_v29_4_8_sqlite_reader_isolation.py::test_locked_lazy_extra_degrades_without_crashing",
--  "tests/test_v29_4_9_material_text_search.py::test_material_identifier_is_unicode_text",
--  "tests/test_v29_4_9_material_text_search.py::test_quick_search_accepts_alphanumeric_material_and_separators",
--  "tests/test_v29_4_9_material_text_search.py::test_rows_168_170_keep_same_material_despite_description_change",
--  "tests/test_v29_4_resilience_editorial.py::test_editorial_tokens_are_restrained_and_css_exposes_paper_language",
--  "tests/test_v29_4_resilience_editorial.py::test_last_published_standardized_frame_can_be_used_as_explicit_stale_fallback",
--  "tests/test_v29_4_resilience_editorial.py::test_noncritical_branch_failure_degrades_but_does_not_block_publish_gate",
--  "tests/test_v29_4_resilience_editorial.py::test_registration_spine_failure_blocks_publication_without_hiding_diagnostics",
--  "tests/test_v29_business_dwh.py::test_moghavemat_does_not_create_bl_relation",
--  "tests/test_v29_business_dwh.py::test_order_material_pr_item_bridge_preserves_multiple_prs_and_evidence",
--  "tests/test_v29_business_dwh.py::test_registration_file_hub_and_order_material_grain",
--  "tests/test_v29_reliability_gate.py::test_atomic_publish_does_not_move_on_failed_gate",
--  "tests/test_v29_reliability_gate.py::test_missing_key_column_blocks",
--  "tests/test_v29_reliability_gate.py::test_order_material_distinct_material_is_valid",
--  "tests/test_v29_reliability_gate.py::test_order_material_grain_duplicate_blocks",
--  "tests/test_v29_reliability_gate.py::test_publish_moves_both_slots_together",
--  "tests/test_v29_reliability_gate.py::test_schema_drift_is_visible_and_baseline_is_stable"
--]
-\ No newline at end of file
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/CHANGELOG.md /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/CHANGELOG.md
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/CHANGELOG.md	2026-09-24 18:54:34.000000000 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/CHANGELOG.md	2026-09-24 19:31:28.932860036 +0000
+diff -ruN -x __pycache__ -x '*.pyc' -x .pytest_cache -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json -x 'D:*' a/CHANGELOG.md b/CHANGELOG.md
+--- a/CHANGELOG.md	2026-09-24 18:54:34.000000000 +0000
++++ b/CHANGELOG.md	2026-09-24 19:31:28.932860036 +0000
 @@ -1,3 +1,47 @@
 +# Current build: GSI 29.8.2 RC4-OPT2 H1 — audit remediation 1
 +
@@ -434,9 +49,9 @@ diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.jso
  # Current release: GSI 29.8.2 RC4-OPT2
  
  Scope: source-authority FX equivalents and currency-safe financial outputs, built
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/factsheet.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/factsheet.py
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/factsheet.py	2026-09-23 11:32:44.000000000 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/factsheet.py	2026-09-24 19:31:28.932693156 +0000
+diff -ruN -x __pycache__ -x '*.pyc' -x .pytest_cache -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json -x 'D:*' a/gsi/factsheet.py b/gsi/factsheet.py
+--- a/gsi/factsheet.py	2026-09-23 11:32:44.000000000 +0000
++++ b/gsi/factsheet.py	2026-09-24 19:31:28.932693156 +0000
 @@ -37,7 +37,7 @@
  
  #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
@@ -446,9 +61,9 @@ diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.jso
  
  #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
  DASHBOARD_SHEETS = 17
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/knowledge_desk/indexer.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/knowledge_desk/indexer.py
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/knowledge_desk/indexer.py	2026-09-23 11:32:44.000000000 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/knowledge_desk/indexer.py	2026-09-24 19:25:03.104578713 +0000
+diff -ruN -x __pycache__ -x '*.pyc' -x .pytest_cache -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json -x 'D:*' a/gsi/knowledge_desk/indexer.py b/gsi/knowledge_desk/indexer.py
+--- a/gsi/knowledge_desk/indexer.py	2026-09-23 11:32:44.000000000 +0000
++++ b/gsi/knowledge_desk/indexer.py	2026-09-24 19:25:03.104578713 +0000
 @@ -191,6 +191,20 @@
              if row["path"] not in seen and any(Path(row["path"]).is_relative_to(root) for root in scanned_roots):
                  conn.execute("UPDATE kb_documents SET status='DELETED' WHERE document_id=?",(row["document_id"],)); stats["deleted"]+=1
@@ -470,9 +85,9 @@ diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.jso
      conn.close(); return stats
  
  
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/learning/anythingllm.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/learning/anythingllm.py
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/gsi/learning/anythingllm.py	2026-09-23 11:32:44.000000000 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/gsi/learning/anythingllm.py	2026-09-24 19:24:24.990236012 +0000
+diff -ruN -x __pycache__ -x '*.pyc' -x .pytest_cache -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json -x 'D:*' a/gsi/learning/anythingllm.py b/gsi/learning/anythingllm.py
+--- a/gsi/learning/anythingllm.py	2026-09-23 11:32:44.000000000 +0000
++++ b/gsi/learning/anythingllm.py	2026-09-24 19:24:24.990236012 +0000
 @@ -69,6 +69,16 @@
          return self._call("GET", "/api/v1/workspaces")
  
@@ -511,9 +126,9 @@ diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.jso
      def answer_text(data: Dict) -> str:
          for key in ("textResponse", "response", "text", "message"):
              val = data.get(key)
-diff -ruN -x __pycache__ -x '*.pyc' -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/tests/test_fullstack_v29_6_10.py /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/tests/test_fullstack_v29_6_10.py
---- /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5/tests/test_fullstack_v29_6_10.py	2026-09-23 11:32:44.000000000 +0000
-+++ /tmp/claude-0/-home-user-dataengineering/58ee2be6-321f-501c-b83a-d123925e2458/scratchpad/rc5fix/tests/test_fullstack_v29_6_10.py	2026-09-24 19:24:24.990487504 +0000
+diff -ruN -x __pycache__ -x '*.pyc' -x .pytest_cache -x PACKAGE_SHA256_FINAL.json -x MANIFEST.json -x 'D:*' a/tests/test_fullstack_v29_6_10.py b/tests/test_fullstack_v29_6_10.py
+--- a/tests/test_fullstack_v29_6_10.py	2026-09-23 11:32:44.000000000 +0000
++++ b/tests/test_fullstack_v29_6_10.py	2026-09-24 19:24:24.990487504 +0000
 @@ -49,21 +49,43 @@
  
  
