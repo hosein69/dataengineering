@@ -117,9 +117,7 @@ def build_standalone_html(*, title: str, data: Mapping[str, Any],
   .pm-wrap{{max-width:{T.CONTAINER_MAX}px;margin:0 auto;padding:28px 24px 60px}}
   .pm-header{{background:{T.BRAND_NAVY};color:#fff;border-radius:{T.RADIUS['lg']}px;
     padding:28px 32px}}
-  .pm-header .eyebrow{{font-size:11px;letter-spacing:1.5px;color:{T.AQUA_300};
-    text-transform:uppercase}}
-  .pm-header h1{{margin:8px 0 4px;font-size:28px;font-weight:800}}
+  .pm-header h1{{margin:0 0 4px;font-size:28px;font-weight:800}}
   .pm-sub{{font-size:14px;color:rgba(255,255,255,.82)}}
   .pm-audience{{font-size:12px;color:rgba(255,255,255,.65);margin-top:10px}}
   .pm-card{{background:{T.SURFACE_RAISED};border:1px solid {T.BORDER};
@@ -135,7 +133,6 @@ def build_standalone_html(*, title: str, data: Mapping[str, Any],
 <div class="pm-wrap">
 
   <header class="pm-header">
-    <div class="eyebrow">Process Mining · GSI UI Kit</div>
     <h1>{_esc(title)}</h1>
     {sub_line}
     {audience_line}

@@ -74,8 +74,15 @@ with st.sidebar:
     st.divider()
     st.markdown("**خروجی سبک برای ارسال**")
     st.caption("HTML/اکسل جدا از Streamlit ساخته می‌شوند — سبک و امن برای اوتلوک آفلاین.")
+    # عنوان گزارش — عمداً یک متغیر واحد، نه رشتهٔ جداگانه در هر خروجی:
+    # Streamlit عنوان خودش را دارد (نام ابزار برای تیم محصول)؛ HTML عنوان
+    # گزارش را دارد (چیزی که واقعاً دست مخاطب می‌رود) — این دو نباید به‌طور
+    # مستقل و ناهماهنگ از هم ساخته شوند. TODO: این عنوان را با نام واقعی
+    # گزارش سازمانی خودتان جایگزین کنید.
+    REPORT_TITLE = "گزارش پلتفرم هوش فرآیندی"
+
     html_bytes = build_report_html(
-        title="گزارش پلتفرم هوش فرآیندی", subtitle=AUDIENCE_LABELS[st.session_state.audience],
+        title=REPORT_TITLE, subtitle=AUDIENCE_LABELS[st.session_state.audience],
         kpis=DATA["kpis"], nodes=DATA["graph"]["nodes"], edges=DATA["graph"]["edges"],
         kanban=DATA["kanban"]).encode("utf-8")
     st.download_button("⬇ دانلود HTML ایمیل", data=html_bytes,
@@ -84,8 +91,8 @@ with st.sidebar:
     st.caption(f"حجم فایل: {len(html_bytes) / 1024:,.0f} کیلوبایت")
 
     standalone_bytes = build_standalone_html(
-        title="اتاق کنترل فرآیندهای سازمانی", subtitle="نمونهٔ کامل — همهٔ نمودارها و جدول‌ها",
-        audience_label=AUDIENCE_LABELS[st.session_state.audience], data=DATA).encode("utf-8")
+        title=REPORT_TITLE, subtitle=AUDIENCE_LABELS[st.session_state.audience],
+        audience_label="", data=DATA).encode("utf-8")
     st.download_button("⬇ دانلود HTML مستقل (کامل)", data=standalone_bytes,
                        file_name="گزارش_فرآیند_کامل.html", mime="text/html",
                        use_container_width=True)
