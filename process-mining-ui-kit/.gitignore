@@ -1,0 +1,16 @@
+# ── چیدمان شخصی‌سازی‌شده و دادهٔ محلی ──
+layout.local.json
+output/
+logs/
+
+# ── پایتون ──
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# ── فونت‌های محلی (دارایی توزیع‌پذیر، نه بخشی از کد) ──
+static/fonts/*.woff2
+static/fonts/*.ttf
+static/fonts/*.otf
