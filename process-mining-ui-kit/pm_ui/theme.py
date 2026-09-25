@@ -1,35 +1,43 @@
 # -*- coding: utf-8 -*-
 """لایهٔ تزریق CSS — راست‌به‌چپ‌سازی کامل، فونت فارسی، و بازنویسی ظاهر پیش‌فرض Streamlit.
 
-## نکتهٔ حیاتی محیط شما
+## فونت — چرا قبلاً واقعاً IRANSans نمایش داده نمی‌شد
 
-این پلتفرم **کاملاً آفلاین** اجرا می‌شود (فقط فولدر شبکه + ایمیل اوتلوک
-سازمانی، بدون سرور و بدون اینترنت مستقیم). بنابراین فونت‌ها را نمی‌توان از
-Google Fonts یا هر CDN عمومی گرفت. سه راه پشتیبانی می‌شود که با
-``FontSource`` انتخاب می‌کنید:
+نسخهٔ قبلی این فایل با فرض «فایل IRANSansWeb را خودتان در ``static/fonts/``
+می‌گذارید» نوشته شده بود؛ تا وقتی آن فایل واقعاً آن‌جا نبود (و نیست — فونت
+IRANSans دارایی مجوزدار است، در مخزن کد قابل توزیع نیست)، ``FontSource``
+پیش‌فرض هیچ ``@font-face``ای تزریق نمی‌کرد و مرورگر بی‌صدا تا انتهای صف
+فونت می‌رفت تا به Tahoma/Arial سیستمی برسد — نتیجه، ظاهری که اصلاً شبیه
+دیزاین‌سیستم فارسی نبود.
 
-    LOCAL_STATIC   فایل‌های woff2 را در ``static/fonts/`` این پروژه بگذارید؛
-                   Streamlit از نگارش ۱٫۳۱ به بعد پوشهٔ ``static/`` کنار
-                   اسکریپت اصلی را روی مسیر ``app/static/...`` سرو می‌کند.
-    NETWORK_SHARE  اگر فونت‌ها روی یک شیرِ شبکهٔ داخلی/سرور اینترانت
-                   سازمانی در دسترس‌اند، آدرس آن را در ``base_url`` بدهید
-                   (همان الگوی «فراخوانی از طریق URL» که خواسته شده،
-                   منتها روی شبکهٔ داخلی به‌جای اینترنت).
-    SYSTEM_ONLY    هیچ ``@font-face`` تزریق نمی‌شود و فقط به فونت‌های
-                   از‌پیش‌نصب‌شدهٔ ویندوز سازمانی (Tahoma) بازمی‌گردد —
-                   همیشه کار می‌کند، فقط ظاهر لوکس IRANSans را ندارد.
+برای رفع این مشکل، **Vazirmatn** (فونت سوم در اولویت درخواستی خودتان،
+متن‌باز با مجوز SIL OFL) همراه این پروژه در ``static/fonts/Vazirmatn-Variable.woff2``
+است و همیشه، بدون هیچ تنظیمی، تزریق می‌شود — نه چیزی که باید خودتان تهیه
+کنید. ترتیب اولویت فونت (``tokens.FONT_STACK``) دست‌نخورده می‌ماند:
+IRANSansWeb → Yekan Bakh → Vazirmatn → سیستمی؛ اگر فایل مجوزدار IRANSans/
+Yekan Bakh را هم با ``FontSource.LOCAL_STATIC`` اضافه کنید، همان‌ها در
+اولویت اول می‌نشینند و Vazirmatn فقط پشتیبان است. اگر اضافه نکنید،
+Vazirmatn — نه Tahoma — چیزی است که واقعاً دیده می‌شود.
 
-پیش‌فرض ``SYSTEM_ONLY`` است تا داشبورد هرگز به‌خاطر فونت گم‌شده نشکند؛ به‌محض
-این‌که فایل فونت را در دسترس گذاشتید، ``FontSource`` را عوض کنید.
+## گزینه‌های ``FontSource`` (برای IRANSansWeb/Yekan Bakh مجوزدار)
+
+    SYSTEM_ONLY    پیش‌فرض. فقط Vazirmatn (همراه پروژه) + فونت سیستمی.
+    LOCAL_STATIC   علاوه بر Vazirmatn، فایل‌های IRANSansWeb/YekanBakh را هم
+                   از ``static/fonts/`` می‌خواند (باید خودتان اضافه کنید).
+    NETWORK_SHARE  مثل بالا، ولی از یک شیرِ شبکهٔ داخلی/اینترانت سازمانی.
 """
 from __future__ import annotations
 
 __contract__ = 1
 
 from enum import Enum
-from typing import Optional
 
 from . import tokens as T
+
+#: مسیر فونت متن‌باز همراه پروژه — نسبت به ریشهٔ اجرای Streamlit (همان‌جا که
+#: ``static/`` سرو می‌شود). مجوز: SIL OFL — نگاه کنید به
+#: ``static/fonts/Vazirmatn-OFL.txt``.
+BUNDLED_VAZIRMATN_PATH = "app/static/fonts/Vazirmatn-Variable.woff2"
 
 
 class FontSource(str, Enum):
@@ -38,18 +46,32 @@ class FontSource(str, Enum):
     NETWORK_SHARE = "network_share"
 
 
+def _bundled_font_face() -> str:
+    """Vazirmatn همراه پروژه — فونت متغیر، یک فایل برای همهٔ وزن‌ها (۱۰۰ تا ۹۰۰)."""
+    return f"""
+@font-face {{
+  font-family: 'Vazirmatn';
+  src: url('{BUNDLED_VAZIRMATN_PATH}') format('woff2-variations'),
+       url('{BUNDLED_VAZIRMATN_PATH}') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}}"""
+
+
 def _font_face_block(source: FontSource, base_url: str) -> str:
+    faces = [_bundled_font_face()]
     if source == FontSource.SYSTEM_ONLY:
-        return ""
+        return "\n".join(faces)
+
     base = base_url.rstrip("/")
     # «IRANSansWeb» دقیقاً همان فونتی است که در خودِ فایل فیگمای دیزاین‌سیستم
     # (GSI Foundations) استفاده شده — نودهای متنی آن‌جا با وزن‌های
-    # IRANSansWeb:Regular/IRANSansWeb:Bold ساخته شده‌اند. IRANSansX/YekanBakh
-    # به‌عنوان جایگزین نگه داشته شده‌اند، برای وقتی فایل وب‌فونت اصلی در
-    # دسترس نیست.
+    # IRANSansWeb:Regular/IRANSansWeb:Bold ساخته شده‌اند. این‌ها دارایی
+    # مجوزدارند و باید خودتان در ``static/fonts/`` بگذارید (نگاه کنید به
+    # ``static/fonts/README_FA.md``)؛ اگر نگذارید، Vazirmatn بالا جایگزینشان می‌شود.
     weights = (("Regular", 400), ("Medium", 500), ("Bold", 700), ("Black", 800))
     web_weights = (("Regular", 400), ("Bold", 700))
-    faces = []
     for name, weight in web_weights:
         faces.append(f"""
 @font-face {{

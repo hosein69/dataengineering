@@ -19,7 +19,7 @@ from pm_ui.layout import AUDIENCE_LABELS, AUDIENCES, DEFAULT_LAYOUT, move_block,
 
 # ── ۱) پیکربندی اولیهٔ صفحه (Wide) و تزریق CSS سراسری ──────────────────────
 theme.page_config(title="پلتفرم هوش فرآیندی — GSI UI Kit", icon="🧭")
-theme.apply(font_source=theme.FontSource.SYSTEM_ONLY)  # فایل فونت را در static/fonts بگذارید و به LOCAL_STATIC تغییر دهید
+theme.apply(font_source=theme.FontSource.SYSTEM_ONLY)  # Vazirmatn همیشه همراه پروژه است؛ برای IRANSansWeb مجوزدار فایل را در static/fonts بگذارید و به LOCAL_STATIC تغییر دهید
 
 if "layout" not in st.session_state:
     st.session_state.layout = [dict(b) for b in DEFAULT_LAYOUT]

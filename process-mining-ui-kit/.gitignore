@@ -10,7 +10,11 @@ __pycache__/
 .venv/
 venv/
 
-# ── فونت‌های محلی (دارایی توزیع‌پذیر، نه بخشی از کد) ──
-static/fonts/*.woff2
+# ── فونت‌های محلی مجوزدار (IRANSansWeb/Yekan Bakh) — دارایی توزیع‌پذیر
+# نیستند، خودتان اضافه می‌کنید. Vazirmatn (OFL، متن‌باز) از این قاعده
+# مستثناست و در مخزن می‌ماند — به همین دلیل نام‌گذاری صریح، نه الگوی کلی.
+static/fonts/IRANSansWeb-*.woff2
+static/fonts/IRANSansX-*.woff2
+static/fonts/YekanBakh-*.woff2
 static/fonts/*.ttf
 static/fonts/*.otf

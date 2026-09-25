@@ -12,9 +12,15 @@
 کانبان — یعنی همان چیزی که تیم محصول در Streamlit می‌بیند، منهای
 تعامل زنده (فیلتر، زوم نمودار).
 
-با این حال هنوز **سبک** است: بدون جاوااسکریپت، بدون فراخوانی فونت از
+با این حال هنوز **سبک** است: بدون جاوااسکریپت، بدون فراخوانی هیچ‌چیز از
 اینترنت، بدون هیچ کتابخانهٔ بیرونی — یک فایل HTML خودبسنده که با
-دوبار‌کلیک از روی فولدر شبکه در هر مرورگری باز می‌شود.
+دوبار‌کلیک از روی فولدر شبکه در هر مرورگری باز می‌شود، **و فونت فارسی هم
+واقعاً در خودِ فایل جاسازی شده** (Vazirmatn، متن‌باز SIL OFL، به‌صورت
+base64) — نه فرض «شاید روی سیستم مقصد نصب باشد». اگر فقط به فونت
+سیستمی تکیه می‌کردیم، روی اکثر ویندوزهای اداری چیزی جز Tahoma دیده
+نمی‌شد؛ IRANSansWeb دارایی مجوزدار است و نمی‌شود بدون فایل واقعی آن را
+جاسازی کرد، پس Vazirmatn (سومین اولویت در خواستهٔ اولیه) همان چیزی است
+که تضمین‌شده رندر می‌شود.
 
 ## کِی از کدام استفاده کنیم
 
@@ -27,7 +33,10 @@ from __future__ import annotations
 
 __contract__ = 1
 
+import base64
+import functools
 import html as _html
+from pathlib import Path
 from typing import Any, Mapping, Optional
 
 from .. import persian as fa
@@ -36,14 +45,38 @@ from ..charts import (flowgraph_svg, heatmap_svg, intensity_area_svg,
                       kanban_board_html, system_flow_html)
 from ..components import evidence_table_html, insight_row_html, kpi_row_html
 
-# بدون @font-face: این فایل ممکن است جدا از پوشهٔ static/fonts باز شود
-# (پیوست، کپی‌شده روی فولدر دیگر، …)، پس فقط به فونت‌های از‌پیش‌نصب‌شده
-# تکیه می‌کند تا هرجا باز شود خوانا بماند.
 STANDALONE_FONT_STACK = T.FONT_STACK
+
+#: pm_ui/export/standalone_html.py → ریشهٔ پروژه → static/fonts/...
+_VAZIRMATN_FILE = Path(__file__).resolve().parent.parent.parent / "static" / "fonts" / "Vazirmatn-Variable.woff2"
 
 
 def _esc(v: object) -> str:
     return _html.escape("" if v is None else str(v), quote=True)
+
+
+@functools.lru_cache(maxsize=1)
+def _embedded_font_face() -> str:
+    """Vazirmatn را به‌صورت base64 در خودِ سند جاسازی می‌کند — یک فایل، بدون
+    هیچ وابستگی بیرونی، و فونت فارسی هرجا باز شود درست دیده می‌شود.
+
+    اگر فایل فونت یافت نشد (مثلاً کسی پوشهٔ ``static/fonts`` را حذف کرده)،
+    بی‌صدا رد می‌شود؛ سند همچنان با پشتهٔ فونت سیستمی باز می‌شود، فقط بدون
+    تضمین ظاهر فارسی — بهتر از شکستن کامل ساخت گزارش.
+    """
+    try:
+        data = _VAZIRMATN_FILE.read_bytes()
+    except OSError:
+        return ""
+    b64 = base64.b64encode(data).decode("ascii")
+    return f"""
+@font-face {{
+  font-family: 'Vazirmatn';
+  src: url('data:font/woff2;base64,{b64}') format('woff2-variations'),
+       url('data:font/woff2;base64,{b64}') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}}"""
 
 
 def _section(title: str, body: str, *, note: Optional[str] = None) -> str:
@@ -110,6 +143,7 @@ def build_standalone_html(*, title: str, data: Mapping[str, Any],
 <meta name="robots" content="noindex">
 <title>{_esc(title)}</title>
 <style>
+{_embedded_font_face()}
   *{{box-sizing:border-box}}
   html{{direction:rtl}}
   body{{margin:0;background:{T.SURFACE_PAGE};color:{T.INK};

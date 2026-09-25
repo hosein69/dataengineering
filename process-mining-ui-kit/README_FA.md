@@ -116,11 +116,16 @@ DATA = {
 
 ## فونت (بدون اینترنت)
 
-پیش‌فرض `theme.FontSource.SYSTEM_ONLY` است (فقط Tahoma/فونت ویندوز
-سازمانی) تا داشبورد هرگز به‌خاطر فونت گم‌شده نشکند. برای فعال‌سازی ظاهر
-IRANSans/Yekan Bakh، فایل‌های `.woff2` را در `static/fonts/` بگذارید
-(دستورالعمل کامل در `static/fonts/README_FA.md`) یا آدرس یک شیر شبکهٔ
-داخلی را با `FontSource.NETWORK_SHARE` بدهید.
+**Vazirmatn** (متن‌باز، مجوز SIL OFL) همراه پروژه است (`static/fonts/`)
+و همیشه — بدون هیچ تنظیمی — استفاده می‌شود؛ هم در Streamlit، هم در هر دو
+خروجی HTML (در خروجی مستقل حتی به‌صورت base64 در خودِ فایل جاسازی
+می‌شود). این یعنی از همین حالا یک فونت فارسی واقعی می‌بینید، نه Tahoma.
+
+اگر فایل مجوزدار IRANSansWeb/Yekan Bakh را از منبع مجاز سازمانی خودتان
+دارید، آن‌ها را در `static/fonts/` بگذارید (دستورالعمل کامل در
+`static/fonts/README_FA.md`) و `FontSource` را به `LOCAL_STATIC` یا
+`NETWORK_SHARE` تغییر دهید — طبق اولویت درخواستی («IRANSans، بعد Yekan
+Bakh، سپس Vazirmatn»)، جلوتر از Vazirmatn می‌نشینند.
 
 ## رنگ سازمانی
 
@@ -144,5 +149,5 @@ pm_ui/layout/                  موتور چیدمان قابل‌تنظیم
 pm_ui/export/html_report.py    خروجی HTML سبک برای ایمیل اوتلوک
 pm_ui/export/excel_report.py   خروجی اکسل
 pm_ui/mock_data.py              دادهٔ آزمایشی نمایشی
-static/fonts/                  محل فایل فونت محلی (خالی — نگاه کنید به README آن)
+static/fonts/                  Vazirmatn همراه پروژه (OFL) + محل فایل مجوزدار IRANSansWeb
 ```
