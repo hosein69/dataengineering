@@ -26,10 +26,9 @@ def _esc(v: object) -> str:
     return _html.escape("" if v is None else str(v), quote=True)
 
 
-def render_system_flow(stages: Sequence[SystemStage], *, height: int = 150) -> None:
-    """خط لولهٔ سیستمی را افقی و راست‌به‌چپ رندر می‌کند."""
-    import streamlit.components.v1 as components
-
+def system_flow_html(stages: Sequence[SystemStage]) -> str:
+    """فقط نشانه‌گذاری+CSS خط لولهٔ سیستمی (بدون iframe) — مشترک بین
+    :func:`render_system_flow` و خروجی HTML مستقل."""
     cards = []
     for i, s in enumerate(stages):
         status = T.status_of(s.get("status") or "good")
@@ -46,12 +45,10 @@ def render_system_flow(stages: Sequence[SystemStage], *, height: int = 150) -> N
         if i < len(stages) - 1:
             cards.append('<div class="arrow">←</div>')
 
-    html = f"""
+    return f"""
 <div class="pipeline" dir="rtl">
 <style>
-  *{{box-sizing:border-box}}
-  body{{margin:0;font-family:{T.FONT_STACK}}}
-  .pipeline{{display:flex;align-items:stretch;gap:4px;overflow-x:auto;padding:6px 2px}}
+  .pipeline{{display:flex;align-items:stretch;gap:4px;overflow-x:auto;padding:6px 2px;font-family:{T.FONT_STACK}}}
   .stage{{flex:0 0 auto;display:flex}}
   .card{{background:{T.SURFACE_RAISED};border:1px solid {T.BORDER};border-top:3px solid;
     border-radius:{T.RADIUS['lg']}px;box-shadow:{T.SHADOW_CARD};padding:14px 18px;
@@ -64,4 +61,10 @@ def render_system_flow(stages: Sequence[SystemStage], *, height: int = 150) -> N
 </style>
 <div style="display:flex;align-items:center">{''.join(cards)}</div>
 </div>"""
-    components.html(html, height=height, scrolling=True)
+
+
+def render_system_flow(stages: Sequence[SystemStage], *, height: int = 150) -> None:
+    """خط لولهٔ سیستمی را افقی و راست‌به‌چپ رندر می‌کند."""
+    import streamlit.components.v1 as components
+
+    components.html(system_flow_html(stages), height=height, scrolling=True)

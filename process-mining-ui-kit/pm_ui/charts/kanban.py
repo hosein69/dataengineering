@@ -77,17 +77,14 @@ def _column_html(col: KanbanColumn) -> str:
 </div>"""
 
 
-def render_kanban_board(columns: Sequence[KanbanColumn], *, height: int = 460) -> None:
-    """تختهٔ کانبان را با ``components.v1.html`` رندر می‌کند (اسکرول افقی روان)."""
-    import streamlit.components.v1 as components
-
+def kanban_board_html(columns: Sequence[KanbanColumn], *, height: int = 460) -> str:
+    """فقط نشانه‌گذاری+CSS تختهٔ کانبان (بدون iframe) — مشترک بین
+    :func:`render_kanban_board` و خروجی HTML مستقل."""
     cols_html = "".join(_column_html(c) for c in columns)
-    html = f"""
+    return f"""
 <div class="board" dir="rtl">
 <style>
-  *{{box-sizing:border-box}}
-  body{{margin:0;font-family:{T.FONT_STACK}}}
-  .board{{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px}}
+  .board{{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;font-family:{T.FONT_STACK}}}
   .col{{flex:0 0 250px;background:{T.SURFACE_SUNKEN};border:1px solid {T.BORDER};
     border-radius:{T.RADIUS['lg']}px;padding:10px;max-height:{height}px;display:flex;flex-direction:column}}
   .col-head{{display:flex;align-items:center;gap:6px;padding:2px 4px 10px;
@@ -116,4 +113,10 @@ def render_kanban_board(columns: Sequence[KanbanColumn], *, height: int = 460) -
 </style>
 {cols_html}
 </div>"""
-    components.html(html, height=height + 24, scrolling=True)
+
+
+def render_kanban_board(columns: Sequence[KanbanColumn], *, height: int = 460) -> None:
+    """تختهٔ کانبان را با ``components.v1.html`` رندر می‌کند (اسکرول افقی روان)."""
+    import streamlit.components.v1 as components
+
+    components.html(kanban_board_html(columns, height=height), height=height + 24, scrolling=True)

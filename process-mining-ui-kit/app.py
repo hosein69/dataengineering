@@ -14,7 +14,7 @@ import streamlit as st
 
 from pm_ui import mock_data, persian as fa, theme, tokens as T
 from pm_ui import blocks as _register_blocks  # noqa: F401 — ثبت رندرکننده‌های بلوک
-from pm_ui.export import build_excel_report, build_report_html
+from pm_ui.export import build_excel_report, build_report_html, build_standalone_html
 from pm_ui.layout import AUDIENCE_LABELS, AUDIENCES, DEFAULT_LAYOUT, move_block, render_layout
 
 # ── ۱) پیکربندی اولیهٔ صفحه (Wide) و تزریق CSS سراسری ──────────────────────
@@ -82,6 +82,15 @@ with st.sidebar:
                        file_name="گزارش_فرآیند.html", mime="text/html",
                        use_container_width=True)
     st.caption(f"حجم فایل: {len(html_bytes) / 1024:,.0f} کیلوبایت")
+
+    standalone_bytes = build_standalone_html(
+        title="اتاق کنترل فرآیندهای سازمانی", subtitle="نمونهٔ کامل — همهٔ نمودارها و جدول‌ها",
+        audience_label=AUDIENCE_LABELS[st.session_state.audience], data=DATA).encode("utf-8")
+    st.download_button("⬇ دانلود HTML مستقل (کامل)", data=standalone_bytes,
+                       file_name="گزارش_فرآیند_کامل.html", mime="text/html",
+                       use_container_width=True)
+    st.caption(f"حجم فایل: {len(standalone_bytes) / 1024:,.0f} کیلوبایت — "
+              "برای فولدر شبکه/اشتراک مستقیم، نه پیوست ایمیل")
 
     xlsx_bytes = build_excel_report(kpis=DATA["kpis"], nodes=DATA["graph"]["nodes"],
                                     edges=DATA["graph"]["edges"])
