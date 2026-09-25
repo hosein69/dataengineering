@@ -18,9 +18,9 @@ def process_graph() -> Dict[str, list]:
     nodes = [
         {"id": "reg", "label": "ثبت سفارش", "count": 1240, "status": "good"},
         {"id": "review", "label": "بررسی مدارک", "count": 1180, "status": "good"},
-        {"id": "fx", "label": "تخصیص ارز", "count": 940, "status": "watch",
+        {"id": "fx", "label": "تخصیص ارز", "count": 940, "status": "warning",
          "hint": "میانگین ۶٫۲ روز توقف"},
-        {"id": "customs", "label": "ترخیص گمرکی", "count": 860, "status": "bottleneck",
+        {"id": "customs", "label": "ترخیص گمرکی", "count": 860, "status": "stockout",
          "hint": "بیشترین توقف کیس"},
         {"id": "delivery", "label": "تحویل انبار", "count": 820, "status": "good"},
         {"id": "rework", "label": "اصلاح مدارک", "count": 240, "status": "critical"},
@@ -47,7 +47,7 @@ def kpi_cards() -> List[dict]:
          "delta_good": True, "status": "good", "icon": "⏱",
          "spark": [11.2, 10.8, 10.1, 9.9, 9.6, 9.4]},
         {"label": "کیس‌های در گلوگاه", "value": fa.fa_number(86), "delta": "‎+۱۲٪",
-         "delta_good": False, "status": "bottleneck", "icon": "⚠",
+         "delta_good": False, "status": "stockout", "icon": "⚠",
          "spark": [54, 61, 70, 75, 80, 86]},
         {"label": "ارزش ریالی در جریان", "value": fa.fa_compact(482_300_000_000),
          "delta": "‎+۲٪", "delta_good": True, "status": "good", "icon": "💰"},
@@ -60,15 +60,15 @@ def kanban_columns() -> List[dict]:
             {"title": "سفارش #۱۲۳۴۵", "tag": "واردات", "owner": "رضایی", "priority": "good", "age_days": 1},
             {"title": "سفارش #۱۲۳۵۰", "tag": "واردات", "owner": "احمدی", "priority": "good", "age_days": 2},
         ]},
-        {"title": "تخصیص ارز", "status": "watch", "wip_limit": 6, "cards": [
-            {"title": "سفارش #۱۲۳۰۱", "tag": "ارزی", "owner": "کریمی", "priority": "watch", "age_days": 5},
-            {"title": "سفارش #۱۲۲۹۰", "tag": "ارزی", "owner": "رضایی", "priority": "watch", "age_days": 7},
+        {"title": "تخصیص ارز", "status": "warning", "wip_limit": 6, "cards": [
+            {"title": "سفارش #۱۲۳۰۱", "tag": "ارزی", "owner": "کریمی", "priority": "warning", "age_days": 5},
+            {"title": "سفارش #۱۲۲۹۰", "tag": "ارزی", "owner": "رضایی", "priority": "warning", "age_days": 7},
             {"title": "سفارش #۱۲۲۸۸", "tag": "ارزی", "owner": "موسوی", "priority": "good", "age_days": 3},
         ]},
-        {"title": "ترخیص گمرکی", "status": "bottleneck", "wip_limit": 5, "cards": [
-            {"title": "سفارش #۱۲۲۵۰", "tag": "گمرک", "owner": "احمدی", "priority": "bottleneck", "age_days": 11},
+        {"title": "ترخیص گمرکی", "status": "stockout", "wip_limit": 5, "cards": [
+            {"title": "سفارش #۱۲۲۵۰", "tag": "گمرک", "owner": "احمدی", "priority": "stockout", "age_days": 11},
             {"title": "سفارش #۱۲۲۴۰", "tag": "گمرک", "owner": "کریمی", "priority": "critical", "age_days": 14},
-            {"title": "سفارش #۱۲۲۳۰", "tag": "گمرک", "owner": "موسوی", "priority": "bottleneck", "age_days": 9},
+            {"title": "سفارش #۱۲۲۳۰", "tag": "گمرک", "owner": "موسوی", "priority": "stockout", "age_days": 9},
         ]},
         {"title": "تحویل انبار", "status": "good", "wip_limit": None, "cards": [
             {"title": "سفارش #۱۲۱۹۰", "tag": "تحویل", "owner": "رضایی", "priority": "good", "age_days": 1},
@@ -81,7 +81,7 @@ def system_stages() -> List[dict]:
         {"label": "منابع داده سازمانی", "icon": "🗄", "sub": "SAP · اکسل · CSV", "status": "good"},
         {"label": "پالایش و اعتبارسنجی", "icon": "🧹", "sub": "قوانین کیفیت داده", "status": "good"},
         {"label": "انبار دادهٔ معنایی", "icon": "🏛", "sub": "Semantic DWH", "status": "good"},
-        {"label": "موتور فرآیندکاوی", "icon": "🧭", "sub": "استخراج رویداد", "status": "watch"},
+        {"label": "موتور فرآیندکاوی", "icon": "🧭", "sub": "استخراج رویداد", "status": "warning"},
         {"label": "داشبورد و گزارش", "icon": "📊", "sub": "Streamlit / HTML / Excel", "status": "good"},
     ]
 

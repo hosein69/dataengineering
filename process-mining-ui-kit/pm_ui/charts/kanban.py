@@ -19,7 +19,7 @@ class KanbanCard(TypedDict, total=False):
     title: str
     tag: str
     owner: str           # نام کوتاه؛ فقط حرف اول در آواتار نشان داده می‌شود
-    priority: str         # یکی از "bottleneck" | "critical" | "watch" | "good"
+    priority: str         # کلید STATUS در tokens.py — مثلاً "stockout" | "critical" | "warning" | "good"
     age_days: int          # چند روز در این ستون مانده — برای شناسایی رکود
 
 
@@ -107,7 +107,7 @@ def render_kanban_board(columns: Sequence[KanbanColumn], *, height: int = 460) -
   .tag{{font-size:10.5px;color:{T.AQUA_700};background:{T.AQUA_WASH};
     border-radius:999px;padding:2px 8px}}
   .age{{font-size:10.5px;color:{T.INK_MUTED}}}
-  .age.stale{{color:{T.STATUS['watch'].ink};font-weight:700}}
+  .age.stale{{color:{T.STATUS['warning'].ink};font-weight:700}}
   .card-foot{{display:flex;align-items:center;gap:6px;margin-top:8px}}
   .av{{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;
     justify-content:center;font-size:10px;font-weight:800}}

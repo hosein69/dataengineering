@@ -42,8 +42,23 @@ def _font_face_block(source: FontSource, base_url: str) -> str:
     if source == FontSource.SYSTEM_ONLY:
         return ""
     base = base_url.rstrip("/")
+    # «IRANSansWeb» دقیقاً همان فونتی است که در خودِ فایل فیگمای دیزاین‌سیستم
+    # (GSI Foundations) استفاده شده — نودهای متنی آن‌جا با وزن‌های
+    # IRANSansWeb:Regular/IRANSansWeb:Bold ساخته شده‌اند. IRANSansX/YekanBakh
+    # به‌عنوان جایگزین نگه داشته شده‌اند، برای وقتی فایل وب‌فونت اصلی در
+    # دسترس نیست.
     weights = (("Regular", 400), ("Medium", 500), ("Bold", 700), ("Black", 800))
+    web_weights = (("Regular", 400), ("Bold", 700))
     faces = []
+    for name, weight in web_weights:
+        faces.append(f"""
+@font-face {{
+  font-family: 'IRANSansWeb';
+  src: url('{base}/IRANSansWeb-{name}.woff2') format('woff2');
+  font-weight: {weight};
+  font-style: normal;
+  font-display: swap;
+}}""")
     for family, filestem in (("IRANSansX", "IRANSansX"), ("YekanBakh", "YekanBakh")):
         for name, weight in weights:
             faces.append(f"""

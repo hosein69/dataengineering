@@ -8,13 +8,16 @@
 فایل فونت (`.woff2`) دارایی توزیع‌پذیر با مجوز جداگانه است و در مخزن کد
 جای درستی ندارد. برای فعال‌سازی ظاهر لوکس IRANSans/Yekan Bakh:
 
-1. فایل‌های زیر را (با همین نام‌ها) از منبع مجاز سازمانی خودتان این‌جا کپی کنید:
+1. فایل‌های زیر را (با همین نام‌ها) از منبع مجاز سازمانی خودتان این‌جا کپی کنید.
+   «IRANSansWeb» اولویت اول است — دقیقاً همان فونتی که در فایل فیگمای
+   دیزاین‌سیستم شما (GSI Foundations) استفاده شده؛ بقیه جایگزین‌اند:
 
    ```
-   IRANSansX-Regular.woff2   IRANSansX-Medium.woff2
-   IRANSansX-Bold.woff2      IRANSansX-Black.woff2
-   YekanBakh-Regular.woff2   YekanBakh-Medium.woff2
-   YekanBakh-Bold.woff2      YekanBakh-Black.woff2
+   IRANSansWeb-Regular.woff2  IRANSansWeb-Bold.woff2
+   IRANSansX-Regular.woff2    IRANSansX-Medium.woff2
+   IRANSansX-Bold.woff2       IRANSansX-Black.woff2
+   YekanBakh-Regular.woff2    YekanBakh-Medium.woff2
+   YekanBakh-Bold.woff2       YekanBakh-Black.woff2
    ```
 
 2. در `app.py`، خط زیر را:
