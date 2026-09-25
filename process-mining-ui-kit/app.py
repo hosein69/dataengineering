@@ -55,12 +55,19 @@ with st.sidebar:
     st.markdown("**ترتیب بلوک‌ها** (جابه‌جایی چه نوع، چه جایگاه)")
     ordered = sorted(st.session_state.layout, key=lambda b: b.get("order", 0))
     for b in ordered:
-        c1, c2, c3 = st.columns([5, 1, 1])
-        c1.caption(b.get("title") or b.get("type"))
-        if c2.button("▲", key=f"up_{b['id']}", help="جابه‌جایی به بالا"):
+        st.caption(b.get("title") or b.get("type"))
+        # عمداً از دو ستون تقریباً هم‌عرض استفاده شده، نه یک ستون باریک ۱/۷ی
+        # کنار برچسب: در Streamlit 1.64 دکمه‌ای که در ستون خیلی باریک بیفتد
+        # (کمتر از ~۶۰px) متنش کاملاً نامرئی می‌شود — باگی از خودِ ویجت، نه
+        # از CSS این پروژه؛ با پهن‌تر کردن ستون دکمه، بدون نیاز به دور زدن
+        # نسخه، دور زده می‌شود.
+        c1, c2 = st.columns(2)
+        if c1.button("▲ بالا", key=f"up_{b['id']}", help="جابه‌جایی به بالا",
+                    use_container_width=True):
             st.session_state.layout = move_block(st.session_state.layout, b["id"], delta=-1)
             st.rerun()
-        if c3.button("▼", key=f"dn_{b['id']}", help="جابه‌جایی به پایین"):
+        if c2.button("▼ پایین", key=f"dn_{b['id']}", help="جابه‌جایی به پایین",
+                    use_container_width=True):
             st.session_state.layout = move_block(st.session_state.layout, b["id"], delta=1)
             st.rerun()
 

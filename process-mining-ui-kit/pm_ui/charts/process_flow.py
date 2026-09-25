@@ -48,26 +48,60 @@ def _esc(v: object) -> str:
 
 
 def _layered_positions(nodes: Sequence[FlowNode], edges: Sequence[FlowEdge]) -> Dict[str, int]:
-    """لایهٔ هر گره را با طولانی‌ترین مسیر از گره‌های بی‌ورودی حساب می‌کند."""
+    """لایهٔ هر گره را با طولانی‌ترین مسیر از گره‌های بی‌ورودی حساب می‌کند.
+
+    فرآیندهای واقعی معمولاً حلقه دارند (مثلاً «اصلاح مدارک» که به «بررسی
+    مدارک» برمی‌گردد). بدون شناسایی این یال‌های برگشتی، رگرسیونِ طولانی‌ترین
+    مسیر روی حلقه هرگز به تعادل نمی‌رسد و لایه‌ها نامحدود رشد می‌کنند —
+    نتیجه‌اش گره‌هایی است که بیرون از بومِ SVG قرار می‌گیرند و از نما حذف
+    می‌شوند. راه‌حل استاندارد ترسیم گراف لایه‌ای (Sugiyama): با یک پیمایش
+    DFS یال‌های برگشتی (back edge — به گرهٔ در حال پیمایش) شناسایی و از
+    محاسبهٔ لایه کنار گذاشته می‌شوند؛ در ترسیم همچنان رسم می‌شوند.
+    """
     ids = [n["id"] for n in nodes]
-    incoming: Dict[str, List[str]] = {i: [] for i in ids}
     outgoing: Dict[str, List[str]] = {i: [] for i in ids}
     for e in edges:
-        if e["source"] in outgoing and e["target"] in incoming:
+        if e.get("source") in outgoing and e.get("target") in outgoing:
             outgoing[e["source"]].append(e["target"])
+
+    # ── شناسایی یال‌های برگشتی با DFS (رنگ‌آمیزی سفید/خاکستری/سیاه) ──
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: Dict[str, int] = {i: WHITE for i in ids}
+    back_edges: set = set()
+
+    def dfs(u: str) -> None:
+        color[u] = GRAY
+        for v in outgoing.get(u, []):
+            if color.get(v) == GRAY:
+                back_edges.add((u, v))
+            elif color.get(v) == WHITE:
+                dfs(v)
+        color[u] = BLACK
+
+    for i in ids:
+        if color[i] == WHITE:
+            dfs(i)
+
+    forward_edges = [e for e in edges
+                     if (e.get("source"), e.get("target")) not in back_edges]
+
+    incoming: Dict[str, List[str]] = {i: [] for i in ids}
+    for e in forward_edges:
+        if e.get("source") in incoming and e.get("target") in incoming:
             incoming[e["target"]].append(e["source"])
 
     layer: Dict[str, int] = {}
     roots = [i for i in ids if not incoming[i]] or ids[:1]
     for r in roots:
         layer[r] = 0
-    # BFS/relaxation ساده که روی گراف‌های غیرحلقوی کوچک (تعداد گره‌های فرآیند) کافی است
+    # روی یال‌های forward (بدون حلقه) رگرسیون طولانی‌ترین مسیر همیشه به
+    # تعادل می‌رسد؛ سقف len(ids) صرفاً محافظ در برابر دادهٔ بدشکل است.
     changed = True
     guard = 0
-    while changed and guard < len(ids) + 5:
+    while changed and guard < len(ids) + 1:
         changed = False
         guard += 1
-        for e in edges:
+        for e in forward_edges:
             s, t = e.get("source"), e.get("target")
             if s in layer:
                 nl = layer[s] + 1
