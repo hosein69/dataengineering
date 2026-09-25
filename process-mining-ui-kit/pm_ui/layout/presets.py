@@ -19,16 +19,20 @@ from .engine import BlockSpec
 DEFAULT_LAYOUT: List[BlockSpec] = [
     {"id": "kpi", "type": "kpi_row", "size": "full", "order": 0,
      "visible_for": [], "props": {}},
+    {"id": "insight", "type": "insight_row", "size": "full", "order": 1,
+     "visible_for": [], "props": {}},
     {"id": "flow", "type": "process_flow", "title": "نقشهٔ جریان فرآیند", "size": "half",
-     "order": 1, "visible_for": ["manager", "analyst"], "props": {}},
+     "order": 2, "visible_for": ["manager", "analyst"], "props": {}},
     {"id": "intensity", "type": "intensity_chart", "title": "روند حجم کیس",
-     "size": "half", "order": 2, "visible_for": ["executive", "manager", "analyst"], "props": {}},
+     "size": "half", "order": 3, "visible_for": ["executive", "manager", "analyst"], "props": {}},
+    {"id": "evidence", "type": "evidence_table", "size": "full", "order": 4,
+     "visible_for": ["manager", "analyst"], "props": {}},
     {"id": "heatmap", "type": "heatmap", "title": "شدت فعالیت هفتگی", "size": "half",
-     "order": 3, "visible_for": ["manager", "analyst"], "props": {}},
+     "order": 5, "visible_for": ["manager", "analyst"], "props": {}},
     {"id": "system", "type": "system_flow", "title": "خط لولهٔ سیستمی", "size": "half",
-     "order": 4, "visible_for": ["manager", "analyst"], "props": {}},
+     "order": 6, "visible_for": ["manager", "analyst"], "props": {}},
     {"id": "kanban", "type": "kanban", "title": "وضعیت کیس‌ها در هر مرحله", "size": "full",
-     "order": 5, "visible_for": ["analyst"], "props": {}},
+     "order": 7, "visible_for": ["analyst"], "props": {}},
 ]
 
 AUDIENCES = ("executive", "manager", "analyst")

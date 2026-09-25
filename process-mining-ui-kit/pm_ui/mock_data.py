@@ -54,6 +54,38 @@ def kpi_cards() -> List[dict]:
     ]
 
 
+def insight_cards() -> List[dict]:
+    """الگوی «Stats Card» صفحهٔ فیگمای Cash Flow — ادعای شواهدمحور، نه یک عدد تنها."""
+    return [
+        {"icon": "🔎", "headline": "شواهد رویداد فرآیند، با منشأ روشن",
+         "body": "کد کیس ≠ کد ثبت سفارش / Case ID ≠ شناسهٔ سیستم مبدأ"},
+    ]
+
+
+def evidence_table() -> dict:
+    """الگوی «Settlement / Evidence comparison» — همان پنل، ترجمه‌شده به دامنهٔ فرآیندکاوی."""
+    return {
+        "title": "شواهد رویداد در مرحلهٔ گلوگاه",
+        "subtitle": "دانه: کد کیس × مرحله  |  زمان‌ها این صفحه نمونهٔ طراحی هستند",
+        "columns": [
+            {"key": "case", "label": "کد کیس"},
+            {"key": "stage", "label": "مرحله"},
+            {"key": "expected", "label": "زمان مورد انتظار"},
+            {"key": "observed", "label": "زمان مشاهده‌شده"},
+            {"key": "deviation", "label": "انحراف (روز)"},
+        ],
+        "rows": [
+            {"case": fa.to_fa_digits("CASE-88213"), "stage": "ترخیص گمرکی",
+             "expected": fa.to_fa_digits("3"), "observed": fa.to_fa_digits("11"),
+             "deviation": fa.to_fa_digits("+8")},
+        ],
+        "source_meta": "منبع: ثبت رویداد سیستمی · نوع شاهد: Timestamp Log · زمان مشاهده: در شناسنامهٔ رویداد",
+        "gap_warning": "شکاف شواهد: انحراف مشاهده‌شده لزوماً به‌معنای خطای عملیاتی نیست.",
+        "gap_note": "بدون مقایسه با SLA قراردادی، از این انحراف نمی‌توان تخلف قطعی نتیجه گرفت.",
+        "actions": ["دریافت Excel با شناسنامهٔ شواهد", "دریافت HTML مستقل"],
+    }
+
+
 def kanban_columns() -> List[dict]:
     return [
         {"title": "ثبت سفارش", "status": "good", "wip_limit": None, "cards": [

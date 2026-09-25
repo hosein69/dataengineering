@@ -18,11 +18,32 @@ streamlit run app.py
 pm_ui/tokens.py   ──► رنگ، فاصله، تایپ، سایه (تنها منبع حقیقت)
        │
        ├──► pm_ui/theme.py        تزریق CSS سراسری در Streamlit (موتور ساخت)
-       ├──► pm_ui/components.py   کارت KPI و نشان وضعیت (HTML سفارشی)
+       ├──► pm_ui/components.py   کارت KPI، کارت شاهد/بینش، جدول شواهد، نشان وضعیت
        ├──► pm_ui/charts/         نقشهٔ جریان، کانبان، خط سیستمی، نمودار شدت
        ├──► pm_ui/layout/         موتور چیدمان قابل‌تنظیم (مکان/اندازه/مخاطب)
        └──► pm_ui/export/         خروجی HTML سبک (ایمیل) و اکسل — آن‌چه کاربر واقعاً می‌بیند
 ```
+
+### همگام با فیگمای واقعی شما
+
+`pm_ui/tokens.py` دیگر تخمین نیست — مستقیماً از فایل فیگمای دیزاین‌سیستم
+شما (fileKey `T9Ps72EYpriHdov9fmNFQu`، فریم «GSI Foundations») خوانده شده:
+پالت Navy/Teal/Gold، مقیاس ۷حالتی وضعیت (ink/fill/wash)، فاصلهٔ ۱۲پله‌ای،
+شعاع، تایپوگرافی، ارتفاع و حرکت — همگی با همان نسبت‌های کنتراست WCAG که
+خودِ فایل فیگما مستند کرده. دو جزء تازه هم مستقیماً از صفحهٔ نمونهٔ
+«GSI / Cash Flow / Evidence-first» (fileKey `oMZKwzm97e65g7nQWnUog8`)
+پیاده‌سازی شده‌اند:
+
+- **`components.render_insight_row`** — الگوی «Stats Card»: آیکن + جملهٔ
+  ادعای شواهدمحور + توضیح، وسط‌چین (نه یک کارت عددی — برای بیانِ یک
+  یافته، مثلاً «بیشترین گلوگاه فرآیند در مرحلهٔ ترخیص گمرکی است»).
+- **`components.render_evidence_table`** — الگوی «Settlement / Evidence
+  comparison»: عنوان، جملهٔ دانه، جدول واقعی، فراداده منبع (منبع · نوع
+  شاهد · زمان مشاهده)، هشدار شکاف شواهد، و توضیح احتیاط در تفسیر — جدا
+  از هم، چون «شکاف شواهد» یک ادعا است و توضیح زیرش یک احتیاط، نه همان چیز.
+
+اگر فایل فیگما به‌روز شد، این‌ها هم باید دوباره با `mcp__Figma__get_design_context`
+همگام شوند — نه برعکس.
 
 ### Streamlit در برابر HTML/اکسل — تفاوتی که هرگز نباید گم شود
 
@@ -70,7 +91,9 @@ Streamlit هم داده می‌شود — یک محاسبه، سه نمایش، 
 ```python
 DATA = {
     "kpis": [...],           # فهرست dict — نگاه کنید به KpiSpec در components.py
+    "insights": [...],        # فهرست dict — نگاه کنید به InsightSpec در components.py
     "graph": {"nodes": [...], "edges": [...]},  # نگاه کنید به FlowNode/FlowEdge
+    "evidence": {...},          # dict — نگاه کنید به EvidenceTableSpec در components.py
     "kanban": [...],          # نگاه کنید به KanbanColumn
     "system": [...],          # نگاه کنید به SystemStage
     "intensity": {"labels": [...], "series": {...}},

@@ -23,6 +23,18 @@ def _kpi_row(props: Dict[str, Any], data: Dict[str, Any]) -> None:
     C.render_kpi_row(data.get("kpis", []), columns=props.get("columns"))
 
 
+@register("insight_row")
+def _insight_row(props: Dict[str, Any], data: Dict[str, Any]) -> None:
+    C.render_insight_row(data.get("insights", []), columns=props.get("columns"))
+
+
+@register("evidence_table")
+def _evidence_table(props: Dict[str, Any], data: Dict[str, Any]) -> None:
+    spec = data.get("evidence")
+    if spec:
+        C.render_evidence_table(spec, height=props.get("height", 420))
+
+
 @register("process_flow")
 def _process_flow(props: Dict[str, Any], data: Dict[str, Any]) -> None:
     g = data.get("graph", {"nodes": [], "edges": []})

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from pm_ui import mock_data, persian as fa, theme
+from pm_ui import mock_data, persian as fa, theme, tokens as T
 from pm_ui import blocks as _register_blocks  # noqa: F401 — ثبت رندرکننده‌های بلوک
 from pm_ui.export import build_excel_report, build_report_html
 from pm_ui.layout import AUDIENCE_LABELS, AUDIENCES, DEFAULT_LAYOUT, move_block, render_layout
@@ -29,7 +29,9 @@ if "audience" not in st.session_state:
 # ── ۲) دادهٔ آزمایشی — در استقرار واقعی با آداپتور دادهٔ سازمانی جایگزین شود ──
 DATA = {
     "kpis": mock_data.kpi_cards(),
+    "insights": mock_data.insight_cards(),
     "graph": mock_data.process_graph(),
+    "evidence": mock_data.evidence_table(),
     "kanban": mock_data.kanban_columns(),
     "system": mock_data.system_stages(),
     "intensity": mock_data.intensity_series(),
@@ -82,10 +84,10 @@ with st.sidebar:
 
 # ── ۴) سربرگ ────────────────────────────────────────────────────────────────
 st.markdown(
-    f"""<div style="background:linear-gradient(120deg,#0F172A,#0F766E);color:#fff;
-    border-radius:16px;padding:22px 26px;margin-bottom:18px">
+    f"""<div style="background:linear-gradient(120deg,{T.BRAND_NAVY},{T.BRAND_TEAL});color:#fff;
+    border-radius:{T.RADIUS['xl']}px;padding:22px 26px;margin-bottom:18px">
       <div style="font-size:22px;font-weight:800">اتاق کنترل فرآیندهای سازمانی</div>
-      <div style="font-size:13px;color:#dbeafe;margin-top:6px">
+      <div style="font-size:13px;color:rgba(255,255,255,.82);margin-top:6px">
         نمای {AUDIENCE_LABELS[st.session_state.audience]} — {fa.today_jalali_str()}
       </div>
     </div>""", unsafe_allow_html=True)
