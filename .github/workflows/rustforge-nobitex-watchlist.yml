@@ -1,0 +1,22 @@
+name: RustForge Nobitex leverage watchlist
+on:
+  push:
+    paths:
+      - 'rustforge-nobitex-watchlist/**'
+      - '.github/workflows/rustforge-nobitex-watchlist.yml'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  watchlist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Fetch pinned RustForge source
+        run: |
+          git clone https://github.com/Ashutosh0x/rust-finance.git rust-finance
+          git -C rust-finance checkout df13eb8dd8e18481790f3417f570d4380cee7764
+      - name: Build and run read-only watchlist
+        run: cargo run --release --manifest-path rustforge-nobitex-watchlist/Cargo.toml
