@@ -454,8 +454,11 @@ class FxTraceabilityStage(Stage):
         for r in df.to_dict("records"):
             reg = r.get("CANONICAL_REG")
             bl = r.get("CANONICAL_BL")
-            add(reg, "SHIPMENT", "صدور بارنامه", r.get("BL_DATE"),
-                r.get("INVOICE_VALUE"), r.get("CURRENCY"), "BL", bl)
+            # «صدور بارنامه» نبود: BL_DATE تولیدکننده ندارد و این رویداد هرگز
+            # به تایم‌لاین نمی‌رسید. شاهدِ موجودِ حرکت، با نام درست خودش.
+            add(reg, "SHIPMENT", "شاهد حرکت محموله", r.get("SHIPPED_EVIDENCE_DATE"),
+                r.get("INVOICE_VALUE"), r.get("CURRENCY"),
+                _s(r.get("SHIPPED_EVIDENCE_BASIS")) or "BL", bl)
             add(reg, "CUSTOMS_DECLARATION", "ثبت کوتاژ", r.get("COT_DATE"),
                 r.get("INVOICE_VALUE"), r.get("CURRENCY"), "EPL/CUSTOMS", r.get("COTAGE_NO"))
             add(reg, "SATA", "صدور کد ساتا", r.get("SATA_DATE"),
@@ -484,18 +487,31 @@ class FxTraceabilityStage(Stage):
             reg = _s(r.get("CANONICAL_REG"))
             if not reg:
                 continue
-            for col, label in (("BL_DATE", "بارنامه"), ("ARRIVAL_DATE", "ورود"),
-                               ("DISCHARGE_DATE", "تخلیه"), ("COT_DATE", "کوتاژ"),
-                               ("FULL_CLEAR_DATE", "ترخیص کامل")):
+            physical = (("ARRIVAL_DATE", "ورود"), ("DISCHARGE_DATE", "تخلیه"),
+                        ("COT_DATE", "کوتاژ"), ("FULL_CLEAR_DATE", "ترخیص کامل"))
+            checks = list(physical)
+            # شاهد حرکت محموله معمولاً *خودِ* یکی از تاریخ‌های بالاست. اگر همان
+            # باشد دوباره بررسی نمی‌شود: یک سلول باید یک ایراد بدهد، نه دو تا.
+            ship = _date(r.get("SHIPPED_EVIDENCE_DATE"))
+            if ship and ship not in {_date(r.get(c)) for c, _ in physical}:
+                checks.append(("SHIPPED_EVIDENCE_DATE", "شاهد حرکت محموله"))
+            for col, label in checks:
                 d = _date(r.get(col))
                 if d and d > ctx.today:
                     flag(reg, "FUTURE_DATE", "HIGH", f"تاریخ {label} بعد از تاریخ مرجع است",
                          f"{col}={d.isoformat()}")
-            bl, clear = _date(r.get("BL_DATE")), _date(r.get("FULL_CLEAR_DATE"))
-            if bl and clear and clear < bl:
+            # تا نسخه قبل این کنترل «ترخیص قبل از تاریخ بارنامه» بود و چون
+            # BL_DATE هیچ‌وقت پر نمی‌شد، هرگز اجرا نمی‌شد. مبنا به «تخلیه»
+            # تغییر کرد: محموله را نمی‌توان قبل از تخلیه از کشتی ترخیص کرد،
+            # و این تاریخ برخلاف تاریخ بارنامه واقعاً در سورس هست. عمداً از
+            # SHIPPED_EVIDENCE_DATE استفاده نمی‌شود، چون اگر شاهدْ «قبض انبار»
+            # باشد، ترخیصِ قبل از آن کاملاً عادی است و هشدار کاذب می‌سازد.
+            discharge = _date(r.get("DISCHARGE_DATE"))
+            clear = _date(r.get("FULL_CLEAR_DATE"))
+            if discharge and clear and clear < discharge:
                 flag(reg, "CLEAR_BEFORE_SHIPMENT", "CRITICAL",
-                     "ترخیص کامل قبل از تاریخ حمل ثبت شده است",
-                     f"BL={bl.isoformat()} / CLEAR={clear.isoformat()}")
+                     "ترخیص کامل قبل از تخلیه محموله ثبت شده است",
+                     f"DISCHARGE={discharge.isoformat()} / CLEAR={clear.isoformat()}")
 
         # سطح پرونده: نسبت‌های مالی فقط وقتی ارز/مبنای مبلغ قابل مقایسه باشد.
         for i, r in ledger.iterrows():

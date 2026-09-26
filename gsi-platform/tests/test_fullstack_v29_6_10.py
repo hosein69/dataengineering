@@ -95,7 +95,7 @@ def test_financial_card_deduplicates_and_never_adds_currencies():
 
 
 def test_historical_material_status_uses_report_date():
-    df=pd.DataFrame({'KEY_MATERIAL':['M1'],'BL_DATE':['2026-06-01']})
+    df=pd.DataFrame({'KEY_MATERIAL':['M1'],'SHIPPED_EVIDENCE_DATE':['2026-06-01']})
     assert build_material_html_view(df,today='2026-05-01').iloc[0]['موقعیت فعلی']=='نامشخص'
     assert build_material_html_view(df,today='2026-06-06').iloc[0]['سن وضعیت (روز)']==5
 

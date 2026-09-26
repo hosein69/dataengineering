@@ -59,7 +59,7 @@ TIMELINE: List[Tuple[str, str, int, str]] = [
     ("BUY_DATE",           "خرید ارز",                    60, "FX_SUPPLY"),
     ("FUND_DATE",          "تأمین وجه",                    62, "FX_SUPPLY"),
     ("SWIFT_DATE",         "ارسال سوئیفت/پرداخت",          65, "FX_SUPPLY"),
-    ("BL_DATE",            "صدور بارنامه (حمل)",          70, "SHIPMENT"),
+    ("SHIPPED_EVIDENCE_DATE", "شاهد حرکت محموله",         70, "SHIPMENT"),
     ("ARRIVAL_DATE",       "ورود محموله",                 75, "SHIPMENT"),
     ("DISCHARGE_DATE",     "تخلیه محموله",                80, "CUSTOMS"),
     ("DOC_SUBMIT_DATE",    "ارائه اسناد به بانک",         85, "DOCS"),

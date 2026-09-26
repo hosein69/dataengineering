@@ -5,7 +5,7 @@ cd /d "%~dp0.."
 :menu
 cls
 echo ===============================================================
-echo GSI 29.10.0 - DWH / ORCHESTRATION CONTROL
+echo GSI 29.11.0 - DWH / ORCHESTRATION CONTROL
 echo DWH: %GSI_DWH_PATH%
 echo ===============================================================
 echo [1] Status - read only

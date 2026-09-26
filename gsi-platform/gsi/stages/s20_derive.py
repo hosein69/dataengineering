@@ -34,7 +34,15 @@ DERIVED = {
     "CLEAR_AMOUNT":       (["CL_CLEAR_AMOUNT"], "", False),
     # ── حمل و پرونده ──
     "NTSW_FILE_NO":       (["IL_FILE_NO"], "", False),
+    # «تاریخ بارنامه» = تاریخ *صدور* بارنامه. هیچ سورسی در این پکیج آن را
+    # تولید نمی‌کند (`BL_BL_DATE` وجود خارجی ندارد) و عمداً با هیچ تاریخ
+    # مشابهی جایگزین نمی‌شود — دلیلش در SHIPMENT_EVIDENCE_CHAIN.
     "BL_DATE":            (["BL_BL_DATE"], "", False),
+    # این سه، شاهد واقعی و پرشده‌ای بودند که adapter استخراج می‌کرد و این
+    # مرحله روی زمین می‌گذاشت. حالا نام دامنه‌ای دارند.
+    "BL_DELIVERY_DATE":   (["BL_BL_DELIVERY_DATE"], "", False),
+    "RELEASE_DATE":       (["BL_RELEASE_DATE"], "", False),
+    "DO_DATE":            (["BL_DO_DATE"], "", False),
     "SEGMENT":            (["BL_SEGMENT"], "", False),
     "PAYMENT_METHOD":     (["SATA_PAYMENT_METHOD"], "", False),
     "BARAT_DUE":          (["SATA_BARAT_DUE"], "", False),
@@ -168,7 +176,31 @@ UNKNOWN_SENSITIVE = (
 #: اهدافی که در این پکیج هیچ تولیدکننده‌ای ندارند و عمداً نامعلوم می‌مانند.
 #: اینجا صریح اعلام می‌شوند تا «مرده و فراموش‌شده» با «تصمیم‌گرفته‌شده» یکی نشود.
 #: FIN_RECEIPT_DATE تا تعیین ستون رسید مالی توسط مالک منبع (B3) نامعلوم است.
-DECLARED_UNMEASURED = ("FIN_RECEIPT_DATE",)
+#: BL_DATE تاریخ *صدور* بارنامه است و هیچ سورسی آن را نمی‌دهد. تا وقتی مالک
+#: کسب‌وکار ستون مرجعش را تعیین نکند، نامعلوم می‌ماند — **نه جایگزین‌شده**.
+DECLARED_UNMEASURED = ("FIN_RECEIPT_DATE", "BL_DATE")
+
+#: زنجیره شاهد حمل، دقیقاً به ترتیب چرخه عمر محموله.
+#:
+#: تنها عضو اول *صدور بارنامه* را ثابت می‌کند؛ بقیه ثابت می‌کنند محموله
+#: **حرکت کرده است**. این تفاوت مالی است، نه لفظی:
+#:
+#: * برای «این محموله کجاست؟» هر کدام از این‌ها شاهد معتبری است.
+#: * برای «سررسید برات» فقط عضو اول معتبر است. سررسید یوزانس از تاریخ صدور
+#:   بارنامه شمرده می‌شود؛ تاریخ تخلیه هفته‌ها **بعدتر** و در مقصد است، پس
+#:   جایگزین‌کردنش سررسید را عقب می‌اندازد و جریمه تأخیر را **کمتر از واقع**
+#:   نشان می‌دهد. عدد غلطِ خوش‌بینانه بدترین حالت ممکن است.
+#:
+#: به همین دلیل `commitment.default_barat_due()` عمداً روی BL_DATE می‌ماند و
+#: از این زنجیره استفاده نمی‌کند.
+SHIPMENT_EVIDENCE_CHAIN = (
+    ("BL_BL_DATE",           "تاریخ بارنامه"),
+    ("BL_BL_DELIVERY_DATE",  "تاریخ تحویل بارنامه"),
+    ("BL_DISCHARGE_DATE",    "تاریخ تخلیه"),
+    ("BL_DO_DATE",           "تاریخ ترخیصیه"),
+    ("BL_RELEASE_DATE",      "تاریخ آزادسازی"),
+    ("BL_WAREHOUSE_RECEIPT", "تاریخ قبض انبار"),
+)
 
 
 @register
@@ -177,7 +209,8 @@ class DeriveStage(Stage):
     title = "ترجمه ستون‌های سورس به ستون‌های دامنه‌ای"
     order = 20
     requires = []
-    provides = list(DERIVED) + [t + "_IS_UNKNOWN" for t in UNKNOWN_SENSITIVE] + list(BOOLS)
+    provides = (list(DERIVED) + [t + "_IS_UNKNOWN" for t in UNKNOWN_SENSITIVE]
+                + list(BOOLS) + ["SHIPPED_EVIDENCE_DATE", "SHIPPED_EVIDENCE_BASIS"])
 
     @staticmethod
     def _inventory_pipeline(df: pd.DataFrame, ctx: PipelineContext) -> pd.DataFrame:
@@ -258,6 +291,9 @@ class DeriveStage(Stage):
                     unknown_counts[target] = int(unknown.sum())
             derived[target] = values
 
+        (derived["SHIPPED_EVIDENCE_DATE"],
+         derived["SHIPPED_EVIDENCE_BASIS"]) = self._shipment_evidence(df)
+
         bools = {}
         for target, src in BOOLS.items():
             # FutureWarning: downcasting در fillna حذف شد
@@ -292,6 +328,27 @@ class DeriveStage(Stage):
                 + str(unknown_counts)
                 + " — صفر فقط وقتی صفر می‌ماند که شاهد عددی صفر وجود داشته باشد (F031 بسته شد).")
         return df
+
+    @staticmethod
+    def _shipment_evidence(df: pd.DataFrame) -> tuple:
+        """زودترین تاریخی که حرکت محموله را ثابت می‌کند، و اینکه چه چیزی ثابتش کرد.
+
+        ستون دوم (`SHIPPED_EVIDENCE_BASIS`) اختیاری نیست: بدون آن، «۱۴۰۵/۰۵/۰۳»
+        روی صفحه یعنی «تاریخ بارنامه» — که برای اکثر پرونده‌ها **نیست**. کاربر
+        باید ببیند این تاریخ از قبض انبار آمده یا از خود بارنامه.
+        """
+        date = pd.Series([""] * len(df), index=df.index, dtype="object")
+        basis = pd.Series([""] * len(df), index=df.index, dtype="object")
+        for column, label in SHIPMENT_EVIDENCE_CHAIN:
+            if column not in df.columns:
+                continue
+            candidate = df[column]
+            fill = date.map(is_empty_val) & ~candidate.map(is_empty_val)
+            if not bool(fill.any()):
+                continue
+            date = date.mask(fill, candidate)
+            basis = basis.mask(fill, label)
+        return date, basis
 
     @staticmethod
     def _first_nonempty(df: pd.DataFrame, names: List[str], default: Any) -> pd.Series:

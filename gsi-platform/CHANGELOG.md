@@ -1,3 +1,58 @@
+# GSI 29.11.0 — shipment evidence: the BL_DATE dead end, resolved honestly — 2026-09-26
+
+`BL_DATE` (bill of lading **issue** date) was derived from `BL_BL_DATE`, which
+no adapter produces. It was empty for every case, and five consumers had been
+silently dead because of it.
+
+The investigation changed the answer. No source in this package carries a BL
+issue date at all — not under another name, not anywhere. So this is not a
+remap, and the nearest lookalikes are not substitutes:
+
+- `BL_BL_DELIVERY_DATE` ("تاریخ تحویل بارنامه") is when the *document* changed
+  hands, and is itself empty in the published data.
+- `BL_DISCHARGE_DATE` ("تاریخ تخلیه") is at the destination, weeks after the
+  goods shipped.
+
+**Recovered** — real, populated dates the abbasi adapter already extracted and
+the derive stage dropped on the floor: `BL_DELIVERY_DATE`, `RELEASE_DATE`,
+`DO_DATE` now have domain names.
+
+**Added** — `SHIPPED_EVIDENCE_DATE` plus `SHIPPED_EVIDENCE_BASIS`: the earliest
+date that proves the goods moved, and which column proved it. The basis column
+is not optional — without it a date on screen reads as "BL date", which for
+most cases it is not.
+
+**Repointed** to evidence that exists: the Goods-Movement event in `s80_eventlog`
+(which had declared `requires = [..., "BL_DATE"]` and therefore never fired),
+the SHIPMENT milestone in `part_status`, `ship_date` in `s56`, and the shipment
+entry on the `s55` timeline.
+
+**Deliberately not repointed** — `default_barat_due()` in `commitment.py`.
+Usance maturity counts from the BL issue date. Substituting a discharge date
+pushes the due date weeks later, which *understates* overdue days and penalty
+exposure. An optimistic wrong number is the worst output this system can
+produce, so the due date stays unknown until the business owner names the
+authoritative column. A test introduces exactly that mistake and fails on it.
+
+**Strengthened** — the clearance-before-shipment check compared clearance to
+`BL_DATE` and so never ran. It now compares against the discharge date: goods
+cannot clear customs before the vessel unloads, and unlike the BL date that
+column is really in the source. It deliberately does not use the evidence date,
+because when the evidence is a warehouse receipt, clearance before it is normal
+and the check would cry wolf.
+
+`BL_DATE` is now listed in `DECLARED_UNMEASURED`, so "decided" stays distinct
+from "dead and forgotten", and it is removed from the expert worklist — nobody
+should be sent looking for a cell that cannot exist. It surfaces through
+`derive_coverage.declared_unmeasured` as the business decision it is.
+
+**Effect on the published snapshot**: SHIPMENT_TRACKING went from 0% coverage
+and NOT_USABLE to 100% and DECISION_GRADE; decision-grade answers went from 1
+of 5 to 2 of 5; BL field coverage from 36% to 56%. The improvement trend picked
+this up on its own between runs.
+
+**Tests**: 1394 passing (16 new in `tests/test_shipment_evidence_v29_10.py`).
+
 # GSI 29.10.0 — data trust layer: per-decision fitness, owner worklists, improvement trend — 2026-09-26
 
 Full detail, design rationale and evidence: `GSI_TRUST_LAYER_REPORT_V29_10_0_FA.md`.

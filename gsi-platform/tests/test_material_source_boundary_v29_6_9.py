@@ -14,7 +14,7 @@ def frame():
         'MOGH_MATERIAL_DESC': 'شرح کارشناسی', 'MOGH_PO_SENT_DATE': '2026-01-01',
         'MOGH_COMMERCIAL_NOTE': 'کامنت یک', 'MOGH_STAGE_FA': 'خرید',
         'NTSW_ALLOC_DATE': '2026-02-01', 'NTSW_BALANCE': 150,
-        'NTSW_RELEASE_STATUS': 'رفع تعهد نشده', 'BL_BL_DATE': '2026-03-01',
+        'NTSW_RELEASE_STATUS': 'رفع تعهد نشده', 'BL_DISCHARGE_DATE': '2026-03-01',
         'CANONICAL_ORDER': '123456', 'CANONICAL_BL': 'BL123456',
         'KEY_REG': '12345678', 'روایت': 'روایت آلوده',
         'BL_CRITICAL_REASON': 'علت آلوده',
@@ -22,6 +22,10 @@ def frame():
     # Real alias definitions, including MOGH_PO_SENT_DATE -> PO_SENT_DATE.
     derived = {target: DeriveStage._first_nonempty(raw, candidates, default)
                for target, (candidates, default, numeric) in DERIVED.items()}
+    # SHIPPED_EVIDENCE_DATE یک alias ساده نیست؛ زنجیره شاهد است و مرحله واقعی
+    # آن را جدا می‌سازد. فیکسچر باید همان چیزی را بسازد که مارت واقعی دارد.
+    (derived["SHIPPED_EVIDENCE_DATE"],
+     derived["SHIPPED_EVIDENCE_BASIS"]) = DeriveStage._shipment_evidence(raw)
     return pd.concat([raw.drop(columns=list(derived), errors="ignore"), pd.DataFrame(derived)], axis=1)
 
 
@@ -59,7 +63,7 @@ def test_advisory_fanout_and_mutation_leave_operational_values_identical():
 
 
 def test_excluded_dates_never_assign_next_activity_or_missing_date():
-    x=pd.DataFrame([{'KEY_MATERIAL':'A','BL_DATE':'2026-01-01',
+    x=pd.DataFrame([{'KEY_MATERIAL':'A','SHIPPED_EVIDENCE_DATE':'2026-01-01',
                      'NTSW_ALLOC_DATE':'2026-02-01','NTSW_COMMIT_DATE':''}])
     v=build_material_html_view(x).iloc[0]
     assert v['موقعیت فعلی']=='حمل'

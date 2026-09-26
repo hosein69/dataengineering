@@ -77,7 +77,12 @@ MATERIAL_RULES: Tuple[FieldRule, ...] = (
 BL_RULES: Tuple[FieldRule, ...] = (
     FieldRule("CANONICAL_BL", KEY, "شماره بارنامه",
               owner_column="EXPERT_LOGISTICS", owner_role_fa="کارشناس لجستیک"),
-    FieldRule("BL_DATE", DATE, "تاریخ بارنامه",
+    # عمداً BL_DATE نیست. تاریخ *صدور* بارنامه هیچ سورسی ندارد، پس ارجاعش به
+    # کارشناس یعنی فرستادن او دنبال سلولی که وجود ندارد. آن یک تصمیمِ مالک
+    # کسب‌وکار است و از مسیر `derive_coverage.declared_unmeasured` گزارش
+    # می‌شود، نه از فهرست کار کارشناس. اینجا شاهدی سنجیده می‌شود که واقعاً
+    # در سورس هست و واقعاً قابل تکمیل است.
+    FieldRule("SHIPPED_EVIDENCE_DATE", DATE, "شاهد حرکت محموله",
               owner_column="EXPERT_LOGISTICS", owner_role_fa="کارشناس لجستیک"),
     FieldRule("ARRIVAL_DATE", DATE, "تاریخ ورود", required=False,
               owner_column="EXPERT_LOGISTICS", owner_role_fa="کارشناس لجستیک"),
@@ -149,7 +154,7 @@ CONTRACTS: Tuple[DecisionContract, ...] = (
         title_fa="رهگیری محموله",
         question_fa="هر محموله الان کجاست؟",
         entity_type=BL,
-        required=("CANONICAL_BL", "BL_DATE"),
+        required=("CANONICAL_BL", "SHIPPED_EVIDENCE_DATE"),
         aggregation=DISTRIBUTIONAL,
         decision_floor=98.0,
         directional_floor=85.0,

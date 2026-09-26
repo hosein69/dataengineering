@@ -72,7 +72,10 @@ ACTIVITIES: List[Tuple[str, str, str, int, str]] = [
     ("BUY_DATE",           "FX Purchased",              "خرید ارز",                  60, "FX_SUPPLY"),
     ("FUND_DATE",          "Bank Funding Recorded",     "ثبت تأمین وجه بانکی",       62, "FX_SUPPLY"),
     ("SWIFT_DATE",         "SWIFT Recorded",            "ثبت/دریافت سوئیفت",         65, "FX_SUPPLY"),
-    ("BL_DATE",            "Goods Shipped",             "صدور بارنامه (حمل)",        70, "SHIPMENT"),
+    # «صدور بارنامه» نبود، چون BL_DATE هیچ تولیدکننده‌ای ندارد و این رویداد
+    # بی‌صدا هرگز رخ نمی‌داد. حالا روی زودترین شاهدِ موجودِ حرکت محموله
+    # می‌نشیند و عنوانش هم همین را می‌گوید — نه بیشتر.
+    ("SHIPPED_EVIDENCE_DATE", "Goods Movement Evidenced", "شاهد حرکت محموله",       70, "SHIPMENT"),
     ("ARRIVAL_DATE",       "Vessel Arrived",            "ورود محموله",               75, "SHIPMENT"),
     ("DISCHARGE_DATE",     "Cargo Discharged",          "تخلیه محموله",              80, "CUSTOMS"),
     ("DOC_SUBMIT_DATE",    "Documents Submitted",       "ارائه اسناد به بانک",       85, "DOCS"),
@@ -113,7 +116,7 @@ class EventLogStage(Stage):
     title = "لاگ رویداد فرآیند (استاندارد Celonis)"
     order = 80
     tolerant = True          # نبود بعضی تاریخ‌ها فقط رویداد کمتر می‌سازد، نه خطا
-    requires = ["CANONICAL_ORDER", "BL_DATE"]
+    requires = ["CANONICAL_ORDER", "SHIPPED_EVIDENCE_DATE"]
     provides = ["CASE_KEY", "CASE_KEY_BASIS", "THROUGHPUT_DAYS", "CASE_AGE_DAYS",
                 "CURRENT_WAIT_DAYS", "CASE_STATE", "VARIANT", "EVENT_COUNT",
                 "SOURCE_ROW_COUNT", "REWORK_COUNT", "PROCESS_COMPLETENESS",

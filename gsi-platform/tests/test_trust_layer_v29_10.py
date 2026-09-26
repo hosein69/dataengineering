@@ -35,7 +35,7 @@ def _mart() -> pd.DataFrame:
         *[{"CANONICAL_REG": "10000001", "CANONICAL_BL": f"BL{i}", "KEY_MATERIAL": f"M{i}",
            "مانده تعهد": 1000.0, "FX_NTSW_CURRENCY": "EUR",
            "مهلت قانونی رفع تعهد": "1405/09/01", "NTSW_RELEASE_STATUS": "رفع تعهد نشده",
-           "BL_DATE": "1405/05/01", "نیاز روزانه": 10, "موجودی ایران خودرو": 100,
+           "SHIPPED_EVIDENCE_DATE": "1405/05/01", "نیاز روزانه": 10, "موجودی ایران خودرو": 100,
            "موجودی ساپکو": 50, "EXPERT_SETTLEMENT": "زهرا الف",
            "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
            "ORG_DEPT": "خرید خارجی", "ORG_MANAGER": "مدیر الف",
@@ -46,7 +46,7 @@ def _mart() -> pd.DataFrame:
         {"CANONICAL_REG": "10000002", "CANONICAL_BL": "BL4", "KEY_MATERIAL": "M4",
          "مانده تعهد": None, "FX_NTSW_CURRENCY": "EUR",
          "مهلت قانونی رفع تعهد": "1405/09/01", "NTSW_RELEASE_STATUS": "رفع تعهد نشده",
-         "BL_DATE": "1405/05/02", "نیاز روزانه": 5, "موجودی ایران خودرو": 20,
+         "SHIPPED_EVIDENCE_DATE": "1405/05/02", "نیاز روزانه": 5, "موجودی ایران خودرو": 20,
          "موجودی ساپکو": 10, "EXPERT_SETTLEMENT": "زهرا الف",
          "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
          "ORG_DEPT": "لجستیک", "ORG_MANAGER": "مدیر ب",
@@ -56,7 +56,7 @@ def _mart() -> pd.DataFrame:
         *[{"CANONICAL_REG": "10000003", "CANONICAL_BL": f"BL{5 + i}", "KEY_MATERIAL": f"M{5 + i}",
            "مانده تعهد": 500.0, "FX_NTSW_CURRENCY": cur,
            "مهلت قانونی رفع تعهد": "1405/09/01", "NTSW_RELEASE_STATUS": "رفع تعهد نشده",
-           "BL_DATE": "1405/05/03", "نیاز روزانه": 8, "موجودی ایران خودرو": 40,
+           "SHIPPED_EVIDENCE_DATE": "1405/05/03", "نیاز روزانه": 8, "موجودی ایران خودرو": 40,
            "موجودی ساپکو": 20, "EXPERT_SETTLEMENT": "زهرا الف",
            "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
            "ORG_DEPT": "خرید خارجی", "ORG_MANAGER": "مدیر الف",
@@ -123,7 +123,7 @@ def test_same_record_is_usable_for_one_decision_and_not_for_another():
     tracking = evaluate(BY_ID["SHIPMENT_TRACKING"], bl_profile, df, KEY_COLUMN[BL])
 
     assert reg_profile.state_of("10000002", "مانده تعهد") != C.OK   # unusable for money
-    assert bl_profile.state_of("BL4", "BL_DATE") == C.OK            # usable for tracking
+    assert bl_profile.state_of("BL4", "SHIPPED_EVIDENCE_DATE") == C.OK   # usable for tracking
     assert tracking.grade == DECISION_GRADE
     assert money.grade != DECISION_GRADE
 
@@ -184,26 +184,28 @@ def test_every_defect_can_be_found_and_routed():
 def test_field_defects_route_to_the_role_that_owns_that_field():
     df = _mart()
     df.loc[df["CANONICAL_REG"] == "10000002", "مهلت قانونی رفع تعهد"] = None
-    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
+    df.loc[df["CANONICAL_BL"] == "BL4", "SHIPPED_EVIDENCE_DATE"] = None
     report = assess(df, ref_date=REF)
     by_field = {(d.field_name, d.owner.name) for d in report.ledger}
     # settlement fields go to the settlement expert, shipment dates to logistics
     assert ("مهلت قانونی رفع تعهد", "زهرا الف") in by_field
-    assert ("BL_DATE", "کاوه ب") in by_field
+    assert ("SHIPPED_EVIDENCE_DATE", "کاوه ب") in by_field
 
 
 def test_a_field_nothing_ever_fills_is_a_mapping_gap_not_a_data_entry_backlog():
     """The safeguard that keeps the worklist believable.
 
-    ``BL_DATE`` in the real product is derived from ``BL_BL_DATE``, which no
-    adapter produces — so it is empty for every case. Sending one ticket per
+    The case that produced this rule: ``BL_DATE`` was derived from
+    ``BL_BL_DATE``, which no adapter produces, so it was empty for every case.
+    (That field has since been retired from the worklist and declared
+    unmeasured — see ``test_shipment_evidence_v29_10``.) Sending one ticket per
     case would ask experts to fill cells that are already filled at source; the
     first person to check would stop trusting every other item on the list.
     """
     df = _mart()
-    df["BL_DATE"] = None
+    df["SHIPPED_EVIDENCE_DATE"] = None
     report = assess(df, ref_date=REF)
-    bl_defects = [d for d in report.ledger if d.field_name == "BL_DATE"]
+    bl_defects = [d for d in report.ledger if d.field_name == "SHIPPED_EVIDENCE_DATE"]
     assert len(bl_defects) == 1, "one finding against the mapping, not one per case"
     only = bl_defects[0]
     assert only.code == "FIELD_NEVER_POPULATED"
@@ -211,7 +213,7 @@ def test_a_field_nothing_ever_fills_is_a_mapping_gap_not_a_data_entry_backlog():
     assert only.entity_key == ""                      # it is not about any one case
     # and the coverage number still tells the truth
     bl_profile = report.profiles[BL]
-    field = [f for f in bl_profile.fields if f.column == "BL_DATE"][0]
+    field = [f for f in bl_profile.fields if f.column == "SHIPPED_EVIDENCE_DATE"][0]
     assert field.coverage_pct == 0.0
 
 
@@ -224,9 +226,9 @@ def test_a_mapping_gap_never_reappears_in_the_worklist_as_data_entry():
     precise mis-routing the removal exists to prevent, re-created one layer up.
     """
     df = _mart()
-    df["BL_DATE"] = None
+    df["SHIPPED_EVIDENCE_DATE"] = None
     report = assess(df, ref_date=REF)
-    items = [o for o in report.opportunities if o.field == "BL_DATE"]
+    items = [o for o in report.opportunities if o.field == "SHIPPED_EVIDENCE_DATE"]
     assert len(items) == 1, "one mapping change, not one ticket per case"
     gap = items[0]
     assert gap.mapping_gap is True
@@ -243,14 +245,14 @@ def test_a_mapping_gap_never_reappears_in_the_worklist_as_data_entry():
 def test_field_worklist_uses_the_human_label_not_the_pipeline_column():
     """An expert should not need to know the mart's column names to act."""
     df = _mart()
-    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
+    df.loc[df["CANONICAL_BL"] == "BL4", "SHIPPED_EVIDENCE_DATE"] = None
     report = assess(df, ref_date=REF)
-    items = [o for o in report.opportunities if o.field == "BL_DATE"]
+    items = [o for o in report.opportunities if o.field == "SHIPPED_EVIDENCE_DATE"]
     assert items, "a single blank BL date is ordinary data entry and must be routed"
-    assert items[0].field_fa == "تاریخ بارنامه"
+    assert items[0].field_fa == "شاهد حرکت محموله"
     assert not items[0].mapping_gap
     row = items[0].row()
-    assert row["فیلد"] == "تاریخ بارنامه" and row["ستون"] == "BL_DATE"
+    assert row["فیلد"] == "شاهد حرکت محموله" and row["ستون"] == "SHIPPED_EVIDENCE_DATE"
 
 
 
@@ -305,7 +307,7 @@ def test_a_person_with_several_roles_keeps_all_of_them():
     # one expert owns both a settlement field and a logistics field
     df["EXPERT_LOGISTICS"] = "زهرا الف"
     df.loc[df["CANONICAL_REG"] == "10000002", "مانده تعهد"] = None
-    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
+    df.loc[df["CANONICAL_BL"] == "BL4", "SHIPPED_EVIDENCE_DATE"] = None
     report = assess(df, ref_date=REF)
     card = [c for c in report.scorecards if c.owner == "زهرا الف"]
     assert card, "the expert must appear on the scorecard"

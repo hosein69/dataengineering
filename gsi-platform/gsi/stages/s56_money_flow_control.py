@@ -353,7 +353,9 @@ class MoneyFlowControlStage(Stage):
             fund_date = _earliest(c, "CRD_FUND_DATE")
             swift_date = _earliest(c, "CRD_SWIFT_DATE")
             receipt_date = _earliest(f, "FX_RECEIPT_DATE")
-            ship_date = _earliest(d, "BL_DATE")
+            # BL_DATE هیچ تولیدکننده‌ای ندارد؛ زودترین شاهد حرکت محموله
+            # همان چیزی است که این کنترل واقعاً به آن نیاز دارد.
+            ship_date = _earliest(d, "SHIPPED_EVIDENCE_DATE")
             customs_date = _earliest(d, "COT_DATE") or _earliest(d, "ARRIVAL_DATE")
             clear_date = _latest(d, "FULL_CLEAR_DATE")
             bank_docs_date = _latest(d, "DOC_SUBMIT_DATE")

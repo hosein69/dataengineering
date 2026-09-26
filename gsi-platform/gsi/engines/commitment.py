@@ -179,6 +179,11 @@ class CommitmentEngine:
 
         P = CalendarEngine.parse
         cb_date = P(row.get("CB_DATE")) or P(row.get("BUY_DATE"))
+        # عمداً BL_DATE و نه SHIPPED_EVIDENCE_DATE: سررسید یوزانس از تاریخ
+        # *صدور* بارنامه شمرده می‌شود. شاهدهای دیگرِ حرکت محموله (تخلیه،
+        # ترخیصیه، قبض انبار) هفته‌ها بعدتر و در مقصدند؛ استفاده از آن‌ها
+        # سررسید را عقب می‌اندازد و جریمه تأخیر را کمتر از واقع نشان می‌دهد.
+        # تا وقتی مالک کسب‌وکار ستون مرجع را تعیین نکند، این نامعلوم می‌ماند.
         bl_date = P(row.get("BL_DATE"))
         barat_due = P(row.get("BARAT_DUE")) or (default_barat_due(bl_date, rb)
                                                 if res.is_barat else None)

@@ -141,7 +141,7 @@ def test_timeline_anomaly() -> None:
     d = pd.DataFrame({
         "COT_DATE":        ["1405/06/10", "1405/01/01", "1405/01/01"],
         "FULL_CLEAR_DATE": ["1405/06/03", "1405/02/02", ""],
-        "BL_DATE":         ["1404/12/01", "1404/12/01", "1410/01/01"],
+        "SHIPPED_EVIDENCE_DATE":         ["1404/12/01", "1404/12/01", "1410/01/01"],
     })
     out = ps.resolve(d, today=pd.Timestamp("2026-09-08"))
     check("ترتیب معکوس شناسایی می‌شود",

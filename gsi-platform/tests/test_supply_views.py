@@ -56,7 +56,7 @@ def sample() -> pd.DataFrame:
         "EXPERT_CREDIT": ["ب", "ب", "ب"],
         "MOGH_KEY_EMP": ["", "", "9001"],
         # تاریخ رویدادها (شمسی)
-        "BL_DATE": ["1405/01/10", "1405/01/10", ""],
+        "SHIPPED_EVIDENCE_DATE": ["1405/01/10", "1405/01/10", ""],
         "COT_DATE": ["", "", "1405/02/20"],
         "MOGH_KEY_PR": ["PR1", "PR1", ""],
         "MOGH_PO_SENT_DATE": ["1404/12/01", "1404/12/01", ""],
@@ -151,14 +151,14 @@ def test_status() -> None:
     check("تاریخ‌های ثبت‌نشده فهرست می‌شوند", out[ps.MISSING].iloc[0] != "")
 
     # ردیف بدون هیچ تاریخ
-    blank = ps.resolve(pd.DataFrame({"KEY_MATERIAL": ["X"], "BL_DATE": [""]}))
+    blank = ps.resolve(pd.DataFrame({"KEY_MATERIAL": ["X"], "SHIPPED_EVIDENCE_DATE": [""]}))
     check("ردیف بدون رویداد «نامشخص» می‌شود، نه یک حدس",
           blank[ps.WHERE].iloc[0] == "نامشخص", blank[ps.WHERE].iloc[0])
     check("مبنای نامشخص بودن صریح ثبت می‌شود",
           "ثبت نشده" in blank[ps.BASIS].iloc[0], blank[ps.BASIS].iloc[0])
 
     # تاریخ آینده شاهد وضعیت فعلی نیست
-    fut = ps.resolve(pd.DataFrame({"BL_DATE": ["1500/01/01"]}),
+    fut = ps.resolve(pd.DataFrame({"SHIPPED_EVIDENCE_DATE": ["1500/01/01"]}),
                      today=pd.Timestamp("2026-09-08"))
     check("تاریخ آینده به‌عنوان وضعیت فعلی پذیرفته نمی‌شود",
           fut[ps.WHERE].iloc[0] == "نامشخص", fut[ps.WHERE].iloc[0])
@@ -240,7 +240,7 @@ def test_performance() -> None:
         "CANONICAL_BL": [f"BL{i % 900}" for i in range(n)],
         "CANONICAL_ORDER": [f"O{i % 1200}" for i in range(n)],
         "ORG_DEPT": rng.choice(["خرید", "لجستیک"], n),
-        "BL_DATE": rng.choice(["1404/10/01", "1405/01/12", ""], n),
+        "SHIPPED_EVIDENCE_DATE": rng.choice(["1404/10/01", "1405/01/12", ""], n),
         "COT_DATE": rng.choice(["1405/02/20", ""], n),
         "مقاومت (روز)": rng.integers(0, 60, n),
     })
