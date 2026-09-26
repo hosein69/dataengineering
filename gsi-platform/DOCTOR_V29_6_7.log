@@ -1,0 +1,58 @@
+══════════════════════════════════════════════════════════════════════════════
+GSI Doctor — بازرس نصب و محیط اجرا
+══════════════════════════════════════════════════════════════════════════════
+پوشه جاری: /mnt/data/gsi_2967
+
+── ۱) بررسی سایه‌اندازی روی کتابخانه استاندارد پایتون ──
+✅ هیچ فایلی روی ماژول‌های استاندارد سایه نینداخته است (2 مسیر کاربر بررسی شد).
+
+── ۲) بررسی هم‌نسخه بودن فایل‌های پکیج ──
+   نسخه پکیج: 29.6.7
+✅ تمام قراردادهای بین‌ماژولی سازگارند.
+✅ اثر انگشت همه فایل‌ها با مانیفست رسمی می‌خواند.
+
+── ۲.۵) بررسی گراف فرآیند ──
+✅ 17 مرحله کشف و زنجیره علّی آن‌ها تأیید شد: resolve → derive → org → scope → supply_position → warehouse_declaration → criticality → commitment → fx_traceability → money_flow_control → legacy_knowledge_transfer → case_actions → narrate → risk → eventlog → conformance → sort
+
+── ۳) بررسی ساختار پکیج ──
+✅ هر 11 زیرپوشه پکیج موجود است (/mnt/data/gsi_2967/gsi)
+✅ تمام زیرپکیج‌ها __init__.py دارند.
+✅ هیچ فایل پکیجی به‌صورت تخت رها نشده است.
+✅ نسخه تک‌فایلی قدیمی gsi.py در مسیر نیست.
+
+── ۴) بررسی کتابخانه‌ها ──
+   پایتون 3.13.5 — /opt/pyvenv/bin/python
+✅ pandas 2.2.3
+✅ numpy 2.3.5
+✅ openpyxl 3.1.5
+✅ yaml 6.0.3
+⚠️  jdatetime: نصب نیست — اختیاری — مبدل شمسی داخلی جایگزین آن است
+✅ sklearn: نصب است — اختیاری — برای تشخیص آنومالی
+
+── ۵) بررسی کتابخانه قوانین و رجیستری سورس‌ها ──
+✅ 13 بسته قانونی سالم بارگذاری شد.
+⚠️  23 قاعده نیازمند تطبیق با آخرین بخشنامه است (python -m gsi.rulebook.validate)
+⚠️  انقضای نزدیک [fx_governance] regulatory_snapshot.emergency_deadline_overlay_1405_05_14: تمدید تا پایان شهریور ۱۴۰۵ برای مهلت‌هایی که قبلاً به علت شرایط اضطرار تمدید شده‌اند — 1 روز تا انقضا (2026-09-22)؛ تمدید یا جانشین را پیش از این تاریخ ثبت کنید.
+⚠️  انقضای نزدیک [customs] emergency_sata_waiver_1405: ترخیص بدون کد ساتا با تعهد EPL (تسهیل اضطراری ۱۴۰۵) — 1 روز تا انقضا (2026-09-22)؛ تمدید یا جانشین را پیش از این تاریخ ثبت کنید.
+✅ 13 adapter کشف شد برای 13 سورس فعال.
+
+── ۶) بررسی دسترسی به مسیرهای شبکه ──
+⚠️  abbasi          پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL
+⚠️  moghavemat      پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\11-Governance & Integration\DataTeam\Data_Ware_House\GS_Combine\OUTPUT
+⚠️  clearance       پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL\Clearance
+⚠️  ntsw            پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign
+⚠️  doccheck        پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\11-Governance & Integration\26-M.Mohamadi
+⚠️  hr              پوشه در دسترس نیست — \\ikco.com\data-share\Global Sourcing\11-Governance & Integration\03-Reports\01-HR
+✅ مسیر خروجی قابل نوشتن است: /home/oai/.gsi/output
+✅ مسیر لاگ قابل نوشتن است: /home/oai/.gsi/logs
+✅ قفل نویسنده DWH آزاد است.
+
+── ۷) بررسی Store شخصی روی پوشه مشترک ──
+⚠️  GSI_PROFILE_ROOT تنظیم نشده است — Store شخصی و publish-personal کار نمی‌کنند.
+
+══════════════════════════════════════════════════════════════════════════════
+نتیجه: 0 خطا | 11 هشدار
+✅ محیط سالم است. اکنون اجرا کنید:  python -m gsi.pipeline
+💡 اگر KPIها صفر یا غیرمنطقی بودند، اول این را بزنید:
+   python -m gsi.diagnose --excel     ← می‌گوید کدام رابطه برقرار نشده
+══════════════════════════════════════════════════════════════════════════════

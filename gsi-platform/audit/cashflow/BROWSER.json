@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "checks": [
+    "tabs",
+    "currency search",
+    "exact embedded XLSX",
+    "390px responsive",
+    "all panes",
+    "63 actual OF observations",
+    "no JS exceptions"
+  ],
+  "errors": []
+}

@@ -1,0 +1,1390 @@
+{
+  "exitstatus": 0,
+  "target": "/workspace/scratch/acc6ed5818f1/work/product",
+  "tests": [
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_each_event_preserves_own_amount[ALLOCATION-allocation]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.014322624999977052,
+      "expectation": "Each event contributes only its own native amount and does not invent other events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_each_event_preserves_own_amount[FX_BUY-purchased]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010620216000006621,
+      "expectation": "Each event contributes only its own native amount and does not invent other events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_each_event_preserves_own_amount[PAYMENT-paid]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011795892999998614,
+      "expectation": "Each event contributes only its own native amount and does not invent other events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_each_event_preserves_own_amount[SHIPMENT-shipment_value]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011589060999995127,
+      "expectation": "Each event contributes only its own native amount and does not invent other events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_each_event_preserves_own_amount[CUSTOMS-customs_value]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010188427000002775,
+      "expectation": "Each event contributes only its own native amount and does not invent other events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_transport_customs_document_does_not_discharge_commitment[SHIPMENT]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012088131999917096,
+      "expectation": "Transport/customs/clearance evidence alone is not a linked settlement event (user rules; CBI part7 §ب1-1 context).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_transport_customs_document_does_not_discharge_commitment[CUSTOMS]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011459801999990304,
+      "expectation": "Transport/customs/clearance evidence alone is not a linked settlement event (user rules; CBI part7 §ب1-1 context).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_transport_customs_document_does_not_discharge_commitment[CLEARANCE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01197571499994865,
+      "expectation": "Transport/customs/clearance evidence alone is not a linked settlement event (user rules; CBI part7 §ب1-1 context).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_transport_customs_document_does_not_discharge_commitment[WAREHOUSE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.013175204000049234,
+      "expectation": "Transport/customs/clearance evidence alone is not a linked settlement event (user rules; CBI part7 §ب1-1 context).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_transport_customs_document_does_not_discharge_commitment[BANK_DOCS]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.013265358000012384,
+      "expectation": "Transport/customs/clearance evidence alone is not a linked settlement event (user rules; CBI part7 §ب1-1 context).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_optional_nonmonetary_event_can_keep_unknown_amount[CLEARANCE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011938012999962666,
+      "expectation": "Presence of a nonmonetary document need not manufacture a financial amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_optional_nonmonetary_event_can_keep_unknown_amount[WAREHOUSE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009851355000023432,
+      "expectation": "Presence of a nonmonetary document need not manufacture a financial amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_optional_nonmonetary_event_can_keep_unknown_amount[BANK_DOCS]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009903940000071998,
+      "expectation": "Presence of a nonmonetary document need not manufacture a financial amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unlinked_settlement_does_not_reduce_obligation",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009950774999992973,
+      "expectation": "A settlement record without an explicit commitment relation remains evidence, not discharged amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_partial_discharge_exact_remaining[1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012038326000038069,
+      "expectation": "A documented same-case same-currency discharge reduces only its explicitly linked amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_partial_discharge_exact_remaining[40]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012732469999946261,
+      "expectation": "A documented same-case same-currency discharge reduces only its explicitly linked amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_partial_discharge_exact_remaining[100]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012060116000043308,
+      "expectation": "A documented same-case same-currency discharge reduces only its explicitly linked amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unsupported_settlement_link_is_excluded[cross_reg]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011888343999999051,
+      "expectation": "Unauthorised case/currency transfer, excess amount, wrong relation and reversed event order cannot discharge.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unsupported_settlement_link_is_excluded[cross_currency]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011990898000021843,
+      "expectation": "Unauthorised case/currency transfer, excess amount, wrong relation and reversed event order cannot discharge.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unsupported_settlement_link_is_excluded[overcapacity]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010395011000014165,
+      "expectation": "Unauthorised case/currency transfer, excess amount, wrong relation and reversed event order cannot discharge.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unsupported_settlement_link_is_excluded[wrong_relation]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00985638800000288,
+      "expectation": "Unauthorised case/currency transfer, excess amount, wrong relation and reversed event order cannot discharge.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_unsupported_settlement_link_is_excluded[backdated]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009675210999944284,
+      "expectation": "Unauthorised case/currency transfer, excess amount, wrong relation and reversed event order cannot discharge.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_settlement_and_return_share_obligation_capacity",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0073130120000541865,
+      "expectation": "Settlement60 + return60 cannot consume commitment100 via separately valid-looking links.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_two_bls_do_not_duplicate_payment_capacity",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007877048999944236,
+      "expectation": "One payment100 cannot be matched at full value to two distinct BLs.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_split_shipments_reconcile_without_double_count",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007884317000048213,
+      "expectation": "Documented BL40 + BL60 links consume exactly payment100; two documents survive.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_exact_event_replay_idempotency[1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007592828999918311,
+      "expectation": "Replaying the same event identifier and content never multiplies amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_exact_event_replay_idempotency[2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006660244000045168,
+      "expectation": "Replaying the same event identifier and content never multiplies amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_exact_event_replay_idempotency[25]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010152136999977301,
+      "expectation": "Replaying the same event identifier and content never multiplies amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_distinct_equal_payment_events_are_not_deduplicated",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010563109000031545,
+      "expectation": "Two distinct event IDs with equal amount/date remain two actual events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_conflicting_event_id_quarantines_both_versions",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.016842418000010184,
+      "expectation": "A reused event ID with differing amounts has no authoritative winner.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_payment_retained_as_observation[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009582800999965002,
+      "expectation": "Unknown, nonfinite and invalid negative payments are excluded with reason and raw observation retained.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_payment_retained_as_observation[unknown]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009068160999959218,
+      "expectation": "Unknown, nonfinite and invalid negative payments are excluded with reason and raw observation retained.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_payment_retained_as_observation[Infinity]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009210366000047543,
+      "expectation": "Unknown, nonfinite and invalid negative payments are excluded with reason and raw observation retained.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_payment_retained_as_observation[-1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009054171000002498,
+      "expectation": "Unknown, nonfinite and invalid negative payments are excluded with reason and raw observation retained.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_ambiguous_currency_unit_rejected[IRT]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01302753400000256,
+      "expectation": "Rial/toman ambiguity and invalid currency labels cannot enter monetary totals.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_ambiguous_currency_unit_rejected[TOMAN]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008911816000022554,
+      "expectation": "Rial/toman ambiguity and invalid currency labels cannot enter monetary totals.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_ambiguous_currency_unit_rejected[\\u0631\\u06cc\\u0627\\u0644]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009499581000000035,
+      "expectation": "Rial/toman ambiguity and invalid currency labels cannot enter monetary totals.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_ambiguous_currency_unit_rejected[US D]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.022779895999974542,
+      "expectation": "Rial/toman ambiguity and invalid currency labels cannot enter monetary totals.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_ambiguous_currency_unit_rejected[US1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010466448999977729,
+      "expectation": "Rial/toman ambiguity and invalid currency labels cannot enter monetary totals.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_zero_payment_is_distinct_from_unknown",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0111532260000331,
+      "expectation": "Explicit zero may remain an observed fact; it does not mean missing amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_missing_required_evidence_cannot_post[document]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007700866000050155,
+      "expectation": "Missing event identity, document, source, date or case makes financial posting unproven.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_missing_required_evidence_cannot_post[source]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008730918999958703,
+      "expectation": "Missing event identity, document, source, date or case makes financial posting unproven.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_missing_required_evidence_cannot_post[event_id]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008933203999959005,
+      "expectation": "Missing event identity, document, source, date or case makes financial posting unproven.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_missing_required_evidence_cannot_post[case_id]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008411954000052901,
+      "expectation": "Missing event identity, document, source, date or case makes financial posting unproven.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_missing_required_evidence_cannot_post[date]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009476153000036902,
+      "expectation": "Missing event identity, document, source, date or case makes financial posting unproven.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_future_event_excluded_as_of_cutoff",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.005890861000011682,
+      "expectation": "As-of report cannot include next-day payment.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_cash_balance_requires_opening",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00613963299997522,
+      "expectation": "Posted account movement without opening balance leaves closing unknown.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_decimal_payment_conservation",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006472620999943501,
+      "expectation": "Decimal0.1+0.2 produces exact0.3; no binary float oracle.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_payment_only_does_not_prove_mandatory_upstream_stages",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007557757999961723,
+      "expectation": "Absent a process applicability contract, payment alone cannot imply obligatory PI/allocation/FX-buy stages.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_chain_linked_amount_never_adds_unlike_currencies",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009032880999939152,
+      "expectation": "A case-level linked amount must carry currency buckets; USD10+EUR20 cannot become naked30.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_allocation_and_purchase_remain_independent_partial_events",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006336597000085931,
+      "expectation": "Allocation60+40 and purchase20+30 preserve allocation100, purchased50, with no inferred payment.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_native_source_replay_detected_across_import_ids",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00946129099997961,
+      "expectation": "Same source transaction under different ingestion IDs remains one source event.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_partial_payment_reversal_is_additional_auditable_event",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00595997699997497,
+      "expectation": "Payment100 plus documented reversal40 leaves paid60 while retaining both immutable events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_reversal_cannot_change_original_payment[change0]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008284484000000703,
+      "expectation": "Reversal cannot exceed or cross the original amount, case, currency, identity or chronology.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_reversal_cannot_change_original_payment[change1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007034502999999859,
+      "expectation": "Reversal cannot exceed or cross the original amount, case, currency, identity or chronology.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_reversal_cannot_change_original_payment[change2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0060626299999739786,
+      "expectation": "Reversal cannot exceed or cross the original amount, case, currency, identity or chronology.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_reversal_cannot_change_original_payment[change3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007176706999985072,
+      "expectation": "Reversal cannot exceed or cross the original amount, case, currency, identity or chronology.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_cashflow_process.py::test_invalid_reversal_cannot_change_original_payment[change4]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006249777000107315,
+      "expectation": "Reversal cannot exceed or cross the original amount, case, currency, identity or chronology.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_single_currency_native_totals[USD]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.005949438000016016,
+      "expectation": "Native amounts add only inside a single known currency; equivalents remain independent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_single_currency_native_totals[EUR]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00459932600006141,
+      "expectation": "Native amounts add only inside a single known currency; equivalents remain independent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_single_currency_native_totals[CNY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0059367620000330135,
+      "expectation": "Native amounts add only inside a single known currency; equivalents remain independent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_multi_currency_has_no_dimensionless_native_total",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004434344999936002,
+      "expectation": "EUR100 + USD200 is not native300; source EUR equivalents may add to EUR280.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_planned_purchase_not_actual_purchase[PLANNED]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0036694570000008753,
+      "expectation": "A declared planned purchase supplies neither actual totals nor actual purchase rate evidence.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_foreign_or_missing_identity_never_supplies_rate[KEY_REG-87654321]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0026359920000231796,
+      "expectation": "Rates are scoped to the same REG and native currency, including missing identity rejection.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_foreign_or_missing_identity_never_supplies_rate[FX_CURRENCY-CNY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0019046009999783564,
+      "expectation": "Rates are scoped to the same REG and native currency, including missing identity rejection.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_foreign_or_missing_identity_never_supplies_rate[KEY_REG-None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001920199999972283,
+      "expectation": "Rates are scoped to the same REG and native currency, including missing identity rejection.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_foreign_or_missing_identity_never_supplies_rate[FX_CURRENCY-]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0018862939999735318,
+      "expectation": "Rates are scoped to the same REG and native currency, including missing identity rejection.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_absent_identity_column_never_supplies_rate[KEY_REG]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0015991249999842694,
+      "expectation": "An absent identity column is not a wildcard for same-case FX authority.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_absent_identity_column_never_supplies_rate[FX_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001436421999983395,
+      "expectation": "An absent identity column is not a wildcard for same-case FX authority.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_source_reported_equivalent_precedes_conflicting_rate",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0035913979999122603,
+      "expectation": "Source IRR1000/USD100 takes priority over FX_RATE999 for the same transaction.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_weighted_conversion_has_independent_decimal_oracle",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.003210039999999026,
+      "expectation": "Same-case partial purchases USD100/EUR80 and USD300/EUR270 imply EUR87.5 for USD100.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_zero_is_valid_but_null_is_unknown[EUR-FX_NTSW_BALANCE_EUR_EQ]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001970781999943938,
+      "expectation": "Authoritative zero remains zero; absent native balance never becomes zero equivalent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_zero_is_valid_but_null_is_unknown[IRR-FX_NTSW_BALANCE_RIAL_EQ]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002261073999989094,
+      "expectation": "Authoritative zero remains zero; absent native balance never becomes zero equivalent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[inf]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013134559999343765,
+      "expectation": "Nonfinite values are invalid financial facts even for identity EUR conversion.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[-inf]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0009462689999963914,
+      "expectation": "Nonfinite values are invalid financial facts even for identity EUR conversion.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[Infinity]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012110870000014984,
+      "expectation": "Nonfinite values are invalid financial facts even for identity EUR conversion.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonfinite_source_equivalent_retains_coverage_gap[FX_EUR_VALUE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00508855299995048,
+      "expectation": "One finite and one infinite equivalent yields only the finite total with 50% row coverage.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonfinite_source_equivalent_retains_coverage_gap[FX_RIAL_VALUE]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.005719741999996586,
+      "expectation": "One finite and one infinite equivalent yields only the finite total with 50% row coverage.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[OPEN]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0029720219999944675,
+      "expectation": "An explicitly nonallocated request cannot be promoted to approved allocation rate evidence.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[REJECTED]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0027311400000371577,
+      "expectation": "An explicitly nonallocated request cannot be promoted to approved allocation rate evidence.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[AMBIGUOUS]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0029473509999888847,
+      "expectation": "An explicitly nonallocated request cannot be promoted to approved allocation rate evidence.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_allocation_rate_conflict_is_order_invariant[2026-01-01]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007109012999990227,
+      "expectation": "Conflicting same-date/undated rates must be withheld and flagged, never resolved by input ordering.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_allocation_rate_conflict_is_order_invariant[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0065858730000627475,
+      "expectation": "Conflicting same-date/undated rates must be withheld and flagged, never resolved by input ordering.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_credit_duplicate_snapshot_does_not_double_amount",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.003494280000040817,
+      "expectation": "Two identical snapshots of LC1 remain one logical credit and EUR100.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_multiple_credit_events_remain_multiple",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002892698999971799,
+      "expectation": "Two distinct LC identifiers with equal values are two credits, EUR200 total.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unversioned_lc_amendment_cannot_be_summed_or_last_selected",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006505481999965923,
+      "expectation": "Conflicting LC snapshots without amendment version/date cannot be resolved by row order.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_credit_partial_equivalent_is_disclosed",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0034836500000210435,
+      "expectation": "One of two LC EUR equivalents missing must yield a partial status and 50% coverage.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001693297999963761,
+      "expectation": "Missing REG is excluded from financial total with explicit missing-key population accounting.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002179709999950319,
+      "expectation": "Missing REG is excluded from financial total with explicit missing-key population accounting.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[key2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002147938999996768,
+      "expectation": "Missing REG is excluded from financial total with explicit missing-key population accounting.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0023497600000155217,
+      "expectation": "Missing REG is excluded from financial total with explicit missing-key population accounting.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_coverage_requires_joint_intersection",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0023651520000385062,
+      "expectation": "EUR-only A and IRR-only B means zero jointly covered REG, not min(1,1).",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_unknown_zero_placeholder_not_covered",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0030971109999882174,
+      "expectation": "BALANCE_IS_UNKNOWN dominates a legacy zero placeholder; known zero remains included.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_same_reg_multi_currency_needs_proven_grain",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0022889110000505752,
+      "expectation": "Equal EUR equivalents of two native currency rows cannot be silently collapsed at REG grain.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_reg_commitment_fanout_never_multiplies_native_total[1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012769188999982362,
+      "expectation": "Repeating a REG balance across BL/material rows leaves EUR100, regardless of row multiplicity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_reg_commitment_fanout_never_multiplies_native_total[2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007850290999954268,
+      "expectation": "Repeating a REG balance across BL/material rows leaves EUR100, regardless of row multiplicity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_reg_commitment_fanout_never_multiplies_native_total[17]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011155292000012196,
+      "expectation": "Repeating a REG balance across BL/material rows leaves EUR100, regardless of row multiplicity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_reg_commitment_fanout_never_multiplies_native_total[101]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008580454000025384,
+      "expectation": "Repeating a REG balance across BL/material rows leaves EUR100, regardless of row multiplicity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_conflict_population_stays_in_denominator",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0023974060000000463,
+      "expectation": "A conflicting REG is excluded from total but retained in coverage population.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0017807030000085433,
+      "expectation": "Legacy commitment output must not silently turn an unknown input balance into numerical zero.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0002358940000704024,
+      "expectation": "Legacy commitment output must not silently turn an unknown input balance into numerical zero.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00045890700005202234,
+      "expectation": "Legacy commitment output must not silently turn an unknown input balance into numerical zero.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_legacy_known_zero_stays_zero",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00039325600005213346,
+      "expectation": "A source-reported zero is valid, distinct from the legacy unknown case.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_fx_authority.py::test_planned_fx_cannot_supply_actual_commitment_valuation_rate",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002497940000012022,
+      "expectation": "An explicitly planned transaction cannot serve as completed-purchase exchange-rate authority.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_same_literal_in_different_namespaces_stays_distinct",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.027036199999997734,
+      "expectation": "ORDER and REG with identical strings stay distinct typed nodes connected by a relation.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_dwh_does_not_infer_edges_from_separate_rows",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.029321420999963266,
+      "expectation": "ORDER and REG appearing on different records without a bridge do not prove ORDER↔REG.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_graph_many_to_many_retains_all_witnessed_edges",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.02901639099991371,
+      "expectation": "Two orders and two REGs may have four directly witnessed edges; no one-to-one invention.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_expert_nonshipping_bl_cannot_become_shipping_edge",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04232910999996875,
+      "expectation": "Existing source authority forbids commercial-expert BL candidates from shipping graph edges.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_dwh_replay_preserves_counts_and_integrity",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.03782600700003513,
+      "expectation": "Repeated source input does not multiply entities, relations or source facts; SQLite constraints hold.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_dwh_raw_payload_retains_unknown_zero_and_source_row",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.02702924000004714,
+      "expectation": "Unknown and zero remain distinct in stored payload and physical row reference survives.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_pr_item_grain_retains_distinct_items",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.15676738500008014,
+      "expectation": "PR number repeats legitimately across item10 and item20; source-native PR frame retains both.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_stage_unknown_commitment_not_zero",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.03366085300001487,
+      "expectation": "Unknown source balance cannot turn into zero native/equivalent balance or fully released amount.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_stage_event_dedupe_preserves_currency",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01788385500003642,
+      "expectation": "Equal amounts and dates in USD and EUR represent two distinct FX events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_source_archive_to_dwh_lineage",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.3953393329999244,
+      "expectation": "Physical XLSX hash remains unchanged and source file/sheet/row survive into both DWH facts.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_purchase_semantic_paths_agree_on_planned_exclusion",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.13864811799999188,
+      "expectation": "Same physical source yields USD100 purchased in cashflow and FX ledger; plannedUSD200 is not actual.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_dwh_cashflow_excel_html_numeric_parity",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.2558731630000466,
+      "expectation": "Source actualUSD100 reaches cashflow and XLSX with USD unit; HTML embeds the identical XLSX bytes.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_credit_swift_source_does_not_invent_supplier_payment",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.10245097900008204,
+      "expectation": "Credit opening and SWIFT amount are independent source facts, not proof of beneficiary payment.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_chatbot_reads_published_snapshot_not_unpublished_work",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0527927880000334,
+      "expectation": "A later unpublished build cannot change chatbot business evidence for the published run.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_graph_storage_outputs.py::test_chatbot_no_evidence_refuses_financial_guess",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004226893000009113,
+      "expectation": "With no published record or knowledge evidence, chatbot declines instead of inventing a balance.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_registration_textual_alias[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.03914971099993636,
+      "expectation": "Permitted spelling changes preserve the same REG meaning and eight-digit value.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_registration_textual_alias[\\u0634\\u0645\\u0627\\u0631\\u0647_\\u062b\\u0628\\u062a_\\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.08206839600006788,
+      "expectation": "Permitted spelling changes preserve the same REG meaning and eight-digit value.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_registration_textual_alias[\\u0634\\u0645\\u0627\\u0631\\u0647\\n\\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.038994454999965455,
+      "expectation": "Permitted spelling changes preserve the same REG meaning and eight-digit value.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_registration_textual_alias[ \\u0634\\u0645\\u0627\\u0631\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634 ]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.03793419700002687,
+      "expectation": "Permitted spelling changes preserve the same REG meaning and eight-digit value.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_non_registration_header_cannot_supply_reg[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u067e\\u0631\\u0648\\u0646\\u062f\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04368341200006398,
+      "expectation": "File identity, date and commercial order are not REG even when value looks like REG.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_non_registration_header_cannot_supply_reg[\\u062a\\u0627\\u0631\\u06cc\\u062e \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.15751953500000582,
+      "expectation": "File identity, date and commercial order are not REG even when value looks like REG.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_non_registration_header_cannot_supply_reg[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04085484400002315,
+      "expectation": "File identity, date and commercial order are not REG even when value looks like REG.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_persian_supplier_spelling[\\u0646\\u0627\\u0645 \\u062a\\u0627\\u0645\\u06cc\\u0646 \\u06a9\\u0646\\u0646\\u062f\\u0647]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04534692599997925,
+      "expectation": "Arabic/Persian letters and underscores are textual aliases only.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_persian_supplier_spelling[\\u0646\\u0627\\u0645 \\u062a\\u0627\\u0645\\u064a\\u0646 \\u06a9\\u0646\\u0646\\u062f\\u0647]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04422990299997309,
+      "expectation": "Arabic/Persian letters and underscores are textual aliases only.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_persian_supplier_spelling[\\u0646\\u0627\\u0645_\\u062a\\u0627\\u0645\\u06cc\\u0646_\\u06a9\\u0646\\u0646\\u062f\\u0647]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04344788600008087,
+      "expectation": "Arabic/Persian letters and underscores are textual aliases only.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_similar_header_cannot_create_business_identity[po no-add_order_key-KEY_ORDER]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00392081900008634,
+      "expectation": "Without source-specific authority PO cannot be ORDER and material document cannot be MATERIAL.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_similar_header_cannot_create_business_identity[Material Document-add_material_key-KEY_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0020458310000321944,
+      "expectation": "Without source-specific authority PO cannot be ORDER and material document cannot be MATERIAL.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_event_currency_cannot_leak_into_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06326-CRD_SWIFT_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.02920937699991555,
+      "expectation": "SWIFT/allocation currencies must not fill absent native credit currency.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_event_currency_cannot_leak_into_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06325-CRD_ALLOC_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04923199899997144,
+      "expectation": "SWIFT/allocation currencies must not fill absent native credit currency.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_rate_type_separation",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.022851692000017465,
+      "expectation": "File conversion rate is not a source-reported FX purchase rate.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_partial_composite_is_not_a_valid_identity[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.018354669000018475,
+      "expectation": "BL+ORDER is unknown if an entire component or its column is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_partial_composite_is_not_a_valid_identity[none_column]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.019333931999995002,
+      "expectation": "BL+ORDER is unknown if an entire component or its column is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_full_composite_does_not_merge_distinct_orders",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.016387631000043257,
+      "expectation": "Same BL attached to two orders produces two distinct composite keys.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_reg_currency_requires_currency[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01825114299992947,
+      "expectation": "REG alone cannot substitute for REG+currency grain.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_reg_currency_requires_currency[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01863978500000485,
+      "expectation": "REG alone cannot substitute for REG+currency grain.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_reg_currency_requires_currency[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.016982376999976623,
+      "expectation": "REG alone cannot substitute for REG+currency grain.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_ROW]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.050784996000061255,
+      "expectation": "Physical source identity survives raw-to-canonical transformation.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_FILE_ID]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.041473950000067816,
+      "expectation": "Physical source identity survives raw-to-canonical transformation.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_SHEET]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04603563999990001,
+      "expectation": "Physical source identity survives raw-to-canonical transformation.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PO_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.4949751130000095,
+      "expectation": "PR Material/Currency are not authority for absent PO/package-native fields.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PACK_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.3624823979999974,
+      "expectation": "PR Material/Currency are not authority for absent PO/package-native fields.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PO_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.29398753999998917,
+      "expectation": "PR Material/Currency are not authority for absent PO/package-native fields.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[source_hash]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.025103381000008085,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[authority]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01063117500007138,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[source_url]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009532594999996036,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[approved_by]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009034323000037148,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[approved_at]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007545798000023751,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[effective_from]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00762152499999047,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_incomplete_rule_provenance_never_verifies[effective_to]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007991696999965825,
+      "expectation": "A declared due date cannot be legally verified if mandatory rule metadata is absent.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_rule_scope_and_validity_cannot_be_bypassed[override0]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007954261000008955,
+      "expectation": "Expired, not-effective-at-event, wrong-event-kind or unapproved rules cannot verify the event deadline.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_rule_scope_and_validity_cannot_be_bypassed[override1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.015539528999966024,
+      "expectation": "Expired, not-effective-at-event, wrong-event-kind or unapproved rules cannot verify the event deadline.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_rule_scope_and_validity_cannot_be_bypassed[override2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007903995999981817,
+      "expectation": "Expired, not-effective-at-event, wrong-event-kind or unapproved rules cannot verify the event deadline.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_rule_scope_and_validity_cannot_be_bypassed[override3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00808233400005065,
+      "expectation": "Expired, not-effective-at-event, wrong-event-kind or unapproved rules cannot verify the event deadline.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_duplicate_active_rule_is_ambiguous",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.009018141999945328,
+      "expectation": "Two competing active rule entries cannot silently select the last entry.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change0]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0016890240000293488,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change1]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0016092480000224896,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014161710000735184,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002134498999907919,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change4]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0021037779999915074,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change5]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002402862000053574,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change6]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002485086999968189,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change7]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0023683580000124493,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change8]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012463239999078723,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_reference_rate_context_guards[change9]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014800630000308956,
+      "expectation": "Reference rate must match currency pair, date, authority approval, purpose/regime and validity.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_conflicting_reference_rate_withheld",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0021503230000234907,
+      "expectation": "Conflicting latest reference rates are unknown independent of row ordering.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_exact_reference_rate_boundary",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012681549999342678,
+      "expectation": "One-day-old approved rate with one-day validity is valid at the inclusive boundary.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_snapshot_is_not_incremental_event",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0079936979999502,
+      "expectation": "Two historical balance snapshots cannot be summed into commitment or discharge events.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_same_date_snapshot_conflict_visible",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007943346000047313,
+      "expectation": "Same-grain same-date competing snapshots remain an explicit conflict.",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/frozen_audit/tests/test_rules_rates_snapshots.py::test_historical_snapshot_not_compared_to_today_ledger",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006889473999990514,
+      "expectation": "A yesterday balance must not be treated as a same-date reconciliation with today ledger.",
+      "failure": ""
+    }
+  ]
+}

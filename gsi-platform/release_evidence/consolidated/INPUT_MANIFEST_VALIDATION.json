@@ -1,0 +1,113 @@
+{
+  "final": {
+    "PACKAGE_SHA256.json": {
+      "entries": 913,
+      "mismatches": [
+        "KNOWN_LIMITATIONS.md",
+        "PACKAGE_INFO.json",
+        "RUN_STUDIO_V28.cmd",
+        "app/dashboard.py",
+        "app/studio.py",
+        "gsi/MANIFEST.json",
+        "gsi/__main__.py",
+        "gsi/dataio/merge.py",
+        "gsi/dataio/reader.py",
+        "gsi/pipeline.py",
+        "gsi/resolve/process_evidence.py",
+        "gsi/stages/s20_derive.py",
+        "gsi/stages/s54_process_integrity.py",
+        "gsi/stages/s80_eventlog.py",
+        "gsi/warehouse/bridge.py",
+        "gsi/warehouse/business_dwh.py",
+        "gsi/warehouse/reliability.py",
+        "gsi/warehouse/store.py"
+      ]
+    },
+    "PACKAGE_SHA256_FINAL.json": {
+      "entries": 926,
+      "mismatches": []
+    },
+    "gsi/MANIFEST.json": {
+      "entries": 189,
+      "mismatches": []
+    }
+  },
+  "audit1": {
+    "PACKAGE_SHA256.json": {
+      "entries": 913,
+      "mismatches": [
+        "CHANGELOG.md",
+        "KNOWN_LIMITATIONS.md",
+        "PACKAGE_INFO.json",
+        "RUN_STUDIO_V28.cmd",
+        "app/dashboard.py",
+        "app/studio.py",
+        "gsi/MANIFEST.json",
+        "gsi/__main__.py",
+        "gsi/dataio/merge.py",
+        "gsi/dataio/reader.py",
+        "gsi/factsheet.py",
+        "gsi/knowledge_desk/indexer.py",
+        "gsi/learning/anythingllm.py",
+        "gsi/pipeline.py",
+        "gsi/resolve/process_evidence.py",
+        "gsi/stages/s20_derive.py",
+        "gsi/stages/s54_process_integrity.py",
+        "gsi/stages/s80_eventlog.py",
+        "gsi/warehouse/bridge.py",
+        "gsi/warehouse/business_dwh.py",
+        "gsi/warehouse/reliability.py",
+        "gsi/warehouse/store.py",
+        "tests/test_fullstack_v29_6_10.py"
+      ]
+    },
+    "PACKAGE_SHA256_FINAL.json": {
+      "entries": 926,
+      "mismatches": []
+    },
+    "gsi/MANIFEST.json": {
+      "entries": 189,
+      "mismatches": []
+    }
+  },
+  "audit2": {
+    "PACKAGE_SHA256.json": {
+      "entries": 913,
+      "mismatches": [
+        "CHANGELOG.md",
+        "KNOWN_LIMITATIONS.md",
+        "PACKAGE_INFO.json",
+        "RUN_STUDIO_V28.cmd",
+        "app/dashboard.py",
+        "app/studio.py",
+        "gsi/MANIFEST.json",
+        "gsi/__main__.py",
+        "gsi/dataio/merge.py",
+        "gsi/dataio/reader.py",
+        "gsi/factsheet.py",
+        "gsi/knowledge_desk/indexer.py",
+        "gsi/learning/anythingllm.py",
+        "gsi/pipeline.py",
+        "gsi/resolve/process_evidence.py",
+        "gsi/stages/s20_derive.py",
+        "gsi/stages/s54_process_integrity.py",
+        "gsi/stages/s80_eventlog.py",
+        "gsi/warehouse/bridge.py",
+        "gsi/warehouse/business_dwh.py",
+        "gsi/warehouse/reliability.py",
+        "gsi/warehouse/store.py",
+        "tests/test_fullstack_v29_6_10.py",
+        "tests/test_knowledge_desk_offline_v292.py",
+        "tests/test_opus_rc4_warehouse_reset.py"
+      ]
+    },
+    "PACKAGE_SHA256_FINAL.json": {
+      "entries": 927,
+      "mismatches": []
+    },
+    "gsi/MANIFEST.json": {
+      "entries": 189,
+      "mismatches": []
+    }
+  }
+}

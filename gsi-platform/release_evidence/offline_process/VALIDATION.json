@@ -1,0 +1,23 @@
+{
+  "tests": {
+    "process_full": {
+      "tests": 575,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "process_audit": {
+      "tests": 250,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "targeted_after_iso_timestamp_change": "7 passed",
+  "test_counts_overlap": true,
+  "html_structure_and_external_resource_check": "PASS",
+  "visual_browser_check": "NOT_RUN_BROWSER_DOWNLOAD_FAILED",
+  "outlook_windows_smb": "NOT_RUN",
+  "figma_plugin": "ENABLED_BUT_READ_TOOLS_NOT_EXPOSED",
+  "production_certified": false
+}

@@ -1,0 +1,23 @@
+{
+  "sha": "c5e3a79264afcffb5d42b8d50434d170f26ffa09",
+  "url": "https://api.github.com/repos/alipyth/Continuous-Learning-AI-PoC/git/trees/c5e3a79264afcffb5d42b8d50434d170f26ffa09",
+  "tree": [
+    {
+      "path": "Continuous_Learning_Agents.ipynb",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "13bc4c9288e5d96ad2b9c1e7d60b4d028df43c85",
+      "size": 20650,
+      "url": "https://api.github.com/repos/alipyth/Continuous-Learning-AI-PoC/git/blobs/13bc4c9288e5d96ad2b9c1e7d60b4d028df43c85"
+    },
+    {
+      "path": "readme.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "731899a010183090ee01ced0e8d5feef8bd3ba75",
+      "size": 2258,
+      "url": "https://api.github.com/repos/alipyth/Continuous-Learning-AI-PoC/git/blobs/731899a010183090ee01ced0e8d5feef8bd3ba75"
+    }
+  ],
+  "truncated": false
+}

@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "checks": [
+    "source comments safely escaped",
+    "material default tab and display cap",
+    "all 175 matches retained for aggregation/export",
+    "Persian-digit search finds late material beyond cap",
+    "material Excel download",
+    "financial Excel download",
+    "RTL keyboard tab navigation",
+    "390px mobile cards show both source comments without page overflow",
+    "no JavaScript runtime errors"
+  ],
+  "errors": []
+}

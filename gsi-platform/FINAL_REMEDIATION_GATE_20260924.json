@@ -1,0 +1,81 @@
+{
+  "package_version": "29.8.2",
+  "release_channel": "rc4-opt2-h1-algo-knowledge-remediated-final-20260924",
+  "generated_at": "2026-09-24",
+  "algorithm_knowledge_verified": true,
+  "semantic_remediation_gate": "PASS",
+  "production_certified": false,
+  "independent_validation": {
+    "frozen": {
+      "passed": 173,
+      "failed": 0
+    },
+    "extended": {
+      "passed": 77,
+      "failed": 0
+    },
+    "total": {
+      "passed": 250,
+      "failed": 0
+    }
+  },
+  "affected_internal_regression": {
+    "passed": 100,
+    "failed": 0
+  },
+  "additional_checks": {
+    "dashboard_email_hygiene": "8/8 PASS",
+    "knowledge_desk_localhost": "3/3 PASS",
+    "import_hygiene": "6/6 PASS",
+    "gsi_manifest_issues": 0,
+    "compileall": "PASS"
+  },
+  "internal_file_sweep": {
+    "inventory": 90,
+    "pass_files": 80,
+    "no_test_files": 8,
+    "local_ui_blocked_files": 2,
+    "note": "Two UI files are blocked only in build environment because streamlit is absent; user Windows feedback showed streamlit 1.51.0 and these two files passed on the pre-remediation baseline."
+  },
+  "real_ntsw_probe": {
+    "status": "OK",
+    "import_license_rows": 1000,
+    "reg_file_nonempty": 1000,
+    "reg_nonempty": 840,
+    "order_nonempty": 0,
+    "reg_file_reg_pairs": 840,
+    "regfile_multi_reg": 0,
+    "reg_multi_regfile": 0,
+    "allocation_history": 3286,
+    "allocation_rows": 2834,
+    "allocation_cases": 1418,
+    "commitment_rows": 4007,
+    "commitment_cases": 2390
+  },
+  "business_key_contract": {
+    "REG": [
+      "ثبت سفارش",
+      "شماره ثبت سفارش",
+      "کد ثبت سفارش"
+    ],
+    "REG_FILE": [
+      "شماره پرونده",
+      "شماره پرونده ثبت سفارش"
+    ],
+    "ORDER": [
+      "سفارش",
+      "شماره سفارش",
+      "Order No.",
+      "Our Reference"
+    ],
+    "BL": [
+      "بارنامه",
+      "شماره بارنامه",
+      "BL No."
+    ],
+    "material_required_for_ntsw_gate": false
+  },
+  "open_gates": [
+    "REAL_ORDER_BL_BRIDGE_SOURCES_REQUIRED_FOR_FULL_MULTI_SOURCE_PRODUCTION_CERTIFICATION"
+  ]
+}

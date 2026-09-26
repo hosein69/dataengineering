@@ -1,0 +1,25 @@
+{
+  "environment_note": "Synthetic component benchmark in build container; not a claim about the user's Windows/network runtime.",
+  "sap_reader_excel_handles": {
+    "workbook_sheets": 5,
+    "before": 6,
+    "after": 1
+  },
+  "business_dwh": {
+    "synthetic_sap_raw_rows": 20000,
+    "synthetic_semantic_rows": 8000,
+    "before_seconds": 4.586234,
+    "after_seconds": 1.170251,
+    "speedup": 3.92,
+    "source_rows_archived_before": 28000,
+    "source_rows_archived_after": 20000,
+    "semantic_facts_preserved": true
+  },
+  "process_stage_matrix": {
+    "cases": 20000,
+    "output_rows": 320000,
+    "before_seconds": 6.553793,
+    "after_seconds": 0.969531,
+    "speedup": 6.76
+  }
+}

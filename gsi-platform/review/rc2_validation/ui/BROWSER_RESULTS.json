@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "checks": [
+    "desktop layout",
+    "case filter",
+    "settlement tab",
+    "Excel download",
+    "RTL keyboard navigation",
+    "Persian digit search",
+    "390px no page overflow"
+  ],
+  "errors": []
+}

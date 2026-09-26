@@ -1,0 +1,26 @@
+{
+  "release": "GSI 29.8.2 RC4-OPT2 H1 — Customizable HTML + Cash Flow",
+  "date": "2026-09-26",
+  "status": "VALIDATED_WITH_EXISTING_REGULATORY_BLOCKERS",
+  "scope": [
+    "offline HTML drag-and-drop customization",
+    "resize / hide / restore / reset",
+    "portable customized HTML download",
+    "Cash Flow / Money Flow Control Tower as first-class Composer block"
+  ],
+  "validation": {
+    "python_compileall": "PASS",
+    "html_composer_targeted_tests": {"passed": 18, "failed": 0},
+    "javascript_syntax_compile": "PASS",
+    "gsi_manifest": {"tracked_files": 195, "issues": 0},
+    "browser_playwright": "ENVIRONMENT-BLOCKED: playwright package unavailable; no PASS claim"
+  },
+  "doctor": {
+    "contracts_manifest_process_graph": "PASS",
+    "blocking_errors": 2,
+    "blocking_category": "REGULATORY_EXPIRY",
+    "note": "same pre-existing two expired temporary rules; they were not auto-extended"
+  },
+  "semantic_data_changes": false,
+  "dwh_changes": false
+}

@@ -1,0 +1,45 @@
+2026-09-24 07:01:13,529 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW-IKCO.xlsx
+2026-09-24 07:01:15,029 | INFO    |    ✅ [ntsw] Import Licence: 1000 ردیف | 1000 پرونده | 840 ثبت سفارش
+2026-09-24 07:01:23,158 | INFO    |    ✅ [ntsw] Release Commitment: 4007 ردیف تعهد → 2390 کد ثبت سفارش
+2026-09-24 07:01:28,763 | INFO    |    ✅ [ntsw] Allocation: 3286 درخواست → 1418 کد ثبت سفارش
+RUN_ID b59cc75fb5654c4cb90fb4604e15ce41
+INPUT_SCOPE NTSW-IKCO.xlsx
+DWH_COUNTS {'source_rows': 14935, 'entities': 3632, 'relations': 840, 'unresolved': 160, 'order_material_pr_item': 0, 'sap_pr_items': 0, 'sap_po_items': 0, 'sap_workflow': 0}
+KEY_REG_FILE nonempty 1000 unique 1000
+KEY_REG nonempty 840 unique 840
+KEY_ORDER nonempty 0 unique 0
+MISSING_REG_STATUS
+'استعلام شده' 101
+'رد پیش فاکتور' 22
+'رد درخواست مجوز' 11
+'پیش نویس' 10
+'جدید' 9
+'آماده پرداخت' 4
+'منتظر مجوز' 3
+CASHFLOW_EVENTS 7082 CASES 2621
+CURRENCY_COUNTS
+'EUR' 3346
+'CNY' 2681
+'AED' 884
+'KRW' 77
+'JPY' 45
+'INR' 31
+'USD' 16
+'IRR' 1
+'RUB' 1
+DIAGNOSTICS 0
+FUTURE_ISSUE_DATES
+تاریخ صدور پیش فاکتور count 53 min 2025-09-01 max 2025-12-06
+تاریخ صدور ثبت سفارش count 0 min None max None
+PAIR_COUNT 840
+REGFILE_MULTI_REG 0
+REG_MULTI_REGFILE 0
+FRAME import_license ROWS 1000
+FRAME allocation_history ROWS 3286
+FRAME allocation_rows ROWS 2834
+FRAME allocation ROWS 1418
+FRAME commitment_rows ROWS 4007
+FRAME commitment ROWS 2390
+CORE lastModifiedBy 'Hamidi, shahram (Commercial Services Dept)'
+CORE created '2024-10-07T03:58:06Z'
+CORE modified '2025-08-30T04:08:20Z'

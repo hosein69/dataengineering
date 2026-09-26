@@ -1,0 +1,31 @@
+{
+  "database": "release_verification.sqlite",
+  "integrity_check": [
+    [
+      "wrong # of entries in index wh_frame_run"
+    ],
+    [
+      "wrong # of entries in index sqlite_autoindex_wh_frame_row_1"
+    ],
+    [
+      "row 117 missing from index wh_frame_run"
+    ],
+    [
+      "row 1021 missing from index sqlite_autoindex_wh_frame_row_1"
+    ],
+    [
+      "row 1022 missing from index sqlite_autoindex_wh_frame_row_1"
+    ],
+    [
+      "row 1023 missing from index sqlite_autoindex_wh_frame_row_1"
+    ],
+    [
+      "row 1024 missing from index sqlite_autoindex_wh_frame_row_1"
+    ],
+    [
+      "row 1025 missing from index sqlite_autoindex_wh_frame_row_1"
+    ]
+  ],
+  "sqlite_version": "3.53.1",
+  "root_cause": "UNRESOLVED; suite isolation does not prove cause or repair this database"
+}

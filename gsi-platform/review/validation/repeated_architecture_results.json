@@ -1,0 +1,29 @@
+[
+  {
+    "iteration": 1,
+    "exit_code": 0,
+    "integrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 2,
+    "exit_code": 0,
+    "integrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 3,
+    "exit_code": 0,
+    "integrity": [
+      [
+        "ok"
+      ]
+    ]
+  }
+]

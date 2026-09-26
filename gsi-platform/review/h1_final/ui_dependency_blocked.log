@@ -1,0 +1,34 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________________ test_dashboard_financial_panel_build_and_scope ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-112/test_dashboard_financial_panel0')
+
+    def test_dashboard_financial_panel_build_and_scope(tmp_path):
+>       from streamlit.testing.v1 import AppTest
+E       ModuleNotFoundError: No module named 'streamlit'
+
+tests/test_cashflow_v29_7.py:250: ModuleNotFoundError
+________________ test_real_dashboard_runs_through_html_download ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-112/test_real_dashboard_runs_throu0')
+
+    def test_real_dashboard_runs_through_html_download(tmp_path):
+>       from streamlit.testing.v1 import AppTest
+E       ModuleNotFoundError: No module named 'streamlit'
+
+tests/test_fullstack_v29_6_10.py:52: ModuleNotFoundError
+__________________ test_studio_starts_with_published_snapshot __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-112/test_studio_starts_with_publis0')
+
+    def test_studio_starts_with_published_snapshot(tmp_path):
+>       from streamlit.testing.v1 import AppTest
+E       ModuleNotFoundError: No module named 'streamlit'
+
+tests/test_fullstack_v29_6_10.py:82: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_cashflow_v29_7.py::test_dashboard_financial_panel_build_and_scope - ModuleNotFoundError: No module named 'streamlit'
+FAILED tests/test_fullstack_v29_6_10.py::test_real_dashboard_runs_through_html_download - ModuleNotFoundError: No module named 'streamlit'
+FAILED tests/test_fullstack_v29_6_10.py::test_studio_starts_with_published_snapshot - ModuleNotFoundError: No module named 'streamlit'
+3 failed in 0.40s

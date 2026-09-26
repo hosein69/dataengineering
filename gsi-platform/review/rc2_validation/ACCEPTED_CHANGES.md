@@ -1,0 +1,8 @@
+# Evidence-based changes accepted for 29.7.8 RC2
+
+- RES-1/2/3: accept attached Opus patch after exact dry-run and inspection. Registered SWIFT stage, unknown companion flags, derived-source coverage. F031 remains partial.
+- FIN-01: accept. cashflow/ui.py falls back to unbound intermediate extras when published DWH is empty and expands unresolved filtered scope to all DWH. Remove implicit fallback; resolve against one read snapshot; empty/ambiguous scope stays explicit and empty.
+- FIN-02: accept. cashflow/dwh.py catches corrupt SQLite and malformed payload as empty evidence. Raise a typed source-unavailable error; UI distinguishes missing publication from failure.
+- ID-01: accept. NTSW Import Licence ORDER fuzzy candidates can select ثبت سفارش when only REG fields exist; SourceAdapter.add_order_key permits the same semantic overlap. Exclude registration-file/registration labels from ORDER resolution. Our Reference remains source-specific; SAP PO reference remains independent.
+- STATUS-01: accept. commitment deduplication compares money/currency but ignores conflicting release status; allocation tied dates choose input order. Preserve raw history; quarantine native-ID conflicts including status and equal-date allocation conflicts. Never infer latest from a status label alone.
+- UI-01: accept explicit user redesign request. Replace dense tables/upload-first financial panels with source/as-of header, case/currency filters, cashflow/settlement/evidence tabs, native currency summaries and clear unknown/empty/conflict wording. Retain engine math and raw evidence. Optional imports are not required for operational reports.

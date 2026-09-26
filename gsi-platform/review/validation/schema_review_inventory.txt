@@ -1,0 +1,123 @@
+src/gsi/warehouse/marts.py:10:CREATE TABLE IF NOT EXISTS wh_business_record(file_id TEXT NOT NULL REFERENCES wh_file(id),source TEXT NOT NULL,sheet TEXT NOT NULL,row_no INTEGER NOT NULL,registration_id TEXT,order_id TEXT,material_id TEXT,request_id TEXT,payload TEXT NOT NULL,PRIMARY KEY(file_id,sheet,row_no));
+src/gsi/warehouse/marts.py:11:CREATE INDEX IF NOT EXISTS wh_business_reg ON wh_business_record(registration_id,source,file_id);
+src/gsi/warehouse/marts.py:12:CREATE INDEX IF NOT EXISTS wh_business_material ON wh_business_record(material_id,source,file_id);
+src/gsi/warehouse/marts.py:13:CREATE TABLE IF NOT EXISTS wh_measure(file_id TEXT NOT NULL,sheet TEXT NOT NULL,row_no INTEGER NOT NULL,measure TEXT NOT NULL,amount_decimal TEXT,amount_raw TEXT,currency TEXT NOT NULL,status TEXT NOT NULL,PRIMARY KEY(file_id,sheet,row_no,measure),FOREIGN KEY(file_id,sheet,row_no) REFERENCES wh_business_record(file_id,sheet,row_no));
+src/gsi/warehouse/marts.py:14:CREATE INDEX IF NOT EXISTS wh_measure_currency ON wh_measure(file_id,measure,currency);
+src/gsi/warehouse/store.py:69:CREATE TABLE IF NOT EXISTS wh_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+src/gsi/warehouse/store.py:70:CREATE TABLE IF NOT EXISTS wh_run(id TEXT PRIMARY KEY,started TEXT NOT NULL,finished TEXT,status TEXT NOT NULL,context TEXT NOT NULL,error TEXT);
+src/gsi/warehouse/store.py:71:CREATE TABLE IF NOT EXISTS wh_audit(id INTEGER PRIMARY KEY,at TEXT NOT NULL,run_id TEXT,kind TEXT NOT NULL,actor TEXT NOT NULL,payload TEXT NOT NULL);
+src/gsi/warehouse/store.py:72:CREATE INDEX IF NOT EXISTS wh_audit_run ON wh_audit(run_id,id);
+src/gsi/warehouse/store.py:73:CREATE TABLE IF NOT EXISTS wh_file(id TEXT PRIMARY KEY,name TEXT NOT NULL,content BLOB NOT NULL,size INTEGER NOT NULL,created TEXT NOT NULL);
+src/gsi/warehouse/store.py:74:CREATE TABLE IF NOT EXISTS wh_ingest(id INTEGER PRIMARY KEY,run_id TEXT,source TEXT NOT NULL,path TEXT NOT NULL,file_id TEXT NOT NULL REFERENCES wh_file(id),at TEXT NOT NULL);
+src/gsi/warehouse/store.py:75:CREATE TABLE IF NOT EXISTS wh_sheet(file_id TEXT NOT NULL REFERENCES wh_file(id),name TEXT NOT NULL,metadata TEXT NOT NULL,PRIMARY KEY(file_id,name));
+src/gsi/warehouse/store.py:76:CREATE TABLE IF NOT EXISTS wh_raw_row(file_id TEXT NOT NULL,sheet TEXT NOT NULL,row_no INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(file_id,sheet,row_no),FOREIGN KEY(file_id,sheet) REFERENCES wh_sheet(file_id,name));
+src/gsi/warehouse/store.py:77:CREATE TABLE IF NOT EXISTS wh_issue(id INTEGER PRIMARY KEY,run_id TEXT,file_id TEXT,sheet TEXT,row_no INTEGER,code TEXT NOT NULL,detail TEXT NOT NULL);
+src/gsi/warehouse/store.py:78:CREATE TABLE IF NOT EXISTS wh_frame(id TEXT PRIMARY KEY,run_id TEXT REFERENCES wh_run(id),layer TEXT NOT NULL,name TEXT NOT NULL,metadata TEXT NOT NULL,row_count INTEGER NOT NULL,created TEXT NOT NULL);
+src/gsi/warehouse/store.py:79:CREATE INDEX IF NOT EXISTS wh_frame_run ON wh_frame(run_id,layer,name);
+src/gsi/warehouse/store.py:80:CREATE TABLE IF NOT EXISTS wh_frame_row(frame_id TEXT NOT NULL REFERENCES wh_frame(id),row_no INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(frame_id,row_no));
+src/gsi/warehouse/store.py:81:CREATE TABLE IF NOT EXISTS wh_config(namespace TEXT PRIMARY KEY,revision INTEGER NOT NULL,payload TEXT NOT NULL);
+src/gsi/warehouse/store.py:82:CREATE TABLE IF NOT EXISTS wh_current(slot TEXT PRIMARY KEY,run_id TEXT NOT NULL REFERENCES wh_run(id));
+src/gsi/warehouse/store.py:83:CREATE TABLE IF NOT EXISTS wh_quality_check(
+src/gsi/warehouse/store.py:91: PRIMARY KEY(run_id,seq));
+src/gsi/warehouse/store.py:92:CREATE INDEX IF NOT EXISTS wh_quality_check_run ON wh_quality_check(run_id,severity,passed);
+src/gsi/warehouse/store.py:93:CREATE TABLE IF NOT EXISTS wh_schema_baseline(
+src/gsi/warehouse/store.py:94: contract TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, columns_json TEXT NOT NULL, updated TEXT NOT NULL);
+src/gsi/warehouse/store.py:95:CREATE TABLE IF NOT EXISTS wh_publish_event(
+src/gsi/warehouse/store.py:96: id INTEGER PRIMARY KEY, at TEXT NOT NULL, run_id TEXT NOT NULL REFERENCES wh_run(id), slots TEXT NOT NULL);
+src/gsi/warehouse/store.py:104:        # executed CREATE TABLE/PRAGMA user_version in every Warehouse(...)
+src/gsi/warehouse/snapshots.py:9:    conn.execute("CREATE TABLE IF NOT EXISTS wh_semantic_snapshot(run_id TEXT PRIMARY KEY REFERENCES wh_run(id))")
+src/gsi/warehouse/snapshots.py:15:        conn.execute(f'CREATE TABLE IF NOT EXISTS "{target}" AS SELECT CAST(NULL AS TEXT) AS snapshot_run, * FROM "{name}" WHERE 0')
+src/gsi/warehouse/snapshots.py:16:        conn.execute(f'CREATE INDEX IF NOT EXISTS "idx_{target}_run" ON "{target}"(snapshot_run)')
+src/gsi/warehouse/snapshots.py:20:                conn.execute(f'CREATE INDEX IF NOT EXISTS "idx_{target}_{key}" ON "{target}"(snapshot_run,"{key}")')
+src/gsi/warehouse/reliability.py:319:        conn.execute("CREATE TABLE IF NOT EXISTS wh_schema_candidate(run_id TEXT,contract TEXT,fingerprint TEXT,columns_json TEXT,updated TEXT,PRIMARY KEY(run_id,contract))")
+src/gsi/warehouse/business_dwh.py:50:CREATE TABLE IF NOT EXISTS dwh_entity(
+src/gsi/warehouse/business_dwh.py:55: PRIMARY KEY(entity_type,business_key));
+src/gsi/warehouse/business_dwh.py:57:CREATE TABLE IF NOT EXISTS dwh_dim_order(
+src/gsi/warehouse/business_dwh.py:58: order_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:61:CREATE TABLE IF NOT EXISTS dwh_dim_material(
+src/gsi/warehouse/business_dwh.py:62: material_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:65:CREATE TABLE IF NOT EXISTS dwh_dim_bl(
+src/gsi/warehouse/business_dwh.py:66: bl_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:69:CREATE TABLE IF NOT EXISTS dwh_dim_registration(
+src/gsi/warehouse/business_dwh.py:70: reg_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:73:CREATE TABLE IF NOT EXISTS dwh_dim_registration_file(
+src/gsi/warehouse/business_dwh.py:74: reg_file_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:77:CREATE TABLE IF NOT EXISTS dwh_dim_pr(
+src/gsi/warehouse/business_dwh.py:78: pr_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:81:CREATE TABLE IF NOT EXISTS dwh_dim_po(
+src/gsi/warehouse/business_dwh.py:82: po_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:85:CREATE TABLE IF NOT EXISTS dwh_dim_employee(
+src/gsi/warehouse/business_dwh.py:86: emp_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:90:CREATE TABLE IF NOT EXISTS dwh_relation(
+src/gsi/warehouse/business_dwh.py:101: PRIMARY KEY(left_type,left_key,right_type,right_key,source,frame,rule),
+src/gsi/warehouse/business_dwh.py:102: FOREIGN KEY(left_type,left_key) REFERENCES dwh_entity(entity_type,business_key),
+src/gsi/warehouse/business_dwh.py:103: FOREIGN KEY(right_type,right_key) REFERENCES dwh_entity(entity_type,business_key));
+src/gsi/warehouse/business_dwh.py:104:CREATE INDEX IF NOT EXISTS dwh_relation_left ON dwh_relation(left_type,left_key);
+src/gsi/warehouse/business_dwh.py:105:CREATE INDEX IF NOT EXISTS dwh_relation_right ON dwh_relation(right_type,right_key);
+src/gsi/warehouse/business_dwh.py:107:CREATE TABLE IF NOT EXISTS dwh_fact_source_row(
+src/gsi/warehouse/business_dwh.py:114: PRIMARY KEY(source,frame,row_hash));
+src/gsi/warehouse/business_dwh.py:116:CREATE TABLE IF NOT EXISTS dwh_fact_supply_position(
+src/gsi/warehouse/business_dwh.py:121: PRIMARY KEY(order_key,material_key));
+src/gsi/warehouse/business_dwh.py:123:CREATE TABLE IF NOT EXISTS dwh_bridge_order_material_pr_item(
+src/gsi/warehouse/business_dwh.py:132: PRIMARY KEY(order_key,material_key,pr_key,pr_item));
+src/gsi/warehouse/business_dwh.py:133:CREATE INDEX IF NOT EXISTS dwh_ompi_order_material ON dwh_bridge_order_material_pr_item(order_key,material_key);
+src/gsi/warehouse/business_dwh.py:134:CREATE INDEX IF NOT EXISTS dwh_ompi_pr ON dwh_bridge_order_material_pr_item(pr_key);
+src/gsi/warehouse/business_dwh.py:136:CREATE TABLE IF NOT EXISTS dwh_fact_oracle_material(
+src/gsi/warehouse/business_dwh.py:137: material_key TEXT PRIMARY KEY REFERENCES dwh_dim_material(material_key),
+src/gsi/warehouse/business_dwh.py:142:CREATE TABLE IF NOT EXISTS dwh_fact_sap_pr_item(
+src/gsi/warehouse/business_dwh.py:148: PRIMARY KEY(pr_key,pr_item));
+src/gsi/warehouse/business_dwh.py:149:CREATE INDEX IF NOT EXISTS dwh_sap_pr_material ON dwh_fact_sap_pr_item(material_key);
+src/gsi/warehouse/business_dwh.py:151:CREATE TABLE IF NOT EXISTS dwh_fact_sap_po_item(
+src/gsi/warehouse/business_dwh.py:159: PRIMARY KEY(po_key,po_item));
+src/gsi/warehouse/business_dwh.py:160:CREATE INDEX IF NOT EXISTS dwh_sap_po_pr ON dwh_fact_sap_po_item(pr_key,pr_item);
+src/gsi/warehouse/business_dwh.py:162:CREATE TABLE IF NOT EXISTS dwh_fact_sap_workflow(
+src/gsi/warehouse/business_dwh.py:163: workflow_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:169:CREATE INDEX IF NOT EXISTS dwh_sap_workflow_pr ON dwh_fact_sap_workflow(pr_key,event_date);
+src/gsi/warehouse/business_dwh.py:171:CREATE TABLE IF NOT EXISTS dwh_fact_ntsw_allocation_request(
+src/gsi/warehouse/business_dwh.py:172: request_key TEXT PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:177:CREATE TABLE IF NOT EXISTS dwh_fact_ntsw_commitment(
+src/gsi/warehouse/business_dwh.py:178: reg_key TEXT PRIMARY KEY REFERENCES dwh_dim_registration(reg_key),
+src/gsi/warehouse/business_dwh.py:182:CREATE TABLE IF NOT EXISTS dwh_unresolved_relation(
+src/gsi/warehouse/business_dwh.py:183: id INTEGER PRIMARY KEY,
+src/gsi/warehouse/business_dwh.py:190:CREATE INDEX IF NOT EXISTS dwh_unresolved_run ON dwh_unresolved_relation(run_id,source,frame);
+src/gsi/warehouse/historical_store.py:205:        CREATE TABLE IF NOT EXISTS dw_meta (
+src/gsi/warehouse/historical_store.py:206:            key TEXT PRIMARY KEY,
+src/gsi/warehouse/historical_store.py:209:        CREATE TABLE IF NOT EXISTS dw_run (
+src/gsi/warehouse/historical_store.py:210:            run_id TEXT PRIMARY KEY,
+src/gsi/warehouse/historical_store.py:223:        CREATE INDEX IF NOT EXISTS ix_dw_run_ref_date ON dw_run(ref_date DESC, started_at DESC);
+src/gsi/warehouse/historical_store.py:225:        CREATE TABLE IF NOT EXISTS source_run_log (
+src/gsi/warehouse/historical_store.py:233:            PRIMARY KEY(run_id, source_key, frame_name)
+src/gsi/warehouse/historical_store.py:235:        CREATE INDEX IF NOT EXISTS ix_source_run_source ON source_run_log(source_key, frame_name, run_id);
+src/gsi/warehouse/historical_store.py:237:        CREATE TABLE IF NOT EXISTS fact_case_snapshot (
+src/gsi/warehouse/historical_store.py:243:            PRIMARY KEY(run_id, row_ordinal)
+src/gsi/warehouse/historical_store.py:245:        CREATE INDEX IF NOT EXISTS ix_fact_case_run_part ON fact_case_snapshot(run_id, partition_name);
+src/gsi/warehouse/historical_store.py:246:        CREATE INDEX IF NOT EXISTS ix_fact_case_identity ON fact_case_snapshot(row_identity, run_id);
+src/gsi/warehouse/historical_store.py:248:        CREATE TABLE IF NOT EXISTS fact_event (
+src/gsi/warehouse/historical_store.py:249:            event_id TEXT PRIMARY KEY,
+src/gsi/warehouse/historical_store.py:271:        CREATE INDEX IF NOT EXISTS ix_fact_event_case_time ON fact_event(case_key, event_time, sorting);
+src/gsi/warehouse/historical_store.py:272:        CREATE INDEX IF NOT EXISTS ix_fact_event_activity ON fact_event(activity_fa, event_time);
+src/gsi/warehouse/historical_store.py:274:        CREATE TABLE IF NOT EXISTS bridge_run_event (
+src/gsi/warehouse/historical_store.py:277:            PRIMARY KEY(run_id, event_id)
+src/gsi/warehouse/historical_store.py:279:        CREATE INDEX IF NOT EXISTS ix_bridge_event_run ON bridge_run_event(run_id);
+src/gsi/warehouse/historical_store.py:281:        CREATE TABLE IF NOT EXISTS fact_case_process_snapshot (
+src/gsi/warehouse/historical_store.py:293:            PRIMARY KEY(run_id, case_key)
+src/gsi/warehouse/historical_store.py:295:        CREATE INDEX IF NOT EXISTS ix_case_proc_case ON fact_case_process_snapshot(case_key, run_id);
+src/gsi/warehouse/historical_store.py:297:        CREATE TABLE IF NOT EXISTS fact_transition_snapshot (
+src/gsi/warehouse/historical_store.py:310:            PRIMARY KEY(run_id, case_key, seq_no)
+src/gsi/warehouse/historical_store.py:312:        CREATE INDEX IF NOT EXISTS ix_transition_run_pair ON fact_transition_snapshot(run_id, from_activity, to_activity);
+src/gsi/warehouse/historical_store.py:313:        CREATE INDEX IF NOT EXISTS ix_transition_case ON fact_transition_snapshot(case_key, run_id, seq_no);
+src/gsi/warehouse/historical_store.py:315:        CREATE TABLE IF NOT EXISTS fact_conformance_snapshot (
+src/gsi/warehouse/historical_store.py:319:            PRIMARY KEY(run_id, case_key)
+src/gsi/warehouse/historical_store.py:322:        CREATE TABLE IF NOT EXISTS fact_kpi_snapshot (
+src/gsi/warehouse/historical_store.py:330:            PRIMARY KEY(run_id, metric_key)
+src/gsi/warehouse/historical_store.py:332:        CREATE INDEX IF NOT EXISTS ix_kpi_metric_date ON fact_kpi_snapshot(metric_key, ref_date);
+src/gsi/warehouse/historical_store.py:334:        CREATE TABLE IF NOT EXISTS case_state_log (
+src/gsi/warehouse/historical_store.py:335:            id INTEGER PRIMARY KEY AUTOINCREMENT,
+src/gsi/warehouse/historical_store.py:346:        CREATE INDEX IF NOT EXISTS ix_case_state_case_date ON case_state_log(case_key, ref_date, id);
+src/gsi/warehouse/historical_store.py:348:        CREATE TABLE IF NOT EXISTS audit_log (
+src/gsi/warehouse/historical_store.py:349:            id INTEGER PRIMARY KEY AUTOINCREMENT,
+src/gsi/warehouse/historical_store.py:360:        CREATE INDEX IF NOT EXISTS ix_audit_created ON audit_log(created_at DESC);
+src/gsi/warehouse/historical_store.py:361:        CREATE INDEX IF NOT EXISTS ix_audit_run ON audit_log(run_id, created_at);
+src/gsi/warehouse/historical_store.py:363:        CREATE TABLE IF NOT EXISTS app_profile (
+src/gsi/warehouse/historical_store.py:368:            PRIMARY KEY(profile_type, name)
+src/gsi/warehouse/historical_store.py:370:        CREATE INDEX IF NOT EXISTS ix_app_profile_type ON app_profile(profile_type, updated_at DESC);

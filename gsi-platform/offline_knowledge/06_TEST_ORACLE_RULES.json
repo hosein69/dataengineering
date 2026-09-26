@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0",
+  "snapshot_date": "2026-09-24",
+  "principles": [
+    {
+      "id": "O-ID-001",
+      "domain": "identity",
+      "severity": "CRITICAL",
+      "statement": "REG aliases represent one business identity while REG_FILE remains distinct.",
+      "basis": [
+        "USER_CONTRACT",
+        "evidence.txt"
+      ]
+    },
+    {
+      "id": "O-ID-002",
+      "domain": "identity",
+      "severity": "CRITICAL",
+      "statement": "ORDER aliases represent one business identity; PO similarity is not sufficient authority.",
+      "basis": [
+        "USER_CONTRACT",
+        "evidence.txt"
+      ]
+    },
+    {
+      "id": "O-ID-003",
+      "domain": "identity",
+      "severity": "HIGH",
+      "statement": "Composite key is valid only when every mandatory component is nonempty and non-null.",
+      "basis": [
+        "AUDIT_IA12"
+      ]
+    },
+    {
+      "id": "O-FX-001",
+      "domain": "finance",
+      "severity": "CRITICAL",
+      "statement": "Planned purchase cannot enter actual purchase totals or supply actual valuation rate.",
+      "basis": [
+        "AUDIT_IA01"
+      ]
+    },
+    {
+      "id": "O-FX-002",
+      "domain": "finance",
+      "severity": "CRITICAL",
+      "statement": "Unknown monetary amount is not zero.",
+      "basis": [
+        "AUDIT_IA08"
+      ]
+    },
+    {
+      "id": "O-FX-003",
+      "domain": "finance",
+      "severity": "CRITICAL",
+      "statement": "Currency mixing without explicit conversion and provenance is prohibited.",
+      "basis": [
+        "AUDIT_IA09",
+        "AUDIT_IA16"
+      ]
+    },
+    {
+      "id": "O-FX-004",
+      "domain": "finance",
+      "severity": "HIGH",
+      "statement": "Conflicting same-grain rates are withheld; file row order is not selection policy.",
+      "basis": [
+        "AUDIT_IA04"
+      ]
+    },
+    {
+      "id": "O-FX-005",
+      "domain": "finance",
+      "severity": "HIGH",
+      "statement": "Nonfinite numeric values cannot enter financial KPIs or coverage.",
+      "basis": [
+        "AUDIT_IA02"
+      ]
+    },
+    {
+      "id": "O-LIN-001",
+      "domain": "lineage",
+      "severity": "CRITICAL",
+      "statement": "Physical source file/sheet/row lineage survives canonical transformation.",
+      "basis": [
+        "AUDIT_IA13"
+      ]
+    },
+    {
+      "id": "O-PROC-001",
+      "domain": "process",
+      "severity": "HIGH",
+      "statement": "Missing-stage gap requires an applicability contract; absence of evidence alone is not proof of mandatory missing stage.",
+      "basis": [
+        "AUDIT_IA17"
+      ]
+    },
+    {
+      "id": "O-LEGAL-001",
+      "domain": "regulatory",
+      "severity": "CRITICAL",
+      "statement": "Transport/customs/clearance evidence alone does not automatically prove discharge of FX commitment.",
+      "basis": [
+        "SRC-CBI-FX-INDEX",
+        "SRC-CBI-SEC7",
+        "AUDIT_CONTROL"
+      ]
+    },
+    {
+      "id": "O-DATA-001",
+      "domain": "source_authority",
+      "severity": "HIGH",
+      "statement": "Shared role across sources is a join candidate, not proof of authoritative comparability.",
+      "basis": [
+        "evidence.txt"
+      ]
+    },
+    {
+      "id": "O-NTSW-001",
+      "domain": "ntsw",
+      "severity": "HIGH",
+      "statement": "Material is not required for NTSW registration/allocation/commitment gate.",
+      "basis": [
+        "USER_CONTRACT",
+        "NTSW_FINAL_GATE.json"
+      ]
+    }
+  ]
+}

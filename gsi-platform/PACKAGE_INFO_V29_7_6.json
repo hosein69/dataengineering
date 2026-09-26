@@ -1,0 +1,17 @@
+{
+  "version": "29.7.6",
+  "title": "SAP Semantic DWH + Smart Chatbot + Streamlit Hardening",
+  "base": "29.7.5",
+  "changes": [
+    "SAP multi-grain adapter: raw_rows/pr_items/workflow_rows/po_items",
+    "PO as independent DWH entity and SAP native-grain facts",
+    "mixed SAP date normalization with raw-value preservation",
+    "derived SAP frames cannot create duplicate relationship evidence",
+    "operational chatbot reads published Semantic DWH with as-of/provenance",
+    "static chatbot includes compact operational PR snapshot",
+    "migrate Streamlit use_container_width to width"
+  ],
+  "primary_population": "moghavemat + ntsw",
+  "cashflow": "published Business DWH first; unchanged evidence-preserving contracts",
+  "sap_contract": "forward-compatible: full PR-item/PO-item export or legacy PR-only export without synthetic keys"
+}

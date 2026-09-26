@@ -1,0 +1,73 @@
+{
+  "final": {
+    "file_count": 927,
+    "python_files": 314
+  },
+  "audit1": {
+    "file_count": 927,
+    "python_files": 314
+  },
+  "audit2": {
+    "file_count": 928,
+    "python_files": 314
+  },
+  "final_to_audit1": {
+    "added": [],
+    "removed": [],
+    "changed": [
+      "CHANGELOG.md",
+      "PACKAGE_SHA256_FINAL.json",
+      "gsi/MANIFEST.json",
+      "gsi/factsheet.py",
+      "gsi/knowledge_desk/indexer.py",
+      "gsi/learning/anythingllm.py",
+      "tests/test_fullstack_v29_6_10.py"
+    ]
+  },
+  "audit1_to_audit2": {
+    "added": [
+      "review/feedback_triage/TRIAGE.md"
+    ],
+    "removed": [],
+    "changed": [
+      "CHANGELOG.md",
+      "PACKAGE_SHA256_FINAL.json",
+      "gsi/MANIFEST.json",
+      "gsi/factsheet.py",
+      "gsi/warehouse/store.py",
+      "tests/test_knowledge_desk_offline_v292.py",
+      "tests/test_opus_rc4_warehouse_reset.py"
+    ]
+  },
+  "feedback_integrity": {
+    "entries": 105,
+    "mismatches": []
+  },
+  "inputs": [
+    {
+      "filename": "GSI_29_8_2_RC4_OPT2_H1_FINAL_PRODUCT_20260924.zip",
+      "bytes": 5324611,
+      "sha256": "23edc7daed66febd3c3113d0327893c4b1771ab1dbe6e4c370f317cd12c2ddc8"
+    },
+    {
+      "filename": "GSI_FEEDBACK_20260924_142807.zip",
+      "bytes": 242326,
+      "sha256": "ad49470da022053edbb75c626215e332d46f0b5dc757dcf3e1aaead78a4433bf"
+    },
+    {
+      "filename": "GSI_29_8_2_RC4_OPT2_H1_AUDIT1_20260924.zip",
+      "bytes": 5385310,
+      "sha256": "e5a4f35f8c83f472ac7b372b5097c30b06c5f11f7be56c5c1d3cb685f4ff7542"
+    },
+    {
+      "filename": "TRIAGE.md",
+      "bytes": 10669,
+      "sha256": "e42b71f060c3934f018b7ec81b3f2f523838f3ab587df9b3953b9bd44c136bf1"
+    },
+    {
+      "filename": "GSI_29_8_2_RC4_OPT2_H1_AUDIT2_20260924.zip",
+      "bytes": 5392429,
+      "sha256": "3ee7b62d706f0f411bad94710e34b7ee8f75cfa700d6f0c51849719154bd2df9"
+    }
+  ]
+}

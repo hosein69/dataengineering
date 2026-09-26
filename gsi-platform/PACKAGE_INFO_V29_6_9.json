@@ -1,0 +1,9 @@
+{
+  "version": "29.6.9",
+  "base": "29.6.8",
+  "notes": "MATERIAL_SOURCE_BOUNDARY_V29_6_9_FA.md",
+  "tests": "34 passed",
+  "browser_validation": "Not completed: Chromium unavailable, download failed",
+  "doctor": "0 errors, 11 environment warnings",
+  "runtime_suite": "10 passed, 1 pre-existing Outlook static-count failure; baseline also fails"
+}

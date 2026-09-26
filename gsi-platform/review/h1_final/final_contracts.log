@@ -1,0 +1,10 @@
+....                                                                     [100%]
+=============================== warnings summary ===============================
+tests/test_contracts_report.py::test_report_keys_exist
+  /opt/pyvenv/lib/python3.13/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_contracts_report.py::test_report_keys_exist returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 1 warning in 18.65s

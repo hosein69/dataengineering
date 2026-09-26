@@ -1,0 +1,10 @@
+{
+  "knowledge_path": "\\\\SERVER\\Share\\GSI_Knowledge",
+  "lessons_path": "\\\\SERVER\\Share\\GSI_Learning",
+  "db_path": "data/knowledge_desk.sqlite",
+  "host": "0.0.0.0",
+  "port": 8765,
+  "public_url": "http://GSI-SERVER:8765",
+  "enabled": false,
+  "title": "دستیار دانش بازرگانی GSI"
+}

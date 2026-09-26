@@ -1,0 +1,144 @@
+{
+  "version": "29.8.2",
+  "release_channel": "rc4-opt2-h1-final-pattern-diagrams-20260925",
+  "base": "AUDIT2_20260924, compared bytewise against AUDIT1 and FINAL_PRODUCT",
+  "scope": "Compatibility-preserving final consolidation: live Figma alignment, three-view process intelligence, deterministic event-pattern observations, controlled offline export, validated architecture/swimlane/EFD engineering artifacts",
+  "business_logic_changed": true,
+  "source_authority_changed": false,
+  "key_changes": [
+    "Exclude planned/forecast purchases from actual FX totals and rate authority",
+    "Reject non-finite financial evidence and preserve Unknown distinct from Zero",
+    "Make allocation-rate conflicts fail-closed and row-order invariant",
+    "Expose partial credit coverage and true joint EUR/IRR coverage",
+    "Require valid REG for registration-level financial aggregation",
+    "Protect REG/REG_FILE/ORDER/BL semantic identities and require complete composite keys",
+    "Preserve Credit physical lineage and prevent PR from fabricating PO/PACK authority",
+    "Make FX event dedupe currency-aware and prevent unitless mixed-currency chain sums",
+    "Do not infer mandatory process GAP without an explicit applicability contract",
+    "Close SQLite handles for Windows reset/cleanup, honor explicit GSI_HOME, and bypass corporate proxy for localhost offline service",
+    "Keep Material non-mandatory for the NTSW-only gate and never fabricate missing ORDER/BL",
+    "Script-aware isolated diagnostics with 600s default and fail-closed incomplete gates",
+    "Dependency contract validation",
+    "Exclusive reset with retained lock inode and safe WAL fallback",
+    "Historical SQLite transaction handles closed deterministically",
+    "Evidence-aware AnythingLLM helper, citations not treated as factual verification",
+    "Live Figma Foundations synchronized into central design tokens and IRANSansWeb typography contract",
+    "Three related process views share one case scope: status/action, process path, inter-unit handoff",
+    "Transition metrics separate unique cases from occurrences and report observed median/P90 hours",
+    "Explicit handoff facts fail closed when from/to evidence is incomplete; missing is never zero",
+    "Independent deterministic event-pattern engine inspired by clips/pattern search concepts; no upstream dependency and no Persian NLP inference",
+    "Pattern matches preserve source-row lineage and are observational only, never automatic risk/violation/SLA",
+    "Offline process bundle adds process-analysis.json and keeps Outlook output draft-only",
+    "No font binary is distributed; licensed IRANSansWeb must be supplied by the organization",
+    "Diagram Maker architecture/process artifacts added as Mermaid/DOT/SVG/PNG without changing runtime business logic",
+    "Flowchart Maker swimlane documents quality-gate, pattern-config, local-export and controlled-publish branches",
+    "EW AI Flowchart EFD 2.1 operating model added with stable IDs, explicit pending human ownership facts, deterministic layout and draw.io mapping"
+  ],
+  "production_certified": false,
+  "validation": "release_evidence/final_20260925/VALIDATION.json",
+  "regulatory_rulebook_changed": false,
+  "financial_semantics_changed": true,
+  "material_required_for_ntsw_gate": false,
+  "order_bl_cross_source_gate": "OPEN_REQUIRES_REAL_BRIDGE_SOURCES",
+  "diagnostic_release": false,
+  "delivery_status": "FINAL_BUILD_VALIDATED_OPERATIONAL_ACCEPTANCE_OPEN",
+  "production_certification_reason": "Build validation passes. Production remains on HOLD until two time-bound emergency rules expired 2026-09-22 have an official successor/non-extension decision recorded, and Windows/real-source/SMB/Outlook acceptance is completed.",
+  "final_product_build": true,
+  "dwh_default": "D:\\GSI_DATA\\warehouse.sqlite",
+  "ui_default_mode": "published_snapshot_only",
+  "refresh_mode": "explicit_only",
+  "excel_export_mode": "published_snapshot_no_etl",
+  "sap_raw_grain": [
+    "SAP_SOURCE_SHEET",
+    "SAP_SOURCE_ROW"
+  ],
+  "f031_runtime_path": "CLOSED_S20_DERIVE_SIX_SENSITIVE_FIELDS",
+  "inherited_validation_not_rerun_on_real_sources": {
+    "real_ntsw_verified": true,
+    "real_ntsw_input_sha256": "380631a763bc5cc3b75d0d403c1da99dcbf89974470ab71a10e531c31878538d",
+    "offline_diagnostic": {
+      "knowledge_snapshot": "2026-09-24",
+      "frozen_independent_tests": 173,
+      "extended_diagnostic_tests": 77,
+      "independent_test_total": 250,
+      "final_results": {
+        "frozen": "173/173 PASS",
+        "extended": "77/77 PASS",
+        "affected_internal": "100/100 PASS"
+      },
+      "internal_file_sweep": {
+        "files": 90,
+        "pass_files": 80,
+        "no_test_files": 8,
+        "local_ui_blocked_files": 2,
+        "local_ui_block_reason": "streamlit not installed in build environment"
+      },
+      "internet_required": false,
+      "raw_business_rows_copied_to_feedback": false,
+      "feedback_contract": "offline_feedback/GSI_FEEDBACK_*.zip"
+    },
+    "final_validation": {
+      "frozen_independent": "173/173 PASS",
+      "extended_independent": "77/77 PASS",
+      "affected_internal": "128/128 PASS",
+      "compileall": "PASS",
+      "snapshot_excel_smoke": "PASS",
+      "streamlit_apptests": "3 ENVIRONMENT-BLOCKED (streamlit.testing unavailable in build runtime; not counted as pass)"
+    },
+    "runtime_acceptance": "FINAL_PRODUCT_GATE_20260924.json",
+    "semantic_remediation_gate": "PASS",
+    "algorithm_knowledge_verified": true
+  },
+  "real_ntsw_verified": false,
+  "runtime_acceptance": "OPEN_REQUIRES_ORGANIZATION_WINDOWS_AND_REAL_SOURCES",
+  "financial_semantics_changed_in_consolidation": false,
+  "pattern_integration": {
+    "upstream": "clips/pattern",
+    "commit": "af754685cca3713db0abc4f020f2e94467c19d85",
+    "direct_dependency": false,
+    "reason": "Upstream README marks repository unmaintained/archived; only deterministic pattern-search concepts were independently implemented.",
+    "mode": "explicit_config_observational_only"
+  },
+  "figma_validation": {
+    "verified_at": "2026-09-25",
+    "foundations": {
+      "file_key": "T9Ps72EYpriHdov9fmNFQu",
+      "node": "3:2",
+      "role": "design_source_of_truth"
+    },
+    "finance": {
+      "file_key": "oMZKwzm97e65g7nQWnUog8",
+      "node": "2:43",
+      "iransansweb_text_nodes": "27/27"
+    },
+    "cover": {
+      "file_key": "Abh0S2zpkk25P7HTNdpipa",
+      "node": "1:152",
+      "iransansweb_text_nodes": "11/11"
+    },
+    "foundations_iransansweb_text_nodes": "203/203",
+    "font_binary_distributed": false
+  },
+  "current_build_validation": {
+    "compileall": "PASS",
+    "process_targeted": "13/13 PASS",
+    "frozen_independent": "173/173 PASS",
+    "extended_diagnostic": "77/77 PASS",
+    "design_contract_checks": "93/93 PASS",
+    "full_pytest": "NOT_COMPLETED_CURRENT_RUNTIME",
+    "full_pytest_first_environment_blocker": "streamlit module unavailable for streamlit.testing AppTest",
+    "inherited_previous_package_full_suite": "575 tests / 0 failures (not re-counted as current-run evidence)",
+    "doctor": "HOLD_2_EXPIRED_TIME_BOUND_RULES",
+    "diagram_artifacts": "PASS",
+    "efd_2_1": "PASS_0_ERRORS_4_WARNINGS_PENDING_ORG_TITLES"
+  },
+  "diagram_artifacts": {
+    "diagram_maker": "design/diagrams/GSI_FINAL_ARCHITECTURE.mmd",
+    "flowchart_maker": "design/diagrams/GSI_FINAL_PROCESS_SWIMLANE.mmd",
+    "pattern_flow": "design/diagrams/GSI_PATTERN_OBSERVATION_FLOW.mmd",
+    "visual_index": "design/diagrams/GSI_FINAL_DIAGRAMS.html",
+    "ew_ai_flowchart": "design/efd/GSI_FINAL_OPERATING_MODEL.efd.json",
+    "efd_validation": "design/efd/GSI_FINAL_OPERATING_MODEL_VALIDATION.json",
+    "runtime_logic_changed_by_diagrams": false
+  }
+}

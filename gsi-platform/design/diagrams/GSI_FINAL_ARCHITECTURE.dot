@@ -1,0 +1,30 @@
+digraph G {
+rankdir=RL; graph [bgcolor="#F6F8F9", pad="0.25", nodesep="0.45", ranksep="0.65"];
+node [shape=box, style="rounded,filled", fontname="IRANSansWeb", fontsize=12, color="#0A7C86", fontcolor="#0B1F33", fillcolor="#FFFFFF", margin="0.16,0.10"];
+edge [fontname="IRANSansWeb", fontsize=10, color="#667788", fontcolor="#0B1F33", arrowsize=0.75];
+SRC [label="منابع واقعی سازمانی\nNTSW / SAP / Oracle / Finance / Customs", fillcolor="#EEF2F4", color="#0B1F33"];
+ADP [label="Reader + Adapters\nlineage + business keys", fillcolor="#EEF2F4", color="#0B1F33"];
+GATE [label="قرارداد و Quality Gate معتبر؟", shape=diamond, fillcolor="#FFF6DF", color="#C79A4A"];
+HOLD [label="HOLD / Fail-closed\nبدون جعل داده", fillcolor="#F8EAEA", color="#8B2E2E"];
+WH [label="Published Snapshot\nWarehouse / SQLite", shape=cylinder, fillcolor="#EEF2F4", color="#0B1F33"];
+UI [label="GSI Studio / Control Center", fillcolor="#E7F1F2"];
+PI [label="Process Intelligence\nStatus + Route + Handoff", fillcolor="#E7F1F2"];
+PAT [label="Pattern Observation\nصریح و فقط مشاهده‌ای", fillcolor="#E7F1F2"];
+EXP [label="Export Builder\nHTML + Excel + EML + evidence", fillcolor="#E7F1F2"];
+PUB [label="Controlled Publish\nlock → staging → hash → rename", fillcolor="#E7F1F2"];
+OUT [label="Share / Outlook Draft\nبدون Send خودکار", fillcolor="#E7F1F2"];
+DS [label="GSI Foundations\nIRANSansWeb + Navy/Teal/Gold", fillcolor="#FFFFFF", color="#C79A4A"];
+SRC -> ADP [label="data"];
+ADP -> GATE;
+GATE -> HOLD [label="خیر"];
+GATE -> WH [label="بله"];
+WH -> UI;
+WH -> PI;
+PI -> PAT;
+PI -> EXP;
+PAT -> EXP;
+EXP -> PUB;
+PUB -> OUT;
+DS -> UI [style=dashed, label="tokens"];
+DS -> EXP [style=dashed, label="tokens"];
+}

@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "taxonomy": {
+    "FX": [
+      "تخصیص ارز",
+      "تامین ارز"
+    ],
+    "CLEARANCE": [
+      "اظهار گمرکی",
+      "ترخیص"
+    ],
+    "FINANCIAL_CHAIN": [
+      "@FX",
+      "رفع تعهد"
+    ]
+  },
+  "patterns": [
+    {
+      "id": "registration-to-fx",
+      "label": "عبور مشاهده‌شده از ثبت سفارش به مرحله ارزی",
+      "constraints": [
+        {
+          "activity": "ثبت سفارش",
+          "capture": "registration"
+        },
+        {
+          "taxonomy": "FX",
+          "quantifier": "one_or_more",
+          "capture": "fx_path"
+        }
+      ]
+    }
+  ]
+}

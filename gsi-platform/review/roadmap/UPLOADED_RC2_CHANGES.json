@@ -1,0 +1,46 @@
+[
+  {
+    "path": "OPUS_FULL_SUITE.log",
+    "status": "added"
+  },
+  {
+    "path": "OPUS_CRITICAL_AND_CASHFLOW.md",
+    "status": "added"
+  },
+  {
+    "path": "tests/test_opus_critical_and_cashflow.py",
+    "status": "added"
+  },
+  {
+    "path": "gsi/config/sources.yaml",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/adapters/a60_finance.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/warehouse/reliability.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/warehouse/bridge.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/warehouse/fx_obligation.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/resolve/process_evidence.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/stages/s54_process_integrity.py",
+    "status": "modified"
+  },
+  {
+    "path": "gsi/stages/s20_derive.py",
+    "status": "modified"
+  }
+]

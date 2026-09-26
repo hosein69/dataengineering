@@ -1,0 +1,2065 @@
+{
+  "schemaVersion": "efd-2.1",
+  "workspace": {
+    "id": "ORG-GSI-WORKSPACE",
+    "name": "GSI — Global Sourcing Intelligence"
+  },
+  "project": {
+    "id": "PRJ-GSI-FINAL",
+    "workspaceId": "ORG-GSI-WORKSPACE",
+    "name": "GSI Final Offline Process Package 2026-09-25"
+  },
+  "organizationUnits": [
+    {
+      "id": "UNIT-GSI-OPS",
+      "name": "حوزه بهره‌برداری GSI — نام رسمی واحد در استقرار تعیین شود",
+      "typeCode": "pending_organization_unit",
+      "active": true,
+      "order": 0,
+      "colorToken": "#0A7C86"
+    },
+    {
+      "id": "UNIT-GSI-GOV",
+      "name": "حوزه حاکمیت و پذیرش — نام رسمی واحد در استقرار تعیین شود",
+      "typeCode": "pending_organization_unit",
+      "active": true,
+      "order": 1,
+      "colorToken": "#C79A4A"
+    }
+  ],
+  "positions": [
+    {
+      "id": "POS-GSI-USER",
+      "name": "کاربر مجاز GSI — عنوان شغلی دقیق در استقرار تعیین شود",
+      "unitIds": [
+        "UNIT-GSI-OPS"
+      ],
+      "active": true,
+      "order": 0,
+      "functionName": "بهره‌برداری از GSI"
+    },
+    {
+      "id": "POS-GSI-GOV",
+      "name": "مسئول پذیرش/حاکمیت — عنوان دقیق در استقرار تعیین شود",
+      "unitIds": [
+        "UNIT-GSI-GOV"
+      ],
+      "active": true,
+      "order": 1,
+      "functionName": "پذیرش و حاکمیت"
+    }
+  ],
+  "systemActors": [
+    {
+      "id": "SYS-GSI-CORE",
+      "name": "GSI Core Runtime",
+      "active": true,
+      "unitId": "UNIT-GSI-OPS"
+    },
+    {
+      "id": "SYS-GSI-PROC",
+      "name": "GSI Process Intelligence",
+      "active": true,
+      "unitId": "UNIT-GSI-OPS"
+    },
+    {
+      "id": "SYS-GSI-FS",
+      "name": "Local / Shared File System",
+      "active": true,
+      "unitId": "UNIT-GSI-OPS"
+    },
+    {
+      "id": "SYS-GSI-OUTLOOK",
+      "name": "Outlook Draft Surface",
+      "active": true,
+      "unitId": "UNIT-GSI-OPS"
+    }
+  ],
+  "process": {
+    "id": "PROC-GSI-OFFLINE-REPORTING",
+    "projectId": "PRJ-GSI-FINAL",
+    "name": "گردش کنترل‌شده تحلیل و انتشار GSI",
+    "modelKind": "as_is",
+    "stages": [
+      {
+        "id": "STG-GSI-1",
+        "name": "شروع و دامنه",
+        "order": 0,
+        "active": true
+      },
+      {
+        "id": "STG-GSI-2",
+        "name": "اعتبارسنجی و Snapshot",
+        "order": 1,
+        "active": true
+      },
+      {
+        "id": "STG-GSI-3",
+        "name": "تحلیل فرآیند",
+        "order": 2,
+        "active": true
+      },
+      {
+        "id": "STG-GSI-4",
+        "name": "ساخت خروجی",
+        "order": 3,
+        "active": true
+      },
+      {
+        "id": "STG-GSI-5",
+        "name": "انتشار کنترل‌شده",
+        "order": 4,
+        "active": true
+      },
+      {
+        "id": "STG-GSI-6",
+        "name": "پایان",
+        "order": 5,
+        "active": true
+      }
+    ],
+    "nodes": [
+      {
+        "id": "EVT-GSI-START",
+        "type": "start",
+        "name": "شروع درخواست",
+        "stageId": "STG-GSI-1",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "TASK-GSI-SCOPE",
+        "type": "task",
+        "name": "انتخاب دامنه و اجرا",
+        "stageId": "STG-GSI-1",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "position",
+            "participantId": "POS-GSI-USER",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS",
+            "confirmationStatus": "pending"
+          }
+        ],
+        "semanticStatus": "pending"
+      },
+      {
+        "id": "SYS-GSI-VALIDATE",
+        "type": "system_action",
+        "name": "اعتبارسنجی منبع",
+        "stageId": "STG-GSI-2",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-CORE",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "DEC-GSI-GATE",
+        "type": "decision",
+        "name": "Quality Gate عبور کرد؟",
+        "stageId": "STG-GSI-2",
+        "unitIds": [
+          "UNIT-GSI-GOV"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-CORE",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          },
+          {
+            "participantType": "position",
+            "participantId": "POS-GSI-GOV",
+            "roles": [
+              "A"
+            ],
+            "unitId": "UNIT-GSI-GOV",
+            "confirmationStatus": "pending"
+          }
+        ],
+        "semanticStatus": "pending"
+      },
+      {
+        "id": "EXC-GSI-HOLD",
+        "type": "exception",
+        "name": "توقف Fail-closed",
+        "stageId": "STG-GSI-2",
+        "unitIds": [
+          "UNIT-GSI-GOV"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-CORE",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          },
+          {
+            "participantType": "position",
+            "participantId": "POS-GSI-GOV",
+            "roles": [
+              "I"
+            ],
+            "unitId": "UNIT-GSI-GOV",
+            "confirmationStatus": "pending"
+          }
+        ],
+        "semanticStatus": "pending"
+      },
+      {
+        "id": "SYS-GSI-SNAPSHOT",
+        "type": "system_action",
+        "name": "انتشار Snapshot معتبر",
+        "stageId": "STG-GSI-2",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-CORE",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "SYS-GSI-PROFILE",
+        "type": "system_action",
+        "name": "محاسبه سه نمای مرتبط",
+        "stageId": "STG-GSI-3",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "DEC-GSI-PATTERN",
+        "type": "decision",
+        "name": "Pattern config فعال است؟",
+        "stageId": "STG-GSI-3",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "SYS-GSI-PATTERN-VALIDATE",
+        "type": "system_action",
+        "name": "اعتبارسنجی config الگو",
+        "stageId": "STG-GSI-3",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "DEC-GSI-PATTERN-VALID",
+        "type": "decision",
+        "name": "Pattern config معتبر است؟",
+        "stageId": "STG-GSI-3",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "SYS-GSI-PATTERN-MATCH",
+        "type": "system_action",
+        "name": "ثبت Match مشاهده‌ای",
+        "stageId": "STG-GSI-3",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "SYS-GSI-BUNDLE",
+        "type": "system_action",
+        "name": "ساخت HTML / Excel / EML / manifest",
+        "stageId": "STG-GSI-4",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-PROC",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "DEC-GSI-PUBLISH",
+        "type": "decision",
+        "name": "انتشار شبکه خواسته شده؟",
+        "stageId": "STG-GSI-5",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "position",
+            "participantId": "POS-GSI-USER",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS",
+            "confirmationStatus": "pending"
+          }
+        ],
+        "semanticStatus": "pending"
+      },
+      {
+        "id": "DEC-GSI-PAUSED",
+        "type": "decision",
+        "name": "Automation و Share باز است؟",
+        "stageId": "STG-GSI-5",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-FS",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "EXC-GSI-PUBLISH-HOLD",
+        "type": "exception",
+        "name": "توقف انتشار",
+        "stageId": "STG-GSI-5",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-FS",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "SYS-GSI-PUBLISH",
+        "type": "system_action",
+        "name": "lock / staging / hash / rename",
+        "stageId": "STG-GSI-5",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [
+          {
+            "participantType": "system",
+            "participantId": "SYS-GSI-FS",
+            "roles": [
+              "R"
+            ],
+            "unitId": "UNIT-GSI-OPS"
+          }
+        ],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "EVT-GSI-END-LOCAL",
+        "type": "end",
+        "name": "پایان محلی",
+        "stageId": "STG-GSI-6",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "EVT-GSI-END-PUBLISHED",
+        "type": "end",
+        "name": "پایان منتشرشده",
+        "stageId": "STG-GSI-6",
+        "unitIds": [
+          "UNIT-GSI-OPS"
+        ],
+        "raci": [],
+        "semanticStatus": "confirmed"
+      },
+      {
+        "id": "EVT-GSI-END-HOLD",
+        "type": "end",
+        "name": "پایان با HOLD",
+        "stageId": "STG-GSI-6",
+        "unitIds": [
+          "UNIT-GSI-GOV"
+        ],
+        "raci": [],
+        "semanticStatus": "confirmed"
+      }
+    ],
+    "edges": [
+      {
+        "id": "EDGE-GSI-01",
+        "sourceId": "EVT-GSI-START",
+        "targetId": "TASK-GSI-SCOPE",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-02",
+        "sourceId": "TASK-GSI-SCOPE",
+        "targetId": "SYS-GSI-VALIDATE",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-03",
+        "sourceId": "SYS-GSI-VALIDATE",
+        "targetId": "DEC-GSI-GATE",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-04Y",
+        "sourceId": "DEC-GSI-GATE",
+        "targetId": "SYS-GSI-SNAPSHOT",
+        "type": "decision_yes",
+        "label": "عبور"
+      },
+      {
+        "id": "EDGE-GSI-04N",
+        "sourceId": "DEC-GSI-GATE",
+        "targetId": "EXC-GSI-HOLD",
+        "type": "decision_no",
+        "label": "رد"
+      },
+      {
+        "id": "EDGE-GSI-05H",
+        "sourceId": "EXC-GSI-HOLD",
+        "targetId": "EVT-GSI-END-HOLD",
+        "type": "exception",
+        "label": "بدون جعل داده"
+      },
+      {
+        "id": "EDGE-GSI-05",
+        "sourceId": "SYS-GSI-SNAPSHOT",
+        "targetId": "SYS-GSI-PROFILE",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-06",
+        "sourceId": "SYS-GSI-PROFILE",
+        "targetId": "DEC-GSI-PATTERN",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-07N",
+        "sourceId": "DEC-GSI-PATTERN",
+        "targetId": "SYS-GSI-BUNDLE",
+        "type": "decision_no",
+        "label": "غیرفعال"
+      },
+      {
+        "id": "EDGE-GSI-07Y",
+        "sourceId": "DEC-GSI-PATTERN",
+        "targetId": "SYS-GSI-PATTERN-VALIDATE",
+        "type": "decision_yes",
+        "label": "فعال"
+      },
+      {
+        "id": "EDGE-GSI-08",
+        "sourceId": "SYS-GSI-PATTERN-VALIDATE",
+        "targetId": "DEC-GSI-PATTERN-VALID",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-09Y",
+        "sourceId": "DEC-GSI-PATTERN-VALID",
+        "targetId": "SYS-GSI-PATTERN-MATCH",
+        "type": "decision_yes",
+        "label": "معتبر"
+      },
+      {
+        "id": "EDGE-GSI-09N",
+        "sourceId": "DEC-GSI-PATTERN-VALID",
+        "targetId": "EXC-GSI-HOLD",
+        "type": "decision_no",
+        "label": "نامعتبر"
+      },
+      {
+        "id": "EDGE-GSI-10",
+        "sourceId": "SYS-GSI-PATTERN-MATCH",
+        "targetId": "SYS-GSI-BUNDLE",
+        "type": "sequence",
+        "label": "مشاهده + lineage"
+      },
+      {
+        "id": "EDGE-GSI-11",
+        "sourceId": "SYS-GSI-BUNDLE",
+        "targetId": "DEC-GSI-PUBLISH",
+        "type": "sequence"
+      },
+      {
+        "id": "EDGE-GSI-12N",
+        "sourceId": "DEC-GSI-PUBLISH",
+        "targetId": "EVT-GSI-END-LOCAL",
+        "type": "decision_no",
+        "label": "محلی"
+      },
+      {
+        "id": "EDGE-GSI-12Y",
+        "sourceId": "DEC-GSI-PUBLISH",
+        "targetId": "DEC-GSI-PAUSED",
+        "type": "decision_yes",
+        "label": "شبکه"
+      },
+      {
+        "id": "EDGE-GSI-13N",
+        "sourceId": "DEC-GSI-PAUSED",
+        "targetId": "EXC-GSI-PUBLISH-HOLD",
+        "type": "decision_no",
+        "label": "paused / disabled"
+      },
+      {
+        "id": "EDGE-GSI-13Y",
+        "sourceId": "DEC-GSI-PAUSED",
+        "targetId": "SYS-GSI-PUBLISH",
+        "type": "decision_yes",
+        "label": "باز"
+      },
+      {
+        "id": "EDGE-GSI-14H",
+        "sourceId": "EXC-GSI-PUBLISH-HOLD",
+        "targetId": "EVT-GSI-END-HOLD",
+        "type": "exception",
+        "label": "انتشار انجام نشد"
+      },
+      {
+        "id": "EDGE-GSI-14",
+        "sourceId": "SYS-GSI-PUBLISH",
+        "targetId": "EVT-GSI-END-PUBLISHED",
+        "type": "sequence"
+      }
+    ]
+  },
+  "layout": {
+    "processId": "PROC-GSI-OFFLINE-REPORTING",
+    "items": [
+      {
+        "efdId": "EVT-GSI-START",
+        "x": 80,
+        "y": 60,
+        "width": 130,
+        "height": 54,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "ellipse",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#EEF2F4",
+        "strokeColor": "#0B1F33",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "TASK-GSI-SCOPE",
+        "x": 300,
+        "y": 50,
+        "width": 220,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-VALIDATE",
+        "x": 300,
+        "y": 180,
+        "width": 220,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "DEC-GSI-GATE",
+        "x": 620,
+        "y": 170,
+        "width": 190,
+        "height": 90,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "decision",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFF6DF",
+        "strokeColor": "#C79A4A",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "EXC-GSI-HOLD",
+        "x": 900,
+        "y": 170,
+        "width": 210,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#F8EAEA",
+        "strokeColor": "#8B2E2E",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-SNAPSHOT",
+        "x": 620,
+        "y": 300,
+        "width": 220,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-PROFILE",
+        "x": 300,
+        "y": 430,
+        "width": 240,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "DEC-GSI-PATTERN",
+        "x": 620,
+        "y": 420,
+        "width": 190,
+        "height": 90,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "decision",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFF6DF",
+        "strokeColor": "#C79A4A",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-PATTERN-VALIDATE",
+        "x": 900,
+        "y": 410,
+        "width": 230,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "DEC-GSI-PATTERN-VALID",
+        "x": 1220,
+        "y": 400,
+        "width": 190,
+        "height": 90,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "decision",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFF6DF",
+        "strokeColor": "#C79A4A",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-PATTERN-MATCH",
+        "x": 1480,
+        "y": 410,
+        "width": 230,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-BUNDLE",
+        "x": 620,
+        "y": 560,
+        "width": 260,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "DEC-GSI-PUBLISH",
+        "x": 620,
+        "y": 690,
+        "width": 200,
+        "height": 90,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "decision",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFF6DF",
+        "strokeColor": "#C79A4A",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "DEC-GSI-PAUSED",
+        "x": 920,
+        "y": 680,
+        "width": 220,
+        "height": 90,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "decision",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFF6DF",
+        "strokeColor": "#C79A4A",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "EXC-GSI-PUBLISH-HOLD",
+        "x": 1220,
+        "y": 690,
+        "width": 220,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#F8EAEA",
+        "strokeColor": "#8B2E2E",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "SYS-GSI-PUBLISH",
+        "x": 1220,
+        "y": 810,
+        "width": 250,
+        "height": 74,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "process",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#FFFFFF",
+        "strokeColor": "#0A7C86",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 500,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "EVT-GSI-END-LOCAL",
+        "x": 300,
+        "y": 930,
+        "width": 150,
+        "height": 54,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "ellipse",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#EEF2F4",
+        "strokeColor": "#0B1F33",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "EVT-GSI-END-PUBLISHED",
+        "x": 1220,
+        "y": 930,
+        "width": 180,
+        "height": 54,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "ellipse",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#EEF2F4",
+        "strokeColor": "#0B1F33",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      },
+      {
+        "efdId": "EVT-GSI-END-HOLD",
+        "x": 900,
+        "y": 930,
+        "width": 170,
+        "height": 54,
+        "zIndex": 1,
+        "locked": false,
+        "autoFitText": true,
+        "shapeId": "ellipse",
+        "shapeLibrary": "efd",
+        "shapeVersion": "2.1",
+        "rotation": 0,
+        "fillColor": "#EEF2F4",
+        "strokeColor": "#0B1F33",
+        "strokeWidth": 1.5,
+        "lineStyle": "solid",
+        "opacity": 1,
+        "shadow": false,
+        "textStyle": {
+          "fontFamily": "IRANSansWeb",
+          "fontSize": 12,
+          "fontWeight": 700,
+          "color": "#0B1F33",
+          "horizontalAlign": "center",
+          "verticalAlign": "middle",
+          "lineHeight": 1.55,
+          "letterSpacing": 0,
+          "paddingTop": 8,
+          "paddingRight": 10,
+          "paddingBottom": 8,
+          "paddingLeft": 10,
+          "maxLines": 4,
+          "wrap": true,
+          "overflow": "ellipsis"
+        }
+      }
+    ],
+    "direction": "right_to_left",
+    "viewMode": "overview",
+    "overview": {
+      "id": "OVR-GSI-FINAL",
+      "layoutVersion": "efd-overview-3",
+      "titleHeight": 88,
+      "headerHeight": 58,
+      "stageHeaderWidth": 160,
+      "unitColumnWidth": 240,
+      "raciPositionWidth": 90,
+      "raciMinimumWidth": 120,
+      "specificationWidth": 300,
+      "footerHeight": 90,
+      "unitColumnIds": [
+        "UNIT-GSI-OPS",
+        "UNIT-GSI-GOV"
+      ],
+      "stageRows": [
+        {
+          "stageId": "STG-GSI-1",
+          "order": 0,
+          "height": 150,
+          "collapsed": false
+        },
+        {
+          "stageId": "STG-GSI-2",
+          "order": 1,
+          "height": 150,
+          "collapsed": false
+        },
+        {
+          "stageId": "STG-GSI-3",
+          "order": 2,
+          "height": 150,
+          "collapsed": false
+        },
+        {
+          "stageId": "STG-GSI-4",
+          "order": 3,
+          "height": 150,
+          "collapsed": false
+        },
+        {
+          "stageId": "STG-GSI-5",
+          "order": 4,
+          "height": 150,
+          "collapsed": false
+        },
+        {
+          "stageId": "STG-GSI-6",
+          "order": 5,
+          "height": 150,
+          "collapsed": false
+        }
+      ],
+      "headerTextStyle": {
+        "fontFamily": "IRANSansWeb",
+        "fontSize": 14,
+        "fontWeight": 700,
+        "color": "#0B1F33"
+      },
+      "stageTextStyle": {
+        "fontFamily": "IRANSansWeb",
+        "fontSize": 13,
+        "fontWeight": 700,
+        "color": "#0B1F33"
+      }
+    },
+    "organizationBoard": {
+      "id": "BOARD-GSI-FINAL",
+      "orientation": "horizontal",
+      "unitLaneIds": [
+        "LANE-GSI-OPS",
+        "LANE-GSI-GOV"
+      ],
+      "unitHeaderWidth": 180,
+      "workflowAreaWidth": 1800,
+      "raciPanelWidth": 320,
+      "headerHeight": 56,
+      "unassignedLaneHeight": 100,
+      "showUnassignedLane": false
+    },
+    "unitLanes": [
+      {
+        "id": "LANE-GSI-OPS",
+        "unitId": "UNIT-GSI-OPS",
+        "order": 0,
+        "height": 260,
+        "collapsed": false,
+        "migrationSource": "organization_unit"
+      },
+      {
+        "id": "LANE-GSI-GOV",
+        "unitId": "UNIT-GSI-GOV",
+        "order": 1,
+        "height": 180,
+        "collapsed": false,
+        "migrationSource": "organization_unit"
+      }
+    ],
+    "edges": [
+      {
+        "efdId": "EDGE-GSI-01",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-02",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-03",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-04Y",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-04N",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-05H",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-05",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-06",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-07N",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-07Y",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-08",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-09Y",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-09N",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-10",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-11",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-12N",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-12Y",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-13N",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-13Y",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-14H",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      },
+      {
+        "efdId": "EDGE-GSI-14",
+        "sourceAnchor": "right",
+        "targetAnchor": "left",
+        "strokeWidth": 1.5,
+        "arrowSize": 8,
+        "startArrow": "none",
+        "endArrow": "classic",
+        "lineStyle": "solid",
+        "pathType": "orthogonal",
+        "routingMode": "auto",
+        "cornerRadius": 8,
+        "color": "#667788",
+        "opacity": 1,
+        "labelPosition": 0.5,
+        "labelFontSize": 10,
+        "labelBold": false,
+        "zIndex": 0,
+        "locked": false
+      }
+    ]
+  },
+  "drawioMapping": {
+    "mappingVersion": "efd-drawio-1",
+    "processId": "PROC-GSI-OFFLINE-REPORTING",
+    "cells": [
+      {
+        "efdId": "EVT-GSI-START",
+        "cellId": "cell-evt-gsi-start",
+        "objectType": "start"
+      },
+      {
+        "efdId": "TASK-GSI-SCOPE",
+        "cellId": "cell-task-gsi-scope",
+        "objectType": "task"
+      },
+      {
+        "efdId": "SYS-GSI-VALIDATE",
+        "cellId": "cell-sys-gsi-validate",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "DEC-GSI-GATE",
+        "cellId": "cell-dec-gsi-gate",
+        "objectType": "decision"
+      },
+      {
+        "efdId": "EXC-GSI-HOLD",
+        "cellId": "cell-exc-gsi-hold",
+        "objectType": "exception"
+      },
+      {
+        "efdId": "SYS-GSI-SNAPSHOT",
+        "cellId": "cell-sys-gsi-snapshot",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "SYS-GSI-PROFILE",
+        "cellId": "cell-sys-gsi-profile",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "DEC-GSI-PATTERN",
+        "cellId": "cell-dec-gsi-pattern",
+        "objectType": "decision"
+      },
+      {
+        "efdId": "SYS-GSI-PATTERN-VALIDATE",
+        "cellId": "cell-sys-gsi-pattern-validate",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "DEC-GSI-PATTERN-VALID",
+        "cellId": "cell-dec-gsi-pattern-valid",
+        "objectType": "decision"
+      },
+      {
+        "efdId": "SYS-GSI-PATTERN-MATCH",
+        "cellId": "cell-sys-gsi-pattern-match",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "SYS-GSI-BUNDLE",
+        "cellId": "cell-sys-gsi-bundle",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "DEC-GSI-PUBLISH",
+        "cellId": "cell-dec-gsi-publish",
+        "objectType": "decision"
+      },
+      {
+        "efdId": "DEC-GSI-PAUSED",
+        "cellId": "cell-dec-gsi-paused",
+        "objectType": "decision"
+      },
+      {
+        "efdId": "EXC-GSI-PUBLISH-HOLD",
+        "cellId": "cell-exc-gsi-publish-hold",
+        "objectType": "exception"
+      },
+      {
+        "efdId": "SYS-GSI-PUBLISH",
+        "cellId": "cell-sys-gsi-publish",
+        "objectType": "system_action"
+      },
+      {
+        "efdId": "EVT-GSI-END-LOCAL",
+        "cellId": "cell-evt-gsi-end-local",
+        "objectType": "end"
+      },
+      {
+        "efdId": "EVT-GSI-END-PUBLISHED",
+        "cellId": "cell-evt-gsi-end-published",
+        "objectType": "end"
+      },
+      {
+        "efdId": "EVT-GSI-END-HOLD",
+        "cellId": "cell-evt-gsi-end-hold",
+        "objectType": "end"
+      },
+      {
+        "efdId": "EDGE-GSI-01",
+        "cellId": "cell-edge-gsi-01",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-02",
+        "cellId": "cell-edge-gsi-02",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-03",
+        "cellId": "cell-edge-gsi-03",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-04Y",
+        "cellId": "cell-edge-gsi-04y",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-04N",
+        "cellId": "cell-edge-gsi-04n",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-05H",
+        "cellId": "cell-edge-gsi-05h",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-05",
+        "cellId": "cell-edge-gsi-05",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-06",
+        "cellId": "cell-edge-gsi-06",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-07N",
+        "cellId": "cell-edge-gsi-07n",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-07Y",
+        "cellId": "cell-edge-gsi-07y",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-08",
+        "cellId": "cell-edge-gsi-08",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-09Y",
+        "cellId": "cell-edge-gsi-09y",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-09N",
+        "cellId": "cell-edge-gsi-09n",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-10",
+        "cellId": "cell-edge-gsi-10",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-11",
+        "cellId": "cell-edge-gsi-11",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-12N",
+        "cellId": "cell-edge-gsi-12n",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-12Y",
+        "cellId": "cell-edge-gsi-12y",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-13N",
+        "cellId": "cell-edge-gsi-13n",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-13Y",
+        "cellId": "cell-edge-gsi-13y",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-14H",
+        "cellId": "cell-edge-gsi-14h",
+        "objectType": "edge"
+      },
+      {
+        "efdId": "EDGE-GSI-14",
+        "cellId": "cell-edge-gsi-14",
+        "objectType": "edge"
+      }
+    ]
+  }
+}

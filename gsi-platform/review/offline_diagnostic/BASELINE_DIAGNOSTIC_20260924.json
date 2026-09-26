@@ -1,0 +1,40 @@
+{
+  "target": "GSI_29_8_2_RC4_OPT2_H1_NTSW_VERIFIED_FINAL",
+  "frozen_independent": {
+    "total": 173,
+    "passed": 130,
+    "failed": 43,
+    "known_finding_families": [
+      "IA01",
+      "IA02",
+      "IA03",
+      "IA04",
+      "IA05",
+      "IA06",
+      "IA07",
+      "IA08",
+      "IA09",
+      "IA10",
+      "IA11",
+      "IA12",
+      "IA13",
+      "IA14",
+      "IA15",
+      "IA16",
+      "IA17"
+    ],
+    "unmapped_failures": 0
+  },
+  "extended_diagnostic": {
+    "total": 77,
+    "passed": 44,
+    "failed": 33
+  },
+  "combined_independent_extended": {
+    "total": 250,
+    "passed": 174,
+    "failed": 76
+  },
+  "purpose": "diagnostic baseline before repair; not a production certificate",
+  "knowledge_snapshot": "2026-09-24"
+}

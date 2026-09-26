@@ -1,0 +1,14 @@
+{
+  "of_rows": 21,
+  "registrations": 3,
+  "missing_payment_ids": 21,
+  "rates_rows": 1462,
+  "rates_min_date": "2020-01-02 00:00:00",
+  "rates_max_date": "2025-09-12 00:00:00",
+  "IRR_rate_present": false,
+  "source_review": {
+    "notebook": "Latest row reused for historical conversions; FIFO association is inferred, not bank evidence.",
+    "mashreq": "Separate transfer from invoice allocation; supplier wallet by currency. No external code copied.",
+    "pdf": "2024 presentation; not a verified current legal rule."
+  }
+}

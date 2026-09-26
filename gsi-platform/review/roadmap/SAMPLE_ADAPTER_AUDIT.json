@@ -1,0 +1,145 @@
+{
+  "sap": {
+    "input_samples": 150,
+    "frames": {
+      "pr_items": 30,
+      "po_items": 30,
+      "workflow_rows": 30,
+      "inbound_deliveries": 30,
+      "goods_receipts": 30,
+      "raw_rows": 150,
+      "main": 24
+    },
+    "key_coverage": {
+      "pr_items": {
+        "KEY_PR": 30,
+        "KEY_PO": 0,
+        "KEY_MATERIAL": 30,
+        "KEY_REG_FILE": 0
+      },
+      "po_items": {
+        "KEY_PO": 30,
+        "KEY_PR": 24,
+        "KEY_MATERIAL": 30,
+        "KEY_REG_FILE": 23,
+        "KEY_ORDER": 0
+      },
+      "workflow_rows": {
+        "KEY_PR": 30,
+        "KEY_PO": 0,
+        "KEY_MATERIAL": 29,
+        "KEY_REG_FILE": 0
+      },
+      "inbound_deliveries": {
+        "KEY_MATERIAL": 29,
+        "KEY_BL": 28,
+        "KEY_PO": 29
+      },
+      "goods_receipts": {
+        "KEY_PO": 30,
+        "KEY_MATERIAL": 30
+      },
+      "raw_rows": {
+        "KEY_PR": 84,
+        "KEY_PO": 89,
+        "KEY_MATERIAL": 148,
+        "KEY_REG_FILE": 23,
+        "KEY_ORDER": 0,
+        "KEY_BL": 28
+      },
+      "main": {
+        "KEY_PR": 24,
+        "KEY_PO": 0,
+        "KEY_MATERIAL": 24,
+        "KEY_REG_FILE": 0
+      }
+    }
+  },
+  "moghavemat": {
+    "input_samples": 30,
+    "frames": {
+      "main": 18,
+      "inventory": 28,
+      "order_material_pr_item": 24,
+      "lines": 30
+    }
+  },
+  "oracle": {
+    "input_samples": 60,
+    "frames": {
+      "main": 58
+    }
+  },
+  "ntsw": {
+    "input_samples": 196,
+    "frames": {
+      "import_license": 30,
+      "commitment_rows": 30,
+      "commitment_quarantine": 0,
+      "commitment": 25,
+      "allocation_history": 30,
+      "allocation_quarantine": 0,
+      "allocation_rows": 30,
+      "allocation": 23
+    }
+  },
+  "ilappend": {
+    "input_samples": 30,
+    "frames": {
+      "main": 30
+    }
+  },
+  "abbasi": {
+    "input_samples": 30,
+    "frames": {
+      "main": 30
+    }
+  },
+  "sata": {
+    "input_samples": 30,
+    "frames": {
+      "main": 30
+    }
+  },
+  "fx_transaction": {
+    "input_samples": 60,
+    "frames": {
+      "main": 59,
+      "quarantine": 1,
+      "rates": 6
+    },
+    "key_coverage": {
+      "main": {
+        "KEY_REG": 59,
+        "KEY_ORDER": 59,
+        "KEY_BL": 0
+      },
+      "quarantine": {},
+      "rates": {}
+    }
+  },
+  "clearance": {
+    "input_samples": 90,
+    "frames": {
+      "main": 90
+    }
+  },
+  "cotage": {
+    "input_samples": 30,
+    "frames": {
+      "main": 30
+    }
+  },
+  "credit": {
+    "input_samples": 30,
+    "frames": {
+      "main": 30
+    },
+    "key_coverage": {
+      "main": {
+        "KEY_REG": 28,
+        "KEY_ORDER": 30
+      }
+    }
+  }
+}

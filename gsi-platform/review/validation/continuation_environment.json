@@ -1,0 +1,11 @@
+{
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "packages": {
+    "pandas": "2.2.3",
+    "numpy": "2.3.5",
+    "streamlit": "1.49.1",
+    "pytest": "9.1.1",
+    "openpyxl": "3.1.5"
+  }
+}

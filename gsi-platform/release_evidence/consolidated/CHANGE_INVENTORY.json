@@ -1,0 +1,25 @@
+{
+  "changed": [
+    "ANYTHINGLLM_INTEGRATION_FA.md",
+    "PACKAGE_INFO.json",
+    "RUN_OFFLINE_DIAGNOSTIC.cmd",
+    "RUN_OFFLINE_DIAGNOSTIC.ps1",
+    "gsi/factsheet.py",
+    "gsi/learning/anythingllm.py",
+    "gsi/warehouse/historical_store.py",
+    "gsi/warehouse/store.py",
+    "offline_validation/run_offline_diagnostic.py",
+    "offline_validation/source_probe.py",
+    "run_all_tests.py",
+    "tests/conftest.py",
+    "tests/legacy_test_v26_18_charts_delivery_persistence.py",
+    "tests/test_opus_rc4_warehouse_reset.py",
+    "tests/test_personalization_v27_1.py"
+  ],
+  "added": [
+    "START_HERE_CONSOLIDATED_FA.md",
+    "requirements-validated.txt",
+    "tests/test_consolidated_release_hardening.py"
+  ],
+  "removed": []
+}

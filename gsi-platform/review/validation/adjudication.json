@@ -1,0 +1,426 @@
+[
+  {
+    "id": "F001",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Published readers use connection-pinned typed run snapshots; blocked R2 cannot change R1. Legacy mutable state is not certified as a historical snapshot.",
+    "modules": "warehouse/snapshots.py; warehouse/store.py; knowledge_desk/operational.py; app/warehouse_view.py",
+    "test": "test_blocked_run_isolation"
+  },
+  {
+    "id": "F002",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Source representations retain run membership and physical multiplicity in typed snapshots; cashflow reads published run.",
+    "modules": "warehouse/business_dwh.py; cashflow/dwh.py",
+    "test": "test_blocked_run_isolation"
+  },
+  {
+    "id": "F003",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Current projection is rebuilt per run; prior snapshots retained. Omission is NOT a deletion event. Full-export versus delta semantics still require per-source contracts.",
+    "modules": "warehouse/business_dwh.py; warehouse/snapshots.py",
+    "test": "test_published_omission_preserves_history"
+  },
+  {
+    "id": "F004",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Material/Employee do not form components; material does not override a concrete case attachment. Shared PR/REG and persistent case identities still require object-centric cardinality policy.",
+    "modules": "resolve/process_evidence.py",
+    "test": "test_shared_dimensions_do_not_merge"
+  },
+  {
+    "id": "F005",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Content hash plus ordinal preserves duplicate physical representations. This is run/frame ordinal lineage, not a fabricated physical Excel row number.",
+    "modules": "resolve/process_evidence.py; warehouse/business_dwh.py",
+    "test": "test_duplicate_orphan_preservation"
+  },
+  {
+    "id": "F006",
+    "verdict": "REJECT",
+    "closure": "NO_CHANGE",
+    "change": "The cited moghavemat/main example lacks canonical PR/Material columns. That concrete alleged direct relation is not produced. This does not certify every derived frame; representation counting remains a separate limitation.",
+    "modules": "warehouse/business_dwh.py:_source_business_keys; adapters/moghavemat.py:_aggregate",
+    "test": "Existing moghavemat relation tests; static key-map review"
+  },
+  {
+    "id": "F007",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "Keep REG compatibility grain; mixed/unknown-currency summary amounts become NaN while request ledger retains individual currencies. Do not add a REG×currency frame to existing one-to-one joins.",
+    "modules": "adapters/a50_ntsw.py",
+    "test": "test_mixed_currency_allocation_unknown_and_native_intact"
+  },
+  {
+    "id": "F008",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Rejection and negation take precedence over positive substrings and allocation dates.",
+    "modules": "adapters/a50_ntsw.py",
+    "test": "test_mixed_currency_allocation_unknown_and_native_intact"
+  },
+  {
+    "id": "F009",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Preserve commitment_rows; identical native IDs deduplicate in accepted projection; differing monetary snapshots quarantine. Latest-state contract remains unresolved; direct private _agg_commitment helper still assumes validated input for conflicting IDs.",
+    "modules": "adapters/a50_ntsw.py",
+    "test": "Existing NTSW tests; native branch inspection"
+  },
+  {
+    "id": "F010",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Absent loaded sources emit SOURCE_COVERAGE_GAP. This is coverage, never failure proof. Mandatory source/frame inventory and disabled-source distinction remain incomplete.",
+    "modules": "warehouse/reliability.py",
+    "test": "Existing reliability and source continuity tests"
+  },
+  {
+    "id": "F011",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Abbasi enrichment failures degrade, not block; NTSW commitment rows quarantine without erasing licence/allocation. Core NTSW/IL source exceptions still block global publication. No per-domain publication protocol added.",
+    "modules": "adapters/a50_ntsw.py; warehouse/reliability.py",
+    "test": "Existing failure isolation and process tests"
+  },
+  {
+    "id": "F012",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Run calculations without file publication; after passing checks write run-addressed reports/extracts/audit. Pointer advances only on completed build. Failed generation may leave unreferenced run files, never overwrites earlier official files.",
+    "modules": "warehouse/bridge.py; pipeline.py",
+    "test": "test_missing_process_summary_blocks_before_files; test_validation"
+  },
+  {
+    "id": "F013",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Existing cross-sheet max policy is explicit in code and tests. Preserve it pending business approval, add per-field SOURCE_SHEETS lineage. This remains a derived composite, not a native Oracle row.",
+    "modules": "adapters/a40_oracle.py",
+    "test": "Existing Oracle multisheet and union tests"
+  },
+  {
+    "id": "F014",
+    "verdict": "DEFER_NEEDS_DATA",
+    "closure": "OPEN",
+    "change": "Need physical inventory bucket IDs, UOM, effective dates and duplicate semantics before changing within-sheet sum. No stock aggregation rewrite.",
+    "modules": "adapters/a40_oracle.py",
+    "test": "Synthetic tests do not prove actual bucket additivity"
+  },
+  {
+    "id": "F015",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "DOCUMENTED",
+    "change": "Flat report remains representative compatibility grain; normalized PO facts and OMPI bridge retain multiplicity. Do not claim flat rows are additive procurement facts. No full UI redesign.",
+    "modules": "adapters/moghavemat.py; report consumers",
+    "test": "Existing multi-PR/OMPI tests"
+  },
+  {
+    "id": "F016",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Mixed/unknown-currency commercial PI summary becomes unknown; native line-level amounts remain. Duplicate-line business identity requires source contract.",
+    "modules": "adapters/moghavemat.py",
+    "test": "Existing commercial/supply tests"
+  },
+  {
+    "id": "F017",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Use PO-side PR/item/material when supplied; header PR relation remains separate. Conflicting header/PO PR is recorded as SAP_HEADER_PO_PR_CONFLICT.",
+    "modules": "warehouse/business_dwh.py",
+    "test": "test_po_own_identity"
+  },
+  {
+    "id": "F018",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Workflow displayed as observations; snapshots prevent cross-run count inflation; latest PR chosen by evidence date. Same-time item conflicts and workflow event IDs remain unresolved; workflow_events key retained for compatibility.",
+    "modules": "knowledge_desk/operational.py; warehouse/business_dwh.py",
+    "test": "Existing SAP tests; snapshot replay tests"
+  },
+  {
+    "id": "F019",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Retain compatibility representative projection, add explicit RHS multiplicity warning and pandas many_to_one validation. All RHS frames remain in DWH. Not a proof of financial additivity; arbitrary equal-date representative still an open design issue.",
+    "modules": "dataio/merge.py",
+    "test": "Existing merge/regression tests"
+  },
+  {
+    "id": "F020",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "JSON tuple encoding prevents delimiter collisions; null/blank components never match; null scalar RHS keys excluded.",
+    "modules": "dataio/merge.py",
+    "test": "test_null_and_delimiter_keys"
+  },
+  {
+    "id": "F021",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Fix proven BL_DISCHARGE_DATE and SATA_TRACKING_DATE paths. Other unreachable dates/amounts remain unknown pending true producers, not guessed aliases.",
+    "modules": "stages/s20_derive.py",
+    "test": "Existing derive/validation tests; producer-consumer inventory"
+  },
+  {
+    "id": "F022",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Document receipt no longer supplies financial receipt date. Absent dedicated financial-receipt evidence stays empty.",
+    "modules": "stages/s20_derive.py",
+    "test": "Existing event-log and validation tests"
+  },
+  {
+    "id": "F023",
+    "verdict": "ACCEPT",
+    "closure": "OPEN_RELEASE_BLOCKER",
+    "change": "Legacy fx_obligation totals still read archived versions without published native commitment membership. Do not certify/use those totals as current finance. Requires version/file-selection reconciliation, not a guessed latest mtime.",
+    "modules": "warehouse/fx_obligation.py:totals_by_currency",
+    "test": "Baseline P08; code query reviewed; no new fix claimed"
+  },
+  {
+    "id": "F024",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Sweep only available roots; reactivation on unchanged restore. Partial permission failure within an existing tree is not fully modeled as an incomplete scan.",
+    "modules": "knowledge_desk/indexer.py",
+    "test": "test_kb_outage_then_restoration"
+  },
+  {
+    "id": "F025",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Nullable keys retain usable-leading-key and uniqueness checks. Entire source/frame contract catalog and null normalization parity still need extension.",
+    "modules": "warehouse/reliability.py",
+    "test": "test_nullable_uniqueness; existing reliability suite"
+  },
+  {
+    "id": "F026",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "ORDER/BL candidate resolution for finance; unresolved rows recorded in diagnostics while native source rows survive. No guessed account/case. Orphans are not yet a dedicated financial quarantine fact.",
+    "modules": "cashflow/dwh.py",
+    "test": "Existing Cashflow DWH tests"
+  },
+  {
+    "id": "F027",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "REG-scoped commitment-summary ID replaces count-as-ID. Explicitly a summary representation, not a newly discovered native transaction ID.",
+    "modules": "cashflow/dwh.py",
+    "test": "Existing multi-REG cashflow tests"
+  },
+  {
+    "id": "F028",
+    "verdict": "ACCEPT",
+    "closure": "OPEN_RELEASE_BLOCKER",
+    "change": "all_data_sheets still selects largest sheet. Raw workbook bytes/sheets survive, but operational second-sheet coverage does not. Need approved sheet signatures/allowlist before changing mixed helper/data workbook ingestion.",
+    "modules": "dataio/reader.py:_read_targets",
+    "test": "Code verified; no all-sheets fix claimed"
+  },
+  {
+    "id": "F029",
+    "verdict": "DEFER_NEEDS_DATA",
+    "closure": "OPEN",
+    "change": "Need real ExportClearance/import workbooks and direction keys. No evidence that supplied QA data demonstrates export/import contamination.",
+    "modules": "adapters/a30_customs.py; source patterns",
+    "test": "Opus insufficient-evidence assessment accepted"
+  },
+  {
+    "id": "F030",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Normalized-header collision and equal-scoring fuzzy tie raise explicit errors. Non-tied fuzzy fallback remains for backward compatibility; exact key/amount allowlists still open.",
+    "modules": "core/columns.py",
+    "test": "Existing mapping and adapter tests"
+  },
+  {
+    "id": "F031",
+    "verdict": "ACCEPT",
+    "closure": "OPEN_RELEASE_BLOCKER",
+    "change": "Legacy BALANCE/CB_VALUE/default-zero and downstream fillna(0) remain. New Cashflow unknown semantics are stronger. No claim of global unknown/zero parity.",
+    "modules": "stages/s20_derive.py; stages/s55_fx_traceability.py; stages/s56_money_flow_control.py",
+    "test": "Existing tests only; known unresolved financial invariant"
+  },
+  {
+    "id": "F032",
+    "verdict": "DEFER_NEEDS_DATA",
+    "closure": "OPEN",
+    "change": "Need authoritative per-field source policy/effective date and approval of tie semantics before unifying canonical versus cashflow ranking.",
+    "modules": "config/authority.py; cashflow/dwh.py",
+    "test": "Conflict-resolution implementations reviewed; no policy invented"
+  },
+  {
+    "id": "F033",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Repeated fallback frame is persisted with source_origin_run attrs; frame attrs survive cache and SQL reconstruction. Freshness SLA/measurement date propagation is not fully resolved.",
+    "modules": "pipeline.py; warehouse/store.py",
+    "test": "Existing fallback/frame roundtrip tests"
+  },
+  {
+    "id": "F034",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Backend errors produce SOURCE_UNAVAILABLE; explicit alphanumeric IDs supported. Static export fails on corrupt operational DB rather than silently dropping evidence. All client-specific error displays still need visual verification.",
+    "modules": "knowledge_desk/operational.py; knowledge_desk/query.py",
+    "test": "test_backend_error_not_absence"
+  },
+  {
+    "id": "F035",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Operational questions do not receive KB fallback as factual evidence; explicit policy intent routes to KB. KB relevance/effective-date/contradiction governance and external LLM grounding remain open.",
+    "modules": "knowledge_desk/query.py",
+    "test": "Existing knowledge tests"
+  },
+  {
+    "id": "F036",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "DOCUMENTED",
+    "change": "Historical warehouse is a separate legacy subsystem; no claim that current pipeline populates it. Migration not necessary for this scoped patch and not implemented.",
+    "modules": "warehouse/historical_runtime.py; warehouse/bridge.py",
+    "test": "Call-site review"
+  },
+  {
+    "id": "F037",
+    "verdict": "DEFER_NEEDS_DATA",
+    "closure": "OPEN_RELEASE_BLOCKER",
+    "change": "Endpoint defaults/CORS/application ACL boundary remain unchanged. Need deployment audience, identity provider and actual file/network ACL evidence before certifying access control.",
+    "modules": "knowledge_desk/service.py; knowledge_desk/config.py",
+    "test": "Static exposure confirmed, deployed exploitability not claimed"
+  },
+  {
+    "id": "F038",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "doc_rows preserves every standardized document row; main remains latest-order compatibility projection. Raw workbook lineage still lives in archive.",
+    "modules": "adapters/a60_finance.py",
+    "test": "Existing finance/process tests"
+  },
+  {
+    "id": "F039",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "SWIFT_SENT stays a separate observation, never PAYMENT. FX payment date no longer falls back to SWIFT/buy date. Zero remaining balance never emits settlement.",
+    "modules": "resolve/process_evidence.py; cashflow/dwh.py",
+    "test": "test_swift_not_payment; test_balance_not_settlement"
+  },
+  {
+    "id": "F040",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "Schema fast path verifies required tables; publication uses BEGIN IMMEDIATE and monotonic started ordering. Global writer lifecycle unchanged; old run cannot roll pointer backward.",
+    "modules": "warehouse/store.py",
+    "test": "test_legacy_schema_upgrade; existing publish tests"
+  },
+  {
+    "id": "N01",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "std retains source_headers/missing_mappings; schema gate emits mapping coverage warning. Full raw header baseline/required-alias classification still open.",
+    "modules": "adapters/base.py; warehouse/reliability.py",
+    "test": "Code and existing schema tests"
+  },
+  {
+    "id": "N02",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "Singleton hub pairs retained as derived traversal; ambiguous hubs return separate REG and ORDER memberships with null opposite keys, no product.",
+    "modules": "warehouse/business_dwh.py",
+    "test": "test_no_hub_product"
+  },
+  {
+    "id": "N03",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Negation and word boundaries fix demonstrated Persian status inversions. Source-specific state-code dictionaries still required.",
+    "modules": "resolve/process_evidence.py",
+    "test": "test_polarity"
+  },
+  {
+    "id": "N04",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Duplicate RHS explicitly warns; pandas validates many_to_one. Legacy representative collapse remains declared, not an active fan-out gate on native facts.",
+    "modules": "dataio/merge.py",
+    "test": "See F019; no claim the old impossible branch is now a native cardinality gate"
+  },
+  {
+    "id": "N05",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Remove fabricated تولیدی segment default; restore proven discharge producer. Excluded Oracle buyer/status and other unmapped producers remain open.",
+    "modules": "stages/s20_derive.py",
+    "test": "Existing derive/validation tests"
+  },
+  {
+    "id": "N06",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "IMPLEMENTED",
+    "change": "PR item carries SAP_PO_COUNT; PO-specific representative columns become missing on multi-PO items; po_items/raw_rows retain all PO facts.",
+    "modules": "adapters/a60_finance.py",
+    "test": "Existing SAP split-PO tests"
+  },
+  {
+    "id": "N07",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Missing process summary is blocking instead of disabling the row-preservation gate; independent processing completes diagnostics first.",
+    "modules": "warehouse/bridge.py",
+    "test": "test_missing_process_summary_blocks_before_files"
+  },
+  {
+    "id": "N08",
+    "verdict": "ACCEPT",
+    "closure": "OPEN_RELEASE_BLOCKER",
+    "change": "PC ID still hashes component membership. Material/Employee no longer merge components, but stable case aliases/identity migration are not implemented.",
+    "modules": "resolve/process_evidence.py:_components",
+    "test": "Static code verified; do not use PC ID as persistent external identity"
+  },
+  {
+    "id": "N09",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Per-run rebuild stops accumulation across ingests. Duplicate derived representations across frames may still count separately; evidence_count is not a physical-event count.",
+    "modules": "warehouse/business_dwh.py",
+    "test": "test_replay_relation_counts"
+  },
+  {
+    "id": "N10",
+    "verdict": "ACCEPT",
+    "closure": "IMPLEMENTED",
+    "change": "Run-scoped schema candidates promote only with successful pointer transaction.",
+    "modules": "warehouse/reliability.py; warehouse/store.py",
+    "test": "test_blocked_schema_does_not_become_baseline"
+  },
+  {
+    "id": "N11",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Archived parsing uses original filename inside content-hash directory; configured sheet lineage carried. First-sheet alias remains __first__, not claimed as actual sheet name.",
+    "modules": "dataio/reader.py",
+    "test": "Existing reader/transport tests"
+  },
+  {
+    "id": "N12",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "PARTIAL",
+    "change": "Stable sort for identical input order. Equal-date conflicting request statuses still lack authoritative time/version tie policy; reordering may change representative.",
+    "modules": "adapters/a50_ntsw.py",
+    "test": "Existing request ledger tests; no reorder-invariance claim"
+  },
+  {
+    "id": "N13",
+    "verdict": "ACCEPT_WITH_MODIFICATION",
+    "closure": "DOCUMENTED",
+    "change": "Eight-digit REG exclusion is current keys.yaml business contract, not evidence deletion from archive/DWH. Nonconforming operational registration quarantine/UI coverage remains open; do not broaden legal identifiers by guessing.",
+    "modules": "resolve/population.py; config/keys.yaml",
+    "test": "Source preservation/current-scope distinction reviewed"
+  }
+]

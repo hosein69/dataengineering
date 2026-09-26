@@ -1,0 +1,26 @@
+# GSI — وابستگی‌های اجرا
+# پایتون ۳٫۱۱ یا بالاتر؛ SQLite باید serialize/deserialize را پشتیبانی کند
+
+# ── هسته خط لوله ──
+pandas>=2.0
+numpy>=1.24
+openpyxl>=3.1
+PyYAML>=6.0          # کتابخانه قوانین gsi/rules/*.yaml بدون این بالا نمی‌آید
+cryptography>=42.0    # AES-256-GCM برای پروفایل/اسنپ‌شات رمزگذاری‌شده کاربران
+
+# ── داشبورد و Studio ──
+streamlit>=1.49
+plotly>=5.20
+streamlit-sortables==0.3.1
+
+# ── بسته ایمیل مدیریتی (python -m gsi email) ──
+matplotlib>=3.7      # نمودارهای PNG ایمیل؛ نبودش یعنی ModuleNotFoundError
+
+# ── اختیاری ──
+# jdatetime         # مبدل شمسی داخلی هست؛ این فقط جایگزین است
+
+# اختیاری: ارسال مستقیم از Classic Outlook روی Windows
+# pywin32>=306
+# اختیاری برای ایندکس مستقیم اسناد در GSI Knowledge Desk (بدون این‌ها فقط همان فایل quarantine می‌شود)
+# pypdf>=5.0
+# python-docx>=1.1

@@ -1,0 +1,1 @@
+PASS: python -m compileall -q gsi app process-mining-ui-kit/pm_ui tests

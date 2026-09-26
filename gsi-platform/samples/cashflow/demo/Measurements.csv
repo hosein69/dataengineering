@@ -1,0 +1,2 @@
+﻿measurement_id,case_id,order_id,bl_id,metric,observed_at,amount,currency,source,source_record_id,document,status,rate_regime,note
+DEMO-M1,DEMO-REG-1,,,COMMITMENT_BALANCE,2026-09-22,650,EUR,SYNTHETIC NTSW,DEMO-NTSW-1,DEMO-SNAPSHOT,OBSERVED,,

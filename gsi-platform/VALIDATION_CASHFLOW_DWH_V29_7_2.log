@@ -1,0 +1,13 @@
+GSI V29.7.2 - Cash Flow DWH validation
+Date: 2026-09-22
+
+Focused regression suite:
+83 passed, 1 deselected
+Deselected: dashboard_financial_panel_build_and_scope (streamlit.testing dependency unavailable in validation runtime)
+
+Doctor:
+0 errors, 11 warnings
+Warnings are environment/configuration warnings (network source paths unavailable in this sandbox, optional jdatetime, expiring regulatory snapshots, personal store root unset); no package integrity errors.
+
+Full-suite note:
+A broader pytest run was started but exceeded the 120s sandbox command limit at 19%; it is not reported as pass/fail. Only completed focused tests above are claimed.

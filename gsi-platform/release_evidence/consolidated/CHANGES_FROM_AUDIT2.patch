@@ -1,0 +1,708 @@
+--- a/RUN_OFFLINE_DIAGNOSTIC.ps1
++++ b/RUN_OFFLINE_DIAGNOSTIC.ps1
+@@ -8,7 +8,9 @@
+ Write-Host "============================================================"
+ Write-Host "Package/Data folder: $PSScriptRoot"
+ Write-Host ""
+-python -u -B .\offline_validation\run_offline_diagnostic.py --data-dir "$PSScriptRoot" @args
++$python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
++if (!(Test-Path $python)) { $python = "python" }
++& $python -u -B .\offline_validation\run_offline_diagnostic.py --data-dir "$PSScriptRoot" @args
+ $rc=$LASTEXITCODE
+ Write-Host ""
+ Write-Host "Feedback is under: $PSScriptRoot\offline_feedback"
+--- a/run_all_tests.py
++++ b/run_all_tests.py
+@@ -58,7 +58,7 @@
+     named = {path: label for label, path in SUITES}
+     return [(named.get(path, Path(path).stem), path)
+             for path in sorted(p.relative_to(ROOT).as_posix()
+-                               for p in Path(ROOT, "tests").glob("test_*.py"))]
++                               for p in list(Path(ROOT, "tests").glob("test_*.py")) + list(Path(ROOT, "tests").glob("legacy_test_*.py")))]
+ 
+ 
+ def test_command(path):
+@@ -76,6 +76,7 @@
+ 
+ def main() -> int:
+     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
++    env["PYTHONPATH"] = ROOT + os.pathsep + env.get("PYTHONPATH", "")
+     total_ok = total_fail = 0
+     failed_suites = []
+     timed_out = []
+--- a/ANYTHINGLLM_INTEGRATION_FA.md
++++ b/ANYTHINGLLM_INTEGRATION_FA.md
+@@ -46,3 +46,10 @@
+ ## اصل امنیتی
+ 
+ برای HTML از Developer API مستقیم در مرورگر استفاده نمی‌شود، چون نیازمند API Key است و secret را افشا می‌کند. Q&A داخل HTML فقط از Public Embed رسمی AnythingLLM استفاده می‌کند.
++
++
++## قرارداد نسخهٔ ادغام‌شده
++
++`AnythingLLMClient.ask()` پاسخ خام API را برمی‌گرداند. برای مصرف سمت سرورِ پاسخ دارای منبع، `ask_evidence()` اضافه شده است: حالت query درخواست می‌شود و اگر فرادادهٔ منبع وجود نداشته باشد متن تولیدشده نمایش داده نمی‌شود. خروجی دارای منبع نیز `verified=False` دارد؛ منبع داشتن اثبات صحت مالی یا معنایی نیست.
++
++این helper به ویجت عمومی AnythingLLM تزریق نشده و تنظیمات ویجت را کنترل نمی‌کند. مسیر فعلی Knowledge Desk داخلی، بازیابی و استخراج متن/دادهٔ منتشرشده است. در این تحویل اتصال زنده به یک Workspace واقعی یا مدل بیرونی آزموده نشده است.
+--- a/RUN_OFFLINE_DIAGNOSTIC.cmd
++++ b/RUN_OFFLINE_DIAGNOSTIC.cmd
+@@ -13,8 +13,11 @@
+ 
+ echo [CHECK] Looking for Python 3...
+ set "PYEXE="
+-where py >nul 2>nul
+-if not errorlevel 1 set "PYEXE=py -3"
++if exist "%~dp0.venv\Scripts\python.exe" set "PYEXE="%~dp0.venv\Scripts\python.exe""
++if not defined PYEXE (
++  where py >nul 2>nul
++  if not errorlevel 1 set "PYEXE=py -3"
++)
+ if not defined PYEXE (
+   where python >nul 2>nul
+   if not errorlevel 1 set "PYEXE=python"
+--- a/PACKAGE_INFO.json
++++ b/PACKAGE_INFO.json
+@@ -1,8 +1,8 @@
+ {
+   "version": "29.8.2",
+-  "release_channel": "final-production-rewrite-20260924",
+-  "base": "29.8.2 RC4-OPT2 H1 ALGO KNOWLEDGE FINAL 20260924",
+-  "scope": "production-runtime rewrite driven by real Windows run: SAP physical grain, early quality gate, single-open SAP reader, vectorized process matrix, batched DWH, Unknown!=Zero, lineage preservation, snapshot-first UI, DWH-based Excel export",
++  "release_channel": "rc4-opt2-h1-consolidated",
++  "base": "AUDIT2_20260924, compared bytewise against AUDIT1 and FINAL_PRODUCT",
++  "scope": "Compatibility-preserving consolidation, diagnostic gate correctness, safe reset, SQLite lifecycle and evidence-aware API helper",
+   "business_logic_changed": true,
+   "source_authority_changed": false,
+   "key_changes": [
+@@ -16,44 +16,23 @@
+     "Make FX event dedupe currency-aware and prevent unitless mixed-currency chain sums",
+     "Do not infer mandatory process GAP without an explicit applicability contract",
+     "Close SQLite handles for Windows reset/cleanup, honor explicit GSI_HOME, and bypass corporate proxy for localhost offline service",
+-    "Keep Material non-mandatory for the NTSW-only gate and never fabricate missing ORDER/BL"
++    "Keep Material non-mandatory for the NTSW-only gate and never fabricate missing ORDER/BL",
++    "Script-aware isolated diagnostics with 600s default and fail-closed incomplete gates",
++    "Dependency contract validation",
++    "Exclusive reset with retained lock inode and safe WAL fallback",
++    "Historical SQLite transaction handles closed deterministically",
++    "Evidence-aware AnythingLLM helper, citations not treated as factual verification"
+   ],
+   "production_certified": false,
+-  "validation": "FINAL_PRODUCT_WORK_REPORT_20260924_FA.md",
++  "validation": "release_evidence/consolidated/RELEASE_GATE.json",
+   "regulatory_rulebook_changed": false,
+   "financial_semantics_changed": true,
+-  "real_ntsw_verified": true,
+-  "real_ntsw_input_sha256": "380631a763bc5cc3b75d0d403c1da99dcbf89974470ab71a10e531c31878538d",
+   "material_required_for_ntsw_gate": false,
+   "order_bl_cross_source_gate": "OPEN_REQUIRES_REAL_BRIDGE_SOURCES",
+   "diagnostic_release": false,
+-  "offline_diagnostic": {
+-    "knowledge_snapshot": "2026-09-24",
+-    "frozen_independent_tests": 173,
+-    "extended_diagnostic_tests": 77,
+-    "independent_test_total": 250,
+-    "final_results": {
+-      "frozen": "173/173 PASS",
+-      "extended": "77/77 PASS",
+-      "affected_internal": "100/100 PASS"
+-    },
+-    "internal_file_sweep": {
+-      "files": 90,
+-      "pass_files": 80,
+-      "no_test_files": 8,
+-      "local_ui_blocked_files": 2,
+-      "local_ui_block_reason": "streamlit not installed in build environment"
+-    },
+-    "internet_required": false,
+-    "raw_business_rows_copied_to_feedback": false,
+-    "feedback_contract": "offline_feedback/GSI_FEEDBACK_*.zip"
+-  },
+-  "algorithm_knowledge_verified": true,
+-  "semantic_remediation_gate": "PASS",
+-  "delivery_status": "FINAL_PRODUCT_BUILD_VALIDATED",
++  "delivery_status": "CONSOLIDATED_CODE_VALIDATED_OPERATIONAL_ACCEPTANCE_OPEN",
+   "production_certification_reason": "Final code build is validated in build environment; operational certification is granted only after the first successful refresh/publish on the organization Windows source set.",
+   "final_product_build": true,
+-  "runtime_acceptance": "FINAL_PRODUCT_GATE_20260924.json",
+   "dwh_default": "D:\\GSI_DATA\\warehouse.sqlite",
+   "ui_default_mode": "published_snapshot_only",
+   "refresh_mode": "explicit_only",
+@@ -63,12 +42,43 @@
+     "SAP_SOURCE_ROW"
+   ],
+   "f031_runtime_path": "CLOSED_S20_DERIVE_SIX_SENSITIVE_FIELDS",
+-  "final_validation": {
+-    "frozen_independent": "173/173 PASS",
+-    "extended_independent": "77/77 PASS",
+-    "affected_internal": "128/128 PASS",
+-    "compileall": "PASS",
+-    "snapshot_excel_smoke": "PASS",
+-    "streamlit_apptests": "3 ENVIRONMENT-BLOCKED (streamlit.testing unavailable in build runtime; not counted as pass)"
+-  }
+-}+  "inherited_validation_not_rerun_on_real_sources": {
++    "real_ntsw_verified": true,
++    "real_ntsw_input_sha256": "380631a763bc5cc3b75d0d403c1da99dcbf89974470ab71a10e531c31878538d",
++    "offline_diagnostic": {
++      "knowledge_snapshot": "2026-09-24",
++      "frozen_independent_tests": 173,
++      "extended_diagnostic_tests": 77,
++      "independent_test_total": 250,
++      "final_results": {
++        "frozen": "173/173 PASS",
++        "extended": "77/77 PASS",
++        "affected_internal": "100/100 PASS"
++      },
++      "internal_file_sweep": {
++        "files": 90,
++        "pass_files": 80,
++        "no_test_files": 8,
++        "local_ui_blocked_files": 2,
++        "local_ui_block_reason": "streamlit not installed in build environment"
++      },
++      "internet_required": false,
++      "raw_business_rows_copied_to_feedback": false,
++      "feedback_contract": "offline_feedback/GSI_FEEDBACK_*.zip"
++    },
++    "final_validation": {
++      "frozen_independent": "173/173 PASS",
++      "extended_independent": "77/77 PASS",
++      "affected_internal": "128/128 PASS",
++      "compileall": "PASS",
++      "snapshot_excel_smoke": "PASS",
++      "streamlit_apptests": "3 ENVIRONMENT-BLOCKED (streamlit.testing unavailable in build runtime; not counted as pass)"
++    },
++    "runtime_acceptance": "FINAL_PRODUCT_GATE_20260924.json",
++    "semantic_remediation_gate": "PASS",
++    "algorithm_knowledge_verified": true
++  },
++  "real_ntsw_verified": false,
++  "runtime_acceptance": "OPEN_REQUIRES_ORGANIZATION_WINDOWS_AND_REAL_SOURCES",
++  "financial_semantics_changed_in_consolidation": false
++}
+--- a/gsi/factsheet.py
++++ b/gsi/factsheet.py
+@@ -37,7 +37,7 @@
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+ VERSION = "29.8.2"
+-RELEASE_CHANNEL = "rc4-opt2-h1-audit2"
++RELEASE_CHANNEL = "rc4-opt2-h1-consolidated"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 17
+--- a/tests/legacy_test_v26_18_charts_delivery_persistence.py
++++ b/tests/legacy_test_v26_18_charts_delivery_persistence.py
+@@ -36,13 +36,17 @@
+     df=sample()
+     html=build_dynamic_html(df,"2026-09-15",max_rows=3000,
+         selected_fields=["KEY_MATERIAL","ORG_DEPT","بحرانی (کوتاه)","مقاومت (روز)"],
+-        charts=["criticality","stage_distribution","transport_mix","commitment","top_orders"],show_process=True)
++        charts=["criticality","stage_distribution","transport_mix","commitment","top_orders"],show_process=True,
++        tabs=[{"id":"main","title":"اصلی","fields":["KEY_MATERIAL","ORG_DEPT"],
++               "blocks":["table","charts","process"],"process_views":["flow_map"]}])
+     assert '"payload_rows": 3000' in html, "3000 rows must stay in payload"
+-    m=re.search(r"const DATA=(.*?);\s*const COL_INDEX=",html,re.S)
+-    assert m and len(json.loads(m.group(1)))==3000, "embedded payload must really contain all 3000 rows"
++    start=html.index("const DATA=")+len("const DATA=")
++    payload,_=json.JSONDecoder().raw_decode(html[start:])
++    assert len(payload)==3000, "embedded payload must really contain all 3000 rows"
+     assert "برای پایداری مرورگر، 900" not in html
+     assert "PAGE_SIZE=100" in html and "COL_INDEX" in html, "pagination + compact payload required"
+-    assert "نقطه شروع فرآیند" in html and "توزیع مرحله فعلی" in html
++    assert "نقشه جریان فرآیند" in html and "Event Log کافی نیست" in html
++    assert "توزیع مرحله فعلی" in html
+     assert len(CHART_TITLES) >= 15, "shared chart catalog must provide real choice"
+     from gsi.studio_core.chart_catalog import CHART_SPECS
+     assert {x.kind for x in CHART_SPECS.values()} >= {"bar","donut","scatter","grouped"}
+--- a/tests/test_personalization_v27_1.py
++++ b/tests/test_personalization_v27_1.py
+@@ -194,7 +194,7 @@
+         gsi_home = home / ".gsi"
+         gsi_home.mkdir(parents=True, exist_ok=True)
+         (gsi_home / "personal_config.json").write_text(
+-            '{"profile_root": ' + repr(str(self.root)).replace("'", '"') + ', "employee_code": "00001001"}',
++            __import__('json').dumps({"profile_root":str(self.root), "employee_code":"00001001"}),
+             encoding="utf-8"
+         )
+         (gsi_home / "identity.json").write_text('{"employee_code":"1001"}', encoding="utf-8")
+--- a/tests/test_opus_rc4_warehouse_reset.py
++++ b/tests/test_opus_rc4_warehouse_reset.py
+@@ -62,7 +62,10 @@
+     assert cache.is_dir() and lock.exists()
+     wh.reset(confirm=True, keep_backup=False)
+     assert not cache.exists(), "کش فریم باید پاک شود"
+-    assert not lock.exists(), "قفل نویسنده نباید جا بماند"
++    assert lock.exists(), "Stable lock inode must survive reset"
++    from gsi.warehouse.writer_lock import WriterLock
++    with WriterLock(lock, timeout=0.1):
++        pass  # A retained file is not a held OS lock.
+     with wh.db() as c:
+         assert c.execute("SELECT count(*) FROM wh_run").fetchone()[0] == 0
+         assert c.execute("SELECT count(*) FROM wh_frame").fetchone()[0] == 0
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -128,3 +128,9 @@
+         sources_mod.SOURCE_ALIASES.clear(); sources_mod.SOURCE_ALIASES.update(saved_aliases)
+         sources_mod.MERGE_ORDER[:] = saved_merge
+         sources_mod.SOURCE_WEIGHTS.clear(); sources_mod.SOURCE_WEIGHTS.update(saved_weights)
++
++@pytest.fixture(autouse=True)
++def isolate_health_ledger(monkeypatch):
++    """A prior suite's source schema failures must not become this run's facts."""
++    from gsi import health
++    monkeypatch.setattr(health, 'HEALTH', health.SystemHealth())
+--- a/offline_validation/source_probe.py
++++ b/offline_validation/source_probe.py
+@@ -151,9 +151,11 @@
+     try:
+         import pandas as pd
+         from gsi.adapters.a50_ntsw import NtswAdapter
+-        xl=pd.ExcelFile(path)
+-        wanted=[s for s in ('Import License','Import Licence','Allocation','Release Commitment','Custom Declaration') if s in xl.sheet_names]
+-        sheets={s:pd.read_excel(path,sheet_name=s,dtype=object) for s in wanted}
++        with pd.ExcelFile(path) as xl:
++            wanted=[s for s in ('Import License','Import Licence','Allocation','Release Commitment','Custom Declaration') if s in xl.sheet_names]
++            sheets={s:pd.read_excel(xl,sheet_name=s,dtype=object) for s in wanted}
++        if not wanted:
++            return {'status':'ERROR','reason':'NTSW_REQUIRED_SHEETS_NOT_FOUND','file':str(path)}
+         transformed=NtswAdapter().transform(sheets)
+         stats={'file':str(path),'sheet_rows':{k:int(len(v)) for k,v in sheets.items()},'frames':{k:int(len(v)) for k,v in transformed.items()}}
+         lic=transformed.get('import_license')
+--- a/offline_validation/run_offline_diagnostic.py
++++ b/offline_validation/run_offline_diagnostic.py
+@@ -1,5 +1,5 @@
+ from __future__ import annotations
+-import argparse, hashlib, json, os, platform, shutil, subprocess, sys, time, traceback, zipfile
++import ast, tempfile, argparse, hashlib, json, os, platform, shutil, subprocess, sys, time, traceback, zipfile
+ from pathlib import Path
+ 
+ ROOT=Path(__file__).resolve().parents[1]
+@@ -115,6 +115,16 @@
+     step.update({'passed':sum(t.get('outcome')=='passed' for t in results),'failed':sum(t.get('outcome')=='failed' for t in results),'total_results':len(results),'failed_tests':[t.get('id') for t in results if t.get('outcome')=='failed']})
+     return step
+ 
++def internal_command(path, basetemp):
++    # Same entrypoint contract as run_all_tests.py; scripts must actually run.
++    tree = ast.parse(path.read_text(encoding="utf-8"))
++    standalone = any(isinstance(n, ast.If) and "__name__" in ast.unparse(n.test)
++                     and "__main__" in ast.unparse(n.test) for n in tree.body)
++    if standalone:
++        return [sys.executable, "-B", str(path)]
++    return [sys.executable, "-B", "-m", "pytest", "-q", "--basetemp", str(basetemp), str(path)]
++
++
+ def run_internal_per_file(out,env,per_file_timeout,limit=0):
+     res=out/'internal'; res.mkdir(); rows=[]
+     files=sorted((ROOT/'tests').glob('test_*.py'))+sorted((ROOT/'tests').glob('legacy_test_*.py'))
+@@ -122,8 +132,12 @@
+     for i,f in enumerate(files,1):
+         log=res/(f.stem+'.log')
+         basetemp=res/'pytest_tmp'/f.stem
+-        cmd=[sys.executable,'-B','-m','pytest','-q','--basetemp',str(basetemp),str(f)]
+-        r=run_cmd(cmd,ROOT,env,per_file_timeout,log); r['file']=str(f.relative_to(ROOT))
++        cmd=internal_command(f,basetemp)
++        with tempfile.TemporaryDirectory(prefix="gsi-diagnostic-suite-") as isolated:
++            suite_env=dict(env,GSI_DWH_PATH=str(Path(isolated)/"warehouse.sqlite"),
++                           PYTHONPATH=str(ROOT)+os.pathsep+env.get("PYTHONPATH",""))
++            r=run_cmd(cmd,ROOT,suite_env,per_file_timeout,log)
++        r['file']=str(f.relative_to(ROOT))
+         r['classification']='PASS' if r['exit_code']==0 else ('NO_TESTS' if r['exit_code']==5 else ('TIMEOUT' if r['exit_code']==124 else 'FAIL'))
+         rows.append(r)
+     (res/'per_file_results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
+@@ -140,6 +154,27 @@
+     normal=run_cmd([sys.executable,'-B','-m','pytest','-q','--basetemp',str(res/'pytest_tmp_normal'),*rel],ROOT,env,timeout,res/'normal_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
+     reverse=run_cmd([sys.executable,'-B','-m','pytest','-q','--basetemp',str(res/'pytest_tmp_reverse'),*reversed(rel)],ROOT,env,timeout,res/'reverse_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
+     return {'normal':normal,'reverse':reverse,'file_count':len(rel)}
++
++def dependency_check():
++    """Validate installed distributions against the shipped runtime contract."""
++    import importlib.metadata as md
++    try:
++        from packaging.requirements import Requirement
++        problems=[]; versions={}
++        for line in (ROOT/'requirements.txt').read_text(encoding='utf-8').splitlines():
++            line=line.split('#',1)[0].strip()
++            if not line: continue
++            req=Requirement(line)
++            if req.marker and not req.marker.evaluate(): continue
++            try: version=md.version(req.name)
++            except md.PackageNotFoundError:
++                problems.append({'package':req.name,'reason':'MISSING'});continue
++            versions[req.name]=version
++            if version not in req.specifier:
++                problems.append({'package':req.name,'installed':version,'required':str(req.specifier)})
++        return {'status':'FAIL' if problems else 'PASS','problems':problems,'versions':versions}
++    except Exception as ex:
++        return {'status':'ERROR','error':str(ex)}
+ 
+ def summarize(out,steps,source_inventory,ntsw_probe):
+     summary={'run_id':out.name,'generated_at':time.strftime('%Y-%m-%dT%H:%M:%S'),'package_root':str(ROOT),
+@@ -149,12 +184,18 @@
+         sts={}
+         for s in source_inventory.get('sources',[]): sts[s.get('status','?')]=sts.get(s.get('status','?'),0)+1
+         summary['source_inventory_summary']=sts
++    summary['dependencies']=dependency_check()
+     blockers=[]
++    if summary['dependencies']['status']!='PASS': blockers.append('DEPENDENCY_CONTRACT')
+     if summary['manifest']['status']!='PASS': blockers.append('PACKAGE_MANIFEST')
+     if summary['knowledge']['status']!='PASS': blockers.append('KNOWLEDGE_MANIFEST')
+     ind=steps.get('independent',{})
+-    if ind.get('failed',0): blockers.append('INDEPENDENT_SEMANTIC_FAILURES')
+-    if steps.get('extended',{}).get('failed',0) or steps.get('extended',{}).get('exit_code') not in (0,None): blockers.append('EXTENDED_DIAGNOSTIC_FAILURES')
++    if ind.get('failed',0) or ind.get('exit_code') != 0 or ind.get('total_results',0) != 173: blockers.append('INDEPENDENT_SEMANTIC_FAILURES')
++    if steps.get('extended',{}).get('failed',0) or steps.get('extended',{}).get('exit_code') != 0 or steps.get('extended',{}).get('total_results',0) != 77: blockers.append('EXTENDED_DIAGNOSTIC_FAILURES')
++    internal=steps.get('internal',{})
++    if internal.get('error') or internal.get('skipped') or not internal.get('files'):
++        blockers.append('INTERNAL_VALIDATION_INCOMPLETE')
++    if internal.get('no_test_files',0): blockers.append('INTERNAL_NO_TESTS')
+     if steps.get('internal',{}).get('failed_files',0): blockers.append('INTERNAL_REGRESSION_FAILURES')
+     if steps.get('internal',{}).get('timed_out_files',0): blockers.append('INTERNAL_TEST_TIMEOUTS')
+     order=steps.get('internal_order',{})
+@@ -163,9 +204,11 @@
+             r=order.get(label,{})
+             if r.get('timeout'): blockers.append('INTERNAL_ORDER_'+label.upper()+'_TIMEOUT')
+             elif r.get('exit_code') not in (0,None): blockers.append('INTERNAL_ORDER_'+label.upper()+'_FAIL')
++    if not source_inventory or not source_inventory.get('sources'): blockers.append('SOURCE_INVENTORY_INCOMPLETE')
+     if source_inventory.get('status') in {'ERROR','TIMEOUT'}: blockers.append('SOURCE_INVENTORY_'+source_inventory.get('status'))
+     if source_inventory and any(x.get('status')=='MISSING_REQUIRED' for x in source_inventory.get('sources',[])): blockers.append('REQUIRED_SOURCE_MISSING')
+     if ntsw_probe.get('status') in {'ERROR','TIMEOUT'}: blockers.append('NTSW_REAL_DATA_PROBE_'+ntsw_probe.get('status'))
++    if ntsw_probe.get('status') != 'OK': blockers.append('NTSW_ACCEPTANCE_INCOMPLETE')
+     summary['release_gate']='PASS' if not blockers else 'HOLD'
+     summary['blockers']=blockers
+     return summary
+@@ -196,7 +239,7 @@
+     ap.add_argument('--output',default='')
+     ap.add_argument('--data-dir',default=os.environ.get('GSI_OFFLINE_DATA_DIR',''))
+     ap.add_argument('--skip-internal',action='store_true')
+-    ap.add_argument('--per-file-timeout',type=int,default=180)
++    ap.add_argument('--per-file-timeout',type=int,default=600)
+     ap.add_argument('--suite-timeout',type=int,default=600)
+     ap.add_argument('--skip-order-smoke',action='store_true')
+     a=ap.parse_args()
+--- a/gsi/learning/anythingllm.py
++++ b/gsi/learning/anythingllm.py
+@@ -69,15 +69,10 @@
+         return self._call("GET", "/api/v1/workspaces")
+ 
+     def ask(self, question: str, lesson: Optional[Dict] = None, mode: str = "chat") -> Dict:
+-        """Ask the configured workspace a question.
++        """Raw API response. Neither query mode nor citations prove correctness.
+ 
+-        ``mode`` is what actually constrains the answer. The prompt below tells
+-        the model to answer only from the lesson and the workspace, but a prompt
+-        is a request, not an enforcement: in ``"chat"`` mode the underlying model
+-        may still answer from its own general knowledge. Pass ``mode="query"``
+-        when the grounding claim has to hold, and check the result with
+-        :meth:`has_sources` before showing it as an evidence-backed answer.
+-        Confirm the mode semantics against your own AnythingLLM version.
++        Use ask_evidence() for fail-closed presentation of cited answers.
++        The optional public embed is managed independently by AnythingLLM.
+         """
+         if not self.cfg.workspace_slug:
+             raise RuntimeError("ANYTHINGLLM_WORKSPACE_SLUG تنظیم نشده است.")
+@@ -97,6 +92,29 @@
+                           {"message": message, "mode": mode})
+         return data
+ 
++    def ask_evidence(self, question: str, lesson: Optional[Dict] = None) -> Dict:
++        """Request retrieval and withhold text when citation metadata is absent.
++
++        Citation presence is a transport check, not factual/financial validation.
++        This method does not execute tools, send messages, or mutate the DWH.
++        """
++        data = self.ask(question, lesson=lesson, mode="query")
++        if not self.has_sources(data):
++            return {"status":"INSUFFICIENT_EVIDENCE",
++                    "answer":"برای پاسخ قابل‌استناد، منبع کافی در پاسخ سرویس موجود نیست.",
++                    "sources":[], "verified":False}
++        sources = next(data[k] for k in ("sources","citations","sourceDocuments")
++                       if self._valid_sources(data.get(k)))
++        return {"status":"CITATIONS_PRESENT", "answer":self.answer_text(data),
++                "sources":sources, "verified":False}
++
++    @staticmethod
++    def _valid_sources(value) -> bool:
++        return isinstance(value, list) and any(
++            (isinstance(x, str) and bool(x.strip())) or
++            (isinstance(x, dict) and any(x.get(k) for k in
++             ("id","title","url","source","text","pageContent"))) for x in value)
++
+     @staticmethod
+     def has_sources(data: Dict) -> bool:
+         """True when the answer carried workspace citations.
+@@ -107,7 +125,7 @@
+         """
+         for key in ("sources", "citations", "sourceDocuments"):
+             val = data.get(key)
+-            if isinstance(val, list) and val:
++            if AnythingLLMClient._valid_sources(val):
+                 return True
+         return False
+ 
+--- a/gsi/warehouse/store.py
++++ b/gsi/warehouse/store.py
+@@ -370,12 +370,22 @@
+         self._write_frame_cache(fid,df)
+         return df
+     def reset(self, *, confirm=False, backup_to=None, keep_backup=True):
++        """Reset exclusively; the stable OS lock file is retained to avoid inode races."""
++        if not confirm:
++            raise ValueError('reset نیازمند confirm=True است؛ حذف انبار داده پیش‌فرض نیست.')
++        from .writer_lock import WriterLock
++        with WriterLock(self.path.with_suffix('.writer.lock'), timeout=0.5,
++                        metadata={'operation':'reset','warehouse':str(self.path)}):
++            return self._reset_locked(backup_to=backup_to, keep_backup=keep_backup)
++
++    def _reset_locked(self, *, backup_to=None, keep_backup=True):
+         """پاک‌کردن کامل انبار داده و ساخت دوبارهٔ آن از صفر.
+ 
+         چرا این متد لازم است: تا پیش از این هیچ مسیر پشتیبانی‌شده‌ای برای
+         «از اول ساختن» وجود نداشت و تنها راه، پاک‌کردن دستی فایل بود. پاک‌کردن
+         دستی سه چیز را جا می‌گذارد که بعداً به شکل خطای گمراه‌کننده برمی‌گردند:
+-        کش فریم‌ها، فایل قفل نویسنده و فایل متادیتای قفل.
++        کش فریم‌ها و وضعیت قفل نویسنده. فایل قفل پایدار نگه داشته می‌شود؛
++        قفل سیستم‌عامل پس از پایان عملیات آزاد می‌شود.
+ 
+         قواعد ایمنی — هر سه عمدی‌اند:
+           * ``confirm=True`` اجباری است. حذف داده هرگز پیش‌فرض نیست.
+@@ -384,8 +394,6 @@
+ 
+         خروجی: گزارشی از آنچه واقعاً حذف شد، برای ثبت در سابقه.
+         """
+-        if not confirm:
+-            raise ValueError('reset نیازمند confirm=True است؛ حذف انبار داده پیش‌فرض نیست.')
+         report={'path':str(self.path),'existed':self.path.exists(),'backup':None,'removed':[]}
+         if self.path.exists() and self.path.stat().st_size:
+             # نگذار یک فایل غیر-GSI با این دستور نابود شود.
+@@ -402,8 +410,9 @@
+         lock=self.path.with_suffix('.writer.lock')
+         for extra in (self.path,
+                       self.path.with_suffix(self.path.suffix+'-wal'),
+-                      self.path.with_suffix(self.path.suffix+'-shm'),
+-                      lock, lock.with_suffix(lock.suffix+'.meta.json')):
++                      self.path.with_suffix(self.path.suffix+'-shm')):
++            # Never unlink WAL/SHM if the database survived: SQLite owns them.
++            if extra != self.path and self.path.exists(): continue
+             if not extra.exists(): continue
+             if _unlink_with_retry(extra): report['removed'].append(extra.name)
+             else: report.setdefault('undeleted',[]).append(extra.name)
+@@ -420,6 +429,7 @@
+             self._drop_all_objects()
+             report['emptied_in_place']=True
+         self._ensure_schema()
++        report['writer_lock_retained']=True
+         report['recreated']=True
+         self.audit('warehouse_reset',report)
+         return report
+@@ -428,11 +438,12 @@
+         """Empty an existing warehouse file without deleting it."""
+         with self.db() as c:
+             c.execute('PRAGMA foreign_keys=OFF')
++            c.execute('BEGIN IMMEDIATE')
+             objs=c.execute("SELECT type,name FROM sqlite_master "
+                            "WHERE name NOT LIKE 'sqlite_%'").fetchall()
+             for kind,name in objs:
+                 if kind in ('table','view','index','trigger'):
+-                    c.execute(f'DROP {kind.upper()} IF EXISTS "{name}"')
++                    c.execute(f'DROP {kind.upper()} IF EXISTS "' + name.replace('"', '""') + '"')
+             c.execute('PRAGMA user_version=0')
+         with self.db() as c:
+             c.execute('VACUUM')
+--- a/gsi/warehouse/historical_store.py
++++ b/gsi/warehouse/historical_store.py
+@@ -18,6 +18,7 @@
+ 
+ __contract__ = 2
+ 
++from contextlib import contextmanager
+ import hashlib
+ import json
+ import os
+@@ -200,6 +201,15 @@
+             pass
+         return con
+ 
++    @contextmanager
++    def transaction(self):
++        con = self.connect()
++        try:
++            with con:
++                yield con
++        finally:
++            con.close()
++
+     def ensure_schema(self) -> None:
+         ddl = """
+         CREATE TABLE IF NOT EXISTS dw_meta (
+@@ -381,7 +391,7 @@
+         JOIN dw_run r ON r.run_id=k.run_id
+         WHERE r.status='SUCCESS';
+         """
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             con.executescript(ddl)
+             con.execute("INSERT OR REPLACE INTO dw_meta(key,value) VALUES('schema_version',?)", (str(SCHEMA_VERSION),))
+             con.execute("INSERT OR REPLACE INTO dw_meta(key,value) VALUES('package_version',?)", (PACKAGE_VERSION,))
+@@ -404,7 +414,7 @@
+               message: str = "", payload: Any = None) -> None:
+         raw = None if payload is None else json.dumps(payload, ensure_ascii=False, default=str)
+         try:
+-            with _LOCK, self.connect() as con:
++            with _LOCK, self.transaction() as con:
+                 con.execute(
+                     "INSERT INTO audit_log(created_at,run_id,actor,action,entity_type,entity_id,level,message,payload_json) VALUES(?,?,?,?,?,?,?,?,?)",
+                     (_utcnow(), run_id, actor, action, entity_type, entity_id, level, message, raw),
+@@ -416,14 +426,14 @@
+     # ── persistent Studio / email profiles ─────────────────────────────
+     def save_profile(self, profile_type: str, name: str, payload: Dict[str, Any]) -> None:
+         raw = json.dumps(payload or {}, ensure_ascii=False, default=str)
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             con.execute("""INSERT INTO app_profile(profile_type,name,payload_json,updated_at) VALUES(?,?,?,?)
+                            ON CONFLICT(profile_type,name) DO UPDATE SET payload_json=excluded.payload_json,updated_at=excluded.updated_at""",
+                         (str(profile_type), str(name), raw, _utcnow()))
+             con.commit()
+ 
+     def load_profile(self, profile_type: str, name: str) -> Dict[str, Any]:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             r = con.execute("SELECT payload_json FROM app_profile WHERE profile_type=? AND name=?",
+                             (str(profile_type), str(name))).fetchone()
+         if not r:
+@@ -434,7 +444,7 @@
+             return {}
+ 
+     def list_profiles(self, profile_type: str) -> List[str]:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             rows = con.execute("SELECT name FROM app_profile WHERE profile_type=? ORDER BY updated_at DESC,name",
+                                (str(profile_type),)).fetchall()
+         return [str(r[0]) for r in rows]
+@@ -449,7 +459,7 @@
+         """
+         ref = str(ref_date)[:10]
+         rid = run_id or _run_id(ref)
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             con.execute(
+                 """INSERT INTO dw_run(run_id,ref_date,started_at,status,package_version)
+                    VALUES(?,?,?,?,?)
+@@ -465,7 +475,7 @@
+                  *, package_version: str = PACKAGE_VERSION) -> None:
+         """Mark a registered execution failed without losing its audit trail."""
+         ref = str(ref_date)[:10]
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             con.execute(
+                 """INSERT INTO dw_run(run_id,ref_date,started_at,finished_at,status,package_version,note)
+                    VALUES(?,?,?,?,?,?,?)
+@@ -492,7 +502,7 @@
+         ref = str(ref_date)[:10]
+         rid = run_id or _run_id(ref)
+         started = _utcnow()
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             try:
+                 con.execute("BEGIN IMMEDIATE")
+                 con.execute(
+@@ -815,7 +825,7 @@
+ 
+     # ── reads ───────────────────────────────────────────────────────────
+     def latest_run(self, ref_date: str | None = None) -> Optional[Dict[str, Any]]:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             if ref_date:
+                 row = con.execute("SELECT * FROM dw_run WHERE status='SUCCESS' AND ref_date<=? ORDER BY ref_date DESC, finished_at DESC LIMIT 1", (str(ref_date)[:10],)).fetchone()
+             else:
+@@ -823,12 +833,12 @@
+             return dict(row) if row else None
+ 
+     def list_runs(self, limit: int = 60) -> pd.DataFrame:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query("SELECT run_id,ref_date,started_at,finished_at,status,package_version,row_count,main_count,event_count,case_count,transition_count,note FROM dw_run ORDER BY ref_date DESC, started_at DESC LIMIT ?", con, params=(int(limit),))
+ 
+     def load_snapshot(self, run_id: str | None = None, ref_date: str | None = None) -> Optional[WarehouseSnapshot]:
+         meta = None
+-        with self.connect() as con:
++        with self.transaction() as con:
+             if run_id:
+                 r = con.execute("SELECT * FROM dw_run WHERE run_id=? AND status='SUCCESS'", (run_id,)).fetchone()
+                 meta = dict(r) if r else None
+@@ -873,7 +883,7 @@
+         if not meta:
+             return pd.DataFrame()
+         rid = meta["run_id"]
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query("""SELECT e.activity_fa AS activity,e.activity_en,event_time,sorting,lifecycle_stage,org_unit,resource,bl_no,part_no,criticality
+                 FROM bridge_run_event b JOIN fact_event e ON e.event_id=b.event_id
+                 WHERE b.run_id=? AND e.case_key=? ORDER BY e.event_time,e.sorting""", con, params=(rid,str(case_key)))
+@@ -883,7 +893,7 @@
+         meta = self.latest_run() if not run_id else {"run_id": run_id}
+         if not meta:
+             return pd.DataFrame()
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query(
+                 """SELECT seq_no,from_activity,to_activity,from_time,to_time,
+                           ROUND(wait_days,4) AS wait_days,from_stage,to_stage,org_unit,resource
+@@ -891,11 +901,11 @@
+                 con, params=(meta["run_id"], str(case_key)))
+ 
+     def case_changes(self, case_key: str, limit: int = 100) -> pd.DataFrame:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query("SELECT ref_date,run_id,previous_run_id,changed_fields_json,previous_json,current_json,created_at FROM case_state_log WHERE case_key=? ORDER BY id DESC LIMIT ?", con, params=(str(case_key),int(limit)))
+ 
+     def kpi_trend(self, metric_key: str | None = None, limit: int = 366) -> pd.DataFrame:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             if metric_key:
+                 return pd.read_sql_query("SELECT * FROM vw_kpi_trend WHERE metric_key=? ORDER BY ref_date DESC LIMIT ?", con, params=(metric_key,int(limit)))
+             return pd.read_sql_query("SELECT * FROM vw_kpi_trend ORDER BY ref_date DESC,metric_key LIMIT ?", con, params=(int(limit)*20,))
+@@ -915,23 +925,23 @@
+                  ROUND(MAX(wait_days),2) AS 'بیشینه روز',COUNT(DISTINCT case_key) AS 'پرونده',COUNT(*) AS 'transition'
+                  FROM fact_transition_snapshot WHERE {' AND '.join(clauses)} GROUP BY from_activity,to_activity
+                  ORDER BY AVG(wait_days) DESC LIMIT ?"""
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query(sql,con,params=params)
+ 
+     def source_lineage(self, run_id: str | None = None) -> pd.DataFrame:
+         meta=self.latest_run() if not run_id else {"run_id":run_id}
+         if not meta: return pd.DataFrame()
+-        with self.connect() as con:
++        with self.transaction() as con:
+             return pd.read_sql_query("SELECT source_key,frame_name,row_count,column_count,fingerprint,columns_json FROM source_run_log WHERE run_id=? ORDER BY source_key,frame_name",con,params=(meta["run_id"],))
+ 
+     def audit_entries(self, limit: int = 200, run_id: str | None = None) -> pd.DataFrame:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             if run_id:
+                 return pd.read_sql_query("SELECT * FROM audit_log WHERE run_id=? ORDER BY id DESC LIMIT ?", con, params=(run_id,int(limit)))
+             return pd.read_sql_query("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", con, params=(int(limit),))
+ 
+     def stats(self) -> Dict[str, Any]:
+-        with self.connect() as con:
++        with self.transaction() as con:
+             q = lambda sql: con.execute(sql).fetchone()[0]
+             files = [self.path, Path(str(self.path) + "-wal"), Path(str(self.path) + "-shm")]
+             size = sum(x.stat().st_size for x in files if x.exists())
+@@ -954,7 +964,7 @@
+         Use ``vacuum`` afterwards when physical file compaction is required.
+         """
+         keep = max(1, int(keep_runs))
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             rows = con.execute(
+                 "SELECT run_id FROM dw_run WHERE status='SUCCESS' ORDER BY ref_date DESC, finished_at DESC"
+             ).fetchall()
+@@ -969,7 +979,7 @@
+         return {"deleted_runs": len(doomed), "deleted_orphan_events": before - after}
+ 
+     def vacuum(self) -> None:
+-        with _LOCK, self.connect() as con:
++        with _LOCK, self.transaction() as con:
+             con.execute("VACUUM")
+ 
+ 

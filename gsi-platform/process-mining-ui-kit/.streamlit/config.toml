@@ -1,0 +1,19 @@
+# پیکربندی Streamlit — پلتفرم هوش فرآیندی (اجرای کاملاً محلی/آفلاین)
+
+[server]
+# لازم برای سرو فایل‌های فونت محلی از پوشهٔ static/ وقتی FontSource.LOCAL_STATIC
+# فعال است (نگاه کنید به pm_ui/theme.py و static/fonts/README_FA.md).
+enableStaticServing = true
+# محیط سازمانی معمولاً بدون اینترنت است؛ آمار استفاده به بیرون ارسال نشود.
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#0F766E"
+backgroundColor = "#F9FAFB"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
+font = "sans serif"

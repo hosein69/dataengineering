@@ -1,0 +1,27 @@
+{
+  "patch": {
+    "name": "process-mining-ui-kit.patch",
+    "sha256": "3e9db84ed0c1eec2cc89f1b2fa34e44945bb7fb8b67d85fe80f40a5e5efa3bc9",
+    "applied": true,
+    "local_hardening": [
+      "Excel strings",
+      "Figma provenance wording",
+      "route share label"
+    ]
+  },
+  "repositories": [
+    {
+      "url": "https://github.com/fetchai/innovation-lab-examples",
+      "commit": "ae840c28001b266a99e390e6e7d35cbe809b9f05",
+      "usage": "conceptual task identity and state pattern, original implementation; no SDK"
+    },
+    {
+      "url": "https://github.com/celonis/pycelonis-examples",
+      "commit": "bd6f52ea2b4bf34281871c4040105cef7a5b2f8d",
+      "usage": "conceptual versioned artifact snapshot pattern, original implementation; no SDK"
+    }
+  ],
+  "figma_live_verified": false,
+  "figma_plugin_installed": true,
+  "figma_tool_available_in_registry": false
+}

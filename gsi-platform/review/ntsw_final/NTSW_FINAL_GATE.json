@@ -1,0 +1,85 @@
+{
+  "package_version": "29.8.2",
+  "release_channel": "rc4-opt2-h1-ntsw-verified-final",
+  "production_certified": false,
+  "real_input": {
+    "name": "NTSW-IKCO.xlsx",
+    "sha256": "380631a763bc5cc3b75d0d403c1da99dcbf89974470ab71a10e531c31878538d",
+    "embedded_in_package": false,
+    "reference_snapshot_date": "2025-08-30",
+    "execution_date": "2026-09-24"
+  },
+  "business_key_contract": {
+    "REG": [
+      "ثبت سفارش",
+      "شماره ثبت سفارش",
+      "کد ثبت سفارش"
+    ],
+    "ORDER": [
+      "سفارش",
+      "شماره سفارش",
+      "Order No.",
+      "Our Reference"
+    ],
+    "REG_FILE": [
+      "شماره پرونده",
+      "شماره پرونده ثبت سفارش"
+    ],
+    "BL": [
+      "بارنامه",
+      "شماره بارنامه",
+      "BL No."
+    ],
+    "material_required_for_ntsw_gate": false
+  },
+  "real_ntsw": {
+    "import_license_rows": 1000,
+    "reg_file_nonempty": 1000,
+    "reg_nonempty": 840,
+    "reg_file_reg_pairs": 840,
+    "reg_file_without_reg": 160,
+    "regfile_multi_reg": 0,
+    "reg_multi_regfile": 0,
+    "allocation_history_rows": 3286,
+    "allocation_fact_rows": 2834,
+    "allocation_case_rows": 1418,
+    "commitment_rows": 4007,
+    "commitment_case_rows": 2390,
+    "cashflow_events": 7082,
+    "cashflow_cases": 2621,
+    "diagnostics": 0,
+    "order_nonempty": 0,
+    "bl_available_in_ntsw": false,
+    "future_dated_proforma_issue_dates": 53,
+    "future_date_range": [
+      "2025-09-01",
+      "2025-12-06"
+    ]
+  },
+  "currency_counts": {
+    "EUR": 3346,
+    "CNY": 2681,
+    "AED": 884,
+    "KRW": 77,
+    "JPY": 45,
+    "INR": 31,
+    "USD": 16,
+    "IRR": 1,
+    "RUB": 1
+  },
+  "validation": {
+    "baseline_h1_runnable_passed": 528,
+    "baseline_h1_ui_blocked": 3,
+    "current_canonical_collected": 536,
+    "current_targeted_passed": 49,
+    "current_changed_function_regression_passed": 92,
+    "current_streamlit_app_tests_blocked": 3,
+    "full_current_suite_single_pass_completed": false,
+    "full_current_suite_note": "A sharded all-suite attempt exceeded the execution tool time limit; no full-current 533-runnable PASS claim is made. Delta-specific and affected-function regressions passed."
+  },
+  "open_gates": [
+    "ORDER/BL bridge validation requires the actual IL Append / Abbasi / SATA or equivalent source workbooks; they are not present in current accessible files.",
+    "Three Streamlit AppTests require streamlit.testing in the runtime environment.",
+    "Cross-source production reconciliation/performance remains outside a NTSW-only snapshot."
+  ]
+}

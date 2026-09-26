@@ -1,0 +1,18 @@
+## compile rc=0
+
+## financial_and_ui rc=0
+..........................                                               [100%]
+26 passed in 5.55s
+
+## broader_regression rc=0
+.....................................                                    [100%]
+=============================== warnings summary ===============================
+tests/test_rc_integrity.py::test_blocked_schema_does_not_become_baseline
+  /workspace/scratch/67a9f8d8b984/h1_build/gsi/warehouse/reliability.py:380: Pandas4Warning: Timestamp.utcnow is deprecated and will be removed in a future version. Use Timestamp.now('UTC') instead.
+    (run_id, name, fp, json.dumps({"columns": cols, "dtypes": dtypes}, ensure_ascii=False), pd.Timestamp.utcnow().isoformat()),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+37 passed, 1 warning in 5.02s
+
+
+Baseline full regression: 526 passed, 4 legacy errors (email scanner includes .venv; SUBTOTAL check); see RELEASE_REVIEW.

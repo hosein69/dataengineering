@@ -1,0 +1,141 @@
+<!doctype html>
+<!--
+  کامپوننت درگ‌اند‌درپ Streamlit — پیاده‌سازی خام پروتکل «Components v1» با
+  postMessage، بدون هیچ کتابخانهٔ کمکی یا وابستگی اینترنتی (نگاه کنید به
+  توضیح بالای pm_ui/layout/dragdrop.py برای چرایی).
+
+  پروتکل (مستند رسمی Streamlit، همان چیزی که خودِ streamlit-component-lib
+  هم فقط پوششی رویش است):
+    این فایل → parent:  streamlit:componentReady   (یک‌بار، بعد از بارگذاری)
+    این فایل → parent:  streamlit:setFrameHeight   (هر بار ارتفاع محتوا عوض شد)
+    این فایل → parent:  streamlit:setComponentValue (وقتی کاربر رهاسازی کرد)
+    parent → این فایل:  streamlit:render            (هر بار Python دوباره صدا زد)
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:transparent}
+  #list{display:flex;flex-direction:column;gap:6px;padding:2px 0}
+  .row{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;
+    border:1px solid var(--border,#dbe3e7);border-radius:var(--radius,10px);
+    background:var(--surfaceRaised,#fff);cursor:grab;user-select:none;
+    transition:box-shadow .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .row:active{cursor:grabbing}
+  .row.dragging{opacity:.35}
+  .row.over{border-color:var(--teal,#0a7c86);background:var(--tealWash,#e7f1f2)}
+  .handle{font-size:13px;color:var(--inkMuted,#5a6b79);flex:none;line-height:1}
+  .label{font-size:12px;font-weight:700;color:var(--ink,#0b1f33);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{font-size:10px;color:var(--inkMuted,#5a6b79);flex:none}
+  .hint{font-size:10px;color:var(--inkMuted,#5a6b79);margin-top:6px}
+  @media (prefers-reduced-motion:reduce){.row{transition:none}}
+</style>
+</head>
+<body>
+<div id="list"></div>
+<div class="hint" id="hint"></div>
+<script>
+(function(){
+  var listEl = document.getElementById('list');
+  var hintEl = document.getElementById('hint');
+  var currentItems = [];
+  var dragId = null;
+
+  // نکتهٔ حیاتی پروتکل که در هیچ نمونهٔ ساده‌ای مستند نبود: ComponentRegistry
+  // خودِ Streamlit (سمت parent) هر پیامی را که ``isStreamlitMessage: true``
+  // نداشته باشد، بی‌هیچ هشداری در کنسول کنار می‌گذارد — نه فقط type/apiVersion
+  // کافی نیست. بدون این پرچم، componentReady هرگز به مقصد نمی‌رسد و render
+  // هم هرگز نمی‌آید، بدون هیچ خطای قابل‌مشاهده‌ای.
+  function post(msg){
+    msg.isStreamlitMessage = true;
+    window.parent.postMessage(msg, "*");
+  }
+  function sendReady(){
+    post({type: "streamlit:componentReady", apiVersion: 1});
+  }
+  function sendHeight(){
+    var h = document.documentElement.scrollHeight;
+    post({type: "streamlit:setFrameHeight", height: h});
+  }
+  function sendValue(orderedIds){
+    post({type: "streamlit:setComponentValue", value: orderedIds, dataType: "json"});
+  }
+
+  function applyTheme(theme){
+    theme = theme || {};
+    var root = document.documentElement.style;
+    var map = {ink:'--ink', inkMuted:'--inkMuted', border:'--border', borderStrong:'--borderStrong',
+      surfaceRaised:'--surfaceRaised', surfaceSunken:'--surfaceSunken', teal:'--teal', tealWash:'--tealWash'};
+    Object.keys(map).forEach(function(k){ if (theme[k]) root.setProperty(map[k], theme[k]); });
+    if (theme.radius) root.setProperty('--radius', theme.radius + 'px');
+    if (theme.font) document.body.style.fontFamily = theme.font;
+  }
+
+  function render(items){
+    currentItems = items || [];
+    listEl.innerHTML = '';
+    currentItems.forEach(function(item){
+      var row = document.createElement('div');
+      row.className = 'row';
+      row.setAttribute('draggable', 'true');
+      row.dataset.id = item.id;
+      row.innerHTML =
+        '<span class="handle" aria-hidden="true">⠿</span>' +
+        '<span class="label"></span>' +
+        (item.badge ? '<span class="badge"></span>' : '');
+      row.querySelector('.label').textContent = item.label || item.id;
+      if (item.badge) row.querySelector('.badge').textContent = item.badge;
+
+      row.addEventListener('dragstart', function(e){
+        dragId = item.id;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        // برخی مرورگرها بدون setData روی dragover کار نمی‌کنند
+        e.dataTransfer.setData('text/plain', item.id);
+      });
+      row.addEventListener('dragend', function(){
+        row.classList.remove('dragging');
+        Array.prototype.forEach.call(listEl.children, function(c){ c.classList.remove('over'); });
+      });
+      row.addEventListener('dragover', function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (item.id !== dragId) row.classList.add('over');
+      });
+      row.addEventListener('dragleave', function(){ row.classList.remove('over'); });
+      row.addEventListener('drop', function(e){
+        e.preventDefault();
+        row.classList.remove('over');
+        if (dragId == null || dragId === item.id) return;
+        var ids = currentItems.map(function(x){ return x.id; });
+        var from = ids.indexOf(dragId);
+        var to = ids.indexOf(item.id);
+        if (from === -1 || to === -1) return;
+        ids.splice(to, 0, ids.splice(from, 1)[0]);
+        // بازچینی محلی فوری (بازخورد آنی)، بعد مقدار واقعی به پایتون می‌رود
+        // و رندر بعدی از سمت Python با ترتیب تازه‌ی تأییدشده جایگزین می‌شود.
+        var reordered = ids.map(function(id){ return currentItems.find(function(x){ return x.id === id; }); });
+        render(reordered);
+        sendValue(ids);
+      });
+      listEl.appendChild(row);
+    });
+    hintEl.textContent = currentItems.length > 1 ? 'برای تغییر ترتیب بکشید و رها کنید' : '';
+    sendHeight();
+  }
+
+  window.addEventListener('message', function(event){
+    var data = event.data || {};
+    if (data.type !== 'streamlit:render') return;
+    var args = data.args || {};
+    applyTheme(args.theme);
+    render(args.items || []);
+  });
+
+  sendReady();
+})();
+</script>
+</body>
+</html>

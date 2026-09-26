@@ -1,0 +1,32 @@
+{
+  "provenance": "live Figma verified 2026-09-25",
+  "figma": {
+    "foundations_file_key": "T9Ps72EYpriHdov9fmNFQu",
+    "foundations_node": "3:2",
+    "finance_file_key": "oMZKwzm97e65g7nQWnUog8",
+    "finance_node": "2:43",
+    "cover_file_key": "Abh0S2zpkk25P7HTNdpipa",
+    "cover_node": "1:152"
+  },
+  "colors": {
+    "surface_page": {"$type": "color", "$value": "#F6F8F9"},
+    "surface_raised": {"$type": "color", "$value": "#FFFFFF"},
+    "surface_sunken": {"$type": "color", "$value": "#EEF2F4"},
+    "navy": {"$type": "color", "$value": "#0B1F33"},
+    "teal": {"$type": "color", "$value": "#0A7C86"},
+    "gold": {"$type": "color", "$value": "#C79A4A"}
+  },
+  "font": {
+    "$type": "fontFamily",
+    "$value": "IRANSansWeb",
+    "distribution": "not bundled; organization-licensed installation/files required",
+    "fallback": ["IRANSans", "YekanBakh", "Vazirmatn", "Tahoma", "Segoe UI", "Arial"]
+  },
+  "typography": {
+    "display": [32, 700, 1.35], "h1": [25, 700, 1.4], "h2": [20, 700, 1.45],
+    "h3": [17, 700, 1.5], "h4": [15, 700, 1.55], "body-lg": [14, 400, 1.75],
+    "body": [13, 400, 1.75], "small": [12, 400, 1.65], "caption": [11, 400, 1.55],
+    "overline": [11, 700, 1.4], "metric": [26, 700, 1.2], "metric-sm": [19, 700, 1.25]
+  },
+  "persian_letter_spacing_px": 0
+}

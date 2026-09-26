@@ -1,0 +1,7 @@
+status=PASS
+errors=0
+warnings=4
+WARNING: TASK-GSI-SCOPE: accountable position not established
+WARNING: نام رسمی واحد بهره‌بردار GSI در منابع تثبیت نشده و به‌صورت pending نگه داشته شده است.
+WARNING: نام رسمی واحد حاکمیت/پذیرش و عنوان شغلی Accountable در استقرار باید تأیید شود.
+WARNING: EFD روند نرم‌افزار/انتشار را مدل می‌کند؛ آن را جایگزین مدل فرآیند بازرگانی واقعی سازمان نکنید.

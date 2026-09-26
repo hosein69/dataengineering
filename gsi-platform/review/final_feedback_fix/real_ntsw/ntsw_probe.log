@@ -1,0 +1,7 @@
+/opt/pyvenv/lib/python3.13/site-packages/openpyxl/worksheet/_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+  warn(msg)
+/opt/pyvenv/lib/python3.13/site-packages/openpyxl/worksheet/_reader.py:329: UserWarning: Data Validation extension is not supported and will be removed
+  warn(msg)
+2026-09-24 13:08:30,191 | INFO    |    ✅ [ntsw] Import Licence: 1000 ردیف | 1000 پرونده | 840 ثبت سفارش
+2026-09-24 13:08:34,686 | INFO    |    ✅ [ntsw] Release Commitment: 4007 ردیف تعهد → 2390 کد ثبت سفارش
+2026-09-24 13:08:37,705 | INFO    |    ✅ [ntsw] Allocation: 3286 درخواست → 1418 کد ثبت سفارش

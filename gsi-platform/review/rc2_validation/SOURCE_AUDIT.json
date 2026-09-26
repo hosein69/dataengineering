@@ -1,0 +1,1200 @@
+{
+  "source_registry": {
+    "abbasi": {
+      "folder": "${BLS_TOTAL_DIR}",
+      "pattern": "*BLs*Tracking*",
+      "sheets": [
+        "BLs Tracking"
+      ],
+      "join_on": "BL",
+      "weight": 0.9,
+      "required": false,
+      "role": "ردیابی بارنامه‌ها (enrichment لجستیکی درجه‌دوم؛ سازنده جمعیت نیست)",
+      "enabled": true
+    },
+    "moghavemat": {
+      "folder": "${GS_COMBINE_OUT_DIR}",
+      "pattern": "*Commercial Expert Data*",
+      "sheets": [
+        "Expert Data"
+      ],
+      "join_on": "ORDER",
+      "frames": {
+        "main": "ORDER",
+        "inventory": "ORDER_MATERIAL"
+      },
+      "weight": 1.0,
+      "required": false,
+      "role": "مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک",
+      "enabled": true,
+      "notes": "ستون Data type چند مقدار دارد (Pre Purchase Approval Data / Purchase Approval Data) پس فایل چندنوعی است. ستون BL No. حاوی شماره فنی/پروفرما است نه بارنامه و قرنطینه می‌شود. سه مقدار کمی «نزد سازنده / در راه / گمرک» منبع اصلی کارشناسی Supply Position هستند و در فریم inventory با دانه ORDER_MATERIAL ادغام می‌شوند؛ blank هرگز صفر فرض نمی‌شود.\n"
+    },
+    "sata": {
+      "folder": "${BLS_TOTAL_DIR}",
+      "pattern": "*SATA*",
+      "sheets": [
+        "Sata Tracking"
+      ],
+      "join_on": "BL",
+      "weight": 0.9,
+      "role": "پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات (شاهد درجه‌دوم)",
+      "enabled": true,
+      "notes": "پل مستقیم و قوی BL ↔ ORDER ↔ REG است، اما تنها مسیر بیزینسی ثبت سفارش نیست. اتصال NTSW در DWH از هاب Import Licence و KEY_REG_FILE نیز برقرار می‌شود. SATA برای spine لجستیک شاهد مستقیم مهم است، نه منبع یگانه حقیقت.\n"
+    },
+    "clearance": {
+      "folder": "${CLEARANCE_DIR}",
+      "pattern": "*Clearance*",
+      "sheets": [
+        null
+      ],
+      "sheet_strategy": "all_data_sheets",
+      "skip_sheets": [
+        "Help",
+        "Sheet2",
+        "data",
+        "Data",
+        "راهنما"
+      ],
+      "join_on": "BL",
+      "weight": 0.9,
+      "multi_file": true,
+      "dedupe_by": "CL_REF_DATE",
+      "role": "ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار",
+      "enabled": true,
+      "notes": "هر فایل شیت هم‌نام خودش را دارد (Sea/Air/Land/chabaharClearance) و تعداد ستون‌ها متفاوت است. «ترخیص کامل» و «ترخیص درصدی» علامت «*» هستند نه تاریخ؛ تاریخ واقعی در «تاریخ بارگیری» است.\n"
+    },
+    "cotage": {
+      "folder": "${BLS_TOTAL_DIR}",
+      "pattern": "*Cottage*",
+      "sheets": [
+        "Cottage Tracking"
+      ],
+      "join_on": "BL",
+      "weight": 0.88,
+      "role": "کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد",
+      "enabled": true
+    },
+    "oracle": {
+      "folder": "${BLS_TOTAL_DIR}",
+      "pattern": "*Oracle*",
+      "sheets": [
+        null
+      ],
+      "join_on": "MATERIAL",
+      "weight": 0.8,
+      "role": "متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت",
+      "enabled": true,
+      "notes": "ستون «قطعه بحراني» در فایل کاملاً خالی است، پس بحرانی بودن باید محاسبه شود. مقاومت = (موجودی ایران‌خودرو + ساپکو + در راه + در گمرک) ÷ نیاز روزانه قطعات.\n"
+    },
+    "ntsw": {
+      "folder": "${FOREIGN_DIR}",
+      "pattern": "*NTSW*",
+      "sheets": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "join_on": "REG",
+      "weight": 1.0,
+      "required": false,
+      "role": "مرجع درجه‌اول و سازنده جمعیت: مجوز واردات + تعهدات ارزی + تخصیص ارز",
+      "enabled": true,
+      "notes": "Import License/Import Licence محور اتصال شماره پرونده ثبت سفارش به NTSW است. Release Commitment و Allocation بر کد ثبت سفارش کار می‌کنند؛ اتصال آنها به سایر بیزینس از Import Licence → KEY_REG_FILE → IL Append و سپس کلیدهای معتبر IL انجام می‌شود. تعهدها چندردیفی و Allocation درخواست‌محور است.\n"
+    },
+    "fx_transaction": {
+      "folder": "${FOREIGN_DIR}",
+      "pattern": "*Foreign*Exchange*Transaction*",
+      "sheets": [
+        null
+      ],
+      "join_on": "REG",
+      "weight": 0.86,
+      "dedupe_by": "FX_BUY_DATE",
+      "role": "خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص",
+      "enabled": true
+    },
+    "credit": {
+      "folder": "${FOREIGN_DIR}",
+      "pattern": "*Credit*",
+      "sheets": [
+        "PURCREDIT"
+      ],
+      "join_on": "REG",
+      "weight": 0.7,
+      "role": "اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت",
+      "enabled": true
+    },
+    "ilappend": {
+      "folder": "${FOREIGN_DIR}",
+      "pattern": "*IL*",
+      "sheets": [
+        "Append"
+      ],
+      "join_on": "REG",
+      "weight": 0.68,
+      "role": "الحاقیه ثبت سفارش",
+      "enabled": true,
+      "notes": "⚠️ دو ستون شبیه هم دارد: «شماره ثبت سفارش» (۸ رقمی، کلید NTSW) و «شماره پرونده ثبت سفارش» (۹ رقمی، شماره پرونده). نسخه قبلی دومی را به‌عنوان کلید گرفته بود و به همین دلیل NTSW هیچ‌وقت وصل نشد.\n"
+    },
+    "sap": {
+      "folder": "${FOREIGN_DIR}",
+      "pattern": "*SAP*",
+      "sheets": [
+        "Data"
+      ],
+      "join_on": "PR",
+      "weight": 0.82,
+      "role": "برنامه‌ریزی و خرید SAP — PR Item / Workflow / PO Item",
+      "enabled": true,
+      "notes": "V29.7.6: فایل SAP چند Grain مستقل دارد. raw_rows برای lineage، pr_items برای PR×Item، workflow_rows برای تاریخچه Workflow/Package و po_items برای PO×Item. فقط main (آخرین projection در سطح PR) به Flat Report قدیمی merge می‌شود؛ تحلیل BI/DWH و Chatbot باید از Factهای native-grain استفاده کند. هیچ fuzzy join بین PR/PO/ORDER/REG مجاز نیست و تاریخ‌های خام در کنار ISO استاندارد حفظ می‌شوند.\n"
+    },
+    "doccheck": {
+      "folder": "${MOHAMADI_DIR}",
+      "pattern": "*Document*",
+      "sheets": [
+        "Checking"
+      ],
+      "join_on": "ORDER",
+      "dedupe_by": "DOC_SUBMIT_DATE",
+      "weight": 0.55,
+      "role": "بررسی و مغایرت اسناد (سطح سند)",
+      "enabled": true,
+      "notes": "کاردینالیتی این فایل «سند» است نه «قلم سفارش»؛ پیش از ادغام روی شماره سفارش به آخرین وضعیت تقلیل داده می‌شود تا جوین many-to-many ردیف‌های خط لوله را تکثیر نکند.\n"
+    },
+    "hr": {
+      "folder": "${HR_DIR}",
+      "pattern": "*HR_Main_Updated*",
+      "sheets": [
+        null
+      ],
+      "join_on": "EMP",
+      "weight": 0.5,
+      "required": true,
+      "role": "پرسنل و سلسله‌مراتب سازمانی",
+      "enabled": true
+    },
+    "missmohammadi": {
+      "folder": "${MOHAMADI_DIR}",
+      "pattern": "*Miss*Mohammadi*",
+      "sheets": [
+        null
+      ],
+      "join_on": "BL",
+      "weight": 0.4,
+      "role": "داده تکمیلی",
+      "enabled": false,
+      "notes": "هیچ فایلی با این الگو در پوشه یافت نشد (تأیید‌شده در HEADERS_MAP)."
+    }
+  },
+  "source_count": 14,
+  "enabled_source_count": 13,
+  "adapter_column_maps": [
+    {
+      "module": "gsi/adapters/a10_abbasi.py",
+      "class": "AbbasiAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "STATUS": [
+            "وضعیت"
+          ],
+          "GOODS_DESC": [
+            "_شرح کالا_",
+            "شرح کالا"
+          ],
+          "TRIP_MODE": [
+            "نوع سفر"
+          ],
+          "CONTAINER_20": [
+            "کانتینر20",
+            "کانتینر 20"
+          ],
+          "CONTAINER_40": [
+            "کانتینر40",
+            "کانتینر 40"
+          ],
+          "VOYAGE_NO": [
+            "شماره سفر"
+          ],
+          "VESSEL": [
+            "نام کشتی"
+          ],
+          "DISCHARGE_DATE": [
+            "تاریخ تخلیه"
+          ],
+          "BL_DELIVERY_DATE": [
+            "تاریخ تحویل بارنامه"
+          ],
+          "RELEASE_DATE": [
+            "تاریخ آزاد سازی"
+          ],
+          "DO_DATE": [
+            "تاریخ دریافت ترخیصیه"
+          ],
+          "WAREHOUSE_RECEIPT": [
+            "تاریخ دریافت قبض انبار"
+          ],
+          "SHIP_STATUS": [
+            "وضعیت حمل"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a20_sata.py",
+      "class": "SataAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "INVOICE_VALUE": [
+            "ارزش فاکتور"
+          ],
+          "DOC_RECEIVED": [
+            "دریافت اسناد"
+          ],
+          "DOC_RETURNED": [
+            "عودت اسناد"
+          ],
+          "TRACKING_DATE": [
+            "تاریخ اخذ کد رهگیری"
+          ],
+          "NO": [
+            "کد رهگیری"
+          ],
+          "PAY_INSTRUMENT": [
+            "کد ابزار پرداخت"
+          ],
+          "CREDIT_STATUS": [
+            "وضعیت اعتبارات"
+          ],
+          "BANK": [
+            "بانک"
+          ],
+          "GOODS_DESC": [
+            "_شرح کالا_",
+            "شرح کالا"
+          ],
+          "CURRENCY": [
+            "_نوع ارز_",
+            "نوع ارز"
+          ],
+          "FX_SOURCE": [
+            "محل تامین ارز"
+          ],
+          "PAYMENT_METHOD": [
+            "روش پرداخت"
+          ],
+          "CREDIT_EXPERT": [
+            "کارشناس اعتبارات"
+          ],
+          "SENT_TO_BANK": [
+            "ارسال به بانک"
+          ],
+          "CLOSED_DATE": [
+            "مختومه شدن"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a30_customs.py",
+      "class": "ClearanceAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "FILE_NO": [
+            "پرونده ترخیص"
+          ],
+          "GOODS_DESC": [
+            "شرح کالا"
+          ],
+          "TRANSPORT_MODE": [
+            "نوع حمل"
+          ],
+          "REF_DATE": [
+            "تاریخ ارجاع"
+          ],
+          "EXPERT": [
+            "کارشناس ترخیص"
+          ],
+          "COTAGE_DATE": [
+            "تاریخ  دریافت شماره کوتاژ",
+            "تاریخ دریافت شماره کوتاژ"
+          ],
+          "COTAGE_NO": [
+            "کوتاژ"
+          ],
+          "LICENSE_DATE": [
+            "تاریخ صدور پروانه"
+          ],
+          "CURRENCY": [
+            "نوع ارز"
+          ],
+          "INVOICE_VALUE": [
+            "ارزش فاکتور"
+          ],
+          "EUR_VALUE": [
+            "ارزش یورویی"
+          ],
+          "RIAL_VALUE": [
+            "ارزش ریالی"
+          ],
+          "HS_CODE": [
+            "تعرفه"
+          ],
+          "DUTY_RATE": [
+            "ماخذ"
+          ],
+          "DUTY_AMOUNT": [
+            "مبلغ حقوق و عوارض گمرکی"
+          ],
+          "DUTY_DATE": [
+            "تاریخ حقوق و عوارض گمرکی"
+          ],
+          "PARTIAL_FLAG": [
+            "ترخیص درصدی"
+          ],
+          "FULL_FLAG": [
+            "ترخیص کامل"
+          ],
+          "LOAD_DATE_1": [
+            "تاریخ بارگیری 1",
+            "_تاریخ بارگیری1_",
+            "_تاریخ بارگیری_"
+          ],
+          "LOAD_DATE_FINAL": [
+            "تاریخ بارگیری 6 (کامل)",
+            "تاریخ بارگیری نهایی",
+            "تاریخ بارگیری"
+          ],
+          "DAMAGE_PCT": [
+            "درصد آسیب دیده"
+          ],
+          "NOTE": [
+            "توضیحات"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a30_customs.py",
+      "class": "CotageAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "STATUS": [
+            "وضعیت"
+          ],
+          "INVOICE_VALUE": [
+            "ارزش فاکتور"
+          ],
+          "EUR_VALUE": [
+            "معادل یورویی"
+          ],
+          "PACK_COUNT": [
+            "تعداد بسته بندی"
+          ],
+          "PACK_TYPE": [
+            "نوع بسته بندی"
+          ],
+          "TRANSIT_STATUS": [
+            "وضعیت ترانزیت"
+          ],
+          "EXPERT": [
+            "کارشناس ترخیص",
+            "کارشناس"
+          ],
+          "ENTRY_BORDER": [
+            "مرز ورودی"
+          ],
+          "DEST_CUSTOMS": [
+            "گمرک مقصد"
+          ],
+          "DOC_DATE": [
+            "تاریخ دریافت اسناد جهت اظهار گمرکی از اعتبارات"
+          ],
+          "COTAGE_DATE": [
+            "تاریخ دریافت شماره کوتاژ"
+          ],
+          "NO": [
+            "کوتاژ"
+          ],
+          "PARTIAL_PCT_1": [
+            "درصد ترخیص 1"
+          ],
+          "PARTIAL_DATE_1": [
+            "تاریخ درصد ترخیص 1"
+          ],
+          "PARTIAL_PCT_2": [
+            "درصد ترخیص 2"
+          ],
+          "PARTIAL_DATE_2": [
+            "تاریخ درصد ترخیص 2"
+          ],
+          "ABANDONED_DATE": [
+            "تاریخ متروکه"
+          ],
+          "FULL_CLEAR_DATE": [
+            "تاریخ ترخیص کامل"
+          ],
+          "NOTE": [
+            "توضیحات"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a40_oracle.py",
+      "class": "OracleAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "PART_NO": [
+            "شماره فنی"
+          ],
+          "MATERIAL_CODE": [
+            "کد جنس"
+          ],
+          "MATERIAL_DESC": [
+            "شرح جنس",
+            "شرح قطعه"
+          ],
+          "SUPPLY_GROUP": [
+            "گروه تامین"
+          ],
+          "BUILD_GROUP": [
+            "گروه ساخت"
+          ],
+          "PLANNING_GROUP": [
+            "گروه برنامه ریزی"
+          ],
+          "PART_GROUP": [
+            "گروه قطعه"
+          ],
+          "PART_CLASS": [
+            "رده بندی قطعه",
+            "EI / NEI"
+          ],
+          "FOREIGN_SHARE": [
+            "درصد سهم خرید خارجی",
+            "درصد خرید خارجی"
+          ],
+          "ALTERNATIVE": [
+            "کد آلترناتیو",
+            "آلترناتیو1"
+          ],
+          "STOCK_IKCO": [
+            "موجودی انبار ایران خودرو"
+          ],
+          "STOCK_SAPCO": [
+            "موجودی انبار ساپکو"
+          ],
+          "CARS_ON_FLOOR": [
+            "تعداد خودرو کف"
+          ],
+          "DAILY_NEED": [
+            "نیاز روزانه قطعات",
+            "میانگین نیاز روزانه (عدد)",
+            "نیاز روزانه"
+          ]
+        },
+        "EXCLUDED_HEADERS": [
+          "column18",
+          "تاریخ ثبت",
+          "توضیحات",
+          "ریسک پذیری",
+          "شماره نامه",
+          "شماره پرسنلی",
+          "قطعه بحرانی",
+          "وضعیت",
+          "کارشناس خرید خارجی"
+        ]
+      }
+    },
+    {
+      "module": "gsi/adapters/a50_ntsw.py",
+      "class": "NtswAdapter",
+      "declared_maps": {
+        "COMMITMENT_MAP": {
+          "COMMIT_ROW": [
+            "شماره ردیف تعهد"
+          ],
+          "BRANCH": [
+            "شعبه"
+          ],
+          "CURRENCY": [
+            "ارز"
+          ],
+          "INITIAL_COMMIT": [
+            "تعهد اولیه"
+          ],
+          "BALANCE": [
+            "مانده تعهد"
+          ],
+          "COMMIT_DATE": [
+            "تاریخ ایجاد تعهد"
+          ],
+          "DEADLINE": [
+            "مهلت رفع تعهد"
+          ],
+          "RELEASE_STATUS": [
+            "وضعیت رفع تعهد"
+          ],
+          "COMPANY": [
+            "شرکت"
+          ]
+        },
+        "ALLOCATION_MAP": {
+          "REQ_ROW": [
+            "ردیف درخواست"
+          ],
+          "ALLOC_STATUS": [
+            "وضعیت"
+          ],
+          "ALLOC_PROCESS": [
+            "فرآیند فعلی"
+          ],
+          "REQ_AMOUNT": [
+            "مبلغ درخواست"
+          ],
+          "REQ_CURRENCY": [
+            "ارز درخواست"
+          ],
+          "REQ_DATE": [
+            "تاریخ ایجاد درخواست"
+          ],
+          "ALLOC_DATE": [
+            "تاریخ تخصیص"
+          ],
+          "FX_SOURCE": [
+            "محل تامین ارز"
+          ],
+          "FX_RATE_TYPE": [
+            "نرخ ارز"
+          ],
+          "FX_RATE_NUMERIC": [
+            "نرخ ارز"
+          ],
+          "REQ_TYPE": [
+            "نوع درخواست"
+          ],
+          "ALLOC_BRANCH": [
+            "شعبه"
+          ],
+          "APPROVE_DATE": [
+            "تاریخ تایید"
+          ],
+          "QUEUE_RANK": [
+            "رتبه در صف",
+            "اولویت صف",
+            "ردیف صف",
+            "Queue Rank",
+            "Queue Position"
+          ],
+          "COMPANY": [
+            "شرکت"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "FxTransactionAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "BUY_DATE": [
+            "تاریخ خرید",
+            "تاریخ خرید ارز"
+          ],
+          "BENEFICIARY": [
+            "نام ذینفع"
+          ],
+          "GOODS_DESC": [
+            "شرح کالا"
+          ],
+          "EXCHANGE": [
+            "نام صرافي",
+            "نام صرافی"
+          ],
+          "BANK": [
+            "نام بانک"
+          ],
+          "AMOUNT": [
+            "ارز خریداری شده",
+            "مبلغ خرید ارز"
+          ],
+          "CURRENCY": [
+            "نوع ارز خریداری شده",
+            "نوع ارز"
+          ],
+          "RATE": [
+            "نرخ ارز خریداری شده"
+          ],
+          "EUR_VALUE": [
+            "معادل یورویی خرید ارز"
+          ],
+          "RIAL_VALUE": [
+            "مبلغ ریالی"
+          ],
+          "STATUS": [
+            "وضعیت"
+          ],
+          "ALLOC_VALIDITY": [
+            "اعتبارتخصیص",
+            "اعتبار تخصیص"
+          ],
+          "BENEF_CONFIRM": [
+            "تاييد ذينفع",
+            "تایید ذینفع"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "CreditAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "CUSTOMER": [
+            "مشتری"
+          ],
+          "OPEN_YEAR": [
+            "سال گشايش",
+            "سال گشایش"
+          ],
+          "CARGO_DESC": [
+            "شرح محموله"
+          ],
+          "DEPARTMENT": [
+            "اداره"
+          ],
+          "EXPERT": [
+            "کارشناس اعتبارات"
+          ],
+          "BUYER": [
+            "کارشناس خرید خارجی",
+            "کارشناس خريد خارجي"
+          ],
+          "SUPPLIER": [
+            "نام تامین کننده"
+          ],
+          "PAYMENT_TYPE": [
+            "نوع پرداخت"
+          ],
+          "BANK_BRANCH": [
+            "بانك عامل شعبه",
+            "بانک عامل شعبه"
+          ],
+          "PROFORMA_VALUE": [
+            "ارزش پروفرم"
+          ],
+          "CURRENCY": [
+            "نوع ارز"
+          ],
+          "EUR_AMOUNT": [
+            "مبلغ به یورو"
+          ],
+          "RIAL_AMOUNT": [
+            "مبلغ به ریال"
+          ],
+          "OPEN_PCT": [
+            "درصد گشايش",
+            "درصد گشایش"
+          ],
+          "PREPAYMENT": [
+            "پیش پرداخت اعتبار"
+          ],
+          "REMAINING": [
+            "اعتبار باقیمانده"
+          ],
+          "REG_DATE": [
+            "تاریخ ثبت سفارش"
+          ],
+          "LC_NO": [
+            "شماره اعتبار/حواله",
+            "شماره اعتبار"
+          ],
+          "LAST_STATUS": [
+            "آخرین وضعیت"
+          ],
+          "FUND_DATE": [
+            "تاریخ تامین وجه"
+          ],
+          "SWIFT_DATE": [
+            "تاریخ دریافت سوئیفت"
+          ],
+          "NOTE": [
+            "ملاحظات"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "IlAppendAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "REQUEST_TYPE": [
+            "نوع درخواست"
+          ],
+          "COMPANY": [
+            "نام شرکت"
+          ],
+          "FILE_NO": [
+            "شماره پرونده ثبت سفارش"
+          ],
+          "REG_DATE": [
+            "تاریخ صدور ثبت سفارش"
+          ],
+          "EXPERT": [
+            "نام کارشناس",
+            "کارشناس ثبت سفارش"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "SapAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "DOC_TYPE": [
+            "Document Type"
+          ],
+          "STATUS_ID": [
+            "Status ID"
+          ],
+          "NOTIFICATION": [
+            "Notification"
+          ],
+          "WORKFLOW_STATUS": [
+            "WorkFlow Status"
+          ],
+          "PR_STATUS_TEXT": [
+            "PR Status Text"
+          ],
+          "TASK_STATUS": [
+            "Tasks Status"
+          ],
+          "ACTION": [
+            "Action"
+          ],
+          "CHANGED_BY": [
+            "Changed By"
+          ],
+          "PR_ITEM": [
+            "Item of requisition"
+          ],
+          "MATERIAL": [
+            "Material"
+          ],
+          "MATERIAL_DESC": [
+            "Material Description"
+          ],
+          "SHORT_TEXT": [
+            "Short Text"
+          ],
+          "REQ_QTY": [
+            "Quantity requested"
+          ],
+          "UOM": [
+            "Unit of Measure"
+          ],
+          "MATERIAL_GROUP": [
+            "Material Group"
+          ],
+          "PURCH_GROUP": [
+            "Purchasing Group"
+          ],
+          "PURCH_GROUP_DESC": [
+            "Purgroup Description"
+          ],
+          "REQUISITIONER": [
+            "Requisitioner"
+          ],
+          "REQUISITION_DATE": [
+            "Requisition date"
+          ],
+          "CREATED_BY": [
+            "Created By"
+          ],
+          "CHANGED_ON": [
+            "Changed On"
+          ],
+          "RELEASE_DATE": [
+            "Release Date"
+          ],
+          "DELIVERY_FROM_TO": [
+            "Deliv. date(From/to)"
+          ],
+          "HEADER_PURCHASE_ORDER": [
+            "Purchase order"
+          ],
+          "QTY_ORDERED": [
+            "Quantity ordered"
+          ],
+          "SUPPLIER_NAME": [
+            "Name of Supplier"
+          ],
+          "DELETION_IND": [
+            "Deletion Indicator"
+          ],
+          "PROCESSING_STATUS": [
+            "Processing status"
+          ],
+          "ITEM_CATEGORY": [
+            "Item Category"
+          ],
+          "ACCT_ASSIGNMENT_CAT": [
+            "Acct Assignment Cat."
+          ],
+          "PURCH_ORG": [
+            "Purch. Organization"
+          ],
+          "SUPPLIER_MATERIAL": [
+            "Supplier Mat. No."
+          ],
+          "PLANT": [
+            "Plant"
+          ],
+          "GOODS_RECEIPT": [
+            "Goods Receipt"
+          ],
+          "DELIVERY_DATE_CATEGORY": [
+            "Deliv. date category"
+          ],
+          "DELIVERY_DATE": [
+            "Delivery Date"
+          ],
+          "PR_TYPE": [
+            "PR Type"
+          ],
+          "REQ_TRACKING_NO": [
+            "Req. Tracking Number"
+          ],
+          "GR_NON_VALUATED": [
+            "GR Non-Valuated"
+          ],
+          "TOTAL_VALUE": [
+            "Total Value"
+          ],
+          "CURRENCY": [
+            "Currency"
+          ],
+          "OVERALL_RELEASE": [
+            "Overall release of requisitions"
+          ],
+          "MFR_PART_PROFILE": [
+            "Mfr Part Profile"
+          ],
+          "LANGUAGE": [
+            "Language Key"
+          ],
+          "GR_PROCESSING_TIME": [
+            "GR processing time"
+          ],
+          "VALUATION_PRICE": [
+            "Valuation Price"
+          ],
+          "PURCHASE_ORDER_ITEM": [
+            "Purchase Order Item"
+          ],
+          "PURCHASE_ORDER_DATE": [
+            "Purchase Order Date"
+          ],
+          "PRICE_UNIT": [
+            "Price Unit"
+          ],
+          "MANUFACTURER": [
+            "Manufacturer"
+          ],
+          "FRAMEWORK_ORDER_ITEM": [
+            "Framework order item"
+          ],
+          "DESIRED_VENDOR": [
+            "Desired Vendor"
+          ],
+          "RELEASE_STRATEGY": [
+            "Release strategy"
+          ],
+          "PACK_NO": [
+            "pack.Pack Number"
+          ],
+          "PACK_PR": [
+            "pack.Purchase Requisition"
+          ],
+          "PACK_PR_ITEM": [
+            "pack.Item of requisition"
+          ],
+          "PACK_QTY": [
+            "pack.Quantity"
+          ],
+          "PACK_ORDER_UNIT": [
+            "pack.Order Unit"
+          ],
+          "PACK_ORDER_NO": [
+            "pack.order Num"
+          ],
+          "PACK_RESPONSIBLE": [
+            "pack.Responsible"
+          ],
+          "PACK_PACKED": [
+            "pack.Packed"
+          ],
+          "WORKFLOW_ID": [
+            "pack.WorkFlow ID",
+            "WorkFlow ID"
+          ],
+          "COMPARISON_ID": [
+            "pack.Comparision ID",
+            "Comparision ID",
+            "Comparison ID"
+          ],
+          "COMMISSION_NO": [
+            "pack.Commision No",
+            "Commision No",
+            "Commission No"
+          ],
+          "COMMISSION_DATE": [
+            "pack.Commision Date",
+            "Commision Date",
+            "Commission Date"
+          ],
+          "PACK_MATERIAL": [
+            "pack.Material"
+          ],
+          "PACK_MPN_MATERIAL": [
+            "pack.MPN: Material"
+          ],
+          "PO_ITEM": [
+            "po.Item"
+          ],
+          "PO_DOCUMENT_ITEM": [
+            "po.Document Item"
+          ],
+          "PO_DELETION_IND": [
+            "po.Deletion Indicator"
+          ],
+          "PO_LAST_CHANGED": [
+            "po.Last Changed on"
+          ],
+          "PO_SHORT_TEXT": [
+            "po.Short Text"
+          ],
+          "PO_MATERIAL": [
+            "po.Material"
+          ],
+          "PO_COMPANY_CODE": [
+            "po.Company Code"
+          ],
+          "PO_PLANT": [
+            "po.Plant"
+          ],
+          "PO_STORAGE_LOCATION": [
+            "po.Storage Location"
+          ],
+          "PO_REQ_TRACKING_NO": [
+            "po.Req. Tracking Number"
+          ],
+          "PO_MATERIAL_GROUP": [
+            "po.Material Group"
+          ],
+          "PO_INFO_REC": [
+            "po.Purchasing Info Rec."
+          ],
+          "PO_SUPPLIER_MATERIAL": [
+            "po.Supplier Mat. No."
+          ],
+          "PO_TARGET_QTY": [
+            "po.Target Quantity"
+          ],
+          "PO_ORDER_UNIT": [
+            "po.Order Unit"
+          ],
+          "PO_ORDER_QTY": [
+            "po.Order Quantity"
+          ],
+          "PO_ORDER_PRICE_UNIT": [
+            "po.Order Price Unit"
+          ],
+          "PO_QTY_CONVERSION": [
+            "po.Quantity Conversion"
+          ],
+          "PO_DENOMINATOR": [
+            "po.Denominator"
+          ],
+          "PO_NET_PRICE": [
+            "po.Net Order Price"
+          ],
+          "PO_CURRENCY": [
+            "po.Currency"
+          ],
+          "PO_PRICE_UNIT": [
+            "po.Price Unit"
+          ],
+          "PO_NET_VALUE": [
+            "po.Net Order Value"
+          ],
+          "PO_GROSS_VALUE": [
+            "po.Gross order value"
+          ],
+          "PO_DELIVERY_COMPLETED": [
+            "po.Delivery Completed"
+          ],
+          "PO_RFQ": [
+            "po.RFQ"
+          ],
+          "PO_PR": [
+            "po.Purchase Requisition"
+          ],
+          "PO_PR_ITEM": [
+            "po.Item of requisition"
+          ],
+          "PO_MFR_PART_NO": [
+            "po.Manufacturer Part No."
+          ],
+          "PO_DOC_TYPE": [
+            "po.Purchasing Doc. Type"
+          ],
+          "PO_SUPPLIER": [
+            "po.Supplier"
+          ],
+          "PO_DOCUMENT_DATE": [
+            "po.Document Date"
+          ],
+          "PO_CREATED_BY": [
+            "po.Created By"
+          ],
+          "PO_REG_FILE": [
+            "po.شماره پرونده"
+          ],
+          "PO_YOUR_REFERENCE": [
+            "po.Your Reference"
+          ],
+          "PO_PURCH_ORG": [
+            "po.Purch. Organization"
+          ],
+          "PO_PURCH_GROUP": [
+            "po.Purchasing Group"
+          ],
+          "PO_OUR_REFERENCE": [
+            "po.Our Reference"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "DocCheckAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "STATUS": [
+            "Status",
+            "وضعیت"
+          ],
+          "SUBMIT_DATE": [
+            "Date Received",
+            "تاریخ دریافت اسناد",
+            "تاریخ ارائه اسناد"
+          ],
+          "EXPERT": [
+            "Expert",
+            "کارشناس"
+          ],
+          "DISCREPANCY": [
+            "Discrepancy",
+            "مغایرت"
+          ],
+          "DOC_TYPE": [
+            "Document Type",
+            "نوع سند"
+          ],
+          "REMARK": [
+            "Remark",
+            "ملاحظات",
+            "توضیحات"
+          ]
+        }
+      }
+    },
+    {
+      "module": "gsi/adapters/a60_finance.py",
+      "class": "HrAdapter",
+      "declared_maps": {
+        "COLUMN_MAP": {
+          "FIRST_NAME": [
+            "نام شخص"
+          ],
+          "LAST_NAME": [
+            "نام خانوادگی"
+          ],
+          "FULL_NAME": [
+            "نام کامل"
+          ],
+          "EMAIL": [
+            "Email"
+          ],
+          "UNIT": [
+            "نام واحد سازمانی کد ساخت"
+          ],
+          "VICE": [
+            "نام معاونت"
+          ],
+          "DEPT": [
+            "نام مدیریت",
+            "مدیریت"
+          ],
+          "POST": [
+            "شرح پست"
+          ],
+          "SECTION": [
+            "بخش"
+          ],
+          "OFFICE": [
+            "اداره"
+          ],
+          "SUPERVISOR": [
+            "مسئول"
+          ],
+          "HEAD": [
+            "رئیس"
+          ],
+          "MANAGER": [
+            "مدیر"
+          ],
+          "STATUS": [
+            "وضعیت"
+          ],
+          "INACTIVE_DATE": [
+            "تاریخ غیرفعال شدن"
+          ]
+        }
+      }
+    }
+  ],
+  "profiler_role_probes": {
+    "شماره پرونده ثبت سفارش": [
+      "REG",
+      "REG_FILE"
+    ],
+    "شماره ثبت سفارش": [
+      "REG"
+    ],
+    "Order No. (Our Reference)": [
+      "ORDER"
+    ],
+    "Reference Letter No.": [],
+    "po.Purchasing Document": [
+      "PO"
+    ],
+    "تاریخ ثبت سفارش": [
+      "DATE",
+      "REG"
+    ]
+  },
+  "profiler_same_column_relation_probe": "AttributeError: 'DataFrame' object has no attribute 'str'",
+  "actual_corporate_source_workbooks_supplied": false,
+  "new_attachment_contains": [
+    "README_FA.md",
+    "MODEL_REVIEW_PROMPT.md",
+    "gsi_sources.yaml",
+    "gsi_source_profiler.py"
+  ],
+  "scope": "code/header contracts and included samples; no production source completeness attestation"
+}

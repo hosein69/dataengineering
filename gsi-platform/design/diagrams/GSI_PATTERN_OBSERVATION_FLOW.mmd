@@ -1,0 +1,33 @@
+%% clips/pattern-inspired but independent GSI event matcher
+flowchart TD
+  A(["شروع Pattern Observation"])
+  B{"فایل config صریح وجود دارد؟"}
+  C["Matcher غیرفعال"]
+  D{"حجم ≤ 1 MiB؟"}
+  E["Fail-closed: رد config"]
+  F["Compile: taxonomy + constraints"]
+  G{"قواعد معتبر و taxonomy بی‌چرخه؟"}
+  H["گروه‌بندی رویدادها بر اساس Case"]
+  I["Match contiguous sequence"]
+  J{"Match پیدا شد؟"}
+  K["ثبت observation + source_rows + captures"]
+  L["خلاصه match_count + unique_cases"]
+  M["عدم تبدیل به Risk / SLA / Violation / Action"]
+  Z(["پایان"])
+
+  A --> B
+  B -->|"خیر"| C --> Z
+  B -->|"بله"| D
+  D -->|"خیر"| E --> Z
+  D -->|"بله"| F --> G
+  G -->|"خیر"| E
+  G -->|"بله"| H --> I --> J
+  J -->|"بله"| K --> I
+  J -->|"خیر / پایان پیمایش"| L --> M --> Z
+
+  classDef process fill:#E7F1F2,stroke:#0A7C86,color:#076670
+  classDef decision fill:#FFF6DF,stroke:#C79A4A,color:#7A5A15
+  classDef blocked fill:#F8EAEA,stroke:#8B2E2E,color:#6F1D1D
+  class F,H,I,K,L,M,C process
+  class B,D,G,J decision
+  class E blocked

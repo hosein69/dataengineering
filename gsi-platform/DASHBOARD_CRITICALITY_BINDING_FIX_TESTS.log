@@ -1,0 +1,11 @@
+Dashboard criticality repair regression: PASS.
+Validated scenarios:
+- UNKNOWN + resistance 0 => STOCKOUT
+- UNKNOWN + resistance 5 => CRITICAL
+- UNKNOWN + resistance 15 => BECOMING_CRITICAL
+- UNKNOWN + resistance 50 => SAFE
+- missing resistance remains UNKNOWN
+- existing valid band is never overwritten
+- Dashboard and Process Cockpit counts use repaired band
+
+Independent selected regression suite passed. Network-bound test requiring IKCO share is not runnable in the build environment. Legacy pytest test_excel has missing fixture `res` and is not a production-code failure.

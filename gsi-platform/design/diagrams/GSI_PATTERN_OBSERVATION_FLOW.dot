@@ -1,0 +1,20 @@
+digraph G {
+rankdir=TB; graph [bgcolor="#F6F8F9", pad="0.25", nodesep="0.45", ranksep="0.65"];
+node [shape=box, style="rounded,filled", fontname="IRANSansWeb", fontsize=12, color="#0A7C86", fontcolor="#0B1F33", fillcolor="#FFFFFF", margin="0.16,0.10"];
+edge [fontname="IRANSansWeb", fontsize=10, color="#667788", fontcolor="#0B1F33", arrowsize=0.75];
+A [label="شروع Pattern Observation", shape=oval];
+B [label="config صریح وجود دارد؟", shape=diamond, fillcolor="#FFF6DF", color="#C79A4A"];
+C [label="Matcher غیرفعال"];
+D [label="حجم ≤ 1 MiB؟", shape=diamond, fillcolor="#FFF6DF", color="#C79A4A"];
+E [label="Fail-closed: رد config", fillcolor="#F8EAEA", color="#8B2E2E"];
+F [label="Compile taxonomy + constraints"];
+G [label="قواعد معتبر و taxonomy بی‌چرخه؟", shape=diamond, fillcolor="#FFF6DF", color="#C79A4A"];
+H [label="گروه‌بندی رویدادها بر اساس Case"];
+I [label="Match contiguous sequence"];
+J [label="Match پیدا شد؟", shape=diamond, fillcolor="#FFF6DF", color="#C79A4A"];
+K [label="ثبت observation + source_rows + captures"];
+L [label="خلاصه match_count + unique_cases"];
+M [label="عدم تبدیل به Risk / SLA / Violation / Action", color="#C79A4A"];
+Z [label="پایان", shape=oval];
+A -> B; B -> C [label="خیر"]; C -> Z; B -> D [label="بله"]; D -> E [label="خیر"]; E -> Z; D -> F [label="بله"]; F -> G; G -> E [label="خیر"]; G -> H [label="بله"]; H -> I -> J; J -> K [label="بله"]; K -> I; J -> L [label="خیر / پایان"]; L -> M -> Z;
+}

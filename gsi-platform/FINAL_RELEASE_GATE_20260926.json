@@ -1,0 +1,19 @@
+{
+  "product": "GSI 29.8.2 RC4-OPT2 H1",
+  "date": "2026-09-26",
+  "status": "PASS",
+  "scope": "final clean release + process UI/UX hardening + HTML samples",
+  "validation": {
+    "compileall": "PASS",
+    "independent_frozen_audit": {"passed": 173, "total": 173},
+    "extended_audit": {"passed": 77, "total": 77},
+    "targeted_release_regression": {"passed": 85, "total": 85},
+    "package_bad_runtime_artifacts": 0,
+    "package_hash_manifest_missing": 0,
+    "package_hash_manifest_mismatch": 0,
+    "package_hash_manifest_extra": 0,
+    "html_samples": 5
+  },
+  "known_environment_note": "Browser-level Streamlit AppTest cases require streamlit.testing, which is not installed in this build environment; they were not claimed as passed.",
+  "regulatory_governance_note": "Expired temporary regulatory rules are not silently extended; RuleBook remains fail-closed until an authoritative successor is supplied."
+}

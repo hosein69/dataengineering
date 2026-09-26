@@ -1,0 +1,40 @@
+%% GSI final architecture — Diagram Maker architecture view
+%% Source of truth: current package code + FINAL_FIGMA_PROCESS_RELEASE_FA.md
+flowchart LR
+  SRC["منابع واقعی سازمانی<br/>NTSW / SAP / Oracle / Finance / Customs"]
+  ADP["Reader + Adapters<br/>حفظ lineage و business keys"]
+  GATE{"قرارداد و Quality Gate معتبر؟"}
+  HOLD["HOLD / Fail-closed<br/>بدون جعل مقدار یا کلید"]
+  WH[("Published Snapshot<br/>SQLite / Warehouse")]
+  UI["GSI Studio / Control Center<br/>خواندن Snapshot منتشرشده"]
+  PI["Process Intelligence<br/>Case status + Route + Handoff"]
+  PAT["Pattern Observation<br/>اختیاری، صریح، فقط مشاهده‌ای"]
+  EXP["Export Builder<br/>HTML + Excel + EML + evidence + manifest"]
+  LOCAL["دانلود محلی<br/>بدون ارسال خودکار"]
+  PUB["انتشار کنترل‌شده<br/>lock → staging → hash → rename"]
+  OUT["Share / Outlook Draft<br/>هیچ SMTP Send خودکار"]
+  DS["GSI Foundations<br/>IRANSansWeb + Navy / Teal / Gold"]
+
+  SRC -->|"داده"| ADP
+  ADP --> GATE
+  GATE -->|"خیر"| HOLD
+  GATE -->|"بله"| WH
+  WH --> UI
+  WH --> PI
+  PI --> PAT
+  PAT --> EXP
+  PI --> EXP
+  EXP --> LOCAL
+  EXP --> PUB
+  PUB --> OUT
+  DS -. "توکن و تایپوگرافی" .-> UI
+  DS -. "همان Design System" .-> EXP
+
+  classDef data fill:#EEF2F4,stroke:#0B1F33,color:#0B1F33,stroke-width:1.5px
+  classDef process fill:#E7F1F2,stroke:#0A7C86,color:#076670,stroke-width:1.5px
+  classDef decision fill:#FFF6DF,stroke:#C79A4A,color:#7A5A15,stroke-width:1.8px
+  classDef blocked fill:#F8EAEA,stroke:#8B2E2E,color:#6F1D1D,stroke-width:1.5px
+  class SRC,ADP,WH data
+  class UI,PI,PAT,EXP,PUB,LOCAL,OUT,DS process
+  class GATE decision
+  class HOLD blocked

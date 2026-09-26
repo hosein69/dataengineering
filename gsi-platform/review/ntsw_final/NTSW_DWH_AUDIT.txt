@@ -1,0 +1,22 @@
+2026-09-24 06:54:11,183 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW-IKCO.xlsx
+2026-09-24 06:54:12,516 | INFO    |    ✅ [ntsw] Import Licence: 1000 ردیف | 1000 پرونده | 840 ثبت سفارش
+2026-09-24 06:54:19,602 | INFO    |    ✅ [ntsw] Release Commitment: 4007 ردیف تعهد → 2390 کد ثبت سفارش
+2026-09-24 06:54:24,536 | INFO    |    ✅ [ntsw] Allocation: 3286 درخواست → 1418 کد ثبت سفارش
+RUN_ID 7b11788e9e904dc1be29df402a8f504f
+COUNTS {'source_rows': 14935, 'entities': 3632, 'relations': 840, 'unresolved': 160, 'order_material_pr_item': 0, 'sap_pr_items': 0, 'sap_po_items': 0, 'sap_workflow': 0}
+ENTITY_COUNTS
+REG 2632
+REG_FILE 1000
+RELATION_COUNTS
+REG_FILE REG ntsw import_license 840 840
+UNRESOLVED_COUNTS
+REG_FILE_WITHOUT_REG_IN_IMPORT_LICENCE 160
+REG_HUB_COUNTS
+(1000, 840, 0)
+REGFILE_REG_CARDINALITY
+regfile_multi_reg 0
+reg_multi_regfile 0
+FACT_COUNTS
+dwh_fact_source_row 14935
+dwh_fact_ntsw_allocation_request 2834
+dwh_fact_ntsw_commitment 2390

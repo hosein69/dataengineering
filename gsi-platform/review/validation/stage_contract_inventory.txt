@@ -1,0 +1,52 @@
+src/gsi/stages/s20_derive.py:159:    name = "derive"
+src/gsi/stages/s20_derive.py:162:    requires = []
+src/gsi/stages/s20_derive.py:251:    def _first_nonempty(df: pd.DataFrame, names: List[str], default: Any) -> pd.Series:
+src/gsi/stages/s20_derive.py:253:        for n in names:
+src/gsi/stages/s55_fx_traceability.py:78:    name = "fx_traceability"
+src/gsi/stages/s55_fx_traceability.py:81:    tolerant = True
+src/gsi/stages/s55_fx_traceability.py:82:    requires = ["CANONICAL_REG"]
+src/gsi/stages/s90_sort.py:13:    name = "sort"
+src/gsi/stages/s90_sort.py:16:    requires = ["CRITICALITY_SORT", "امتیاز ریسک"]
+src/gsi/stages/s54_process_integrity.py:15:    name = "process_integrity"
+src/gsi/stages/s54_process_integrity.py:18:    tolerant = True
+src/gsi/stages/s54_process_integrity.py:19:    requires = []
+src/gsi/stages/s85_conformance.py:65:    name = "conformance"
+src/gsi/stages/s85_conformance.py:68:    requires = ["CANONICAL_ORDER"]
+src/gsi/stages/s85_conformance.py:69:    tolerant = True                 # اگر لاگ رویداد نبود، فقط رد می‌شود
+src/gsi/stages/s85_conformance.py:171:            order_map = {name: pos for pos, name in enumerate(g[act_col].astype(str))}
+src/gsi/stages/s10_resolve.py:18:    name = "resolve"
+src/gsi/stages/s10_resolve.py:21:    requires = [KEY_BL, KEY_ORDER]
+src/gsi/stages/s80_eventlog.py:112:    name = "eventlog"
+src/gsi/stages/s80_eventlog.py:115:    tolerant = True          # نبود بعضی تاریخ‌ها فقط رویداد کمتر می‌سازد، نه خطا
+src/gsi/stages/s80_eventlog.py:116:    requires = ["CANONICAL_ORDER", "BL_DATE"]
+src/gsi/stages/s80_eventlog.py:316:        q = q.rename(columns={"LAST_ACTIVITY": "مرحله جاری"})
+src/gsi/stages/s70_risk.py:18:    name = "risk"
+src/gsi/stages/s70_risk.py:21:    requires = ["روزهای رسوب", "جریمه برآوردی", "CB_VALUE",
+src/gsi/stages/s60_narrate.py:18:    name = "narrate"
+src/gsi/stages/s60_narrate.py:21:    # این requires همان گاردی است که باگ B1 را برای همیشه می‌بندد:
+src/gsi/stages/s60_narrate.py:23:    requires = ["CANONICAL_BL", "COTAGE_NO", "SATA_NO", "DISCHARGE_DATE",
+src/gsi/stages/s39_warehouse_declaration.py:75:    name = "warehouse_declaration"
+src/gsi/stages/s39_warehouse_declaration.py:78:    requires = ["WAREHOUSE_RECEIPT"]
+src/gsi/stages/s58_case_actions.py:55:    name = "case_actions"
+src/gsi/stages/s58_case_actions.py:58:    tolerant = True
+src/gsi/stages/s58_case_actions.py:59:    requires = ["FX_CASE_KEY", "FX_CURRENT_STAGE"]
+src/gsi/stages/s50_commitment.py:16:    name = "commitment"
+src/gsi/stages/s50_commitment.py:19:    requires = ["SEGMENT", "CB_DATE", "BALANCE"]
+src/gsi/stages/s40_criticality.py:21:    name = "criticality"
+src/gsi/stages/s40_criticality.py:24:    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY", "DAILY_NEED"]
+src/gsi/stages/s30_org.py:18:    name = "org"
+src/gsi/stages/s30_org.py:21:    requires = ["CANONICAL_EXPERT", KEY_EMP]
+src/gsi/stages/s56_money_flow_control.py:86:    name = "money_flow_control"
+src/gsi/stages/s56_money_flow_control.py:89:    tolerant = True
+src/gsi/stages/s56_money_flow_control.py:90:    requires = ["FX_CASE_KEY", "FX_TRACE_SCORE", "FX_ANOMALY_COUNT"]
+src/gsi/stages/s38_supply_position.py:97:    name = "supply_position"
+src/gsi/stages/s38_supply_position.py:100:    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY",
+src/gsi/stages/s38_supply_position.py:119:    def _text_col(df: pd.DataFrame, name: str) -> pd.Series:
+src/gsi/stages/s38_supply_position.py:120:        """معادل برداریِ ``str(r.get(name) or "").strip()``.
+src/gsi/stages/s38_supply_position.py:129:        if name not in df.columns:
+src/gsi/stages/s38_supply_position.py:131:        return _text_or_blank(df[name])
+src/gsi/stages/s35_scope.py:28:    name = "scope"
+src/gsi/stages/s35_scope.py:31:    requires = ["CANONICAL_EXPERT"]
+src/gsi/stages/s57_legacy_knowledge.py:44:    name = "legacy_knowledge_transfer"
+src/gsi/stages/s57_legacy_knowledge.py:47:    tolerant = True
+src/gsi/stages/s57_legacy_knowledge.py:48:    requires = ["FX_CASE_KEY"]

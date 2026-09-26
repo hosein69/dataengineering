@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-09-25",
+  "build": "GSI_29_8_2_RC4_OPT2_H1_FINAL_PATTERN_DIAGRAMS_20260925",
+  "checks": {
+    "compileall": {
+      "status": "PASS",
+      "evidence": "release_evidence/final_20260925/COMPILEALL.log"
+    },
+    "process_targeted": {
+      "status": "PASS",
+      "result": "13/13",
+      "evidence": "release_evidence/final_20260925/PROCESS_TARGETED.log"
+    },
+    "frozen_independent": {
+      "status": "PASS",
+      "result": "173/173",
+      "evidence": "release_evidence/final_20260925/FROZEN_173.log"
+    },
+    "extended_diagnostic": {
+      "status": "PASS",
+      "result": "77/77",
+      "evidence": "release_evidence/final_20260925/EXTENDED_77.log"
+    },
+    "design_contract": {
+      "status": "PASS",
+      "result": "93/93",
+      "evidence": "release_evidence/final_20260925/DESIGN_93.log"
+    },
+    "full_pytest_current_runtime": {
+      "status": "ENVIRONMENT_BLOCKED",
+      "reason": "streamlit is not installed; first AppTest collection/execution blocker was ModuleNotFoundError: streamlit. A later exclusion run exceeded the tool time budget and is not counted as pass.",
+      "observed_before_block": "60 passed before first Streamlit AppTest failure"
+    },
+    "doctor": {
+      "status": "HOLD",
+      "evidence": "release_evidence/final_20260925/DOCTOR.log",
+      "errors": [
+        "regulatory_snapshot.emergency_deadline_overlay_1405 expired 2026-09-22; successor required",
+        "customs.emergency_sata_waiver_1405 expired 2026-09-22; successor required"
+      ],
+      "environment_warnings": [
+        "organization UNC source paths unavailable in build environment",
+        "GSI_PROFILE_ROOT not configured"
+      ]
+    },
+    "figma_live": {
+      "status": "PASS",
+      "foundations": "T9Ps72EYpriHdov9fmNFQu node 3:2",
+      "font_nodes": {
+        "finance": "27/27 IRANSansWeb",
+        "cover": "11/11 IRANSansWeb",
+        "foundations": "203/203 IRANSansWeb"
+      },
+      "font_binary_distributed": false
+    },
+    "pattern_upstream_review": {
+      "status": "PASS_WITH_REJECTION_OF_DIRECT_DEPENDENCY",
+      "repo": "clips/pattern",
+      "commit": "af754685cca3713db0abc4f020f2e94467c19d85",
+      "upstream_state": "README marks repository unmaintained/archived",
+      "implementation": "independent deterministic event-sequence matcher; observational only"
+    },
+    "diagram_artifacts": {
+      "status": "PASS",
+      "result": "15 files + offline HTML index",
+      "evidence": "release_evidence/final_20260925/DIAGRAMS_VALIDATION.log"
+    },
+    "efd_2_1": {
+      "status": "PASS_WITH_WARNINGS",
+      "result": "0 structural/reference errors; 4 pending-fact warnings",
+      "evidence": "release_evidence/final_20260925/EFD_VALIDATION.log",
+      "note": "Bundled validator script was not exposed by installed skill resources; equivalent deterministic contract/reference validation was run."
+    },
+    "diagram_release_runtime_unchanged": {
+      "status": "PASS",
+      "result": "gsi/app/process-mining-ui-kit/config byte-identical to prior FINAL_PATTERN package",
+      "evidence": "release_evidence/final_20260925/DIAGRAM_RUNTIME_UNCHANGED.log"
+    },
+    "diagram_release_compileall": {
+      "status": "PASS",
+      "evidence": "release_evidence/final_20260925/COMPILEALL_DIAGRAM_RELEASE.log"
+    },
+    "diagram_release_process_targeted": {
+      "status": "PASS",
+      "result": "13/13",
+      "evidence": "release_evidence/final_20260925/PROCESS_TARGETED_DIAGRAM_RELEASE.log"
+    },
+    "diagram_release_design_contract": {
+      "status": "PASS",
+      "result": "93/93",
+      "evidence": "release_evidence/final_20260925/DESIGN_DIAGRAM_RELEASE.log"
+    }
+  },
+  "build_gate": "PASS",
+  "operational_gate": "HOLD",
+  "production_certified": false,
+  "operational_blockers": [
+    "RuleBook successor/explicit non-extension decision required for two rules expired 2026-09-22",
+    "Windows + real source refresh/publish acceptance not executed in this build environment",
+    "SMB concurrency/disconnect and Outlook draft rendering acceptance not executed here"
+  ]
+}

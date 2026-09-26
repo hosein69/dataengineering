@@ -1,0 +1,554 @@
+--- a/gsi/resolve/process_evidence.py
++++ b/gsi/resolve/process_evidence.py
+@@ -346,15 +346,30 @@
+         return pd.DataFrame()
+     unmeasured_stages = set(unmeasured_stages or set())
+     rows = []
+-    by_case = {k: g for k, g in obs.groupby("PROCESS_CASE_ID", sort=False)}
++    # Performance contract: the production process ledger can contain tens of
++    # thousands of observations.  The previous implementation filtered each
++    # case DataFrame once for every process stage (cases × 16 tiny pandas
++    # filters).  On real NTSW data that turned a few thousand cases into a
++    # multi-minute step.  Index stage evidence once and reuse it; semantics are
++    # unchanged because the same rows are grouped by the same case+stage keys.
++    stage_obs = obs[obs["STAGE_CODE"].isin(_STAGE_POS)].copy()
++    by_case_stage = {
++        (cid, code): g
++        for (cid, code), g in stage_obs.groupby(
++            ["PROCESS_CASE_ID", "STAGE_CODE"], sort=False, dropna=False
++        )
++    }
++    observed_by_case: Dict[str, set[str]] = {}
++    for cid, code in by_case_stage:
++        observed_by_case.setdefault(cid, set()).add(code)
+     for _, c in cases.iterrows():
+         cid = c["PROCESS_CASE_ID"]
+-        g = by_case.get(cid, pd.DataFrame())
+-        observed = set(g.loc[g["STAGE_CODE"].isin(_STAGE_POS), "STAGE_CODE"]) if not g.empty else set()
++        observed = observed_by_case.get(cid, set())
+         furthest = max((_STAGE_POS[s] for s in observed), default=-1)
+         for pos, (code, fa, owner) in enumerate(STAGES):
+-            z = g[g["STAGE_CODE"].eq(code)] if not g.empty else pd.DataFrame()
+-            if not z.empty:
++            z = by_case_stage.get((cid, code))
++            has_z = z is not None and not z.empty
++            if has_z:
+                 status = "OBSERVED"
+                 if z["EVIDENCE_STATE"].eq("NEGATIVE_OBSERVED").any(): status = "NEGATIVE_OBSERVED"
+                 elif z["EVIDENCE_STATE"].eq("POSITIVE_OBSERVED").any(): status = "POSITIVE_OBSERVED"
+@@ -369,15 +384,15 @@
+             rows.append({
+                 "PROCESS_CASE_ID": cid, "STAGE_ORDER": pos + 1, "STAGE_CODE": code,
+                 "STAGE_FA": fa, "OWNER_DOMAIN": owner, "STATUS": status,
+-                "EVIDENCE_STATE": ("OBSERVED" if len(z) else "NOT_MEASURED" if code in unmeasured_stages else "EVIDENCE_GAP" if pos < furthest else "NOT_OBSERVED"),
++                "EVIDENCE_STATE": ("OBSERVED" if has_z else "NOT_MEASURED" if code in unmeasured_stages else "EVIDENCE_GAP" if pos < furthest else "NOT_OBSERVED"),
+                 "COVERAGE_STATE": "SOURCE_COVERAGE_GAP" if code in unmeasured_stages else "MEASURED",
+-                "COMPLETION_STATE": "COMPLETED" if not z.empty and any(_s(v).lower() in {"completed","done","تکمیل شده"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
+-                "EXECUTION_STATE": "FAILED" if not z.empty and any(_s(v).lower() in {"failed","failure","ناموفق"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
+-                "RELATION_STATE": "AMBIGUOUS" if not z.empty and z["EVIDENCE_STATE"].eq("NEGATIVE_OBSERVED").any() and z["EVIDENCE_STATE"].eq("POSITIVE_OBSERVED").any() else "NOT_OBSERVED",
+-                "OBSERVATION_COUNT": int(len(z)),
+-                "SOURCE_LIST": " | ".join(sorted(set(z["SOURCE"]))) if not z.empty else "",
+-                "RAW_STATUS_LIST": " | ".join(sorted({_s(x) for x in z["OBSERVED_STATUS"] if _s(x)})) if not z.empty else "",
+-                "EVENT_DATES": " | ".join(sorted({_s(x) for x in z["EVENT_DATE"] if _s(x)})) if not z.empty else "",
++                "COMPLETION_STATE": "COMPLETED" if has_z and any(_s(v).lower() in {"completed","done","تکمیل شده"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
++                "EXECUTION_STATE": "FAILED" if has_z and any(_s(v).lower() in {"failed","failure","ناموفق"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
++                "RELATION_STATE": "AMBIGUOUS" if has_z and z["EVIDENCE_STATE"].eq("NEGATIVE_OBSERVED").any() and z["EVIDENCE_STATE"].eq("POSITIVE_OBSERVED").any() else "NOT_OBSERVED",
++                "OBSERVATION_COUNT": int(len(z)) if has_z else 0,
++                "SOURCE_LIST": " | ".join(sorted(set(z["SOURCE"]))) if has_z else "",
++                "RAW_STATUS_LIST": " | ".join(sorted({_s(x) for x in z["OBSERVED_STATUS"] if _s(x)})) if has_z else "",
++                "EVENT_DATES": " | ".join(sorted({_s(x) for x in z["EVENT_DATE"] if _s(x)})) if has_z else "",
+             })
+     return pd.DataFrame(rows)
+ 
+@@ -390,50 +405,99 @@
+ 
+ 
+ def attach_process_state(df: pd.DataFrame, observations: pd.DataFrame, cases: pd.DataFrame) -> pd.DataFrame:
+-    """Attach unambiguous process projection to flat rows without changing row count."""
++    """Attach unambiguous process projection to flat rows without changing row count.
++
++    The business rule is priority based: REG, then ORDER, PR, BL.  A stronger
++    key that resolves to multiple process components must remain ambiguous; we
++    never intersect it with a weaker key to manufacture a unique answer.  The
++    previous implementation applied this rule row-by-row with thousands of
++    scalar ``DataFrame.at`` writes.  This vectorized projection preserves the
++    same rule while making large real snapshots practical.
++    """
+     out = df.copy()
+-    for c, default in {
++    defaults = {
+         "PROCESS_CASE_ID": "", "PROCESS_CASE_COUNT": 0, "PROCESS_STATUS": "",
+         "PROCESS_CURRENT_STAGE": "", "PROCESS_CURRENT_OWNER": "", "PROCESS_GAPS": "",
+         "PROCESS_LAST_EVIDENCE_DATE": "", "PROCESS_EVIDENCE_COUNT": 0,
+-    }.items(): out[c] = default
++    }
++    for c, default in defaults.items():
++        out[c] = default
+     if observations.empty or cases.empty or out.empty:
+         return out
+-    index: Dict[tuple[str, str], set[str]] = {}
++
++    # value -> tuple(case ids), materialized once per entity type.  Tuples make
++    # the mapping stable/hashable and avoid constructing a set for every report row.
++    lookup: Dict[str, Dict[str, tuple[str, ...]]] = {}
+     for typ in ENTITY_COLS:
+         c = f"KEY_{typ}"
+         if c not in observations.columns:
+             continue
+-        for value, g in observations[observations[c].astype(str).str.strip().ne("")].groupby(c):
+-            index[(typ, _s(value))] = set(g["PROCESS_CASE_ID"]) - {""}
+-    cm = cases.set_index("PROCESS_CASE_ID").to_dict("index")
+-    for i, r in out.iterrows():
+-        candidates: set[str] = set()
+-        probes = [
+-            ("REG", _s(r.get("CANONICAL_REG") or r.get(KEY_REG))),
+-            ("ORDER", _s(r.get("CANONICAL_ORDER") or r.get(KEY_ORDER))),
+-            ("PR", _s(r.get(KEY_PR))),
+-            ("BL", _s(r.get("CANONICAL_BL") or r.get(KEY_BL))),
+-        ]
+-        # Prefer the strongest available identifier.  If it maps to >1 components,
+-        # expose ambiguity instead of intersecting/guessing through weaker keys.
+-        for typ, val in probes:
+-            if not val: continue
+-            found = index.get((typ, val), set())
+-            if found:
+-                candidates = set(found); break
+-        out.at[i, "PROCESS_CASE_COUNT"] = len(candidates)
+-        if len(candidates) != 1:
+-            if len(candidates) > 1:
+-                out.at[i, "PROCESS_STATUS"] = "AMBIGUOUS_LINK"
+-                out.at[i, "PROCESS_GAPS"] = "MULTIPLE_PROCESS_CASES"
++        z = observations.loc[observations[c].map(_s).ne(""), [c, "PROCESS_CASE_ID"]].copy()
++        if z.empty:
++            lookup[typ] = {}
++            continue
++        z[c] = z[c].map(_s)
++        z["PROCESS_CASE_ID"] = z["PROCESS_CASE_ID"].map(_s)
++        z = z[z["PROCESS_CASE_ID"].ne("")]
++        lookup[typ] = {
++            str(value): tuple(sorted(set(g["PROCESS_CASE_ID"])))
++            for value, g in z.groupby(c, sort=False)
++        }
++
++    def _prefer(primary: str, fallback: str) -> pd.Series:
++        a = out[primary].map(_s) if primary in out.columns else pd.Series("", index=out.index, dtype=object)
++        if fallback in out.columns:
++            b = out[fallback].map(_s)
++            a = a.where(a.ne(""), b)
++        return a
++
++    probes = [
++        ("REG", _prefer("CANONICAL_REG", KEY_REG)),
++        ("ORDER", _prefer("CANONICAL_ORDER", KEY_ORDER)),
++        ("PR", out[KEY_PR].map(_s) if KEY_PR in out.columns else pd.Series("", index=out.index, dtype=object)),
++        ("BL", _prefer("CANONICAL_BL", KEY_BL)),
++    ]
++
++    chosen = pd.Series([()] * len(out), index=out.index, dtype=object)
++    unresolved = pd.Series(True, index=out.index)
++    for typ, values in probes:
++        table = lookup.get(typ, {})
++        if not table or not unresolved.any():
++            continue
++        mapped = values.map(table)
++        has = unresolved & mapped.map(lambda x: isinstance(x, tuple) and len(x) > 0)
++        if has.any():
++            chosen.loc[has] = mapped.loc[has]
++            unresolved.loc[has] = False
++
++    counts = chosen.map(len).astype(int)
++    out["PROCESS_CASE_COUNT"] = counts
++    ambiguous = counts.gt(1)
++    out.loc[ambiguous, "PROCESS_STATUS"] = "AMBIGUOUS_LINK"
++    out.loc[ambiguous, "PROCESS_GAPS"] = "MULTIPLE_PROCESS_CASES"
++
++    unique = counts.eq(1)
++    if not unique.any():
++        return out
++    cids = chosen.loc[unique].map(lambda x: x[0])
++    case_map = cases.drop_duplicates("PROCESS_CASE_ID").set_index("PROCESS_CASE_ID")
++    projections = {
++        "PROCESS_CASE_ID": None,
++        "PROCESS_STATUS": "PROCESS_STATUS",
++        "PROCESS_CURRENT_STAGE": "CURRENT_FOCUS_STAGE",
++        "PROCESS_CURRENT_OWNER": "CURRENT_OWNER",
++        "PROCESS_GAPS": "EVIDENCE_GAPS",
++        "PROCESS_LAST_EVIDENCE_DATE": "LAST_EVIDENCE_DATE",
++        "PROCESS_EVIDENCE_COUNT": "EVIDENCE_COUNT",
++    }
++    out.loc[unique, "PROCESS_CASE_ID"] = cids.values
++    for target, source in projections.items():
++        if source is None or source not in case_map.columns:
+             continue
+-        cid = next(iter(candidates)); x = cm.get(cid, {})
+-        out.at[i, "PROCESS_CASE_ID"] = cid
+-        out.at[i, "PROCESS_STATUS"] = x.get("PROCESS_STATUS", "")
+-        out.at[i, "PROCESS_CURRENT_STAGE"] = x.get("CURRENT_FOCUS_STAGE", "")
+-        out.at[i, "PROCESS_CURRENT_OWNER"] = x.get("CURRENT_OWNER", "")
+-        out.at[i, "PROCESS_GAPS"] = x.get("EVIDENCE_GAPS", "")
+-        out.at[i, "PROCESS_LAST_EVIDENCE_DATE"] = x.get("LAST_EVIDENCE_DATE", "")
+-        out.at[i, "PROCESS_EVIDENCE_COUNT"] = x.get("EVIDENCE_COUNT", 0)
++        mapped = cids.map(case_map[source])
++        if target == "PROCESS_EVIDENCE_COUNT":
++            mapped = pd.to_numeric(mapped, errors="coerce").fillna(0).astype(int)
++        else:
++            mapped = mapped.fillna("")
++        out.loc[unique, target] = mapped.values
+     return out
+--- a/gsi/rulebook/loader.py
++++ b/gsi/rulebook/loader.py
+@@ -35,6 +35,8 @@
+ 
+ import yaml
+ 
++from ..core.text import normalize_persian_text
++
+ DEFAULT_RULES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules")
+ MANIFEST = "_manifest.yaml"
+ 
+@@ -194,18 +196,22 @@
+         idx: Dict[str, str] = {}
+         for c in self.get("currencies.currencies", []) or []:
+             code = c["code"]
+-            idx[code.lower()] = code
++            idx[normalize_persian_text(code).casefold()] = code
+             for a in c.get("aliases", []) or []:
+-                idx[str(a).lower().strip()] = code
++                idx[normalize_persian_text(a).casefold()] = code
+             if c.get("fa"):
+-                idx[c["fa"].strip()] = code
++                idx[normalize_persian_text(c["fa"]).casefold()] = code
+         for d in self.get("currencies.derived_units", []) or []:
+             for a in d.get("aliases", []) or []:
+-                idx[str(a).lower().strip()] = d["code"]
++                idx[normalize_persian_text(a).casefold()] = d["code"]
+         return idx
+ 
+     def normalize_currency(self, value: Any) -> str:
+-        s = str(value or "").strip().lower()
++        # Source workbooks commonly contain Arabic/Persian glyph variants and
++        # repeated spaces (for example ``"ین  ژاپن "`` in NTSW).  Currency
++        # identity must be normalized before alias lookup; otherwise a valid
++        # JPY value falls through to the three-character fallback as ``"ین "``.
++        s = normalize_persian_text(value).casefold()
+         # مقدار تهی pandas به رشته 'nan' تبدیل می‌شود و نباید ارز شمرده شود
+         if not s or s in ("nan", "none", "nat", "-", "<na>"):
+             return ""
+--- a/gsi/stages/s56_money_flow_control.py
++++ b/gsi/stages/s56_money_flow_control.py
+@@ -630,20 +630,32 @@
+             out["FX_OBLIGATION_RECON_STATUS"] = "NO_COMMITMENT_EVIDENCE"
+             return out
+         rank = {"ACCOUNTING_MISMATCH":4,"EVIDENCE_GAP":3,"OPEN_AMOUNT_GAP":2,"RECONCILED":1}
++        # Aggregate once per REG.  The former implementation rebuilt a boolean
++        # mask over the entire control table for every reconciliation group
++        # (REGs × control rows).  Real NTSW snapshots contain thousands of REGs,
++        # so that quadratic update dominated the stage while adding no semantics.
++        recon_map: Dict[str, Dict[str, Any]] = {}
+         for reg, g in reconciliation.groupby("KEY_REG", sort=False):
+             statuses = [_s(x) for x in g["RECON_STATUS"]]
+             worst = max(statuses, key=lambda x: rank.get(x,0)) if statuses else ""
+-            gaps = _set_join(g["EVIDENCE_GAPS"])
+-            obs = _set_join(g["OBLIGATION_RECON_STATUS"])
+-            mask = out["KEY_REG"].map(_s).eq(_s(reg))
+-            out.loc[mask,"FX_MONEY_RECON_STATUS"] = worst
+-            out.loc[mask,"FX_MONEY_EVIDENCE_GAPS"] = gaps
+-            out.loc[mask,"FX_OBLIGATION_RECON_STATUS"] = obs
+-            if worst == "ACCOUNTING_MISMATCH":
+-                out.loc[mask,"FX_CONTROL_RISK_SCORE"] = (pd.to_numeric(out.loc[mask,"FX_CONTROL_RISK_SCORE"],errors="coerce").fillna(0)+20).clip(upper=100)
+-        out["FX_MONEY_RECON_STATUS"] = out.get("FX_MONEY_RECON_STATUS", "").fillna("NO_AMOUNT_EVIDENCE")
+-        out["FX_MONEY_EVIDENCE_GAPS"] = out.get("FX_MONEY_EVIDENCE_GAPS", "").fillna("")
+-        out["FX_OBLIGATION_RECON_STATUS"] = out.get("FX_OBLIGATION_RECON_STATUS", "").fillna("NO_COMMITMENT_EVIDENCE")
++            recon_map[_s(reg)] = {
++                "status": worst,
++                "gaps": _set_join(g["EVIDENCE_GAPS"]),
++                "obligation": _set_join(g["OBLIGATION_RECON_STATUS"]),
++            }
++        regs = out["KEY_REG"].map(_s)
++        out["FX_MONEY_RECON_STATUS"] = regs.map(
++            lambda r: recon_map.get(r, {}).get("status", "NO_AMOUNT_EVIDENCE"))
++        out["FX_MONEY_EVIDENCE_GAPS"] = regs.map(
++            lambda r: recon_map.get(r, {}).get("gaps", ""))
++        out["FX_OBLIGATION_RECON_STATUS"] = regs.map(
++            lambda r: recon_map.get(r, {}).get("obligation", "NO_COMMITMENT_EVIDENCE"))
++        mismatch = out["FX_MONEY_RECON_STATUS"].eq("ACCOUNTING_MISMATCH")
++        if mismatch.any():
++            out.loc[mismatch,"FX_CONTROL_RISK_SCORE"] = (
++                pd.to_numeric(out.loc[mismatch,"FX_CONTROL_RISK_SCORE"], errors="coerce")
++                .fillna(0).add(20).clip(upper=100)
++            )
+         score = pd.to_numeric(out["FX_CONTROL_RISK_SCORE"], errors="coerce").fillna(0)
+         out["FX_CONTROL_RISK_BAND"] = score.map(lambda v: "CRITICAL" if v>=80 else "HIGH" if v>=60 else "MEDIUM" if v>=35 else "LOW")
+         return out
+@@ -652,8 +664,94 @@
+     def _build_control(self, ledger: pd.DataFrame, timeline: pd.DataFrame,
+                        rate_bridge: pd.DataFrame, realloc: pd.DataFrame,
+                        ctx: PipelineContext) -> pd.DataFrame:
+-        gt = _groups(timeline)
+-        gr = _groups(rate_bridge)
++        # Pre-aggregate the small per-case frames once.  Repeated pandas
++        # filtering/sorting of 11-row timeline frames for every REG was far
++        # slower than the business calculations themselves on production data.
++        timeline_summary: Dict[str, Dict[str, Any]] = {}
++        if timeline is not None and not timeline.empty and KEY_REG in timeline.columns:
++            for reg, g in timeline.groupby(timeline[KEY_REG].map(_s), sort=False):
++                reg = _s(reg)
++                if not reg:
++                    continue
++                recs = g.to_dict("records")
++                open_rows = [r for r in recs if _s(r.get("STATUS")) != "DONE"]
++                if open_rows:
++                    top_rank = max(_status_rank(_s(r.get("STATUS"))) for r in open_rows)
++                    top = [r for r in open_rows if _status_rank(_s(r.get("STATUS"))) == top_rank]
++                    chosen = min(top, key=lambda r: _num(r.get("STAGE_ORDER")))
++                    current_stage = _s(chosen.get("STAGE_FA"))
++                else:
++                    current_stage = "چرخه تکمیل"
++                progress = round(100 * sum(_s(r.get("STATUS")) == "DONE" for r in recs) / len(recs), 1) if recs else 0.0
++
++                due_rows = [r for r in open_rows if _s(r.get("DUE_DATE"))]
++                deadline_date = ""
++                deadline_days = None
++                deadline_status = "NO_DEADLINE"
++                deadline_basis = ""
++                if due_rows:
++                    def _due_sort(r):
++                        v = pd.to_numeric(pd.Series([r.get("DAYS_REMAINING")]), errors="coerce").iloc[0]
++                        return float(v) if pd.notna(v) else float("inf")
++                    x = min(due_rows, key=_due_sort)
++                    deadline_date = _s(x.get("DUE_DATE"))
++                    dv = pd.to_numeric(pd.Series([x.get("DAYS_REMAINING")]), errors="coerce").iloc[0]
++                    deadline_days = int(dv) if pd.notna(dv) else None
++                    deadline_basis = f"{_s(x.get('DEADLINE_BASIS'))} [{_s(x.get('RULE_STATUS'))}]"
++                    if deadline_days is not None:
++                        deadline_status = ("OVERDUE" if deadline_days < 0 else
++                                           "CRITICAL" if deadline_days <= 15 else
++                                           "WARNING" if deadline_days <= 45 else "OK")
++                timeline_summary[reg] = {
++                    "current_stage": current_stage,
++                    "progress": progress,
++                    "deadline_date": deadline_date,
++                    "deadline_days": deadline_days,
++                    "deadline_status": deadline_status,
++                    "deadline_basis": deadline_basis,
++                }
++
++        rate_summary: Dict[str, Dict[str, Any]] = {}
++        if rate_bridge is not None and not rate_bridge.empty and KEY_REG in rate_bridge.columns:
++            for reg, g in rate_bridge.groupby(rate_bridge[KEY_REG].map(_s), sort=False):
++                reg = _s(reg)
++                if not reg:
++                    continue
++                recs = g.to_dict("records")
++                supplier_curs = _set_join(r.get("PAID_CURRENCY") for r in recs)
++                measured = [r for r in recs if _s(r.get("STATUS")) == "CROSS_CURRENCY_MEASURED"]
++                gaps = [r for r in recs if _s(r.get("STATUS")) == "CROSS_CURRENCY_EVIDENCE_GAP"]
++                impact = sum(_num(r.get("IMPACT_RIAL")) for r in measured)
++                if gaps: conv_status = "EVIDENCE_GAP"
++                elif measured: conv_status = "MEASURED"
++                elif supplier_curs: conv_status = "SAME_CURRENCY_OR_NO_CROSS"
++                else: conv_status = "NO_SUPPLIER_PAYMENT_DATA"
++
++                by_cur: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
++                for r in recs:
++                    cur = _s(r.get("PURCHASE_CURRENCY"))
++                    if cur:
++                        by_cur[cur].append(r)
++                rate_parts = []
++                for cur in sorted(by_cur):
++                    rows_cur = by_cur[cur]
++                    amount = sum(_num(r.get("PURCHASE_AMOUNT")) for r in rows_cur)
++                    if amount <= EPS:
++                        continue
++                    rial = sum(_num(r.get("PURCHASE_RIAL")) for r in rows_cur)
++                    if rial > EPS:
++                        cr = rial / amount
++                    else:
++                        cr = sum(_num(r.get("PURCHASE_RATE_RIAL")) * _num(r.get("PURCHASE_AMOUNT")) for r in rows_cur) / amount
++                    if cr > EPS:
++                        rate_parts.append((cur, float(cr)))
++                rate_summary[reg] = {
++                    "supplier_curs": supplier_curs,
++                    "conv_status": conv_status,
++                    "impact": float(impact),
++                    "wavg": rate_parts[0][1] if len(rate_parts) == 1 else None,
++                    "rate_display": " | ".join(f"{cur}: {rate:,.4f}" for cur, rate in rate_parts),
++                }
+         # reallocation می‌تواند یک REG را در مبدا یا مقصد درگیر کند.
+         rr: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+         if realloc is not None and not realloc.empty:
+@@ -663,13 +761,19 @@
+ 
+         # شدت anomalyهای V26.16
+         an = ctx.extras.get("fx_anomalies")
+-        ga = _groups(an) if an is not None and not an.empty else {}
++        anomaly_counts: Dict[str, Dict[str, int]] = {}
++        if an is not None and not an.empty and KEY_REG in an.columns:
++            for reg, g in an.groupby(an[KEY_REG].map(_s), sort=False):
++                sev = g.get("شدت", pd.Series(dtype=str)).astype(str)
++                anomaly_counts[_s(reg)] = {
++                    "CRITICAL": int((sev == "CRITICAL").sum()),
++                    "HIGH": int((sev == "HIGH").sum()),
++                    "MEDIUM": int((sev == "MEDIUM").sum()),
++                }
+ 
+         rows = []
+         for lr in ledger.to_dict("records"):
+             reg = _s(lr.get("KEY_REG"))
+-            t = gt.get(reg, pd.DataFrame())
+-            rbridge = gr.get(reg, pd.DataFrame())
+             rel = rr.get(reg, [])
+             auth = sum(1 for x in rel if x.get("STATUS") == "AUTHORIZED")
+             unauth = sum(1 for x in rel if x.get("STATUS") == "UNEXPLAINED")
+@@ -678,32 +782,12 @@
+             elif auth: rel_status = "AUTHORIZED"
+             else: rel_status = "NONE"
+ 
+-            supplier_curs = _set_join(rbridge.get("PAID_CURRENCY", pd.Series(dtype=str))) if not rbridge.empty else ""
+-            measured = rbridge[rbridge.get("STATUS", pd.Series(dtype=str)) == "CROSS_CURRENCY_MEASURED"] if not rbridge.empty else pd.DataFrame()
+-            gaps = rbridge[rbridge.get("STATUS", pd.Series(dtype=str)) == "CROSS_CURRENCY_EVIDENCE_GAP"] if not rbridge.empty else pd.DataFrame()
+-            impacts = pd.to_numeric(measured.get("IMPACT_RIAL"), errors="coerce").dropna() if not measured.empty else pd.Series(dtype=float)
+-            impact = float(impacts.sum()) if not impacts.empty else 0.0
+-            if not gaps.empty: conv_status = "EVIDENCE_GAP"
+-            elif not measured.empty: conv_status = "MEASURED"
+-            elif supplier_curs: conv_status = "SAME_CURRENCY_OR_NO_CROSS"
+-            else: conv_status = "NO_SUPPLIER_PAYMENT_DATA"
+-
+-            # نرخ متوسط خرید فقط درون یک ارز معنی دارد. برای پرونده چندارزی
+-            # عدد واحد تولید نمی‌کنیم و نرخ هر ارز را جداگانه نمایش می‌دهیم.
+-            purchase_curs = sorted({_s(x) for x in rbridge.get("PURCHASE_CURRENCY", pd.Series(dtype=str)) if _s(x)}) if not rbridge.empty else []
+-            rate_parts = []
+-            for cur in purchase_curs:
+-                cg = rbridge[rbridge["PURCHASE_CURRENCY"].map(_s).eq(cur)].copy()
+-                am = pd.to_numeric(cg["PURCHASE_AMOUNT"], errors="coerce").fillna(0)
+-                ri = pd.to_numeric(cg["PURCHASE_RIAL"], errors="coerce").fillna(0)
+-                if am.sum() <= EPS:
+-                    continue
+-                cr = float(ri.sum() / am.sum()) if ri.sum() > EPS else float(
+-                    (pd.to_numeric(cg["PURCHASE_RATE_RIAL"], errors="coerce").fillna(0) * am).sum() / am.sum())
+-                if cr > EPS:
+-                    rate_parts.append((cur, cr))
+-            wavg = rate_parts[0][1] if len(rate_parts) == 1 else None
+-            rate_display = " | ".join(f"{cur}: {rate:,.4f}" for cur, rate in rate_parts)
++            rs = rate_summary.get(reg, {})
++            supplier_curs = rs.get("supplier_curs", "")
++            conv_status = rs.get("conv_status", "NO_SUPPLIER_PAYMENT_DATA")
++            impact = float(rs.get("impact", 0.0) or 0.0)
++            wavg = rs.get("wavg")
++            rate_display = rs.get("rate_display", "")
+ 
+             current_stage = ""
+             progress = 0.0
+@@ -711,30 +795,14 @@
+             deadline_days = None
+             deadline_status = "NO_DEADLINE"
+             deadline_basis = ""
+-            if not t.empty:
+-                # مرحله جاری: شدیدترین وضعیت باز، با اولویت ترتیب زمانی.
+-                open_t = t[t["STATUS"] != "DONE"].copy()
+-                if not open_t.empty:
+-                    open_t["_rank"] = open_t["STATUS"].map(_status_rank)
+-                    top_rank = open_t["_rank"].max()
+-                    current_stage = _s(open_t[open_t["_rank"] == top_rank].sort_values("STAGE_ORDER").iloc[0]["STAGE_FA"])
+-                else:
+-                    current_stage = "چرخه تکمیل"
+-                progress = round(100 * int((t["STATUS"] == "DONE").sum()) / len(t), 1)
+-                td = t[t["DUE_DATE"].astype(str).str.strip() != ""].copy()
+-                if not td.empty:
+-                    td["DAYS_REMAINING"] = pd.to_numeric(td["DAYS_REMAINING"], errors="coerce")
+-                    # نزدیک‌ترین deadline باز؛ deadline مرحله انجام‌شده دیگر مهم نیست.
+-                    td = td[td["STATUS"] != "DONE"]
+-                    if not td.empty:
+-                        x = td.sort_values("DAYS_REMAINING").iloc[0]
+-                        deadline_date = _s(x["DUE_DATE"])
+-                        deadline_days = int(x["DAYS_REMAINING"]) if pd.notna(x["DAYS_REMAINING"]) else None
+-                        deadline_basis = f"{_s(x['DEADLINE_BASIS'])} [{_s(x['RULE_STATUS'])}]"
+-                        if deadline_days is not None:
+-                            deadline_status = ("OVERDUE" if deadline_days < 0 else
+-                                               "CRITICAL" if deadline_days <= 15 else
+-                                               "WARNING" if deadline_days <= 45 else "OK")
++            ts = timeline_summary.get(reg)
++            if ts:
++                current_stage = ts["current_stage"]
++                progress = ts["progress"]
++                deadline_date = ts["deadline_date"]
++                deadline_days = ts["deadline_days"]
++                deadline_status = ts["deadline_status"]
++                deadline_basis = ts["deadline_basis"]
+ 
+             score = 0.0
+             score += min(60.0, unauth * 35.0)
+@@ -745,11 +813,10 @@
+             if deadline_status == "OVERDUE": score += 30.0
+             elif deadline_status == "CRITICAL": score += 20.0
+             elif deadline_status == "WARNING": score += 10.0
+-            anomalies = ga.get(reg, pd.DataFrame())
+-            if not anomalies.empty:
+-                sev = anomalies.get("شدت", pd.Series(dtype=str)).astype(str)
+-                score += min(35.0, int((sev == "CRITICAL").sum()) * 20 +
+-                             int((sev == "HIGH").sum()) * 12 + int((sev == "MEDIUM").sum()) * 5)
++            sev = anomaly_counts.get(reg, {})
++            if sev:
++                score += min(35.0, sev.get("CRITICAL", 0) * 20 +
++                             sev.get("HIGH", 0) * 12 + sev.get("MEDIUM", 0) * 5)
+             trace = _num(lr.get("FX_TRACE_SCORE"))
+             score += max(0.0, 100.0 - trace) * 0.20
+             score = round(min(100.0, score), 1)
+--- /dev/null
++++ b/tests/test_business_key_alias_contract_v29_8_2.py
+@@ -0,0 +1,39 @@
++import pandas as pd
++
++from gsi.adapters.a50_ntsw import NtswAdapter
++from gsi.adapters.a60_finance import IlAppendAdapter
++from gsi.adapters.base import KEY_ORDER, KEY_REG, KEY_REG_FILE
++from gsi.adapters.moghavemat import MoghavematAdapter
++
++
++def test_ntsw_registration_number_and_code_are_one_reg_identity():
++    reg = "12345678"
++    by_number = pd.DataFrame([{"شماره ثبت سفارش": reg}])
++    by_code = pd.DataFrame([{"کد ثبت سفارش": reg}])
++    assert NtswAdapter._reg(by_number).iloc[0] == reg
++    assert NtswAdapter._reg(by_code).iloc[0] == reg
++
++
++def test_registration_file_is_distinct_from_registration_identity():
++    frames = {"Import License": pd.DataFrame([{
++        "شماره پرونده": "123456789",
++        "شماره ثبت سفارش": "12345678",
++        "وضعیت": "ثبت سفارش",
++    }])}
++    out = NtswAdapter().transform(frames)["import_license"]
++    assert out.loc[out.index[0], KEY_REG_FILE] == "123456789"
++    assert out.loc[out.index[0], KEY_REG] == "12345678"
++    assert out.loc[out.index[0], KEY_REG_FILE] != out.loc[out.index[0], KEY_REG]
++
++
++def test_order_number_and_our_reference_are_one_order_identity():
++    order = "603128A"
++    il = pd.DataFrame([{"شماره سفارش": order, "شماره ثبت سفارش": "12345678",
++                        "شماره پرونده ثبت سفارش": "123456789"}])
++    il_out = IlAppendAdapter().transform({"Append": il})["main"]
++
++    expert = pd.DataFrame([{"Our Reference": order}])
++    expert_out = MoghavematAdapter().transform({"Expert Data": expert})["lines"]
++
++    assert il_out.loc[il_out.index[0], KEY_ORDER] == order
++    assert expert_out.loc[expert_out.index[0], KEY_ORDER] == order
+--- /dev/null
++++ b/tests/test_currency_normalization_ntsw_v29_8_2.py
+@@ -0,0 +1,13 @@
++from gsi.rulebook import RuleBook
++
++
++def test_ntsw_currency_label_with_repeated_whitespace_maps_to_iso():
++    rb = RuleBook()
++    assert rb.normalize_currency("ین  ژاپن ") == "JPY"
++    assert rb.normalize_currency("یوان  چین ") == "CNY"
++
++
++def test_currency_normalization_handles_arabic_persian_glyph_variants():
++    rb = RuleBook()
++    assert rb.normalize_currency("ين  ژاپن") == "JPY"
++    assert rb.normalize_currency("درهم   امارات") == "AED"

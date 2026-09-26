@@ -1,0 +1,41 @@
+﻿code,reference,severity,detail
+ACCOUNT_DETAIL_GAP,OF:2ff5fb0c25bbd48a5b12ba91,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+ACCOUNT_DETAIL_GAP,OF:9099bf6e3c8944287b7c8cb8,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+MISSING_DATE,OF:9eaa455fd9ff61bd8bd9fcd3,WARNING,رویداد قابل احتساب نیست؛ اصل داده حفظ شد
+ACCOUNT_DETAIL_GAP,OF:cfc6988983e85f77cf57cd8e,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+ACCOUNT_DETAIL_GAP,OF:78fe804505c31aa341e6c052,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+ACCOUNT_DETAIL_GAP,OF:cdb8d401398915a21f645e0a,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+MISSING_DATE,OF:aeaa92f34e215cd233903a9a,WARNING,رویداد قابل احتساب نیست؛ اصل داده حفظ شد
+ACCOUNT_DETAIL_GAP,OF:363ea1e5e44ec697b7af97e6,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+MISSING_DATE,OF:1aa895da373114716891a606,WARNING,رویداد قابل احتساب نیست؛ اصل داده حفظ شد
+ACCOUNT_DETAIL_GAP,OF:e4e38c7a66967812834a3ebf,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+ACCOUNT_DETAIL_GAP,OF:a34f0a92b4111a4785e66e18,INFO,مبلغ منبع در جریان وجوه لحاظ شد، اما گردش حساب ساخته نشد چون حساب بانکی در شاهد منبع وجود ندارد
+VALUATION_GAP,OF:2ff5fb0c25bbd48a5b12ba91,WARNING,MISSING_RATE
+VALUATION_GAP,OF:9099bf6e3c8944287b7c8cb8,WARNING,MISSING_RATE
+VALUATION_GAP,OF:cfc6988983e85f77cf57cd8e,WARNING,MISSING_RATE
+VALUATION_GAP,OF:78fe804505c31aa341e6c052,WARNING,MISSING_RATE
+VALUATION_GAP,OF:cdb8d401398915a21f645e0a,WARNING,MISSING_RATE
+VALUATION_GAP,OF:363ea1e5e44ec697b7af97e6,WARNING,MISSING_RATE
+VALUATION_GAP,OF:e4e38c7a66967812834a3ebf,WARNING,MISSING_RATE
+VALUATION_GAP,OF:a34f0a92b4111a4785e66e18,WARNING,MISSING_RATE
+UNTRACED_PAYMENT,CB1 / EUR,WARNING,بخشی از پرداخت به منبع وجه متصل نیست
+UNMATCHED_PAYMENT,CB1 / EUR,WARNING,بخشی از پرداخت به بارنامه متصل نیست
+UNTRACED_PAYMENT,CB2 / EUR,WARNING,بخشی از پرداخت به منبع وجه متصل نیست
+UNMATCHED_PAYMENT,CB2 / EUR,WARNING,بخشی از پرداخت به بارنامه متصل نیست
+UNTRACED_PAYMENT,CB3 / EUR,WARNING,بخشی از پرداخت به منبع وجه متصل نیست
+UNMATCHED_PAYMENT,CB3 / EUR,WARNING,بخشی از پرداخت به بارنامه متصل نیست
+MISSING_ALLOCATION_REQUEST_EVIDENCE,CB1,WARNING,درخواست تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_ALLOCATION_EVIDENCE,CB1,WARNING,تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_COMMITMENT_EVIDENCE,CB1,WARNING,تعهد ارزی در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FX_BUY_EVIDENCE,CB1,WARNING,خرید ارز در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FUNDING_EVIDENCE,CB1,WARNING,تأمین وجه در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_ALLOCATION_REQUEST_EVIDENCE,CB2,WARNING,درخواست تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_ALLOCATION_EVIDENCE,CB2,WARNING,تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_COMMITMENT_EVIDENCE,CB2,WARNING,تعهد ارزی در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FX_BUY_EVIDENCE,CB2,WARNING,خرید ارز در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FUNDING_EVIDENCE,CB2,WARNING,تأمین وجه در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_ALLOCATION_REQUEST_EVIDENCE,CB3,WARNING,درخواست تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_ALLOCATION_EVIDENCE,CB3,WARNING,تخصیص در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_COMMITMENT_EVIDENCE,CB3,WARNING,تعهد ارزی در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FX_BUY_EVIDENCE,CB3,WARNING,خرید ارز در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است
+MISSING_FUNDING_EVIDENCE,CB3,WARNING,تأمین وجه در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است

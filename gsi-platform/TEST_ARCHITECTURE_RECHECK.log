@@ -1,0 +1,117 @@
+==============================================================================
+GSI V23 — تست معماری، اختلاف نسخه و لاگ رویداد
+==============================================================================
+
+── ۱) قرارداد مرحله‌ها ──
+✅ مرحله‌ها خودکار کشف می‌شوند  → 18 مرحله: resolve → derive → org → scope → supply_position → warehouse_declaration → criticality → commitment → fx_traceability → money_flow_control → legacy_knowledge_transfer → case_actions → narrate → risk → eventlog → conformance → sort → demo_feature
+✅ ثابت‌های ترتیبی زنجیره علّی رعایت شده  → resolve→derive→criticality→risk و eventlog→sort
+✅ ترتیب اجرا صعودی و بدون تکرار است  → [10, 20, 30, 35, 38, 39, 40, 50, 55, 56, 57, 58, 60, 70, 80, 85, 90, 95]
+✅ هر مرحله عنوان فارسی دارد
+✅ هر مرحله ورودی/خروجی خود را اعلام کرده
+✅ زنجیره علّی کامل است (هر ورودی توسط مرحله قبلی تولید می‌شود)  → بدون هشدار
+✅ ستون‌های گزارش را مرحله‌ها اعلام می‌کنند، نه dashboard  → 133 ستون از 18 مرحله
+✅ ستون‌های بحرانی در ابتدای ترتیب نمایش‌اند  → ['طبقه بحرانی', 'مقاومت قطعی (روز)', 'موجودی ایران\u200cخودرو (Oracle)', 'موجودی ساپکو (Oracle)']
+
+── ۲) گارد ترتیب علّی ──
+✅ مرحله با ترتیب اشتباه پیش از خواندن داده رد می‌شود
+✅ پیام خطا مرحله تولیدکننده را نام می‌برد  → مرحله «bad_test_stage» (ترتیب 5) به ستون‌های ['COTAGE_NO'] نیاز دارد که تا این نقطه تولید نشده‌اند. این ستون‌ه
+✅ راوی نمی‌تواند پیش از ساخت ستون‌های شاهد اجرا شود (باگ B1)
+
+── ۳) افزودن و حذف قابلیت با یک فایل ──
+✅ قابلیت جدید فقط با افزودن یک فایل فعال شد  → 55:32,346 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+COL_OK True
+SHEET_OK True
+KPI_OK True
+✅ ستونش خودکار در شیت ماتریس آمد (بدون لمس dashboard.py)
+✅ KPI اش خودکار در خلاصه اجرایی آمد (بدون لمس pipeline.py)
+✅ حذف فایل، قابلیت را بدون هیچ خطایی برداشت  → STAGES 17 (مبنا 17)
+
+── ۴) تشخیص اختلاف نسخه (علت خطای frame_map) ──
+✅ قراردادها در نسخه سالم بدون مشکل‌اند  → 0 مشکل
+✅ Doctor فایل قدیمی را تشخیص می‌دهد
+✅ پیام دقیقاً نام همان یک فایل را می‌گوید  → ❌ فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس‌های چندفریمی 
+✅ پیام می‌گوید نیازی به کپی مجدد کل پکیج نیست
+✅ خط لوله با پیام صریح متوقف می‌شود، نه AttributeError مبهم  → ['2026-09-19 08:55:35,411 | ERROR   | ❌ اختلاف نسخه فایل: فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس\u200cهای چندفریمی مثل Oracle']
+✅ مانیفست فایل تغییرکرده را نام می‌برد
+
+── ۵) لاگ رویداد (استاندارد Celonis) ──
+2026-09-19 08:55:35,731 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,776 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,785 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,792 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,792 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,792 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,799 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,799 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,826 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,828 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 08:55:35,834 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 08:55:35,898 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+2026-09-19 08:55:36,182 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+/workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+✅ جدول فعالیت ساخته شد  → 16 رویداد
+✅ هر چهار ستون استاندارد Celonis موجود است  → ['_CASE_KEY', 'ACTIVITY_EN', 'EVENTTIME', '_SORTING']
+✅ ستون _SORTING پر است (رویدادهای هم‌تاریخ ترتیب قطعی دارند)  → 7 مقدار ترتیب متمایز
+✅ رویدادهای هر پرونده بر اساس (زمان، ترتیب) مرتب‌اند
+✅ جدول پرونده با throughput ساخته شد  → میانگین 86 روز
+✅ زمان چرخه فقط برای پرونده بسته و برابر فاصله نخستین تا آخرین است  → 3 پرونده بسته
+✅ پرونده باز زمان چرخه نمی‌گیرد، سن و انتظار جاری می‌گیرد  → 2 پرونده باز
+✅ رویدادها در سطح (پرونده، فعالیت، تاریخ) یکتا شده‌اند
+✅ شمار ردیف منبع نگه داشته شده و از رویداد یکتا کمتر نیست
+✅ نقاط کنترل طی‌شده هرگز از ۱۰۰٪ رد نمی‌کند  → بیشینه 46.7٪
+✅ گلوگاه‌ها با میانه محاسبه و نزولی مرتب شدند  → خرید ارز → ثبت رسید مالی: میانه 296 روز
+✅ گذار «به خودش» در جدول گلوگاه نیست
+✅ صف جاری هر مرحله محاسبه شد  → 2 مرحله دارای صف
+✅ مسیرهای فرآیند (variants) با سهم درصدی تولید شد  → 4 مسیر متمایز
+✅ فایل CSV آماده بارگذاری در Celonis ذخیره شد  → /workspace/scratch/46e9c4ad1cdf/GSI_V27_2_1_RUNTIME_FIX/gsi_arch_o3nfjgw1/output/GSI_EventLog.csv
+✅ سرستون CSV مطابق استاندارد Celonis است  → ['EVENT_ID', '_CASE_KEY', 'ACTIVITY_EN', 'ACTIVITY_FA', 'EVENTTIME']
+✅ شیت «نقشه فرآیند و گلوگاه» ساخته شد  → ['۱۶. اداره محور', '۱۷. سلامت سیستم']
+✅ داشبورد 17 شیتی کامل است  → 17 شیت
+
+── ۶) ارکستراتور باید لاغر بماند ──
+✅ pipeline.py زیر ۳۰۰ خط مؤثر است  → 299 خط
+✅ هیچ عدد یا قاعده کسب‌وکاری در ارکستراتور نیست  → پاک
+✅ dashboard.py ستون‌های ماتریس را هاردکد نمی‌کند
+
+==============================================================================
+نتیجه: 42 موفق | 0 ناموفق
+==============================================================================

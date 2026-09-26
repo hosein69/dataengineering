@@ -1,0 +1,30 @@
+{
+  "status": "OK",
+  "stats": {
+    "file": "/mnt/data/NTSW-IKCO.xlsx",
+    "sheet_rows": {
+      "Import License": 1000,
+      "Allocation": 3286,
+      "Release Commitment": 4007
+    },
+    "frames": {
+      "import_license": 1000,
+      "commitment_rows": 4007,
+      "commitment_quarantine": 0,
+      "commitment": 2390,
+      "allocation_history": 3286,
+      "allocation_quarantine": 0,
+      "allocation_rows": 2834,
+      "allocation": 1418
+    },
+    "import_license": {
+      "rows": 1000,
+      "reg_file_nonempty": 1000,
+      "reg_nonempty": 840,
+      "order_nonempty": 0,
+      "reg_file_reg_pairs": 840,
+      "regfile_multi_reg": 0,
+      "reg_multi_regfile": 0
+    }
+  }
+}

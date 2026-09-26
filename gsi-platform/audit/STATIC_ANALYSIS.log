@@ -1,0 +1,123 @@
+app/process_cockpit.py:11:1: 'typing.Iterable' imported but unused
+app/process_cockpit.py:20:1: '.theme.BANDS' imported but unused
+app/process_cockpit.py:20:1: '.theme.STATUS' imported but unused
+app/process_cockpit.py:20:1: '.theme.STATUS_INK' imported but unused
+app/process_cockpit.py:20:1: '.theme.STATUS_WASH' imported but unused
+app/personal_workspace.py:5:1: 'os' imported but unused
+app/run_platform.py:13:10: 'streamlit' imported but unused
+app/run_dashboard.py:33:9: 'streamlit' imported but unused
+app/dashboard.py:24:1: 'base64' imported but unused
+app/dashboard.py:49:1: 'app.ui_kit.GREEN_SOFT' imported but unused
+app/dashboard.py:49:1: 'app.ui_kit.export_html' imported but unused
+app/dashboard.py:49:1: 'app.ui_kit.kpis' imported but unused
+app/process_view.py:22:1: '.theme.BANDS' imported but unused
+app/styles.py:12:1: '.theme.BRAND_SOFT' imported but unused
+app/studio.py:23:1: 'typing.Dict' imported but unused
+app/studio.py:23:1: 'typing.List' imported but unused
+app/studio.py:37:1: 'app.theme.SEQUENTIAL' imported but unused
+app/studio.py:37:1: 'app.theme.TEXT_SECONDARY' imported but unused
+app/studio.py:39:1: 'gsi.studio_core.excel_export.DEFAULT_CUSTOM_NAME' imported but unused
+app/studio.py:39:1: 'gsi.studio_core.excel_export.OfficialReportOverwrite' imported but unused
+app/studio.py:43:1: 'gsi.studio_core.html_export.build_dynamic_html' imported but unused
+app/studio.py:47:5: 'plotly.express as px' imported but unused
+app/studio.py:738:5: 'gsi.studio_core.grain.GRAIN_FA' imported but unused
+app/studio.py:738:5: 'gsi.studio_core.grain.column_grain' imported but unused
+app/studio.py:738:5: 'gsi.studio_core.grain.measure_kind' imported but unused
+app/studio.py:738:5: 'gsi.studio_core.grain.KIND_FA' imported but unused
+app/studio.py:855:20: f-string is missing placeholders
+app/motion.py:23:1: '.theme.TEXT' imported but unused
+app/motion.py:23:1: '.theme.TEXT_SECONDARY' imported but unused
+app/control_center.py:4:1: 'hashlib' imported but unused
+app/control_center.py:11:1: 'gsi.control_center.core.KINDS' imported but unused
+app/control_center.py:11:1: 'gsi.control_center.core.render_report' imported but unused
+app/control_center.py:11:1: 'gsi.control_center.core.save_report' imported but unused
+app/control_center.py:11:1: 'gsi.control_center.core.outlook_draft' imported but unused
+app/ui_kit.py:28:1: '.theme.TEXT_MUTED' imported but unused
+app/ui_kit.py:28:1: '.theme.STATUS' imported but unused
+gsi/__main__.py:78:9: '.personalization.personal_html.build_personal_html' imported but unused
+gsi/pipeline.py:22:1: 'datetime.datetime' imported but unused
+gsi/voice.py:48:1: 'typing.Iterable' imported but unused
+gsi/voice.py:48:1: 'typing.List' imported but unused
+gsi/voice.py:48:1: 'typing.Sequence' imported but unused
+gsi/audience.py:43:1: 'dataclasses.field' imported but unused
+gsi/version.py:30:1: '.factsheet.VERSION as PACKAGE_VERSION' imported but unused
+gsi/diagnose.py:28:1: 'typing.Tuple' imported but unused
+gsi/diagnose.py:307:9: local variable 'left' is assigned to but never used
+gsi/knowledge_desk/query.py:7:1: 'pathlib.Path' imported but unused
+gsi/knowledge_desk/indexer.py:5:1: 'json' imported but unused
+gsi/knowledge_desk/indexer.py:7:1: 'time' imported but unused
+gsi/knowledge_desk/indexer.py:9:1: 'typing.Iterable' imported but unused
+gsi/knowledge_desk/indexer.py:9:1: 'typing.List' imported but unused
+gsi/knowledge_desk/indexer.py:9:1: 'typing.Optional' imported but unused
+gsi/knowledge_desk/indexer.py:9:1: 'typing.Tuple' imported but unused
+gsi/knowledge_desk/service.py:7:1: 'urllib.parse.parse_qs' imported but unused
+gsi/knowledge_desk/service.py:9:1: '.config.load_config' imported but unused
+gsi/knowledge_desk/parsers.py:5:1: 'html' imported but unused
+gsi/knowledge_desk/static_export.py:6:1: 'os' imported but unused
+gsi/knowledge_desk/static_export.py:8:1: 'sqlite3' imported but unused
+gsi/stages/s57_legacy_knowledge.py:11:1: 'typing.Set' imported but unused
+gsi/stages/s55_fx_traceability.py:24:1: '..adapters.base.KEY_BL' imported but unused
+gsi/stages/s50_commitment.py:10:1: '.base.GROUP_MAIN' imported but unused
+gsi/stages/s39_warehouse_declaration.py:34:1: 'typing.Optional' imported but unused
+gsi/stages/s39_warehouse_declaration.py:40:1: '..core.text.is_empty_val' imported but unused
+gsi/stages/s85_conformance.py:33:1: 'typing.Tuple' imported but unused
+gsi/integrations/daily_email.py:237:9: 'matplotlib' imported but unused
+gsi/dataio/reader.py:121:5: 'io.BytesIO' imported but unused
+gsi/dataio/logging_setup.py:10:1: 'os' imported but unused
+gsi/dataio/logging_setup.py:12:1: 'datetime.datetime' imported but unused
+gsi/dataio/logging_setup.py:14:1: '..config.settings.SETTINGS' imported but unused
+gsi/resolve/expert_roles.py:42:1: 'typing.Optional' imported but unused
+gsi/resolve/expert_scope.py:46:1: 'dataclasses.field' imported but unused
+gsi/resolve/expert_scope.py:47:1: 'typing.Optional' imported but unused
+gsi/personalization/personal_html.py:10:1: 'datetime.datetime' imported but unused
+gsi/personalization/personal_html.py:11:1: 'typing.Iterable' imported but unused
+gsi/warehouse/__main__.py:2:1: 'pathlib.Path' imported but unused
+gsi/warehouse/historical_store.py:26:1: 'shutil' imported but unused
+gsi/warehouse/historical_store.py:31:1: 'typing.Iterable' imported but unused
+gsi/warehouse/historical_store.py:31:1: 'typing.Sequence' imported but unused
+gsi/warehouse/service.py:1:1: '.store.RUN' imported but unused
+gsi/warehouse/service.py:1:1: '.store.dumps' imported but unused
+gsi/warehouse/service.py:3:1: '.numeric.decimal_text' imported but unused
+gsi/warehouse/excel.py:5:1: 'pathlib.PurePosixPath' imported but unused
+gsi/warehouse/__init__.py:2:1: '.store.Warehouse' imported but unused
+gsi/warehouse/business_dwh.py:10:1: 'dataclasses.dataclass' imported but unused
+gsi/warehouse/business_dwh.py:19:1: '.store.now' imported but unused
+gsi/warehouse/numeric.py:1:1: 'math' imported but unused
+gsi/control_center/core.py:20:1: '.locking.FileLock as _FileLock' imported but unused
+gsi/control_center/core.py:304:9: 'cryptography' imported but unused
+gsi/control_center/widgets.py:3:1: 'collections.Counter' imported but unused
+gsi/control_center/widgets.py:4:1: 'datetime.date' imported but unused
+gsi/config/keys.py:17:1: 'typing.Tuple' imported but unused
+gsi/design/handoff.py:168:7: f-string is missing placeholders
+gsi/design/charts_js.py:27:1: '.tokens as T' imported but unused
+gsi/adapters/a60_finance.py:12:1: '..core.text.clean_employee_code' imported but unused
+gsi/adapters/a50_ntsw.py:35:1: '..core.text.num_safe' imported but unused
+gsi/adapters/a50_ntsw.py:88:9: redefinition of unused 'num_safe' from line 35
+gsi/adapters/base.py:20:1: 'os' imported but unused
+gsi/adapters/a10_abbasi.py:17:1: '..core.text.clean_part_no' imported but unused
+gsi/report/insight.py:30:1: 'typing.Optional' imported but unused
+gsi/report/insight.py:182:5: local variable 'total' is assigned to but never used
+gsi/report/dashboard.py:262:13: local variable 'title_row' is assigned to but never used
+gsi/report/charts.py:33:1: 'openpyxl.chart.LineChart' imported but unused
+gsi/report/charts.py:33:1: 'openpyxl.chart.Series' imported but unused
+gsi/report/charts.py:35:1: 'openpyxl.chart.marker.Marker' imported but unused
+gsi/report/charts.py:39:1: 'openpyxl.drawing.fill.PatternFillProperties' imported but unused
+gsi/report/charts.py:39:1: 'openpyxl.drawing.fill.SolidColorFillProperties' imported but unused
+gsi/report/charts.py:40:1: 'openpyxl.utils.get_column_letter' imported but unused
+gsi/report/supply_views.py:268:5: local variable 'notes' is assigned to but never used
+gsi/studio_core/registry.py:5:1: 'typing.Any' imported but unused
+gsi/studio_core/registry.py:5:1: 'typing.Callable' imported but unused
+gsi/studio_core/registry.py:5:1: 'typing.Optional' imported but unused
+gsi/studio_core/report_builder.py:383:9: local variable 'name' is assigned to but never used
+gsi/studio_core/excel_export.py:5:1: 'datetime.date' imported but unused
+gsi/studio_core/excel_export.py:7:1: 'typing.List' imported but unused
+gsi/studio_core/html_export.py:56:1: '..voice as V' imported but unused
+gsi/studio_core/html_export.py:58:1: '.grain.safe_agg' imported but unused
+gsi/studio_core/html_export.py:60:1: '.composer.PROCESS_VIEWS' imported but unused
+gsi/studio_core/html_export.py:60:1: '.composer.KANBAN_MODES' imported but unused
+gsi/studio_core/html_export.py:60:1: '.composer.KANBAN_CARD_FIELDS' imported but unused
+gsi/studio_core/html_export.py:565:5: local variable 'cap' is assigned to but never used
+gsi/studio_core/html_export.py:645:5: local variable 'shown' is assigned to but never used
+gsi/studio_core/filters.py:5:1: 'typing.Iterable' imported but unused
+gsi/studio_core/filters.py:5:1: 'typing.Mapping' imported but unused
+gsi/studio_core/metric_registry.py:16:1: 'typing.Optional' imported but unused

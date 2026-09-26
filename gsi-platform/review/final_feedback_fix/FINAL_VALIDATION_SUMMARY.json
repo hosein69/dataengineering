@@ -1,0 +1,35 @@
+{
+  "frozen_independent": {
+    "passed": 173,
+    "failed": 0,
+    "log": "FINAL_FROZEN_173_PASS.log"
+  },
+  "extended_diagnostic": {
+    "passed": 77,
+    "failed": 0,
+    "log": "FINAL_EXTENDED_77_PASS.log"
+  },
+  "affected_internal_regression": {
+    "passed": 100,
+    "failed": 0,
+    "log": "FINAL_AFFECTED_INTERNAL_100_PASS.log"
+  },
+  "dashboard_email_hygiene": {
+    "passed": 8,
+    "failed": 0,
+    "log": "DASHBOARD_EMAIL_HYGIENE_PASS.log"
+  },
+  "knowledge_desk_localhost": {
+    "passed": 3,
+    "failed": 0,
+    "log": "KNOWLEDGE_DESK_LOCALHOST_PASS.log"
+  },
+  "import_hygiene": {
+    "passed": 6,
+    "failed": 0,
+    "log": "IMPORT_HYGIENE_6_PASS.log"
+  },
+  "compileall": "PASS",
+  "gsi_manifest_issues": 0,
+  "real_ntsw_probe": "real_ntsw/ntsw_semantic_probe.json"
+}

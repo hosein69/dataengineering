@@ -1,0 +1,13 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "29.6.3",
+  "release": "Material In-Tab HTML Runtime Fix",
+  "build": "V29_6_3_MATERIAL_HTML_RUNTIME_FIX",
+  "fixes": {
+    "material_present_in_every_html_tab": true,
+    "material_filter_owned_by_each_tab": true,
+    "no_global_material_table": true,
+    "saved_legacy_tabs_upgraded_at_html_runtime": true,
+    "version_manifest_bumped": true
+  }
+}

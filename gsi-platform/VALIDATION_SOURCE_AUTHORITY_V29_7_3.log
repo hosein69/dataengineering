@@ -1,0 +1,17 @@
+........................................................................ [ 81%]
+................                                                         [100%]
+=============================== warnings summary ===============================
+tests/test_rules_and_moghavemat.py: 10 warnings
+  /mnt/data/gsi_v2972_fullpriority/gsi/report/dashboard.py:384: DeprecationWarning: Call to deprecated function copy (Use copy(obj) or cell.obj = cell.obj + other).
+    crit_cell.font = crit_cell.font.copy(color=crit_color)
+
+tests/test_rules_and_moghavemat.py::test_moghavemat
+  /opt/pyvenv/lib/python3.13/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_rules_and_moghavemat.py::test_moghavemat returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+88 passed, 11 warnings in 13.64s
+.........................................                                [100%]
+41 passed, 1 deselected in 0.67s

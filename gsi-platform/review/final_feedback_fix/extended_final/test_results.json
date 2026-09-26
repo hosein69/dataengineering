@@ -1,0 +1,622 @@
+{
+  "exitstatus": 0,
+  "target": "/mnt/data/gsi_final_work",
+  "tests": [
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[\\u06a9\\u062f \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00340498600007777,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013482399999702466,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[\\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0011645989998214645,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[ \\u0634\\u0645\\u0627\\u0631\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634 ]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0011782089995904244,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[\\u0634\\u0645\\u0627\\u0631\\u0647_\\u062b\\u0628\\u062a_\\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012749020002047473,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_aliases_are_one_identity[\\u0634\\u0645\\u0627\\u0631\\u0647\\n\\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0011655199996312149,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u067e\\u0631\\u0648\\u0646\\u062f\\u0647 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014132360001894995,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u067e\\u0631\\u0648\\u0646\\u062f\\u0647]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0017446150000068883,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u062a\\u0627\\u0631\\u06cc\\u062e \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00156526999990092,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u0627\\u0631\\u0632\\u0634 \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012964439997631416,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u0645\\u0628\\u0644\\u063a \\u06a9\\u0627\\u0631\\u0645\\u0632\\u062f \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634 (\\u0631\\u06cc\\u0627\\u0644)]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014497389997814025,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u062d\\u0627\\u0644\\u062a \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0025776249999580614,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_reg_semantic_near_misses_are_not_reg_identity[\\u0648\\u0636\\u0639\\u06cc\\u062a \\u062b\\u0628\\u062a \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013484199998856639,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_aliases_are_one_commercial_identity[\\u0634\\u0645\\u0627\\u0631\\u0647 \\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0012781659997926909,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_aliases_are_one_commercial_identity[\\u0633\\u0641\\u0627\\u0631\\u0634]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013202189998082758,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_aliases_are_one_commercial_identity[Order No.]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013962010002614988,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_aliases_are_one_commercial_identity[Our Reference]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001247019999937038,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Purchase Requisition]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0015169490002335806,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Order Unit]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014729340000485536,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Net Order Value]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0017377049998685834,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Gross order value]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014295900000433903,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Purchase Order Item]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0013795059999210935,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Purchase Order Date]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0015116909999051131,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[PO No]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001743704000091384,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_semantic_near_misses_do_not_create_commercial_order[Material Document]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014139570002953405,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_material_descriptors_do_not_create_material_identity[Material Document]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0015099480001481425,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_material_descriptors_do_not_create_material_identity[Material Description]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.001399335999849427,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_material_descriptors_do_not_create_material_identity[Material Group]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0015380199997707678,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_material_descriptors_do_not_create_material_identity[Order Material]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0014159100001052138,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_all_composite_components_are_mandatory[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01989190900030735,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_all_composite_components_are_mandatory[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012906328000099165,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_all_composite_components_are_mandatory[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.014205316000243329,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_all_composite_components_are_mandatory[bad3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.01733295200028806,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_bl_composite_never_serializes_missing_component[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.011130536999644391,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_bl_composite_never_serializes_missing_component[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012284439999802998,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_bl_composite_never_serializes_missing_component[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012390597999910824,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_order_bl_composite_never_serializes_missing_component[bad3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.012872950000200944,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_ntsw_import_license_does_not_require_material",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.010535248999985924,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_ntsw_reg_file_without_reg_stays_unresolved_not_fabricated",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00939349400005085,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_business_key_contract_extended.py::test_ntsw_order_absence_does_not_fabricate_order_from_registration",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008730314999866096,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_credit_lineage_roundtrip[_SOURCE_ROW-17]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.03143901099974755,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_credit_lineage_roundtrip[_SOURCE_FILE_ID-sha256:abc]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.028091440000025614,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_credit_lineage_roundtrip[_SOURCE_SHEET-PURCREDIT]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.027402083000197308,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_pr_native_fields_remain_on_pr_semantics[Material-SAP_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.08245670200039967,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_pr_native_fields_remain_on_pr_semantics[Currency-SAP_PR_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0908699839997098,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_pr_does_not_fill_foreign_sheet_authority[SAP_PO_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.08220010299964997,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_pr_does_not_fill_foreign_sheet_authority[SAP_PACK_MATERIAL]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.10466455100004168,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_pr_does_not_fill_foreign_sheet_authority[SAP_PO_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.08874122200040802,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_event_specific_currency_does_not_become_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06325-CRD_ALLOC_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.02198290900014399,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_contract_and_lineage_extended.py::test_event_specific_currency_does_not_become_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06326-CRD_SWIFT_CURRENCY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.022215160000087053,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_knowledge_bundle.py::test_knowledge_manifest_is_complete_and_immutable",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0030557200002476748,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_knowledge_bundle.py::test_oracle_ids_unique_and_have_basis",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00023465599997507525,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_knowledge_bundle.py::test_regulatory_oracles_have_external_provenance",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00029991300016263267,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_knowledge_bundle.py::test_no_external_source_claimed_fully_observed_when_access_was_incomplete",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.00021533800008910475,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_knowledge_bundle.py::test_business_contract_document_contains_four_distinct_entities",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0002488180002728768,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unknown_commitment_never_becomes_covered_zero[None]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0027044919997933903,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unknown_commitment_never_becomes_covered_zero[]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0033670399998300127,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unknown_commitment_never_becomes_covered_zero[nan]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0022813770001448574,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unknown_commitment_never_becomes_covered_zero[unknown3]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.002565637000316201,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonfinite_balance_cannot_produce_equivalent[inf]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.016983858999992663,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonfinite_balance_cannot_produce_equivalent[-inf]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.000929000999803975,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonfinite_balance_cannot_produce_equivalent[Infinity]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0008195700002033846,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonfinite_balance_cannot_produce_equivalent[-Infinity]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0009435830002075818,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonactual_purchase_does_not_change_actual_valuation[PLANNED]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006385935999787762,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonactual_purchase_does_not_change_actual_valuation[FORECAST]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006112623000262829,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_nonactual_purchase_does_not_change_actual_valuation[DRAFT]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.006732838000061747,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_currency_evidence_cannot_change_target_currency[EUR]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004736411000067164,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_currency_evidence_cannot_change_target_currency[CNY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004620520000116812,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_currency_evidence_cannot_change_target_currency[AED]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004426522999892768,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_currency_evidence_cannot_change_target_currency[JPY]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0046002600001884275,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_registration_cannot_change_target_case[R2]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0043619489997581695,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_registration_cannot_change_target_case[99999999]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004440454999894428,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_unrelated_registration_cannot_change_target_case[OTHER]",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.004716501000075368,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_allocation_conflict_is_permutation_invariant",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.0050737689998641144,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_cashflow_row_order_invariance_for_valid_events",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.04089893399986977,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_distinct_equal_events_different_currency_survive",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.007922323999991931,
+      "expectation": "",
+      "failure": ""
+    },
+    {
+      "id": "offline_validation/tests/test_metamorphic_semantics.py::test_exact_source_replay_is_idempotent_but_distinct_ids_are_not",
+      "phase": "call",
+      "outcome": "passed",
+      "seconds": 0.008962429000348493,
+      "expectation": "",
+      "failure": ""
+    }
+  ]
+}

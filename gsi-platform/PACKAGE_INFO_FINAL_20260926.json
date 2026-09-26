@@ -1,0 +1,19 @@
+{
+  "product": "GSI",
+  "version": "29.8.2 RC4-OPT2 H1",
+  "release_date": "2026-09-26",
+  "release_status": "FINAL_CANDIDATE",
+  "scope": [
+    "release hygiene and deterministic clean packaging",
+    "process diagram UI/UX hardening without business-logic changes",
+    "Excel font contract restoration",
+    "HTML samples generated from the real synthetic pipeline path"
+  ],
+  "html_samples": [
+    "samples/release_html/GSI_SAMPLE_EXECUTIVE.html",
+    "samples/release_html/GSI_SAMPLE_MANAGER.html",
+    "samples/release_html/GSI_SAMPLE_EXPERT.html",
+    "samples/release_html/GSI_SAMPLE_ANALYST.html",
+    "samples/release_html/GSI_SAMPLE_DAILY_EMAIL.html"
+  ]
+}

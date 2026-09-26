@@ -1,0 +1,2364 @@
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_anythingllm_learning_v29
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.74s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۴) معماری، اختلاف نسخه و لاگ رویداد
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V23 — تست معماری، اختلاف نسخه و لاگ رویداد
+==============================================================================
+
+── ۱) قرارداد مرحله‌ها ──
+✅ مرحله‌ها خودکار کشف می‌شوند  → 18 مرحله: resolve → derive → org → scope → supply_position → warehouse_declaration → criticality → commitment → process_integrity → fx_traceability → money_flow_control → legacy_knowledge_transfer → case_actions → narrate → risk → eventlog → conformance → sort
+✅ ثابت‌های ترتیبی زنجیره علّی رعایت شده  → resolve→derive→criticality→risk و eventlog→sort
+✅ ترتیب اجرا صعودی و بدون تکرار است  → [10, 20, 30, 35, 38, 39, 40, 50, 54, 55, 56, 57, 58, 60, 70, 80, 85, 90]
+✅ هر مرحله عنوان فارسی دارد
+✅ هر مرحله ورودی/خروجی خود را اعلام کرده
+✅ زنجیره علّی کامل است (هر ورودی توسط مرحله قبلی تولید می‌شود)  → بدون هشدار
+✅ ستون‌های گزارش را مرحله‌ها اعلام می‌کنند، نه dashboard  → 140 ستون از 18 مرحله
+✅ ستون‌های بحرانی در ابتدای ترتیب نمایش‌اند  → ['طبقه بحرانی', 'مقاومت قطعی (روز)', 'موجودی ایران\u200cخودرو (Oracle)', 'موجودی ساپکو (Oracle)']
+
+── ۲) گارد ترتیب علّی ──
+✅ مرحله با ترتیب اشتباه پیش از خواندن داده رد می‌شود
+✅ پیام خطا مرحله تولیدکننده را نام می‌برد  → مرحله «bad_test_stage» (ترتیب 5) به ستون‌های ['COTAGE_NO'] نیاز دارد که تا این نقطه تولید نشده‌اند. این ستون‌ه
+✅ راوی نمی‌تواند پیش از ساخت ستون‌های شاهد اجرا شود (باگ B1)
+
+── ۳) افزودن و حذف قابلیت با یک فایل ──
+✅ قابلیت جدید فقط با افزودن یک فایل فعال شد  → 13:18,123 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+COL_OK True
+SHEET_OK True
+KPI_OK True
+✅ ستونش خودکار در شیت ماتریس آمد (بدون لمس dashboard.py)
+✅ KPI اش خودکار در خلاصه اجرایی آمد (بدون لمس pipeline.py)
+✅ حذف فایل، قابلیت را بدون هیچ خطایی برداشت  → STAGES 18 (مبنا 18)
+
+── ۴) تشخیص اختلاف نسخه (علت خطای frame_map) ──
+✅ قراردادها در نسخه سالم بدون مشکل‌اند  → 0 مشکل
+✅ Doctor فایل قدیمی را تشخیص می‌دهد
+✅ پیام دقیقاً نام همان یک فایل را می‌گوید  → ❌ فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس‌های چندفریمی 
+✅ پیام می‌گوید نیازی به کپی مجدد کل پکیج نیست
+✅ خط لوله با پیام صریح متوقف می‌شود، نه AttributeError مبهم  → ['2026-09-22 21:13:24,691 | ERROR   | ❌ اختلاف نسخه فایل: فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس\u200cهای چندفریمی مثل Oracle']
+✅ مانیفست فایل تغییرکرده را نام می‌برد
+
+── ۵) لاگ رویداد (استاندارد Celonis) ──
+2026-09-22 21:13:25,778 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-22 21:13:25,999 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,020 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,049 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,058 | WARNING |    ⚠️ [sap] ستون «PR_ITEM» یافت نشد (کاندیدها: ['Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,060 | WARNING |    ⚠️ [sap] ستون «MATERIAL» یافت نشد (کاندیدها: ['Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,063 | WARNING |    ⚠️ [sap] ستون «MATERIAL_DESC» یافت نشد (کاندیدها: ['Material Description']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,065 | WARNING |    ⚠️ [sap] ستون «SHORT_TEXT» یافت نشد (کاندیدها: ['Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,067 | WARNING |    ⚠️ [sap] ستون «REQ_QTY» یافت نشد (کاندیدها: ['Quantity requested']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,069 | WARNING |    ⚠️ [sap] ستون «UOM» یافت نشد (کاندیدها: ['Unit of Measure']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,071 | WARNING |    ⚠️ [sap] ستون «MATERIAL_GROUP» یافت نشد (کاندیدها: ['Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,074 | WARNING |    ⚠️ [sap] ستون «PURCH_GROUP_DESC» یافت نشد (کاندیدها: ['Purgroup Description']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,076 | WARNING |    ⚠️ [sap] ستون «REQUISITIONER» یافت نشد (کاندیدها: ['Requisitioner']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,078 | WARNING |    ⚠️ [sap] ستون «REQUISITION_DATE» یافت نشد (کاندیدها: ['Requisition date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,080 | WARNING |    ⚠️ [sap] ستون «CREATED_BY» یافت نشد (کاندیدها: ['Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,083 | WARNING |    ⚠️ [sap] ستون «RELEASE_DATE» یافت نشد (کاندیدها: ['Release Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,085 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,087 | WARNING |    ⚠️ [sap] ستون «HEADER_PURCHASE_ORDER» یافت نشد (کاندیدها: ['Purchase order']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,089 | WARNING |    ⚠️ [sap] ستون «QTY_ORDERED» یافت نشد (کاندیدها: ['Quantity ordered']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,091 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,092 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,094 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,096 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,098 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,101 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,106 | WARNING |    ⚠️ [sap] ستون «PLANT» یافت نشد (کاندیدها: ['Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,109 | WARNING |    ⚠️ [sap] ستون «GOODS_RECEIPT» یافت نشد (کاندیدها: ['Goods Receipt']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,112 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,114 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE» یافت نشد (کاندیدها: ['Delivery Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,118 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,121 | WARNING |    ⚠️ [sap] ستون «REQ_TRACKING_NO» یافت نشد (کاندیدها: ['Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,123 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,124 | WARNING |    ⚠️ [sap] ستون «TOTAL_VALUE» یافت نشد (کاندیدها: ['Total Value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,126 | WARNING |    ⚠️ [sap] ستون «CURRENCY» یافت نشد (کاندیدها: ['Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,128 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,130 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,132 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,133 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,135 | WARNING |    ⚠️ [sap] ستون «VALUATION_PRICE» یافت نشد (کاندیدها: ['Valuation Price']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,137 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_ITEM» یافت نشد (کاندیدها: ['Purchase Order Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,139 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_DATE» یافت نشد (کاندیدها: ['Purchase Order Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,143 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,148 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,150 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,153 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,159 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,161 | WARNING |    ⚠️ [sap] ستون «PACK_NO» یافت نشد (کاندیدها: ['pack.Pack Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,163 | WARNING |    ⚠️ [sap] ستون «PACK_PR_ITEM» یافت نشد (کاندیدها: ['pack.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,166 | WARNING |    ⚠️ [sap] ستون «PACK_QTY» یافت نشد (کاندیدها: ['pack.Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,169 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,171 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_NO» یافت نشد (کاندیدها: ['pack.order Num']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,173 | WARNING |    ⚠️ [sap] ستون «PACK_RESPONSIBLE» یافت نشد (کاندیدها: ['pack.Responsible']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,176 | WARNING |    ⚠️ [sap] ستون «PACK_PACKED» یافت نشد (کاندیدها: ['pack.Packed']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,184 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,186 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,188 | WARNING |    ⚠️ [sap] ستون «PACK_MATERIAL» یافت نشد (کاندیدها: ['pack.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,190 | WARNING |    ⚠️ [sap] ستون «PACK_MPN_MATERIAL» یافت نشد (کاندیدها: ['pack.MPN: Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,192 | WARNING |    ⚠️ [sap] ستون «PO_ITEM» یافت نشد (کاندیدها: ['po.Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,194 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,196 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,198 | WARNING |    ⚠️ [sap] ستون «PO_SHORT_TEXT» یافت نشد (کاندیدها: ['po.Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,200 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL» یافت نشد (کاندیدها: ['po.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,202 | WARNING |    ⚠️ [sap] ستون «PO_COMPANY_CODE» یافت نشد (کاندیدها: ['po.Company Code']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,204 | WARNING |    ⚠️ [sap] ستون «PO_PLANT» یافت نشد (کاندیدها: ['po.Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,206 | WARNING |    ⚠️ [sap] ستون «PO_STORAGE_LOCATION» یافت نشد (کاندیدها: ['po.Storage Location']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,210 | WARNING |    ⚠️ [sap] ستون «PO_REQ_TRACKING_NO» یافت نشد (کاندیدها: ['po.Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,213 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL_GROUP» یافت نشد (کاندیدها: ['po.Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,215 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,220 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['po.Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,225 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,227 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_UNIT» یافت نشد (کاندیدها: ['po.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,230 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_QTY» یافت نشد (کاندیدها: ['po.Order Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,231 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,234 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,236 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,238 | WARNING |    ⚠️ [sap] ستون «PO_NET_PRICE» یافت نشد (کاندیدها: ['po.Net Order Price']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,240 | WARNING |    ⚠️ [sap] ستون «PO_CURRENCY» یافت نشد (کاندیدها: ['po.Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,243 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,245 | WARNING |    ⚠️ [sap] ستون «PO_NET_VALUE» یافت نشد (کاندیدها: ['po.Net Order Value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,247 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,249 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,257 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,260 | WARNING |    ⚠️ [sap] ستون «PO_PR_ITEM» یافت نشد (کاندیدها: ['po.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,263 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,265 | WARNING |    ⚠️ [sap] ستون «PO_DOC_TYPE» یافت نشد (کاندیدها: ['po.Purchasing Doc. Type']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,267 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER» یافت نشد (کاندیدها: ['po.Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,269 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_DATE» یافت نشد (کاندیدها: ['po.Document Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,271 | WARNING |    ⚠️ [sap] ستون «PO_CREATED_BY» یافت نشد (کاندیدها: ['po.Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,273 | WARNING |    ⚠️ [sap] ستون «PO_REG_FILE» یافت نشد (کاندیدها: ['po.شماره پرونده']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,275 | WARNING |    ⚠️ [sap] ستون «PO_YOUR_REFERENCE» یافت نشد (کاندیدها: ['po.Your Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,278 | WARNING |    ⚠️ [sap] ستون «PO_OUR_REFERENCE» یافت نشد (کاندیدها: ['po.Our Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,405 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,409 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,475 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,480 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-22 21:13:26,505 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-22 21:13:26,634 | WARNING | ⚠️ [ilappend] ستون‌های هم‌نام کنار گذاشته شدند: ['KEY_REG_FILE']
+2026-09-22 21:13:26,643 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-22 21:13:26,694 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-22 21:13:27,288 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+✅ جدول فعالیت ساخته شد  → 21 رویداد
+✅ هر چهار ستون استاندارد Celonis موجود است  → ['_CASE_KEY', 'ACTIVITY_EN', 'EVENTTIME', '_SORTING']
+✅ ستون _SORTING پر است (رویدادهای هم‌تاریخ ترتیب قطعی دارند)  → 9 مقدار ترتیب متمایز
+✅ رویدادهای هر پرونده بر اساس (زمان، ترتیب) مرتب‌اند
+✅ جدول پرونده با throughput ساخته شد  → میانگین nan روز
+✅ زمان چرخه فقط برای پرونده بسته و برابر فاصله نخستین تا آخرین است  → 0 پرونده بسته
+✅ پرونده باز زمان چرخه نمی‌گیرد، سن و انتظار جاری می‌گیرد  → 5 پرونده باز
+✅ رویدادها در سطح (پرونده، فعالیت، تاریخ) یکتا شده‌اند
+✅ شمار ردیف منبع نگه داشته شده و از رویداد یکتا کمتر نیست
+✅ نقاط کنترل طی‌شده هرگز از ۱۰۰٪ رد نمی‌کند  → بیشینه 60.0٪
+✅ گلوگاه‌ها با میانه محاسبه و نزولی مرتب شدند  → خرید ارز → تخلیه محموله: میانه 565 روز
+✅ گذار «به خودش» در جدول گلوگاه نیست
+✅ صف جاری هر مرحله محاسبه شد  → 4 مرحله دارای صف
+✅ مسیرهای فرآیند (variants) با سهم درصدی تولید شد  → 5 مسیر متمایز
+❌ لاگ رویداد فقط در دیتاورهوس ثبت شد
+❌ ستون‌های استاندارد Celonis در دیتاورهوس حفظ شد
+✅ شیت «نقشه فرآیند و گلوگاه» ساخته شد  → ['۱۶. اداره محور', '۱۷. سلامت سیستم']
+✅ داشبورد 17 شیتی کامل است  → 17 شیت
+
+── ۶) ارکستراتور باید لاغر بماند ──
+✅ ارکستراتور اجرای منطق را به مراحل واگذار می‌کند
+✅ هیچ عدد یا قاعده کسب‌وکاری در ارکستراتور نیست  → پاک
+✅ dashboard.py ستون‌های ماتریس را هاردکد نمی‌کند
+
+==============================================================================
+نتیجه: 40 موفق | 2 ناموفق
+ناموفق: لاگ رویداد فقط در دیتاورهوس ثبت شد ، ستون‌های استاندارد Celonis در دیتاورهوس حفظ شد
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_cashflow_dwh_v29_7_2
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 0.64s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_cashflow_hardening_v29_7_1
+██████████████████████████████████████████████████████████████████████████████
+.....                                                                    [100%]
+5 passed in 0.85s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_cashflow_v29_7
+██████████████████████████████████████████████████████████████████████████████
+..........................................                               [100%]
+42 passed in 1.53s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_cluster_scope_v284
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.04s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۵) قرارداد گزارش (باگ موجودی/مقاومت)
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست قرارداد گزارش (باگ «مقاومت ۴ روز با موجودی صفر»)
+==============================================================================
+
+── ۱) بازتولید «مقاومت ۴ روز با موجودی صفر» ──
+✅ محاسبه درست است: ۴۴۰ ساپکو ÷ ۱۱۰ = ۴ روز  → 4.0 روز → بحرانی
+✅ موجودی ایران‌خودرو واقعاً صفر است (تناقض ظاهری بود نه محاسباتی)
+✅ کلید قدیمی «موجودی» دیگر وجود ندارد — منشأ باگ  → شیت باید «موجودی ایران خودرو» و «موجودی ساپکو» را بخواند
+✅ موجودی کل قابل احتساب گزارش می‌شود تا حساب قابل بازبینی باشد
+
+── ۲) قرارداد کلیدهای گزارش ──
+
+Traceback (most recent call last):
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_contracts_report.py", line 213, in <module>
+    result = test_report_keys_exist()
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_contracts_report.py", line 99, in test_report_keys_exist
+    res = Pipeline().run(build_report=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/pipeline.py", line 350, in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/bridge.py", line 62, in run_pipeline
+    wh.publish(rid,slots=('report','dwh'))
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/store.py", line 249, in publish
+    raise QualityGateBlockedError(rid, failed)
+gsi.warehouse.store.QualityGateBlockedError: Quality gate blocked publish: sqlite:INTEGRITY_CHECK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۷) مرکز مخاطبان و منابع
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 17 موفق | 0 شکست
+
+test_cluster_import_keeps_template (__main__.CenterTests.test_cluster_import_keeps_template) ... ok
+test_defaults_revision_conflict (__main__.CenterTests.test_defaults_revision_conflict) ... ok
+test_draft_never_sends (__main__.CenterTests.test_draft_never_sends) ... ok
+test_drift_preserves_config (__main__.CenterTests.test_drift_preserves_config) ... ok
+test_duplicate_header (__main__.CenterTests.test_duplicate_header) ... ok
+test_duplicate_identity (__main__.CenterTests.test_duplicate_identity) ... ok
+test_inactive_member (__main__.CenterTests.test_inactive_member) ... ok
+test_membership_integrity (__main__.CenterTests.test_membership_integrity) ... ok
+test_missing_rows_preserved (__main__.CenterTests.test_missing_rows_preserved) ... ok
+test_partial_invalid_file (__main__.CenterTests.test_partial_invalid_file) ... ok
+test_personal_store_unchanged_on_export (__main__.CenterTests.test_personal_store_unchanged_on_export) ... ok
+test_raw_archive_and_idempotency (__main__.CenterTests.test_raw_archive_and_idempotency) ... ok
+test_restore_revision (__main__.CenterTests.test_restore_revision) ... ok
+test_snapshot_required (__main__.CenterTests.test_snapshot_required) ... ok
+test_template_rejects_attribute_access (__main__.CenterTests.test_template_rejects_attribute_access) ... ok
+test_unknown_columns_not_in_config (__main__.CenterTests.test_unknown_columns_not_in_config) ... ok
+test_xlsx_codes (__main__.CenterTests.test_xlsx_codes) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.127s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۳) مقاومت قطعه و بحرانی بودن
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V23 — تست مقاومت قطعه و بحرانی بودن
+==============================================================================
+
+── ۱) فرمول مقاومت و طبقه‌بندی ──
+✅ مرزهای ۱۰ و ۲۰ روز دقیقاً طبق تعریف کاربر  → 10 حالت درست
+✅ نیاز روزانه صفر ⇒ «بدون مصرف» نه «بحرانی»  → بدون مصرف
+✅ داده غایب ⇒ «نامشخص» نه «توقف خط»  → نامشخص
+✅ مقاومت انبار جدا از مقاومت کل گزارش می‌شود  → انبار 0.0 | کل 0.0
+✅ ترتیب مرتب‌سازی طبقات درست است  → توقف خط → بحرانی → در حال بحرانی → تحت نظر → ایمن
+
+── ۲) هشدار ترکیبی «قطعه بحرانی × پرونده مشکل‌دار» ──
+✅ قطعه بحرانی + پرونده بلوکه ⇒ هشدار CRITICAL  → قطعه بحرانی با پرونده بلوکه — ریسک قطعی توقف خط
+✅ قطعه بحرانی + رسوب گمرکی ⇒ هشدار  → قطعه بحرانی که محموله‌اش در گمرک رسوب کرده
+✅ قطعه بحرانی بدون سفارش باز ⇒ هشدار PR اضطراری  → قطعه بحرانی بدون هیچ سفارش باز
+✅ قطعه ایمن هشدار ترکیبی نمی‌گیرد
+
+── ۳) اتصال سورس Oracle → مقاومت در خط لوله ──
+2026-09-22 21:13:40,143 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,228 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,260 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,284 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,287 | WARNING |    ⚠️ [sap] ستون «PR_ITEM» یافت نشد (کاندیدها: ['Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,289 | WARNING |    ⚠️ [sap] ستون «MATERIAL» یافت نشد (کاندیدها: ['Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,290 | WARNING |    ⚠️ [sap] ستون «MATERIAL_DESC» یافت نشد (کاندیدها: ['Material Description']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,292 | WARNING |    ⚠️ [sap] ستون «SHORT_TEXT» یافت نشد (کاندیدها: ['Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,294 | WARNING |    ⚠️ [sap] ستون «REQ_QTY» یافت نشد (کاندیدها: ['Quantity requested']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,296 | WARNING |    ⚠️ [sap] ستون «UOM» یافت نشد (کاندیدها: ['Unit of Measure']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,298 | WARNING |    ⚠️ [sap] ستون «MATERIAL_GROUP» یافت نشد (کاندیدها: ['Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,300 | WARNING |    ⚠️ [sap] ستون «PURCH_GROUP_DESC» یافت نشد (کاندیدها: ['Purgroup Description']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,302 | WARNING |    ⚠️ [sap] ستون «REQUISITIONER» یافت نشد (کاندیدها: ['Requisitioner']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,304 | WARNING |    ⚠️ [sap] ستون «REQUISITION_DATE» یافت نشد (کاندیدها: ['Requisition date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,306 | WARNING |    ⚠️ [sap] ستون «CREATED_BY» یافت نشد (کاندیدها: ['Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,308 | WARNING |    ⚠️ [sap] ستون «RELEASE_DATE» یافت نشد (کاندیدها: ['Release Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,310 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,312 | WARNING |    ⚠️ [sap] ستون «HEADER_PURCHASE_ORDER» یافت نشد (کاندیدها: ['Purchase order']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,314 | WARNING |    ⚠️ [sap] ستون «QTY_ORDERED» یافت نشد (کاندیدها: ['Quantity ordered']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,316 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,319 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,322 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,324 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,326 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,328 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,335 | WARNING |    ⚠️ [sap] ستون «PLANT» یافت نشد (کاندیدها: ['Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,338 | WARNING |    ⚠️ [sap] ستون «GOODS_RECEIPT» یافت نشد (کاندیدها: ['Goods Receipt']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,341 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,344 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE» یافت نشد (کاندیدها: ['Delivery Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,345 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,347 | WARNING |    ⚠️ [sap] ستون «REQ_TRACKING_NO» یافت نشد (کاندیدها: ['Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,350 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,352 | WARNING |    ⚠️ [sap] ستون «TOTAL_VALUE» یافت نشد (کاندیدها: ['Total Value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,353 | WARNING |    ⚠️ [sap] ستون «CURRENCY» یافت نشد (کاندیدها: ['Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,355 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,357 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,358 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,360 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,362 | WARNING |    ⚠️ [sap] ستون «VALUATION_PRICE» یافت نشد (کاندیدها: ['Valuation Price']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,364 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_ITEM» یافت نشد (کاندیدها: ['Purchase Order Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,366 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_DATE» یافت نشد (کاندیدها: ['Purchase Order Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,368 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,370 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,371 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,373 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,375 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,377 | WARNING |    ⚠️ [sap] ستون «PACK_NO» یافت نشد (کاندیدها: ['pack.Pack Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,379 | WARNING |    ⚠️ [sap] ستون «PACK_PR_ITEM» یافت نشد (کاندیدها: ['pack.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,381 | WARNING |    ⚠️ [sap] ستون «PACK_QTY» یافت نشد (کاندیدها: ['pack.Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,383 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,385 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_NO» یافت نشد (کاندیدها: ['pack.order Num']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,389 | WARNING |    ⚠️ [sap] ستون «PACK_RESPONSIBLE» یافت نشد (کاندیدها: ['pack.Responsible']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,391 | WARNING |    ⚠️ [sap] ستون «PACK_PACKED» یافت نشد (کاندیدها: ['pack.Packed']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,397 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,399 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,401 | WARNING |    ⚠️ [sap] ستون «PACK_MATERIAL» یافت نشد (کاندیدها: ['pack.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,402 | WARNING |    ⚠️ [sap] ستون «PACK_MPN_MATERIAL» یافت نشد (کاندیدها: ['pack.MPN: Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,404 | WARNING |    ⚠️ [sap] ستون «PO_ITEM» یافت نشد (کاندیدها: ['po.Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,406 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,407 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,409 | WARNING |    ⚠️ [sap] ستون «PO_SHORT_TEXT» یافت نشد (کاندیدها: ['po.Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,411 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL» یافت نشد (کاندیدها: ['po.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,413 | WARNING |    ⚠️ [sap] ستون «PO_COMPANY_CODE» یافت نشد (کاندیدها: ['po.Company Code']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,415 | WARNING |    ⚠️ [sap] ستون «PO_PLANT» یافت نشد (کاندیدها: ['po.Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,417 | WARNING |    ⚠️ [sap] ستون «PO_STORAGE_LOCATION» یافت نشد (کاندیدها: ['po.Storage Location']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,420 | WARNING |    ⚠️ [sap] ستون «PO_REQ_TRACKING_NO» یافت نشد (کاندیدها: ['po.Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,422 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL_GROUP» یافت نشد (کاندیدها: ['po.Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,424 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,426 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['po.Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,429 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,431 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_UNIT» یافت نشد (کاندیدها: ['po.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,435 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_QTY» یافت نشد (کاندیدها: ['po.Order Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,436 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,439 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,441 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,443 | WARNING |    ⚠️ [sap] ستون «PO_NET_PRICE» یافت نشد (کاندیدها: ['po.Net Order Price']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,446 | WARNING |    ⚠️ [sap] ستون «PO_CURRENCY» یافت نشد (کاندیدها: ['po.Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,447 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,450 | WARNING |    ⚠️ [sap] ستون «PO_NET_VALUE» یافت نشد (کاندیدها: ['po.Net Order Value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,452 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,454 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,459 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,462 | WARNING |    ⚠️ [sap] ستون «PO_PR_ITEM» یافت نشد (کاندیدها: ['po.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,463 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,465 | WARNING |    ⚠️ [sap] ستون «PO_DOC_TYPE» یافت نشد (کاندیدها: ['po.Purchasing Doc. Type']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,467 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER» یافت نشد (کاندیدها: ['po.Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,469 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_DATE» یافت نشد (کاندیدها: ['po.Document Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,471 | WARNING |    ⚠️ [sap] ستون «PO_CREATED_BY» یافت نشد (کاندیدها: ['po.Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,472 | WARNING |    ⚠️ [sap] ستون «PO_REG_FILE» یافت نشد (کاندیدها: ['po.شماره پرونده']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,474 | WARNING |    ⚠️ [sap] ستون «PO_YOUR_REFERENCE» یافت نشد (کاندیدها: ['po.Your Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,476 | WARNING |    ⚠️ [sap] ستون «PO_OUR_REFERENCE» یافت نشد (کاندیدها: ['po.Our Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,623 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,625 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,691 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,694 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-22 21:13:40,716 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-22 21:13:40,850 | WARNING | ⚠️ [ilappend] ستون‌های هم‌نام کنار گذاشته شدند: ['KEY_REG_FILE']
+2026-09-22 21:13:40,858 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-22 21:13:40,903 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-22 21:13:41,474 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+
+Traceback (most recent call last):
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_criticality.py", line 306, in <module>
+    result = test_pipeline()
+             ^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_criticality.py", line 161, in test_pipeline
+    res = Pipeline().run(build_report=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/pipeline.py", line 350, in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/bridge.py", line 62, in run_pipeline
+    wh.publish(rid,slots=('report','dwh'))
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/store.py", line 249, in publish
+    raise QualityGateBlockedError(rid, failed)
+gsi.warehouse.store.QualityGateBlockedError: Quality gate blocked publish: sqlite:INTEGRITY_CHECK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۶) منطق داشبورد و خروجی‌ها
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست منطق داشبورد
+==============================================================================
+
+── ۱) محاسبه شاخص‌ها ──
+✅ شمارش طبقه بحرانی بر اساس متریال یکتاست، نه ردیف  → دو ردیف IK004 → یک متریال
+✅ توقف خط و بحرانی درست شمرده می‌شوند
+✅ طبقه ناموجود صفر برمی‌گرداند
+✅ num روی ستون غایب خطا نمی‌دهد
+✅ کارت‌های مدیریتی کامل تولید می‌شوند  → 11
+✅ کارت «توقف خط» بحرانی علامت می‌خورد
+✅ کمترین مقاومت درست است  → 0.0 روز
+✅ جمع بدون کلید ثبت سفارش و ارز ساخته نمی‌شود  → نیازمند کلید ثبت سفارش و ارز
+✅ تعهد معوق شمرده شد و بحرانی علامت خورد
+✅ روی داده خالی خطا نمی‌دهد و «—» می‌گذارد
+
+── ۲) کارت‌ها ──
+✅ کلاس بحرانی اعمال می‌شود
+✅ عدد با جداکننده هزارگان قالب می‌گیرد  → <div class="kpi"><div class="lbl">x</div><div class="val">1,
+✅ مقدار متنی هم پذیرفته می‌شود
+✅ ورودی متنی escape می‌شود (بدون تزریق HTML)
+
+── ۳) خروجی HTML ──
+✅ سند کامل HTML است
+✅ راست‌به‌چپ و فارسی تنظیم شده
+✅ CSS درون‌خط است (بدون فایل بیرونی)
+✅ JS درون‌خط است
+✅ دکمه ذخیره PDF دارد
+✅ در چاپ، دکمه پنهان می‌شود
+✅ هر رنگ خروجی از سیستم طراحی می‌آید  → پاک
+✅ پالت خانه واقعاً استفاده شده
+✅ جدول داده در خروجی هست
+✅ همه ردیف‌ها منتقل شده‌اند
+✅ تاریخ مرجع در سند آمده
+✅ خروجی برای داده بزرگ به ۵۰۰ ردیف محدود می‌شود  → 500 سطر
+✅ روی داده خالی هم سند معتبر می‌سازد
+
+── ۴) ستون‌های جدول ──
+✅ فقط ستون‌های موجود انتخاب می‌شوند  → 12
+✅ ستون‌های اجزای مقاومت در جدول هستند  → تا تناقض «مقاومت با موجودی صفر» دوباره رخ ندهد
+✅ روی دیتافریم بی‌ربط خالی برمی‌گرداند
+
+── ۵) سلامت فایل داشبورد (بدون اجرای Streamlit) ──
+✅ dashboard.py از نظر نحوی سالم است
+✅ منطق از ui_kit وارد می‌شود (بدون کد تکراری)
+✅ پس‌زمینه متحرک تعریف شده
+✅ نبض فقط روی کارت بحرانی است
+✅ هر سه خروجی وجود دارد (اکسل کامل، داده فیلترشده، HTML)
+✅ st.set_page_config پیش از هر فراخوانی دیگر st است
+✅ راه‌انداز پورت آزاد پیدا می‌کند
+    ℹ️ Streamlit نصب است؛ اجرای زنده هم ممکن است.
+
+── ۶) کارنامه سازمانی و رنگ وضعیت ──
+2026-09-22 21:13:42,793 | INFO    | 📄 شیت «۵. کارنامه سازمانی» ساخته شد — 2 ردیف.
+2026-09-22 21:13:42,801 | INFO    | 🏆 داشبورد ذخیره شد: /tmp/tmpf7gry1pf/scorecard.xlsx
+✅ کارنامه بارنامه بحرانی را از کل BL حساب می‌کند، نه اولین ردیف  → (1, 1)
+✅ فونت کارنامه IRANSans Light است  → IRANSans Light
+✅ عدد بحرانی با قرمز وضعیت بحرانی نمایش داده می‌شود  → 00A52020 vs A52020
+✅ همان قرمز کف خوانایی WCAG را دارد  → 7.43
+
+── ۷) رگرسیون‌های تثبیت‌شده ──
+✅ CSS داشبورد position را روی .stApp بازنویسی نمی‌کند  → پاک
+✅ نام پیش‌فرض Excel سفارشی با گزارش رسمی یکی نیست  → GSI Studio
+✅ writer نوشتن روی گزارش رسمی روزانه را رد می‌کند
+✅ وابستگی‌های واقعی در requirements.txt اعلام شده‌اند  → matplotlib/PyYAML/numpy
+✅ کاتالوگ هیچ ستونی را جا نمی‌اندازد  → 7/7 — جامانده: set()
+✅ ستون ناشناخته هم قابل گزارش می‌ماند (حذف نمی‌شود)
+✅ برچسب از هدر واقعی سورس مشتق می‌شود
+✅ نام‌های نمایشی یکتا هستند (جدول با ستون تکراری نمی‌ترکد)  → 7/7
+✅ rename با نگاشت کاتالوگ روی دیتافریم واقعی کار می‌کند
+✅ هیچ نشانی ایمیل واقعی در سورس نیست  → پاک
+✅ بدون پیکربندی، فهرست گیرندگان خالی است (نه یک فهرست جاسازی‌شده)
+✅ فهرست گیرندگان از متغیر محیطی خوانده می‌شود  → ['x@a.invalid', 'y@b.invalid']
+✅ جدول متقاطع در هر ترکیب بُعد/سنجه کار می‌کند  → 5 ترکیب
+✅ شمارش با بُعد ستون درست جمع می‌زند
+✅ جمع سنجه با بُعد ستون درست است
+✅ هر نقش کارشناسی ستون مستقل دارد  → 7 نقش
+✅ کارشناس ترخیص هرگز در ستون کارشناس خرید نمی‌نشیند  → ['اباذر بالی', '', '']
+✅ ستون ترخیص فقط کارشناس ترخیص را دارد
+✅ ستون اعتبارات با ترخیص آلوده نمی‌شود
+✅ مالک مرحله فعلی همراه با نام نقشش گزارش می‌شود  → نیما صابری / کارشناس کنترل اسناد
+✅ نقش مالک با ستونی که نامش از آن آمده هم‌خوان است  → عقیل بقاپور / کارشناس ترخیص
+✅ پوشش هر نقش جداگانه گزارش می‌شود
+✅ نقش بدون داده صریحاً صفر گزارش می‌شود (نه پر از نقش دیگر)  → ['کارشناس ثبت سفارش', 'کارشناس رفع تعهد ارزی', 'کارشناس بازرگانی']
+✅ هر ماژول پکیج روی همین نسخه پایتون کامپایل می‌شود  → python 3.12
+
+── ۸) گیرنده ایمیل از سورس HR ──
+2026-09-22 21:13:43,337 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ پیش‌فرض فقط سطوح مدیریتیِ فعال است  → ['a.manager@x.invalid', 'b.head@x.invalid']
+✅ پرسنل غیرفعال حذف می‌شود
+✅ نشانی نامعتبر حذف می‌شود
+✅ ردیف بدون نشانی حذف می‌شود
+2026-09-22 21:13:43,341 | INFO    | 👥 1 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ فیلتر شرح پست کار می‌کند  → ['d.expert@x.invalid']
+2026-09-22 21:13:43,345 | INFO    | 👥 0 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ فیلترها با هم AND می‌شوند
+2026-09-22 21:13:43,353 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ سقف تعداد رعایت می‌شود
+✅ جدول خالی ⇒ فهرست خالی
+2026-09-22 21:13:43,355 | WARNING | ⚠️ ستون Email در سورس HR نیست؛ گیرنده‌ای استخراج نشد.
+✅ سورس بدون ستون Email ⇒ فهرست خالی
+✅ بدون GSI_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود
+✅ با فعال‌سازی، زنجیره به سورس HR می‌رسد
+✅ متغیر محیطی صریح بر سورس HR اولویت دارد
+2026-09-22 21:13:43,358 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ هیچ نشانی‌ای لاگ نمی‌شود  → 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ تعداد گیرنده لاگ می‌شود  → 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+
+==============================================================================
+نتیجه: 79 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_dashboard_criticality_repair_v28
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.85s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۲) سیستم طراحی — توکن، کامپوننت، دسترس‌پذیری
+██████████████████████████████████████████████████████████████████████████████
+
+── ۱) UI Basics ──
+✅ پالت هیچ تخلف کنتراستی ندارد
+✅ هر وضعیت سه نقش رنگی جدا دارد
+✅ رنگ تنها حامل معنا نیست: هر وضعیت آیکن و برچسب دارد
+✅ همه فاصله‌ها روی شبکه ۴ پیکسلی‌اند → [0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
+✅ هویت Navy/Teal/Gold حفظ شده
+✅ مقیاس تایپ نزولی و بدون گره است
+✅ متن جاری کف ارتفاع خط ۱٫۵ را دارد → {'body-lg': 1.75, 'body': 1.75, 'small': 1.65, 'caption': 1.55}
+✅ تیتر و عدد درشت فشرده‌اند ولی زیر ۱٫۲ نمی‌روند
+
+── ۲) Auto Layout ──
+✅ اولیه «.stack» تعریف شده
+✅ اولیه «.cluster» تعریف شده
+✅ اولیه «.split» تعریف شده
+✅ اولیه «.grow» تعریف شده
+✅ اولیه «.hug» تعریف شده
+✅ اولیه «.grid-auto» تعریف شده
+✅ هر توکن فاصله کلاس gap دارد
+✅ چیدمان‌ها در خروجی واقعی استفاده می‌شوند
+
+── ۳) Components & Variants ──
+✅ فهرست کامپوننت‌ها ≥ ۱۰ مورد است → 11
+✅ هر کامپوننت حالت‌هایش اعلام شده
+✅ واریانت دکمه «primary» در شیوه‌نامه هست
+✅ واریانت دکمه «decision» در شیوه‌نامه هست
+✅ واریانت دکمه «secondary» در شیوه‌نامه هست
+✅ واریانت دکمه «ghost» در شیوه‌نامه هست
+✅ دکمه‌ی تصمیم از طلایی استفاده می‌کند
+✅ هر وضعیت متغیر رنگی خودش را دارد
+✅ نشان وضعیت رنگ + آیکن + متن می‌دهد
+✅ کامپوننت‌ها ورودی را escape می‌کنند
+✅ حالت خالی همیشه دلیل می‌گوید
+
+── ۴) Responsive ──
+✅ نقطه شکست «sm» تعریف شده
+✅ نقطه شکست «md» تعریف شده
+✅ نقطه شکست «lg» تعریف شده
+✅ نقطه شکست «xl» تعریف شده
+✅ media queryهای چیدمان در شیوه‌نامه هستند
+✅ شبکه بدون media query هم می‌شکند
+✅ viewport meta برای موبایل هست
+✅ چاپ یک نقطه شکست واقعی است
+
+── ۵) Design System ──
+✅ Excel از همان توکن‌ها می‌خواند
+✅ ایمیل از همان توکن‌ها می‌خواند
+✅ HTML از همان توکن‌ها می‌خواند
+✅ پالت‌های رد‌شده قدیمی دیگر در هیچ خروجی نیستند
+✅ سلول رنگی Excel مرز هم‌خانواده می‌گیرد
+
+── ۶) Prototype ──
+✅ تب‌ها قابل فعال‌سازی‌اند
+✅ فیلتر زنده روی همه لایه‌ها اثر می‌گذارد
+✅ صفحه‌بندی جدول کار می‌کند
+✅ استخراج Excel مرورگری هست
+✅ چاپ/PDF از همان DOM
+✅ حالت hover و active تعریف شده
+
+── ۷) UX Flow ──
+✅ نوار مسیر زنجیره تأمین هست
+✅ روایت پیش از جدول می‌آید
+✅ ساختار وضعیت/گره/اقدام هست
+✅ هر نمودار سؤالش را می‌گوید
+✅ چیدمان از بلوک‌های تألیف‌شده استفاده می‌کند
+✅ مسیرها و عوامل همراه در دسترس‌اند
+✅ صف جاری هم نمایش داده می‌شود، نه فقط گذارهای کامل‌شده
+
+── ۸) Accessibility ──
+✅ حلقه فوکوس فقط برای کیبورد است
+✅ skip-link هست
+✅ landmarkها اعلام شده
+✅ تب‌ها ARIA درست دارند
+✅ شمارنده ردیف به صفحه‌خوان اعلام می‌شود
+✅ هر جدول caption دارد
+✅ prefers-reduced-motion احترام گذاشته می‌شود
+✅ حرکت فقط transform/opacity است
+✅ هیچ محتوایی نامرئی نمی‌ماند
+✅ ناحیه لمسی حداقل ۳۶ پیکسل
+✅ حالت کنتراست اجباری ویندوز پشتیبانی می‌شود
+✅ متن SVG جهتش را از خودش می‌گیرد
+✅ هر نمودار aria-label دارد
+
+── ۹) Dev Handoff ──
+✅ توکن ماشین‌خوان کامل است
+✅ ممیزی دسترس‌پذیری داخل خروجی handoff است
+✅ هر وضعیت کنتراستش را گزارش می‌کند
+✅ گزارش متنی هر نه لایه را پوشش می‌دهد
+✅ متغیرهای CSS قابل استخراج‌اند
+✅ نگاشت Auto Layout فیگما ↔ CSS مستند است
+✅ مرجع فیگما در خروجی ماشین‌خوان هست
+✅ جمع متغیرهای فیگما با فهرست مجموعه‌ها می‌خواند
+✅ یازده صفحه GSI در فیگما نام‌گذاری شده‌اند
+✅ تعداد متغیر رنگ فیگما با تعداد توکن رنگ می‌خواند
+✅ تعداد متغیر تایپ فیگما = چهار ویژگی در هر سبک
+✅ تعداد متغیر فاصله و گردی و نقطه‌شکست می‌خواند
+✅ گزارش متنی به فایل فیگما ارجاع می‌دهد
+
+── قرارداد رنگ ──
+✅ هیچ رنگ هگز دستی در gsi/ و app/ نمانده → پاک
+✅ پالت نمودار Excel همان طیف دسته‌ای است
+✅ رنگ نوارهای وضعیت در Excel از توکن می‌آید
+✅ سلول وضعیت در خروجی Studio کف WCAG را رد نمی‌کند
+✅ «در حال بحرانی شدن» با «بحرانی» اشتباه گرفته نمی‌شود
+✅ چهار لایه بینش هر کدام بالای کف کنتراست‌اند
+✅ قرمز نماهای تأمین همان ink بحرانی است
+✅ رنگ باندهای کتاب قوانین با توکن‌ها یکی است → پاک
+✅ هر هفت باند کتاب قوانین به یک وضعیت سیستم طراحی نگاشت می‌شود
+✅ پالت وضعیت اپ Streamlit از توکن می‌آید
+✅ هر باند اپ آیکن و برچسب دارد، نه فقط رنگ
+✅ طیف قالب‌بندی شرطی از wash وضعیت‌ها می‌آید
+
+── قرارداد اجرایی ──
+✅ جاوااسکریپت خروجی در scope مشترک معتبر است
+✅ هیچ منبع بیرونی بارگذاری نمی‌شود
+
+==============================================================================
+نتیجه: 93 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۸) ادعاهای مستندات
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست ادعاهای مستندات
+==============================================================================
+
+── ۱) اعداد README در برابر کد ──
+✅ «بسته قانونی»: README می‌گوید ۱۳، کد می‌گوید ۱۳
+✅ «قاعده نیازمند تطبیق»: README می‌گوید ۲۳، کد می‌گوید ۲۳
+✅ «شیت داشبورد»: README می‌گوید ۱۷، کد می‌گوید ۱۷
+
+── ۲) نسخه تنها یک منبع دارد ──
+✅ gsi.__version__ با شناسنامه یکی است  → 29.7.7 / 29.7.7
+✅ version.PACKAGE_VERSION با شناسنامه یکی است  → 29.7.7 / 29.7.7
+✅ هیچ نسخه هاردکدی در پکیج نمانده  → پاک
+
+── ۳) شناسنامه اجرا می‌شود ──
+✅ python -m gsi.factsheet بدون خطا اجرا می‌شود
+✅ همه کلیدهای شناسنامه چاپ می‌شوند
+
+==============================================================================
+نتیجه: 8 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۹) بسته ایمیل مدیریتی
+██████████████████████████████████████████████████████████████████████████████
+✅ پوشه تاریخ‌دار
+✅ نام ثابت تاریخ‌دار
+✅ KPI بارنامه یکتا
+✅ KPI متریال
+✅ نام Excel در ایمیل
+✅ علت متریال در ایمیل
+✅ دعوت به Excel
+✅ فونت ایمیل IRANSans Light است
+✅ بدون CSS خارجی
+2026-09-22 21:13:49,560 | WARNING | ⚠️ فونت IRANSans برای نمودار ایمیل پیدا نشد؛ GSI_FONT_PATH را تنظیم کنید.
+✅ نمودارهای ایمیل ساخته می‌شوند
+✅ عنوان‌های نمودار از کاتالوگ فارسی می‌آیند
+نتیجه: 11 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_fullstack_v29_6_10
+██████████████████████████████████████████████████████████████████████████████
+.........                                                                [100%]
+9 passed in 4.53s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_fx_adapter_quarantine_v28
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 0.82s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_fx_obligation_v28_1
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 8 موفق | 0 ناموفق
+
+test_a_real_zero_balance_stays_zero (__main__.FxObligationTests.test_a_real_zero_balance_stays_zero) ... ok
+test_blank_source_row_is_not_a_case (__main__.FxObligationTests.test_blank_source_row_is_not_a_case) ... ok
+test_currencies_are_never_summed_together (__main__.FxObligationTests.test_currencies_are_never_summed_together) ... ok
+test_decimal_precision_survives (__main__.FxObligationTests.test_decimal_precision_survives) ... ok
+test_matched_registration_closes_the_chain (__main__.FxObligationTests.test_matched_registration_closes_the_chain) ... ok
+test_missing_amount_is_unknown_never_zero (__main__.FxObligationTests.test_missing_amount_is_unknown_never_zero) ... ok
+test_stage_without_evidence_is_unknown_not_done (__main__.FxObligationTests.test_stage_without_evidence_is_unknown_not_done) ... ok
+test_unmatched_chain_is_reported_not_hidden (__main__.FxObligationTests.test_unmatched_chain_is_reported_not_hidden) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.334s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۷) FX Traceability V26.16
+██████████████████████████████████████████████████████████████████████████████
+2026-09-22 21:13:59,839 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 13 رویداد | 0 مغایرت/شکاف
+✅ test_fx_ledger_is_reg_grain_and_no_fanout
+2026-09-22 21:14:00,038 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 7 رویداد | 0 مغایرت/شکاف
+✅ test_obligations_are_separate_not_one_boolean
+✅ test_conformance_names_match_eventlog_and_order_uses_position
+✅ test_current_rule_snapshot_present
+✅ test_html_process_explorer_embeds_fx_traceability
+نتیجه: 5 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_global_source_authority_v29_7_3
+██████████████████████████████████████████████████████████████████████████████
+.........                                                                [100%]
+9 passed in 1.04s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۶) HTML Process V26.15
+██████████████████████████████████████████████████████████████████████████████
+✅ test_dynamic_html_has_story_process_and_excel
+✅ test_inline_json_cannot_break_script_context
+نتیجه: 2 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_html_payload_compaction_v285
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 1.14s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۷) سیستمی و استقرار
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V22 — تست سلامت import و استقرار
+==============================================================================
+
+── ۱) تصادم نام با کتابخانه استاندارد ──
+✅ هیچ ماژول GSI هم‌نام ماژول استاندارد پایتون نیست  → 155 ماژول بررسی شد، ۰ تصادم
+✅ ماژول تقویم به jalali تغییر نام یافته (نه calendar)
+✅ پکیج ورودی/خروجی dataio است (نه io)
+
+── ۲) بازتولید خطای واقعی شبکه IKCO ──
+✅ خطای اصلی با فایل تخت calendar.py بازتولید شد  → ImportError: attempted relative import with no known parent package
+✅ Doctor این حالت را تشخیص می‌دهد و کد خروجی ۱ می‌دهد
+✅ پس از حذف فایل متصادم، pandas سالم import می‌شود
+
+── ۳) اجرا از پوشه‌های مختلف ──
+✅ import پکیج از «ریشه پروژه» موفق است
+✅ import پکیج از «پوشه موقت» موفق است
+✅ import پکیج از «داخل خود پکیج» موفق است
+
+── ۴) نقاط ورود ──
+✅ «python -m gsi.doctor» بدون استثنا اجرا می‌شود  → exit=0
+✅ «python -m gsi.rulebook.validate» بدون استثنا اجرا می‌شود  → exit=0
+✅ «python -m gsi rules» بدون استثنا اجرا می‌شود  → exit=0
+
+── ۵) کامل بودن ساختار پکیج ──
+✅ تمام زیرپکیج‌ها __init__.py دارند  → غایب: []
+✅ فایل‌های RuleBook دقیقاً با manifest سازگارند  → actual=['_manifest.yaml', 'alarms.yaml', 'case_actions.yaml', 'criticality.yaml', 'currencies.yaml', 'customs.yaml', 'fx_governance.yaml', 'hs_codes.yaml', 'incoterms.yaml', 'intelligence_sources.yaml', 'legacy_knowledge.yaml', 'status_lexicon.yaml', 'transport.yaml', 'warehouse.yaml']; expected=['_manifest.yaml', 'alarms.yaml', 'case_actions.yaml', 'criticality.yaml', 'currencies.yaml', 'customs.yaml', 'fx_governance.yaml', 'hs_codes.yaml', 'incoterms.yaml', 'intelligence_sources.yaml', 'legacy_knowledge.yaml', 'status_lexicon.yaml', 'transport.yaml', 'warehouse.yaml']
+✅ __main__.py برای «python -m gsi» موجود است
+✅ doctor.py موجود است
+✅ نسخه در همه‌جا یکی است (تنها منبع: factsheet)  → 29.7.7 / 29.7.7 / 29.7.7
+
+── ۶) وابستگی‌های اختیاری ──
+✅ بدون jdatetime هم تاریخ شمسی درست تبدیل می‌شود  → JD False 2025-04-04
+✅ ماژول استاندارد calendar از stdlib بارگذاری می‌شود  → /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/calendar.py
+
+==============================================================================
+نتیجه: 19 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_knowledge_desk_offline_v292
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 1.18s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_knowledge_desk_self_index_guard_v2946
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.09s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_knowledge_desk_static_v293
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.55s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۹) انتقال دانش نسل قدیم V26.19
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.19 — Legacy Knowledge Transfer
+==============================================================================
+
+── کاتالوگ و گارد حاکمیتی ──
+✅ بسته legacy_knowledge بارگذاری شده
+✅ کاتالوگ حداقل 15 دانش دارد → 22
+✅ مدل A/B/C تاریخی است نه binding
+✅ Legacy حتی با دانش تاریخی auto enforce نمی‌شود
+✅ Payment without BL به Unallocated Balance ترجمه شده
+
+── Signal پرونده و Evidence ──
+2026-09-22 21:14:13,453 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 3 رویداد | 1 مغایرت/شکاف
+2026-09-22 21:14:13,506 | INFO    | 💸 [money-control] 1 پرونده | 11 مرحله | 7 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-22 21:14:13,519 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 1 پرونده | 3 signal | enforce خودکار=0
+✅ Payment بدون BL سیگنال می‌شود → UNALLOCATED_PAYMENT_CANDIDATE
+✅ کسر تخلیه به عنوان Root-cause candidate ظاهر می‌شود → کسر تخلیه ؛ مغایرت اظهارنامه
+✅ شواهد کسر تخلیه پیشنهاد می‌شود → مانیفست/BL ؛ قبض انبار ؛ گزارش توزین/تخلیه ؛ اظهارنامه و پروانه ؛ ثبت سفارش ؛ فاکتور ؛ اظهارنامه ؛ پروانه/کوتاژ ؛ ارز و مبلغ هر سند ؛ شناسه تراکنش/خرید ارز ؛ مبلغ اولیه ؛ Allocation Edgeهای مصرف‌شده ؛ مانده تخصیص‌نیافته
+✅ شکاف نرخ Cross-Currency جعل P&L نمی‌کند → تبدیل بین دو ارز ثبت شده ولی مبلغ/نرخ مقصد، Cross Rate یا نرخ خرید مبدأ کامل نیست
+✅ گارد legacy روی پرونده فعال است
+✅ Signal table provenance دارد
+✅ هیچ Signal legacy قابل enforce خودکار نیست
+
+── معماری و semantics نرخ ──
+✅ Stage انتقال دانش کشف می‌شود
+✅ Stage بعد از Money Flow و قبل از Narrate است → ['resolve', 'derive', 'org', 'scope', 'supply_position', 'warehouse_declaration', 'criticality', 'commitment', 'process_integrity', 'fx_traceability', 'money_flow_control', 'legacy_knowledge_transfer', 'case_actions', 'narrate', 'risk', 'eventlog', 'conformance', 'sort']
+2026-09-22 21:14:13,695 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 4 رویداد | 0 مغایرت/شکاف
+2026-09-22 21:14:13,760 | INFO    | 💸 [money-control] 1 پرونده | 11 مرحله | 7 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-22 21:14:13,776 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 1 پرونده | 0 signal | enforce خودکار=0
+✅ نرخ خرید، نرخ پرداخت و Cross Rate مستقل‌اند
+✅ نرخ ثابت قدیمی برای P&L ممنوع است
+
+==============================================================================
+نتیجه: 16 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_dashboard_runtime_v29_6_8
+██████████████████████████████████████████████████████████████████████████████
+.                                                                        [100%]
+1 passed in 0.69s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_group_identity_v29_6_6
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 0.70s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_html_advisory_only_v29_6_7
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 0.91s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_html_export_v29_6_1
+██████████████████████████████████████████████████████████████████████████████
+.                                                                        [100%]
+1 passed in 0.94s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_html_export_v29_6_2
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 1.00s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_html_export_v29_6_3
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 1.99s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_runtime_visible_v29_6_4
+██████████████████████████████████████████████████████████████████████████████
+.                                                                        [100%]
+1 passed in 1.13s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_source_boundary_v29_6_9
+██████████████████████████████████████████████████████████████████████████████
+.......                                                                  [100%]
+7 passed in 1.67s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_source_search_v2950
+██████████████████████████████████████████████████████████████████████████████
+..                                                                       [100%]
+2 passed in 0.66s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_material_supply_html_v29_6_5
+██████████████████████████████████████████████████████████████████████████████
+.                                                                        [100%]
+1 passed in 0.66s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۸) برج کنترل جریان پول V26.18
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.18 — Money Flow Control Tower
+==============================================================================
+
+── پل نرخ و تبدیل ──
+2026-09-22 21:14:29,341 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-22 21:14:29,400 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 10 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ تبدیل EUR→CNY اندازه‌گیری شده → CROSS_CURRENCY_MEASURED
+✅ اثر ریالی تبدیل ۲۱۰۰ است → 2100.0
+✅ اثر تبدیل به پرونده تجمیع شده
+
+── جابه‌جایی پرونده ──
+2026-09-22 21:14:29,559 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-22 21:14:29,642 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 10 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ مغایرت REG مالی با مالک O2 کشف شد
+✅ بدون شاهد مجوز UNEXPLAINED است
+2026-09-22 21:14:29,936 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-22 21:14:30,069 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 10 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ با شماره مجوز AUTHORIZED است
+
+── مراحل و Deadline ──
+2026-09-22 21:14:30,335 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-22 21:14:30,433 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 10 رویداد مبلغی | 2 تطبیق ارزی | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ یازده مرحله پرونده ساخته شده → 11
+✅ مرحله رفع تعهد OVERDUE است
+✅ روز باقی‌مانده NTSW منفی ۷ است
+✅ مبنای مهلت NTSW شفاف است → مهلت ثبت‌شده در NTSW [source_record]
+✅ ریسک به دلیل جابه‌جایی+Deadline بالا است → 85.0
+
+── منابع Field Intelligence ──
+✅ پنج منبع تلگرامی ثبت شده → 5
+✅ Field Signal اجازه enforce خودکار ندارد
+
+==============================================================================
+نتیجه: 13 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_money_flow_v29_6
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 1.29s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۶) خطاهای شبکه و ذخیره‌سازی
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 18 موفق | 0 ناموفق
+
+test_action_fields_preserved (__main__.NetworkTests.test_action_fields_preserved) ... ok
+test_bad_preferences_rejected (__main__.NetworkTests.test_bad_preferences_rejected) ... ok
+test_base64_junk_rejected (__main__.NetworkTests.test_base64_junk_rejected) ... ok
+test_client_cannot_publish (__main__.NetworkTests.test_client_cannot_publish) ... ok
+test_explicit_empty_scope_clears_previous (__main__.NetworkTests.test_explicit_empty_scope_clears_previous) ... ok
+test_failed_replace_preserves_previous (__main__.NetworkTests.test_failed_replace_preserves_previous) ... ok
+test_future_schema_rejected (__main__.NetworkTests.test_future_schema_rejected) ... ok
+test_invalid_kind_rejected (__main__.NetworkTests.test_invalid_kind_rejected) ... ok
+test_invalid_limit_rejected (__main__.NetworkTests.test_invalid_limit_rejected) ... ok
+test_lock_owner_change_is_preserved (__main__.NetworkTests.test_lock_owner_change_is_preserved) ... ok
+test_network_disappearance_is_not_empty (__main__.NetworkTests.test_network_disappearance_is_not_empty) ... ok
+test_nonfinite_json_cleaned (__main__.NetworkTests.test_nonfinite_json_cleaned) ... ok
+test_old_lock_is_not_stolen (__main__.NetworkTests.test_old_lock_is_not_stolen) ... ok
+test_preferences_do_not_share_mutable_defaults (__main__.NetworkTests.test_preferences_do_not_share_mutable_defaults) ... ok
+test_snapshot_context_consistent (__main__.NetworkTests.test_snapshot_context_consistent) ... ok
+test_transient_sharing_violation_retries (__main__.NetworkTests.test_transient_sharing_violation_retries) ... ok
+test_unknown_columns_never_leak (__main__.NetworkTests.test_unknown_columns_never_leak) ... ok
+test_utf16_key_file (__main__.NetworkTests.test_utf16_key_file) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.469s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۴) Oracle چندشیتی V26.14
+██████████████████████████████████████████████████████████████████████████████
+✅ test_oracle_merges_two_sheets_preferring_full_data
+نتیجه: 1 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_oracle_union_v28_1
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 7 موفق | 0 ناموفق
+
+test_duplicate_inside_one_sheet_resolves_at_material_grain (__main__.OracleUnionTests.test_duplicate_inside_one_sheet_resolves_at_material_grain) ... ok
+test_exact_duplicate_business_row_is_not_double_counted (__main__.OracleUnionTests.test_exact_duplicate_business_row_is_not_double_counted) ... ok
+test_excluded_headers_never_reach_the_output (__main__.OracleUnionTests.test_excluded_headers_never_reach_the_output) ... ok
+test_missing_quantity_stays_missing_not_zero (__main__.OracleUnionTests.test_missing_quantity_stays_missing_not_zero) ... ok
+test_no_part_is_dropped_when_sheets_are_disjoint (__main__.OracleUnionTests.test_no_part_is_dropped_when_sheets_are_disjoint) ... ok
+test_overlapping_part_uses_one_sheet_only_no_hybrid (__main__.OracleUnionTests.test_overlapping_part_uses_one_sheet_only_no_hybrid) ... ok
+test_source_sheet_is_recorded_for_every_row (__main__.OracleUnionTests.test_source_sheet_is_recorded_for_every_row) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.328s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۵) فضای شخصی رمزگذاری‌شده و Snapshot بدون IP
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 32 موفق | 0 ناموفق
+
+test_launcher_renders_from_shared_store_to_local_cache (__main__.PersonalPublisherTests.test_launcher_renders_from_shared_store_to_local_cache) ... ok
+test_personal_html_has_local_live_protocol_not_http_api (__main__.PersonalPublisherTests.test_personal_html_has_local_live_protocol_not_http_api) ... ok
+test_personal_html_reads_shared_store_and_keeps_preferences (__main__.PersonalPublisherTests.test_personal_html_reads_shared_store_and_keeps_preferences) ... ok
+test_publish_scopes_each_user (__main__.PersonalPublisherTests.test_publish_scopes_each_user) ... ok
+test_shared_files_are_only_encrypted_store_files (__main__.PersonalPublisherTests.test_shared_files_are_only_encrypted_store_files) ... ok
+test_audit_does_not_store_value (__main__.PersonalStoreTests.test_audit_does_not_store_value) ... ok
+test_central_publish_fails_closed_without_master_even_if_user_key_exists (__main__.PersonalStoreTests.test_central_publish_fails_closed_without_master_even_if_user_key_exists) ... ok
+test_employee_folder_is_canonical_eight_digits (__main__.PersonalStoreTests.test_employee_folder_is_canonical_eight_digits) ... ok
+test_encrypted_file_does_not_expose_plaintext (__main__.PersonalStoreTests.test_encrypted_file_does_not_expose_plaintext) ... ok
+test_from_env_prefers_user_key_without_master (__main__.PersonalStoreTests.test_from_env_prefers_user_key_without_master) ... ok
+test_identity_fails_closed_when_missing (__main__.PersonalStoreTests.test_identity_fails_closed_when_missing) ... ok
+test_identity_resolution_never_uses_ip (__main__.PersonalStoreTests.test_identity_resolution_never_uses_ip) ... ok
+test_integrity_check (__main__.PersonalStoreTests.test_integrity_check) ... ok
+test_local_config_restores_root_identity_and_user_key_without_env (__main__.PersonalStoreTests.test_local_config_restores_root_identity_and_user_key_without_env) ... ok
+test_master_key_file_must_not_be_inside_profile_root (__main__.PersonalStoreTests.test_master_key_file_must_not_be_inside_profile_root) ... ok
+test_per_user_key_can_open_only_its_user_store (__main__.PersonalStoreTests.test_per_user_key_can_open_only_its_user_store) ... ok
+test_profile_persists_between_store_instances (__main__.PersonalStoreTests.test_profile_persists_between_store_instances) ... ok
+test_snapshot_is_separate_from_profile (__main__.PersonalStoreTests.test_snapshot_is_separate_from_profile) ... ok
+test_snapshot_replace_drops_stale_keys (__main__.PersonalStoreTests.test_snapshot_replace_drops_stale_keys) ... ok
+test_tamper_is_detected (__main__.PersonalStoreTests.test_tamper_is_detected) ... ok
+test_user_isolation_uses_distinct_crypto_context (__main__.PersonalStoreTests.test_user_isolation_uses_distinct_crypto_context) ... ok
+test_windows_installer_uses_local_launcher_and_recommends_key_file (__main__.PersonalStoreTests.test_windows_installer_uses_local_launcher_and_recommends_key_file) ... ok
+test_workspace_defaults_and_saved_preferences (__main__.PersonalStoreTests.test_workspace_defaults_and_saved_preferences) ... ok
+test_wrong_key_fails_closed (__main__.PersonalStoreTests.test_wrong_key_fails_closed) ... ok
+test_atomic_write_retries_before_giving_up (__main__.V27_1_RegressionTests.test_atomic_write_retries_before_giving_up)
+روی ویندوز/SMB، os.replace وقتی خواننده‌ای فایل را باز دارد خطا می‌دهد. ... ok
+test_audience_caps_reach_the_personal_html (__main__.V27_1_RegressionTests.test_audience_caps_reach_the_personal_html)
+تغییر مخاطب باید واقعاً تعداد سطر و یافته را عوض کند، نه فقط ذخیره شود. ... ok
+test_broken_user_key_is_not_reported_as_master_key (__main__.V27_1_RegressionTests.test_broken_user_key_is_not_reported_as_master_key)
+پیام خطا باید همان فایلی را نام ببرد که خراب است. ... ok
+test_doctor_checks_the_shared_store (__main__.V27_1_RegressionTests.test_doctor_checks_the_shared_store)
+تنها ابزار تشخیص این استقرار باید پوشه مشترک را هم بررسی کند. ... ok
+test_handoff_points_at_the_real_figma_file (__main__.V27_1_RegressionTests.test_handoff_points_at_the_real_figma_file) ... ok
+test_namespace_and_get_share_one_error_contract (__main__.V27_1_RegressionTests.test_namespace_and_get_share_one_error_contract)
+هر دو باید ProfileIntegrityError بدهند، نه یکی JSONDecodeError خام. ... ok
+test_numpy_bool_stays_boolean (__main__.V27_1_RegressionTests.test_numpy_bool_stays_boolean)
+np.bool_ نباید به رشته «True»/«False» تبدیل شود؛ «False» رشته‌ای truthy است. ... ok
+test_vanished_share_gives_an_actionable_error (__main__.V27_1_RegressionTests.test_vanished_share_gives_an_actionable_error)
+قطع شدن درایو شبکه نباید FileNotFoundError خام روی فایل .lock بدهد. ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 0.977s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_population_cashflow_v29_7_4
+██████████████████████████████████████████████████████████████████████████████
+......                                                                   [100%]
+6 passed in 1.49s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_process_cockpit_v28
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.84s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_process_integrity_v29_7_5
+██████████████████████████████████████████████████████████████████████████████
+......                                                                   [100%]
+6 passed in 2.58s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_rc_integrity
+██████████████████████████████████████████████████████████████████████████████
+.............................                                            [100%]
+29 passed in 2.27s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۱) سازنده گزارش و صحت دانه‌ای
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست سازنده گزارش و صحت دانه‌ای
+==============================================================================
+
+── ۱) دوباره‌شماری در جمع ──
+✅ دانه «مانده تعهد» از سورس مبدأ به ارث می‌رسد (REG، نه ردیف)  → REG
+✅ جمع ساده روی ردیف‌ها دوباره‌شماری می‌کند  → 3,500
+✅ جمع دانه‌ای مقدار درست را می‌دهد  → 1,500
+✅ اختلاف دقیقاً همان مقدار تکرارشده است
+✅ ستون با دانه ریز دست‌نخورده می‌ماند  → 50
+✅ ضریب تکرار دانه ثبت سفارش گزارش می‌شود  → 2.0
+
+── ۲) شناسه در برابر سنجه ──
+✅ شماره سفارش شناسه است، نه سنجه
+✅ شناسه هرگز جمع نمی‌شود (تجمیع پیش‌فرض: شمار یکتا)
+✅ «مقاومت (روز)» نسبتی است، نه انباشتنی
+✅ تجمیع پیش‌فرض ستون نسبتی میانگین است
+✅ «مانده تعهد» انباشتنی است
+✅ شناسه‌ها از فهرست قابل جمع کنار می‌روند  → ['مانده تعهد', 'ORC_STOCK_IKCO']
+
+── ۳) ردپای محاسباتی ──
+✅ گزارش صحت برای هر ستون یک ردیف دارد  → 3
+✅ دوباره‌شماری در گزارش صحت علامت می‌خورد  → ⚠ دوباره‌شماری
+✅ شناسه در گزارش صحت جمع نمی‌شود  → — شناسه، جمع نمی‌شود
+
+── ۴) خروجی HTML ──
+✅ سند راست‌به‌چپ و فارسی است
+✅ کلید دانه برای یکتاسازی سمت مرورگر تعبیه شده
+✅ تابع تجمیع دانه‌ای در JS هست
+✅ ستون نسبتی میانگین می‌گیرد نه جمع
+✅ دکمه چاپ/PDF دارد
+✅ پالت وضعیت از سیستم طراحی می‌آید
+✅ رنگ متن هر وضعیت کف WCAG AA را دارد
+✅ مرز هر سطح رنگی کف ۳:۱ را دارد
+✅ پالت رد شده قبلی دیگر نیست
+
+── ۵) ساخت گزارش در هر قالب ──
+✅ چهار قالب تعریف شده است  → ['executive', 'operational', 'process', 'audit']
+✅ خاموش کردن ویژوال، بخش‌های نموداری را حذف می‌کند
+✅ خاموش کردن جدول‌ها، بخش‌های جدولی را حذف می‌کند
+✅ قالب «اجرایی» هر دو فرمت را می‌سازد  → HTML بهینه: 0.11 MB · payload ردیفی فشرده بدون حذف داده | HTML: 2026-08-31_t_executive.html | Excel: 2026-08-31_t_executive.xlsx
+✅ قالب «عملیاتی» هر دو فرمت را می‌سازد  → HTML بهینه: 0.11 MB · payload ردیفی فشرده بدون حذف داده | HTML: 2026-08-31_t_operational.html | Excel: 2026-08-31_t_operational.xlsx
+✅ قالب «فرآیندی» هر دو فرمت را می‌سازد  → HTML بهینه: 0.11 MB · payload ردیفی فشرده بدون حذف داده | HTML: 2026-08-31_t_process.html | Excel: 2026-08-31_t_process.xlsx
+✅ قالب «ممیزی داده» هر دو فرمت را می‌سازد  → HTML بهینه: 0.11 MB · payload ردیفی فشرده بدون حذف داده | HTML: 2026-08-31_t_audit.html | Excel: 2026-08-31_t_audit.xlsx
+
+── ۶) یکسانی عدد بین فرمت‌ها ──
+✅ عدد گزارش صحت با محاسبه مستقل یکی است  → 1,500
+✅ کلید دانه «مانده تعهد» در payload مرورگر هست  → KEY_REG
+✅ تجمیع مرورگر پیش از جمع، بر همان کلید یکتا می‌کند
+✅ برگه «صحت محاسبات» در Excel هست  → ['Executive', 'Criticality', 'Live Data', 'جدول تفصیلی', 'صحت محاسبات', 'دانه\u200cبندی', 'خلاصه عددی']
+
+==============================================================================
+نتیجه: 35 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_report_composer_tab_isolation_v284
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+=============================== warnings summary ===============================
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_process_and_actions_follow_authorized_scope
+tests/test_report_composer_tab_isolation_v284.py::test_timeline_has_local_escape_runtime
+tests/test_report_composer_tab_isolation_v284.py::test_timeline_has_local_escape_runtime
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+    return np.nanmean(a, axis, out=out, keepdims=keepdims)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 7 warnings in 0.88s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_report_composer_v28
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.64s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲) کتابخانه قوانین و سورس مقاومت
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V22 — تست کتابخانه قوانین، سورس مقاومت جدید و ماژولاریتی
+==============================================================================
+
+── ۱) کتابخانه قوانین (YAML) ──
+✅ بسته‌های قانونی مطابق manifest بارگذاری شدند  → currencies, incoterms, transport, hs_codes, fx_governance, customs, warehouse, alarms, criticality, status_lexicon, legacy_knowledge, intelligence_sources, case_actions
+✅ اعتبارسنجی ساختاری بدون خطا  → ۰ خطا
+✅ مجموع وزن‌های ریسک دقیقاً ۱٫۰ است  → 1.0
+✅ قواعد نیازمند تطبیق علامت‌گذاری شده‌اند  → 23 قاعده
+✅ مهلت رفع تعهد تولیدی/بازرگانی از YAML
+✅ نرمال‌سازی ارز از currencies.yaml
+✅ ین ژاپن بدون اعشار تعریف شده
+✅ Incoterms 2020: CIP بیمه ICC(A) و CIF بیمه ICC(C)  → CIP → Institute Cargo Clauses (A) — 
+✅ نام قدیمی DAT به DPU نگاشت می‌شود
+✅ EXW ترخیص صادراتی بر عهده خریدار است
+✅ ویرایش جاری HS و ویرایش بعدی ثبت شده  → HS 2022 → HS 2028
+✅ استنتاج تعرفه از شرح کالا  → «تیغچه الماسه» → 8209
+✅ استنتاج تعرفه برای مته  → 8207
+✅ سال مالی از YAML خوانده می‌شود  → 2026-03-21
+✅ آستانه رسوب شدید از YAML
+✅ تشخیص سگمنت از کلیدواژه
+
+── ۲) اعتبارسنجی بارنامه (قرنطینه مقادیر جعلی) ──
+✅ تفکیک بارنامه واقعی از شماره فنی/پروفرما  → همه ۸ حالت درست
+
+── ۳) واژگان وضعیت فارسی ──
+✅ تفکیک دو بخش «//»
+✅ «در انتظار خرید ارز» ⇒ پرونده بلوکه
+✅ «ترخیص درصدی» ⇒ راهنمای نوع ترخیص  → PARTIAL
+✅ هشدار متنی تولید شد  → ریسک عبور از مهلت رفع تعهد در صورت تأخیر خرید ارز.
+✅ «ابطال شد» ⇒ خارج از KPI
+✅ «تمام» ⇒ مرحله پایانی با پیشرفت ۱۰۰  → progress=100
+✅ «مذاکره بازرگانی» ⇒ مرحله NEGOTIATION  → NEGOTIATION / 20٪
+✅ تضاد وضعیت شناسایی می‌شود (آماده حمل ولی بدون ثبت سفارش)  → progress=70 blocking=True
+
+── ۴) نرمال‌سازی مرجع سفارش ──
+✅ پسوند قلم حذف می‌شود  → 603128A
+✅ «Items 2 & 3» حذف می‌شود
+✅ ریشه عددی سفارش استخراج می‌شود
+✅ پسوند '.0' اکسل حذف می‌شود
+
+── ۵) سورس مقاومت (۳۵ ستون، سطح قلم) ──
+2026-09-22 21:14:51,579 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,683 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,717 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,745 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,747 | WARNING |    ⚠️ [sap] ستون «PR_ITEM» یافت نشد (کاندیدها: ['Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,749 | WARNING |    ⚠️ [sap] ستون «MATERIAL» یافت نشد (کاندیدها: ['Material']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,751 | WARNING |    ⚠️ [sap] ستون «MATERIAL_DESC» یافت نشد (کاندیدها: ['Material Description']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,753 | WARNING |    ⚠️ [sap] ستون «SHORT_TEXT» یافت نشد (کاندیدها: ['Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,755 | WARNING |    ⚠️ [sap] ستون «REQ_QTY» یافت نشد (کاندیدها: ['Quantity requested']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,757 | WARNING |    ⚠️ [sap] ستون «UOM» یافت نشد (کاندیدها: ['Unit of Measure']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,758 | WARNING |    ⚠️ [sap] ستون «MATERIAL_GROUP» یافت نشد (کاندیدها: ['Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,761 | WARNING |    ⚠️ [sap] ستون «PURCH_GROUP_DESC» یافت نشد (کاندیدها: ['Purgroup Description']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,763 | WARNING |    ⚠️ [sap] ستون «REQUISITIONER» یافت نشد (کاندیدها: ['Requisitioner']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,765 | WARNING |    ⚠️ [sap] ستون «REQUISITION_DATE» یافت نشد (کاندیدها: ['Requisition date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,767 | WARNING |    ⚠️ [sap] ستون «CREATED_BY» یافت نشد (کاندیدها: ['Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,769 | WARNING |    ⚠️ [sap] ستون «RELEASE_DATE» یافت نشد (کاندیدها: ['Release Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,771 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,774 | WARNING |    ⚠️ [sap] ستون «HEADER_PURCHASE_ORDER» یافت نشد (کاندیدها: ['Purchase order']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,776 | WARNING |    ⚠️ [sap] ستون «QTY_ORDERED» یافت نشد (کاندیدها: ['Quantity ordered']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,778 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,780 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,782 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,784 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,789 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,792 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,797 | WARNING |    ⚠️ [sap] ستون «PLANT» یافت نشد (کاندیدها: ['Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,799 | WARNING |    ⚠️ [sap] ستون «GOODS_RECEIPT» یافت نشد (کاندیدها: ['Goods Receipt']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,801 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,803 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE» یافت نشد (کاندیدها: ['Delivery Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,805 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,806 | WARNING |    ⚠️ [sap] ستون «REQ_TRACKING_NO» یافت نشد (کاندیدها: ['Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,808 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,810 | WARNING |    ⚠️ [sap] ستون «TOTAL_VALUE» یافت نشد (کاندیدها: ['Total Value']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,812 | WARNING |    ⚠️ [sap] ستون «CURRENCY» یافت نشد (کاندیدها: ['Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,815 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,817 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,819 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,820 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,822 | WARNING |    ⚠️ [sap] ستون «VALUATION_PRICE» یافت نشد (کاندیدها: ['Valuation Price']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,825 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_ITEM» یافت نشد (کاندیدها: ['Purchase Order Item']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,826 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_DATE» یافت نشد (کاندیدها: ['Purchase Order Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,828 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,830 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,831 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,833 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,835 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,837 | WARNING |    ⚠️ [sap] ستون «PACK_NO» یافت نشد (کاندیدها: ['pack.Pack Number']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,839 | WARNING |    ⚠️ [sap] ستون «PACK_PR_ITEM» یافت نشد (کاندیدها: ['pack.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,840 | WARNING |    ⚠️ [sap] ستون «PACK_QTY» یافت نشد (کاندیدها: ['pack.Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,842 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,844 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_NO» یافت نشد (کاندیدها: ['pack.order Num']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,846 | WARNING |    ⚠️ [sap] ستون «PACK_RESPONSIBLE» یافت نشد (کاندیدها: ['pack.Responsible']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,848 | WARNING |    ⚠️ [sap] ستون «PACK_PACKED» یافت نشد (کاندیدها: ['pack.Packed']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,855 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,857 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,859 | WARNING |    ⚠️ [sap] ستون «PACK_MATERIAL» یافت نشد (کاندیدها: ['pack.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,861 | WARNING |    ⚠️ [sap] ستون «PACK_MPN_MATERIAL» یافت نشد (کاندیدها: ['pack.MPN: Material']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,863 | WARNING |    ⚠️ [sap] ستون «PO_ITEM» یافت نشد (کاندیدها: ['po.Item']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,865 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,867 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,869 | WARNING |    ⚠️ [sap] ستون «PO_SHORT_TEXT» یافت نشد (کاندیدها: ['po.Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,871 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL» یافت نشد (کاندیدها: ['po.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,872 | WARNING |    ⚠️ [sap] ستون «PO_COMPANY_CODE» یافت نشد (کاندیدها: ['po.Company Code']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,874 | WARNING |    ⚠️ [sap] ستون «PO_PLANT» یافت نشد (کاندیدها: ['po.Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,876 | WARNING |    ⚠️ [sap] ستون «PO_STORAGE_LOCATION» یافت نشد (کاندیدها: ['po.Storage Location']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,878 | WARNING |    ⚠️ [sap] ستون «PO_REQ_TRACKING_NO» یافت نشد (کاندیدها: ['po.Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,880 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL_GROUP» یافت نشد (کاندیدها: ['po.Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,881 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,883 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['po.Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,885 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,887 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_UNIT» یافت نشد (کاندیدها: ['po.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,891 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_QTY» یافت نشد (کاندیدها: ['po.Order Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,893 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,895 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,897 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,899 | WARNING |    ⚠️ [sap] ستون «PO_NET_PRICE» یافت نشد (کاندیدها: ['po.Net Order Price']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,901 | WARNING |    ⚠️ [sap] ستون «PO_CURRENCY» یافت نشد (کاندیدها: ['po.Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,902 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,904 | WARNING |    ⚠️ [sap] ستون «PO_NET_VALUE» یافت نشد (کاندیدها: ['po.Net Order Value']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,906 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,907 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,914 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,916 | WARNING |    ⚠️ [sap] ستون «PO_PR_ITEM» یافت نشد (کاندیدها: ['po.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,919 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,921 | WARNING |    ⚠️ [sap] ستون «PO_DOC_TYPE» یافت نشد (کاندیدها: ['po.Purchasing Doc. Type']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,923 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER» یافت نشد (کاندیدها: ['po.Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,927 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_DATE» یافت نشد (کاندیدها: ['po.Document Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,929 | WARNING |    ⚠️ [sap] ستون «PO_CREATED_BY» یافت نشد (کاندیدها: ['po.Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,931 | WARNING |    ⚠️ [sap] ستون «PO_REG_FILE» یافت نشد (کاندیدها: ['po.شماره پرونده']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,933 | WARNING |    ⚠️ [sap] ستون «PO_YOUR_REFERENCE» یافت نشد (کاندیدها: ['po.Your Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:14:51,935 | WARNING |    ⚠️ [sap] ستون «PO_OUR_REFERENCE» یافت نشد (کاندیدها: ['po.Our Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:14:52,032 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-22 21:14:52,034 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-22 21:14:52,123 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-22 21:14:52,127 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-22 21:14:52,152 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-22 21:14:52,296 | WARNING | ⚠️ [ilappend] ستون‌های هم‌نام کنار گذاشته شدند: ['KEY_REG_FILE']
+2026-09-22 21:14:52,305 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-22 21:14:52,356 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-22 21:14:52,952 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+
+Traceback (most recent call last):
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_rules_and_moghavemat.py", line 408, in <module>
+    result = test_moghavemat()
+             ^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_rules_and_moghavemat.py", line 201, in test_moghavemat
+    res = p.run(build_report=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/pipeline.py", line 350, in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/bridge.py", line 62, in run_pipeline
+    wh.publish(rid,slots=('report','dwh'))
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/store.py", line 249, in publish
+    raise QualityGateBlockedError(rid, failed)
+gsi.warehouse.store.QualityGateBlockedError: Quality gate blocked publish: sqlite:INTEGRITY_CHECK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۸) رفع خطای زمان اجرا
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 7 موفق | 0 شکست
+
+test_config_without_crypto (__main__.RuntimeFixTests.test_config_without_crypto) ... ok
+test_empty_filter (__main__.RuntimeFixTests.test_empty_filter) ... ok
+test_invalid_not_zero (__main__.RuntimeFixTests.test_invalid_not_zero) ... ok
+test_legacy_mean (__main__.RuntimeFixTests.test_legacy_mean) ... ok
+test_missing_metric (__main__.RuntimeFixTests.test_missing_metric) ... ok
+test_new_median (__main__.RuntimeFixTests.test_new_median) ... ok
+test_resistance_reasons (__main__.RuntimeFixTests.test_resistance_reasons) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.720s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_sap_semantic_dwh_v29_7_6
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 1.07s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۰) GSI Studio ماژولار
+██████████████████████████████████████████████████████████████████████████████
+✅ فیلتر برخط 
+✅ فیلتر کارشناس 
+✅ HTML شامل CSS و JavaScript پویا است 
+✅ Excel سفارشی ساخته می‌شود 
+✅ لانچر Studio به فایل صحیح اشاره می‌کند 
+نتیجه: 5 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۵) Studio V26.12
+██████████████████████████████████████████████████████████████████████████████
+✅ test_transport
+✅ test_tabs_and_design
+نتیجه: 2 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — حوزه مسئولیت، مالکیت قطعه و نماهای تأمین
+==============================================================================
+
+── ۱) سه حوزه مسئولیت و مالک قطعه ──
+✅ سه ستون حوزه ساخته می‌شود  → ['EXPERT_PURCHASING', 'EXPERT_COMMERCIAL', 'EXPERT_LOGISTICS']
+✅ کارشناس ترخیص هرگز در ستون کارشناس خرید نمی‌نشیند  → ['الف', 'الف', 'دلاور']
+✅ حوزه لجستیک فقط کارشناس ترخیص را دارد
+✅ حوزه بازرگانی از نقش اعتبارات پر می‌شود
+✅ وقتی نام مستقیم نیست، کد پرسنلی از HR به نام تبدیل می‌شود  → دلاور
+✅ مالک قطعه همان کارشناس خرید است  → ['الف', 'الف', 'دلاور']
+✅ منبع شناسایی مالک ثبت می‌شود  → Commercial Expert Data (کد پرسنلی)
+✅ ردیف با داده ناقصِ مالک حذف نمی‌شود  → 3
+✅ شکاف داده مالک برای ردیف ناقص ثبت می‌شود  → شماره درخواست خرید، تاریخ ابلاغ سفارش، کد تأمین‌کننده، ارزش PI، شماره بارنامه در سورس خرید، مقدار ترخیص‌شده
+✅ ردیف کامل شکاف ندارد
+✅ گزارش پوشش، مالک بودن حوزه خرید را اعلام می‌کند
+✅ فقط یک حوزه مالک است
+
+── ۲) وضعیت قطعه: کجا / کِی / چه کسی ──
+✅ موقعیت از رویداد تاریخ‌دار می‌آید، نه از حدس موجودی  → ['حمل', 'حمل', 'گمرک و ترخیص']
+✅ آخرین فعالیت نام‌گذاری می‌شود  → ثبت کوتاژ گمرکی
+✅ تاریخ شمسی درست تبدیل می‌شود (سن وضعیت منطقی است، نه ۲۲۷٬۰۰۰ روز)  → [162, 162, 121]
+✅ تاریخ به میلادی نرمال می‌شود  → 2026-03-30 00:00:00
+✅ مسئول وضعیت، کارشناس همان حوزه است  → ['کارشناس حمل و لجستیک', 'کارشناس حمل و لجستیک', 'کارشناس حمل و لجستیک']
+✅ نام مسئول از ستون همان حوزه برداشته می‌شود  → ['ج', 'ج', 'ج']
+✅ فعالیت بعدی مورد انتظار تعیین می‌شود  → ثبت کوتاژ گمرکی
+✅ چرخه تمام‌شده «کامل است» گزارش می‌شود  → چرخه کامل است
+✅ «معطل چه حوزه‌ای» پاسخ دارد  → کارشناس حمل و لجستیک
+✅ تاریخ‌های ثبت‌نشده فهرست می‌شوند
+✅ ردیف بدون رویداد «نامشخص» می‌شود، نه یک حدس  → نامشخص
+✅ مبنای نامشخص بودن صریح ثبت می‌شود  → هیچ فعالیت تاریخ‌داری برای این ردیف ثبت نشده است
+✅ تاریخ آینده به‌عنوان وضعیت فعلی پذیرفته نمی‌شود  → نامشخص
+✅ جدول زمانی با جدول فعالیت لاگ رویداد یکی است
+
+── ۳) پوشش Commercial Expert Data ──
+2026-09-22 21:14:59,459 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 3 ردیف دارای سفارش.
+✅ سفارش خارج از سورس شمرده می‌شود  → 1
+✅ سفارش موجود در سورس پرچم نمی‌گیرد
+✅ سفارش غایب پرچم می‌گیرد
+✅ وضعیت سنجش «measured» است
+✅ measured() درست گزارش می‌دهد
+2026-09-22 21:14:59,464 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ سورس در دسترس نباشد ⇒ هیچ سفارشی به‌غلط پرچم نمی‌گیرد (NoneType)  → n=0
+2026-09-22 21:14:59,468 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ سورس در دسترس نباشد ⇒ هیچ سفارشی به‌غلط پرچم نمی‌گیرد (DataFrame)  → n=0
+2026-09-22 21:14:59,471 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ حالت «سنجیده نشد» از «صفر» تفکیک می‌شود
+✅ علت سنجیده‌نشدن برای کاربر توضیح داده می‌شود
+
+── ۴) نماهای متریال / بارنامه / اداره ──
+✅ نمای متریال هر ردیف را نگه می‌دارد
+✅ نمای بارنامه هر ردیف را نگه می‌دارد
+✅ نمای اداره یک ردیف به ازای هر اداره دارد  → 2
+✅ ستون «موقعیت فعلی» در نما هست
+✅ ستون «تاریخ آخرین رویداد» در نما هست
+✅ ستون «سن وضعیت (روز)» در نما هست
+✅ ستون «کارشناس مسئول وضعیت» در نما هست
+✅ ستون «معطل حوزه» در نما هست
+✅ ستون «مالک قطعه (کارشناس خرید)» در نما هست
+✅ ستون «شکاف داده مالک» در نما هست
+✅ ستون حوزه «کارشناس خرید» در نما هست
+✅ ستون حوزه «کارشناس بازرگانی» در نما هست
+✅ ستون حوزه «کارشناس حمل و لجستیک» در نما هست
+✅ نمای اداره چرایی بار کاری دارد
+✅ نمای اداره شکاف مالک را می‌شمارد
+✅ سه شیت با نام درست ساخته می‌شود  → ['۱۴. متریال محور', '۱۵. بارنامه محور', '۱۶. اداره محور']
+✅ دیتافریم خالی خطا نمی‌دهد
+✅ ستون گروه‌بندی نباشد ⇒ نمای خالی، نه استثنا
+
+── ۵) کارایی (رگرسیون نسخه ۲۶٫۹) ──
+✅ سه نما روی 5,000 ردیف زیر ۱۰ ثانیه ساخته می‌شود  → 0.29s
+
+── ۶) هیچ فایل تستی از قلم نیفتد ──
+✅ همه فایل‌های تست در run_all_tests ثبت شده‌اند  → 73 فایل
+
+==============================================================================
+نتیجه: 55 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۳) نقاط کور سیستمی و فرآیندی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — نقاط کور سیستمی و فرآیندی
+==============================================================================
+
+── ۱) شیتِ نبوده هرگز با شیت دیگر جایگزین نمی‌شود ──
+2026-09-22 21:15:00,518 | INFO    | 📥 [t] شیت «Other» خوانده شد — 1 ردیف × 1 ستون
+✅ شیت موجود خوانده می‌شود
+2026-09-22 21:15:00,526 | INFO    | 📥 [t] شیت «Other» خوانده شد — 1 ردیف × 1 ستون
+✅ تطبیق بدون حساسیت به حروف/فاصله کار می‌کند
+2026-09-22 21:15:00,531 | ERROR   | ❌ [t] شیت «Expert Data» در sample.xlsx نیست (شیت‌های موجود: ['Sheet1', 'Other']) — این فریم نامعتبر اعلام شد و به شیت دیگری fallback نمی‌شود.
+✅ شیت ناموجود ⇒ None، نه fallback به شیت اول  → None
+✅ شکاف اسکیما در سلامت سیستم ثبت می‌شود  → ["شیت «Expert Data» در sample.xlsx نیست (شیت\u200cهای موجود: ['Sheet1', 'Other'])"]
+✅ وضعیت سورس «ناقص» می‌شود، نه سالم  → ناقص
+2026-09-22 21:15:00,538 | INFO    | 📥 [t] شیت «Sheet1» خوانده شد — 2 ردیف × 1 ستون
+✅ sheet=None همچنان شیت اول را می‌خواند (رفتار عمدی)
+
+── ۲) دفتر سلامت سیستم ──
+✅ اجرای با سورس اختیاریِ ردشده «ناقص» است، نه خراب  → ناقص
+✅ سورس اختیاری مسدودکننده نیست  → []
+✅ سورس الزامیِ خراب، مسدودکننده است  → ['c']
+✅ وضعیت کلی «خراب» می‌شود  → خراب
+✅ همه سالم ⇒ وضعیت سالم  → سالم
+✅ استثنای مرحله بلعیده نمی‌شود
+✅ مرحله شکست‌خورده ثبت می‌شود
+✅ خطای مرحله وضعیت کلی را خراب می‌کند
+✅ جدول سورس ساخته می‌شود
+✅ جدول مرحله ساخته می‌شود
+✅ جدول ادغام ساخته می‌شود
+✅ جدول یافته ساخته می‌شود
+
+── ۳) شیت «۱۷. سلامت سیستم» ──
+✅ شیت ساخته می‌شود  → ['۱۷. سلامت سیستم']
+✅ بخش «وضعیت کلی این اجرا» در شیت هست
+✅ بخش «سلامت سورس» در شیت هست
+✅ بخش «سلامت مرحله» در شیت هست
+✅ بخش «سلامت ادغام» در شیت هست
+✅ بخش «یافته» در شیت هست
+✅ بخش «Expert Data» در شیت هست
+✅ خلاصه کوتاه برای ایمیل ساخته می‌شود
+✅ اجرای سالم هم شیت می‌سازد (بدون استثنا)
+
+── ۴) ترتیب زمانی معکوس و تاریخ برنامه‌ای ──
+✅ ترتیب معکوس شناسایی می‌شود  → «ترخیص کامل» پیش از «ثبت کوتاژ گمرکی» ثبت شده
+✅ ردیف سالم علامت نمی‌خورد
+✅ تاریخ آینده به‌عنوان «برنامه‌ای» ثبت می‌شود  → صدور بارنامه (حمل)
+✅ تاریخ آینده وضعیت فعلی را تعیین نمی‌کند  → 2026-03-21 00:00:00
+✅ ناسازگاری زمانی وارد سلامت سیستم می‌شود  → ['2 ردیف ترتیب زمانی معکوس دارد', '1 ردیف تاریخ آینده (برنامه\u200cای) دارد']
+✅ تاریخ برنامه‌ای هم گزارش می‌شود  → ['2 ردیف ترتیب زمانی معکوس دارد', '1 ردیف تاریخ آینده (برنامه\u200cای) دارد']
+✅ ستون‌های تازه در فهرست خروجی اعلام شده‌اند
+
+── ۵) سفارش چندمتریاله پنهان نمی‌ماند ──
+✅ تابع یکتاسازی مقادیر خالی را دور می‌ریزد  → ['a', 'b']
+✅ خروجی مرتب است (نسب پایدار، نه وابسته به ترتیب ردیف)
+
+── ۶) سه حالت پوشش سورس خرید ──
+2026-09-22 21:15:00,671 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 2 ردیف دارای سفارش.
+✅ سنجیده‌شده: حالت measured
+✅ سنجیده‌شده: شمارش درست  → 1
+2026-09-22 21:15:00,674 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ فایل نبود ⇒ source_unavailable  → source_unavailable
+✅ فایل نبود ⇒ هیچ سفارشی پرچم نمی‌گیرد
+✅ KPI «سنجیده نشد» می‌دهد
+2026-09-22 21:15:00,678 | WARNING | ⚠️ سورس «Commercial Expert Data» ساختار مورد انتظار را نداشت؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ ساختار عوض شد ⇒ source_schema_gap  → source_schema_gap
+✅ پیام KPI بین «فایل نبود» و «ساختار عوض شد» فرق می‌گذارد  → فایل Commercial Expert Data ساختار مورد انتظار را نداشت
+✅ هیچ‌کدام از دو حالتِ نسنجیده، measured نیست
+
+── ۷) بهداشت اجرا ──
+✅ هیچ escape نامعتبری در سورس نیست  → []
+✅ «python -m gsi.factsheet» بدون RuntimeWarning اجرا می‌شود
+✅ هر مجموعه تست سقف زمانی دارد
+✅ خروجی TIMEOUT صریح گزارش می‌شود
+✅ نسخه پکیج تنبل خوانده می‌شود
+
+==============================================================================
+نتیجه: 49 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۳) برداری‌سازی ۳۸، سامانه انبار، پنجره اعتبار قوانین
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+V26.20.2 — برداری‌سازی ۳۸، سامانه انبار، پنجره اعتبار قوانین
+==============================================================================
+
+── ۱) مرحله ۳۸: برداری‌سازی بدون تغییر معنا ──
+✅ هیچ پیمایش ردیف‌به‌ردیفی در کد مرحله نمانده  → پاک
+✅ تبدیل عددی برداری با منطق مرجع یکی است  → 30 مقدار لبه‌ای
+✅ عدد فارسی‌نویس «نامشخص» شمرده نمی‌شود
+✅ عدد عربی‌نویس هم درست خوانده می‌شود
+✅ Missing با Zero یکی نمی‌شود  → [nan, 0.0, nan, 0.0]
+✅ NaN به رشته 'nan' تبدیل نمی‌شود
+2026-09-22 21:15:02,426 | INFO    | 🧮 [supply-position] پوشش مؤلفه‌ها: STOCK_IKCO 80.0% (4/5) | STOCK_SAPCO 60.0% (3/5) | SUPPLIER_QTY 40.0% (2/5) | IN_TRANSIT_QTY 60.0% (3/5) | IN_CUSTOMS_QTY 60.0% (3/5)
+2026-09-22 21:15:02,430 | INFO    | 🔗 [supply-position] KEY_MATERIAL معتبر 0/5 | DAILY_NEED معتبر 0/5 | Oracle کامل 3 | Expert کامل 2
+2026-09-22 21:15:02,433 | INFO    | 📦 [supply-position] کامل 1 | ناقص 2 | فاقد داده 1 | تعارض 1; Missing هرگز Zero نشده است.
+✅ جمع قطعی فقط وقتی هر پنج مؤلفه هست ساخته می‌شود  → [480.0, nan, nan, nan, 18.0]
+✅ حداقل قابل اثبات از مؤلفه‌های موجود ساخته می‌شود
+✅ وضعیت‌ها درست تفکیک می‌شوند  → ['COMPLETE', 'PARTIAL', 'MISSING', 'PARTIAL', 'CONFLICT']
+✅ ردیف بدون تعارض، CONFLICT اعلام نمی‌شود
+✅ شکاف‌ها با نام و ترتیب درست گزارش می‌شوند  → Oracle/SAPCO، Expert/نزد سازنده، Expert/در راه، Expert/گمرک
+✅ پوشش داده درصد درست می‌دهد  → [100.0, 80.0, 0.0, 20.0, 100.0]
+
+── ۲) سامانه جامع انبارها ──
+✅ بسته قوانین انبار بارگذاری می‌شود
+✅ هشت وضعیت اظهار تعریف شده است  → ['DECLARED', 'LATE', 'OVERDUE', 'CRITICAL_GAP', 'SEQUENCE_CONFLICT', 'PENDING', 'NOT_CLEARED', 'UNKNOWN']
+✅ هیچ مهلت انبار خودکار اعمال نمی‌شود  → {'declare_inbound_days': False, 'declare_outbound_days': False}
+✅ مهلت‌های قانونی needs_verification علامت خورده‌اند
+✅ آستانه‌های پایش صریحاً internal‌اند، نه قاعده قانونی
+✅ قبض انبار به فریم اصلی می‌رسد
+2026-09-22 21:15:02,588 | INFO    | 🏭 [warehouse] اظهارشده 2 | با تأخیر 1 | شکاف شاهد 1 | تناقض تاریخ 1 | در مهلت 1 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+✅ هر شش سناریو وضعیت درست می‌گیرند  → ['DECLARED', 'LATE', 'CRITICAL_GAP', 'PENDING', 'DECLARED', 'SEQUENCE_CONFLICT']
+✅ فاصله اظهار برای ردیف به‌موقع محاسبه می‌شود  → 2.0
+✅ عمر شکاف فقط برای ردیف بدون قبض انبار پر می‌شود
+✅ فاصله منفی هرگز به‌عنوان مدت گزارش نمی‌شود  → nan
+✅ ردیف بدون تاریخ ترخیص، شکاف شمرده نمی‌شود
+✅ هر وضعیت برچسب فارسی دارد
+✅ مبنای تاریخ ترخیص در خروجی ثبت می‌شود
+✅ پایه قاعده در خروجی اعلام می‌شود که خودکار نیست
+2026-09-22 21:15:02,601 | INFO    | 🏭 [warehouse] اظهارشده 0 | با تأخیر 0 | شکاف شاهد 0 | تناقض تاریخ 0 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+✅ بدون داده، Unknown اعلام می‌شود نه شکاف  → ['NOT_CLEARED', 'NOT_CLEARED']
+✅ آهنگ رنگی هر وضعیت در سیستم طراحی وجود دارد  → {'critical', 'warning', 'serious', 'good', 'unknown', 'neutral'}
+✅ هر وضعیت YAML آهنگ رنگی دارد
+
+── ۳) پنجره اعتبار قوانین (expires_on) ──
+✅ قاعده معتبر با active() برگردانده می‌شود
+✅ قاعده منقضی با active() برگردانده نمی‌شود
+✅ get() همچنان قاعده منقضی را برای نمایش می‌دهد  → ممیزی باید بتواند قاعده منقضی را ببیند، وگرنه ناپدید می‌شود
+✅ is_expired تاریخ مرجع را می‌سنجد
+✅ شمارش روز تا انقضا درست است  → 4 / -1
+✅ قاعده بی‌انقضا همیشه معتبر است
+✅ ممیزی انقضا در تاریخ گذشته خالی و در آینده پر است  → 0 / 2
+✅ قاعده منقضی سطح error دارد، نه warning
+✅ پیش‌هشدار انقضا پیش از تاریخ انقضا می‌آید
+✅ پیش‌هشدار سطح warning دارد
+✅ پنجره پیش‌هشدار یک عدد مستند است  → 30
+✅ پیام انقضا تاریخ و فاصله را می‌گوید
+✅ داخل پنجره، نسخه موقت انتخاب می‌شود
+✅ پس از انقضا، به نسخه پیشین برمی‌گردد نه نسخه منقضی  → قدیمی
+✅ جدول پنجره اعتبار ساخته می‌شود و ستون‌های لازم را دارد  → ['بسته', 'قاعده', 'موضوع', 'از تاریخ', 'تا تاریخ', 'روز باقی\u200cمانده', 'وضعیت', 'اعمال خودکار', 'اعتبار منبع']
+✅ جدول از نزدیک‌ترین انقضا مرتب می‌شود
+✅ خلاصه سلامت، انقضای نزدیک را اعلام می‌کند  → ['وضعیت داده امروز', 'سورس سالم / ناقص / خراب', 'قاعده نزدیک انقضا']
+✅ doctor پنجره اعتبار را بررسی می‌کند
+
+==============================================================================
+نتیجه: 47 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۰) صف تخصیص، اقدام پرونده و موجودی V26.20
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.20 — Case Action / Allocation Queue / Supply Position
+==============================================================================
+✅ مقاومت انبار مستقل؛ مقاومت کل با فقدان موجودی سازنده نامشخص است  → band=BECOMING_CRITICAL, supplier=None, days=15.0
+✅ با داده ناقص حداقل قابل اثبات حفظ می‌شود  → lower=180.0, coverage=80.0
+✅ فرمول پنج‌جزئی: Oracle + سه سبد کارشناسی  → total=480.0, days=15.0
+2026-09-22 21:15:03,900 | WARNING |    ⚠️ [ntsw] شیت «Release Commitment» یافت نشد.
+2026-09-22 21:15:03,918 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 1 کد ثبت سفارش
+✅ تاریخچه status یک درخواست دوباره‌شماری نمی‌شود  → request ledger rows=2
+✅ مبلغ تخصیص و مبلغ باز صف جدا هستند  → alloc=100.0 open=50.0
+✅ پرونده هم‌زمان تخصیص جزئی و صف باز را حفظ می‌کند  → PARTIAL_ALLOCATED rank=4
+2026-09-22 21:15:04,172 | INFO    | ==========================================================================================
+🚀 GSI 29.7.7 — تاریخ مرجع: 2026-08-31
+==========================================================================================
+2026-09-22 21:15:04,175 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-22 21:15:04,177 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-22 21:15:04,178 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-22 21:15:04,180 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-22 21:15:04,182 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-22 21:15:04,184 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-22 21:15:04,185 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-22 21:15:04,187 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (IKCO + SAPCO ÷ نیاز روزانه) + مقاومت‌های زنجیره
+2026-09-22 21:15:04,189 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-22 21:15:04,190 | INFO    |     54 │ process_integrity │ یکپارچگی زنجیره فرایند و حفظ شواهد
+2026-09-22 21:15:04,192 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-22 21:15:04,194 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-22 21:15:04,196 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-22 21:15:04,198 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-22 21:15:04,200 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-22 21:15:04,202 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-22 21:15:04,205 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-22 21:15:04,207 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-22 21:15:04,209 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-22 21:15:04,212 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-22 21:15:04,223 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW Export.xlsx
+2026-09-22 21:15:04,257 | INFO    |    ✅ [ntsw] Import Licence: 3 ردیف | 3 پرونده | 3 ثبت سفارش
+2026-09-22 21:15:04,276 | INFO    |    ✅ [ntsw] Release Commitment: 4 ردیف تعهد → 3 کد ثبت سفارش
+2026-09-22 21:15:04,292 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 2 کد ثبت سفارش
+2026-09-22 21:15:04,307 | INFO    | 🔌 اتصال موفق به سورس 'abbasi' → BLs Tracking.xlsx
+2026-09-22 21:15:04,324 | INFO    | 📥 [abbasi] شیت «BLs Tracking» خوانده شد — 6 ردیف × 23 ستون
+2026-09-22 21:15:04,338 | INFO    | 🔌 اتصال موفق به سورس 'sata' → SATA Tracking.xlsx
+2026-09-22 21:15:04,354 | INFO    | 📥 [sata] شیت «Sata Tracking» خوانده شد — 5 ردیف × 23 ستون
+2026-09-22 21:15:04,362 | INFO    |    🔑 [sata] کلید ثبت سفارش از ستون «ثبت سفارش» ساخته شد — 5 از 5 ردیف (5 کد یکتا)
+2026-09-22 21:15:04,370 | INFO    | 🔌 اتصال موفق به سورس 'clearance' → 2 فایل
+2026-09-22 21:15:04,400 | INFO    | 📥 [clearance] شیت «Air Clearance» خوانده شد — 1 ردیف × 28 ستون
+2026-09-22 21:15:04,417 | INFO    | 📥 [clearance] شیت «Sea Clearance» خوانده شد — 4 ردیف × 28 ستون
+2026-09-22 21:15:04,419 | INFO    |    📚 [clearance] 2 شیت داده از 2 فایل ادغام شد — مجموع 5 ردیف
+2026-09-22 21:15:04,434 | INFO    |    🛃 [clearance] 5 ردیف — 1 ترخیص کامل، 1 ترخیص درصدی، 5 کد تعرفه
+2026-09-22 21:15:04,441 | INFO    | 🔌 اتصال موفق به سورس 'cotage' → Cottage Tracking.xlsx
+2026-09-22 21:15:04,457 | INFO    | 📥 [cotage] شیت «Cottage Tracking» خوانده شد — 2 ردیف × 22 ستون
+2026-09-22 21:15:04,460 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,473 | INFO    | 🔌 اتصال موفق به سورس 'oracle' → Oracle.xlsx
+2026-09-22 21:15:04,502 | INFO    | 🔌 اتصال موفق به سورس 'fx_transaction' → Foreign Exchange Transaction.xlsx
+2026-09-22 21:15:04,550 | INFO    |    💱 [fx] 0 ارز، 3 ردیف با کد ثبت سفارش
+2026-09-22 21:15:04,561 | INFO    | 🔌 اتصال موفق به سورس 'credit' → Credit Dept.xlsx
+2026-09-22 21:15:04,575 | INFO    | 📥 [credit] شیت «PURCREDIT» خوانده شد — 2 ردیف × 23 ستون
+2026-09-22 21:15:04,580 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,607 | INFO    | 🔌 اتصال موفق به سورس 'ilappend' → IL Append.xlsx
+2026-09-22 21:15:04,623 | INFO    | 📥 [ilappend] شیت «Append» خوانده شد — 3 ردیف × 7 ستون
+2026-09-22 21:15:04,627 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,632 | INFO    |    🔑 [il] کلید ثبت سفارش از ستون «شماره ثبت سفارش» (3 ردیف)
+2026-09-22 21:15:04,637 | INFO    | 🔌 اتصال موفق به سورس 'sap' → Comparison (SAP).xlsx
+2026-09-22 21:15:04,655 | INFO    | 📥 [sap] شیت «Data» خوانده شد — 3 ردیف × 13 ستون
+2026-09-22 21:15:04,658 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,660 | WARNING |    ⚠️ [sap] ستون «PR_ITEM» یافت نشد (کاندیدها: ['Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,662 | WARNING |    ⚠️ [sap] ستون «MATERIAL» یافت نشد (کاندیدها: ['Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,664 | WARNING |    ⚠️ [sap] ستون «MATERIAL_DESC» یافت نشد (کاندیدها: ['Material Description']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,666 | WARNING |    ⚠️ [sap] ستون «SHORT_TEXT» یافت نشد (کاندیدها: ['Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,667 | WARNING |    ⚠️ [sap] ستون «REQ_QTY» یافت نشد (کاندیدها: ['Quantity requested']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,670 | WARNING |    ⚠️ [sap] ستون «UOM» یافت نشد (کاندیدها: ['Unit of Measure']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,671 | WARNING |    ⚠️ [sap] ستون «MATERIAL_GROUP» یافت نشد (کاندیدها: ['Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,673 | WARNING |    ⚠️ [sap] ستون «PURCH_GROUP_DESC» یافت نشد (کاندیدها: ['Purgroup Description']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,676 | WARNING |    ⚠️ [sap] ستون «REQUISITIONER» یافت نشد (کاندیدها: ['Requisitioner']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,678 | WARNING |    ⚠️ [sap] ستون «REQUISITION_DATE» یافت نشد (کاندیدها: ['Requisition date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,681 | WARNING |    ⚠️ [sap] ستون «CREATED_BY» یافت نشد (کاندیدها: ['Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,683 | WARNING |    ⚠️ [sap] ستون «RELEASE_DATE» یافت نشد (کاندیدها: ['Release Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,685 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,687 | WARNING |    ⚠️ [sap] ستون «HEADER_PURCHASE_ORDER» یافت نشد (کاندیدها: ['Purchase order']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,688 | WARNING |    ⚠️ [sap] ستون «QTY_ORDERED» یافت نشد (کاندیدها: ['Quantity ordered']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,691 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,693 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,695 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,696 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,699 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,700 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,705 | WARNING |    ⚠️ [sap] ستون «PLANT» یافت نشد (کاندیدها: ['Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,708 | WARNING |    ⚠️ [sap] ستون «GOODS_RECEIPT» یافت نشد (کاندیدها: ['Goods Receipt']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,710 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,712 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE» یافت نشد (کاندیدها: ['Delivery Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,715 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,718 | WARNING |    ⚠️ [sap] ستون «REQ_TRACKING_NO» یافت نشد (کاندیدها: ['Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,720 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,722 | WARNING |    ⚠️ [sap] ستون «TOTAL_VALUE» یافت نشد (کاندیدها: ['Total Value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,724 | WARNING |    ⚠️ [sap] ستون «CURRENCY» یافت نشد (کاندیدها: ['Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,726 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,728 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,731 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,733 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,735 | WARNING |    ⚠️ [sap] ستون «VALUATION_PRICE» یافت نشد (کاندیدها: ['Valuation Price']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,738 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_ITEM» یافت نشد (کاندیدها: ['Purchase Order Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,743 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_DATE» یافت نشد (کاندیدها: ['Purchase Order Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,745 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,748 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,750 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,752 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,755 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,757 | WARNING |    ⚠️ [sap] ستون «PACK_NO» یافت نشد (کاندیدها: ['pack.Pack Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,759 | WARNING |    ⚠️ [sap] ستون «PACK_PR_ITEM» یافت نشد (کاندیدها: ['pack.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,760 | WARNING |    ⚠️ [sap] ستون «PACK_QTY» یافت نشد (کاندیدها: ['pack.Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,762 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,764 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_NO» یافت نشد (کاندیدها: ['pack.order Num']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,766 | WARNING |    ⚠️ [sap] ستون «PACK_RESPONSIBLE» یافت نشد (کاندیدها: ['pack.Responsible']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,768 | WARNING |    ⚠️ [sap] ستون «PACK_PACKED» یافت نشد (کاندیدها: ['pack.Packed']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,774 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,777 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,778 | WARNING |    ⚠️ [sap] ستون «PACK_MATERIAL» یافت نشد (کاندیدها: ['pack.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,780 | WARNING |    ⚠️ [sap] ستون «PACK_MPN_MATERIAL» یافت نشد (کاندیدها: ['pack.MPN: Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,782 | WARNING |    ⚠️ [sap] ستون «PO_ITEM» یافت نشد (کاندیدها: ['po.Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,784 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,787 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,789 | WARNING |    ⚠️ [sap] ستون «PO_SHORT_TEXT» یافت نشد (کاندیدها: ['po.Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,791 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL» یافت نشد (کاندیدها: ['po.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,793 | WARNING |    ⚠️ [sap] ستون «PO_COMPANY_CODE» یافت نشد (کاندیدها: ['po.Company Code']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,794 | WARNING |    ⚠️ [sap] ستون «PO_PLANT» یافت نشد (کاندیدها: ['po.Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,796 | WARNING |    ⚠️ [sap] ستون «PO_STORAGE_LOCATION» یافت نشد (کاندیدها: ['po.Storage Location']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,798 | WARNING |    ⚠️ [sap] ستون «PO_REQ_TRACKING_NO» یافت نشد (کاندیدها: ['po.Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,800 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL_GROUP» یافت نشد (کاندیدها: ['po.Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,801 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,803 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['po.Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,805 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,807 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_UNIT» یافت نشد (کاندیدها: ['po.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,812 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_QTY» یافت نشد (کاندیدها: ['po.Order Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,813 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,815 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,817 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,819 | WARNING |    ⚠️ [sap] ستون «PO_NET_PRICE» یافت نشد (کاندیدها: ['po.Net Order Price']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,821 | WARNING |    ⚠️ [sap] ستون «PO_CURRENCY» یافت نشد (کاندیدها: ['po.Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,823 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,825 | WARNING |    ⚠️ [sap] ستون «PO_NET_VALUE» یافت نشد (کاندیدها: ['po.Net Order Value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,828 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,830 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,838 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,840 | WARNING |    ⚠️ [sap] ستون «PO_PR_ITEM» یافت نشد (کاندیدها: ['po.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,842 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,844 | WARNING |    ⚠️ [sap] ستون «PO_DOC_TYPE» یافت نشد (کاندیدها: ['po.Purchasing Doc. Type']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,847 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER» یافت نشد (کاندیدها: ['po.Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,848 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_DATE» یافت نشد (کاندیدها: ['po.Document Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,851 | WARNING |    ⚠️ [sap] ستون «PO_CREATED_BY» یافت نشد (کاندیدها: ['po.Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,853 | WARNING |    ⚠️ [sap] ستون «PO_REG_FILE» یافت نشد (کاندیدها: ['po.شماره پرونده']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,855 | WARNING |    ⚠️ [sap] ستون «PO_YOUR_REFERENCE» یافت نشد (کاندیدها: ['po.Your Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,857 | WARNING |    ⚠️ [sap] ستون «PO_OUR_REFERENCE» یافت نشد (کاندیدها: ['po.Our Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,901 | INFO    |    ⚙️ [sap] raw=3 | PR-item=3 | workflow=3 | PO-item=0 | PR=3
+2026-09-22 21:15:04,954 | INFO    | 🔌 اتصال موفق به سورس 'doccheck' → Document Checking.xlsx
+2026-09-22 21:15:04,967 | INFO    | 📥 [doccheck] شیت «Checking» خوانده شد — 2 ردیف × 6 ستون
+2026-09-22 21:15:04,970 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,972 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-22 21:15:04,977 | INFO    |    📑 [doccheck] 2 سند — بارنامه 0 ردیف، سفارش 2 ردیف (کلید ادغام: سفارش)
+2026-09-22 21:15:05,019 | INFO    | 🔌 اتصال موفق به سورس 'hr' → HR_Main_Updated.xlsx
+2026-09-22 21:15:05,041 | INFO    | 📥 [hr] شیت «Sheet1» خوانده شد — 4 ردیف × 29 ستون
+2026-09-22 21:15:05,051 | INFO    |    👥 [hr] 4 پرسنل — 3 فعال
+2026-09-22 21:15:05,058 | INFO    | 🔌 اتصال موفق به سورس 'moghavemat' → Commercial Expert Data.xlsx
+2026-09-22 21:15:05,076 | INFO    | 📥 [moghavemat] شیت «Expert Data» خوانده شد — 6 ردیف × 38 ستون
+2026-09-22 21:15:05,090 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:05,094 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-22 21:15:05,116 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-22 21:15:05,120 | INFO    |    🧩 [moghavemat] فایل چندنوعی است — Data type: ['Pre Purchase Approval Data', 'Purchase Approval Data']
+2026-09-22 21:15:05,161 | INFO    |    📊 [moghavemat] 6 قلم در 6 سفارش تجمیع شد؛ 6 موقعیت موجودی Order×Material و 6 رابطه Order×Material×PR×PR Item ساخته شد.
+2026-09-22 21:15:05,175 | INFO    | 📦 13 از 13 سورس برای ادامه Run آماده است: ['ntsw', 'abbasi', 'sata', 'clearance', 'cotage', 'oracle', 'fx_transaction', 'credit', 'ilappend', 'sap', 'doccheck', 'hr', 'moghavemat']
+2026-09-22 21:15:05,192 | INFO    | 🧱 جمعیت اصلی Tier-1: 6 ردیف | 6 سفارش | 3 ثبت سفارش | 5 شاهد بارنامه عباسی.
+2026-09-22 21:15:05,206 | INFO    |    🔑 [MATERIAL] کد متریال / شماره فنی: 6 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_MATERIAL
+2026-09-22 21:15:05,213 | INFO    |    🔗 [moghavemat/inventory] ادغام با کلید مرکب KEY_ORDER + KEY_MATERIAL
+2026-09-22 21:15:05,224 | INFO    | 🔗 [moghavemat/inventory] ادغام روی __CK_moghavemat/inventory__ انجام شد — 6 ردیف منطبق از 6
+2026-09-22 21:15:05,228 | INFO    |    🔑 [PR] شماره درخواست خرید: 6 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_KEY_PR
+2026-09-22 21:15:05,236 | INFO    | 🔗 [sap] ادغام روی KEY_PR انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:05,244 | INFO    | 🔗 [oracle] ادغام روی KEY_MATERIAL انجام شد — 6 ردیف منطبق از 6
+2026-09-22 21:15:05,252 | INFO    | 🔗 [sata] ادغام روی KEY_BL انجام شد — 5 ردیف منطبق از 6
+2026-09-22 21:15:05,257 | INFO    |    🧹 [clearance] 0 ردیف بدون کلید و 1 ردیف تکراری حذف شد (5 → 4)
+2026-09-22 21:15:05,261 | INFO    | 🔗 [clearance] ادغام روی KEY_BL انجام شد — 4 ردیف منطبق از 6
+2026-09-22 21:15:05,267 | INFO    | 🔗 [cotage] ادغام روی KEY_BL انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:05,273 | INFO    | 🔗 [doccheck] ادغام روی KEY_ORDER انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:05,278 | WARNING | ⚠️ [ilappend] ستون‌های هم‌نام کنار گذاشته شدند: ['KEY_REG_FILE']
+2026-09-22 21:15:05,283 | INFO    | 🔗 [ilappend] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:05,288 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-22 21:15:05,293 | INFO    | 🔗 [fx_transaction] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:05,299 | INFO    | 🔗 [credit] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:05,309 | INFO    |    🔑 [REG] کد ثبت سفارش (۸ رقمی): 5 از 6 ردیف (6 مقدار یکتا) — منابع: ntsw.NTSW_KEY_REG → sata.SATA_KEY_REG
+2026-09-22 21:15:05,316 | INFO    | 🔗 [ntsw_commitment] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:05,321 | INFO    | 🔗 [ntsw_allocation] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:05,324 | INFO    | 🧭 [resolver] «شماره بارنامه» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:05,327 | INFO    | 🧭 [resolver] «شماره سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:05,330 | INFO    | 🧭 [resolver] «شماره فنی» از 3 سورس حل شد — 5 تعارض ثبت گردید.
+2026-09-22 21:15:05,336 | INFO    | 🧭 [resolver] «شرح کالا» از 5 سورس حل شد — 6 تعارض ثبت گردید.
+2026-09-22 21:15:05,340 | INFO    | 🧭 [resolver] «ثبت سفارش» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:05,363 | INFO    | 👤 نقش‌های کارشناسی: کارشناس اعتبارات 83٪ (3 نفر) | کارشناس ترخیص 67٪ (1 نفر) | کارشناس کنترل اسناد 33٪ (1 نفر)
+2026-09-22 21:15:05,365 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-22 21:15:05,419 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-22 21:15:05,423 | INFO    | 🏢 تطبیق سازمانی: 6 از 6 ردیف به HR وصل شد.
+2026-09-22 21:15:05,426 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-22 21:15:05,472 | INFO    | 🎯 حوزه‌های مسئولیت: کارشناس خرید 100% (4 نفر) | کارشناس بازرگانی 83% (3 نفر) | کارشناس حمل و لجستیک 67% (1 نفر)
+2026-09-22 21:15:05,475 | INFO    | 👤 مالک قطعه برای 6 از 6 ردیف شناسایی شد (100%).
+2026-09-22 21:15:05,477 | INFO    | 🧩 6 ردیف شکاف داده مالک دارد — ردیف‌ها حذف نشدند؛ علت در ستون «PART_OWNER_DATA_GAP» ثبت شد.
+2026-09-22 21:15:05,479 | INFO    | ⏳ بیشترین انتظار روی «کارشناس خرید» است — 3 ردیف.
+2026-09-22 21:15:05,495 | INFO    | 🧮 [supply-position] پوشش مؤلفه‌ها: STOCK_IKCO 100.0% (6/6) | STOCK_SAPCO 100.0% (6/6) | SUPPLIER_QTY 100.0% (6/6) | IN_TRANSIT_QTY 100.0% (6/6) | IN_CUSTOMS_QTY 100.0% (6/6)
+2026-09-22 21:15:05,498 | INFO    | 🔗 [supply-position] KEY_MATERIAL معتبر 6/6 | DAILY_NEED معتبر 6/6 | Oracle کامل 6 | Expert کامل 6
+2026-09-22 21:15:05,501 | INFO    | 📦 [supply-position] کامل 6 | ناقص 0 | فاقد داده 0 | تعارض 0; Missing هرگز Zero نشده است.
+2026-09-22 21:15:05,515 | INFO    | 🏭 [warehouse] اظهارشده 0 | با تأخیر 1 | شکاف شاهد 2 | تناقض تاریخ 2 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+2026-09-22 21:15:05,539 | INFO    | 🔧 مقاومت قطعی برای 6 از 6 ردیف — UNKNOWN=0, پوشش ناقص=0, طبقات={'بحرانی': 1, 'در حال بحرانی شدن': 1, 'توقف خط': 1, 'تحت نظر': 1, 'ایمن': 1, 'بدون مصرف': 1}
+2026-09-22 21:15:05,663 | INFO    | 🧭 [process-integrity] 6 پرونده فرایندی | 185 شاهد | 19 شکاف صریح | 0 شاهد بدون کلید (حفظ‌شده برای اتصال بعدی)
+2026-09-22 21:15:05,724 | INFO    | 💱 [fx-trace] 5 پرونده ثبت سفارش | 18 رویداد | 2 مغایرت/شکاف
+2026-09-22 21:15:05,816 | INFO    | 💸 [money-control] 5 پرونده | 55 مرحله | 22 رویداد مبلغی | 4 تطبیق ارزی | 3 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-22 21:15:05,845 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 5 پرونده | 0 signal | enforce خودکار=0
+2026-09-22 21:15:05,884 | INFO    | 🎯 [case-actions] 7 پیشنهاد برای 5 پرونده | Draft Email، نیازمند تأیید کاربر
+2026-09-22 21:15:05,965 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+2026-09-22 21:15:06,014 | INFO    | 🔄 لاگ رویداد: 21 رویداد یکتا در 5 پرونده (0 ردیف تکراری منبع ادغام شد) · 5 مسیر متمایز · میانه چرخه پرونده‌های بسته nan روز.
+2026-09-22 21:15:06,030 | INFO    | 🔍 [conformance] 5 از 5 پرونده قابل‌ارزیابی انحراف دارند · 1 پرونده شاهد کافی ندارند · میانگین انطباق 52.2٪ (فقط قابل‌ارزیابی‌ها)
+2026-09-22 21:15:06,033 | INFO    | ↕️ مرتب‌سازی بر اساس بحرانی بودن: CRITICALITY_SORT → امتیاز ریسک
+2026-09-22 21:15:06,036 | INFO    | ⏱️ کندترین مرحله‌ها: money_flow_control 0.09s | process_integrity 0.07s | risk 0.06s
+2026-09-22 21:15:06,044 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 0 سفارش یکتا خارج از سورس، از 6 ردیف دارای سفارش.
+2026-09-22 21:15:06,055 | INFO    | 📊 افراز دو محوری:
+2026-09-22 21:15:06,057 | INFO    |    • کل ردیف: 6
+2026-09-22 21:15:06,059 | INFO    |    • بارنامه یکتا: 5
+2026-09-22 21:15:06,061 | INFO    |    • P1 — فاقد بارنامه و سفارش: 1
+2026-09-22 21:15:06,062 | INFO    |    • P2 — فقط بارنامه: 0
+2026-09-22 21:15:06,064 | INFO    |    • P3 — بارنامه و سفارش: 5
+2026-09-22 21:15:06,066 | INFO    |    • M1 — جمعیت اصلی کارشناسان/NTSW: 6
+2026-09-22 21:15:06,067 | INFO    |    • M2 — فاقد منبع درجه‌اول، دارای ساتا/کوتاژ: 0
+2026-09-22 21:15:06,069 | INFO    |    • M3 — تعیین تکلیف: 0
+2026-09-22 21:15:06,234 | INFO    | 🏁 خط لوله با موفقیت پایان یافت.
+
+Traceback (most recent call last):
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_v26_20_case_action_inventory.py", line 113, in <module>
+    test_unknown_not_zero(); test_ntsw_request_ledger(); test_pipeline_actions_identity(); test_contracts()
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_v26_20_case_action_inventory.py", line 80, in test_pipeline_actions_identity
+    res=Pipeline().run(build_report=False)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/pipeline.py", line 350, in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/bridge.py", line 62, in run_pipeline
+    wh.publish(rid,slots=('report','dwh'))
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/store.py", line 249, in publish
+    raise QualityGateBlockedError(rid, failed)
+gsi.warehouse.store.QualityGateBlockedError: Quality gate blocked publish: sqlite:INTEGRITY_CHECK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۱) runtime مرورگر، دانه موجودی و COM اوت‌لوک
+██████████████████████████████████████████████████████████████████████████████
+✅ جاوااسکریپت خروجی در scope مشترک معتبر است
+✅ هیچ شناسه‌ای دوبار در سطح سراسری اعلام نشده
+✅ هیچ تابع داخلی فراخوانی‌شده‌ای تعریف‌نشده نیست
+✅ ستون‌های موجودی در رجیستری دانه ثبت شده‌اند
+✅ دانه ستون‌های موجودی متریال است
+✅ جمع موجودی روی fan-out بارنامه دوباره‌شماری نمی‌کند → confirmed=100.0
+✅ رتبه اولویت نزولی و بدون گره است
+✅ خروجی صف اقدام بر PRIORITY رشته‌ای مرتب نمی‌شود
+✅ COM روی نخ جاری مقداردهی می‌شود
+✅ COM در مسیر خطا هم آزاد می‌شود
+✅ هیچ فراخوانی Outlook خارج از مدیر زمینه نمانده → 4 dispatch / 4 session
+
+==============================================================================
+نتیجه: 11 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۴) مخاطب، لحن و صداقت خروجی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+V27 — مخاطب، لحن و صداقت خروجی
+==============================================================================
+
+── ۱) پروفایل مخاطب ──
+✅ چهار پروفایل تعریف شده است  → ['expert', 'manager', 'executive', 'analyst']
+✅ پیش‌فرض کارشناس است، چون پرتعدادترین خواننده است
+✅ هر پروفایل پرسشی دارد که خواننده‌اش صبح می‌پرسد
+✅ هر پروفایل می‌گوید برای چه کسی است
+✅ هرچه بالاتر، ردیف کمتر و یافته کمتر  → ردیف 200/80/10 · یافته 5/4/3
+✅ عمق روایت برای کارشناس بیشترین و برای مدیر ارشد کمترین است
+✅ مدیر ارشد جدول بلند نمی‌گیرد
+✅ هیچ پروفایل عملیاتی سنجه کیفیت داده نمی‌بیند
+✅ فقط تحلیل‌گر کیفیت داده می‌بیند
+✅ بخش quality فقط در پروفایل تحلیل‌گر است
+✅ انتخاب با متغیر محیطی کار می‌کند
+✅ نام ناشناخته به پیش‌فرض برمی‌گردد، نه خطا
+
+── ۲) لحن ──
+✅ بزرگ‌نمایی خنثی می‌شود
+✅ ادعای علّی به همبستگی تبدیل می‌شود
+✅ واژگان اتهامی به «مانع» تبدیل می‌شود
+✅ علامت تعجب پیاپی جمع می‌شود
+✅ عدد بدون مخرج منتشر نمی‌شود  → ۱۴۷ قلم از ۱٬۲۰۴
+✅ سهم همیشه با صورت و مخرج می‌آید
+✅ مخرج صفر، درصد نمی‌سازد
+✅ نمونه کوچک صریحاً کم اعلام می‌شود
+✅ نبود شاهد، سلامت گزارش نمی‌شود
+✅ چهار حالت ندانستن از هم جدا مانده‌اند
+✅ اقدام بدون مالک، «تعیین نشده» می‌گوید نه حدس
+✅ یافته بدون اقدام، خودش را لو می‌دهد
+✅ تیتر وقتی چیزی نیست، صادق می‌ماند
+✅ ارقام فارسی با جداکننده درست
+
+── ۳) خروجی HTML، مخاطب‌محور ──
+✅ نمای «کارشناس» ساخته می‌شود
+✅ نمای «مدیر میانی» ساخته می‌شود
+✅ نمای «مدیر ارشد» ساخته می‌شود
+✅ نمای «تحلیل‌گر داده» ساخته می‌شود
+✅ هر فایل فقط یک مخاطب دارد
+✅ فقط مخاطب انتخاب‌شده در metadata وجود دارد
+✅ پرسش هر مخاطب در صفحه نوشته می‌شود
+✅ بخش‌ها با data-section علامت خورده‌اند تا جابه‌جایی کار کند
+✅ اندازه صفحه از پروفایل می‌آید، نه عدد ثابت
+✅ انتخاب مخاطب ماندگار می‌شود ولی فقط در مرورگر خود خواننده
+
+── ۴) آنچه عمداً دیده نمی‌شود ──
+✅ نمای «کارشناس» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ نمای «مدیر میانی» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ نمای «مدیر ارشد» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ این اعداد در شیت سلامت سیستم جای خود را دارند
+
+── ۵) بدون ادعای بیش از داده ──
+✅ «هیچ ریسکی نیست» ادعا نمی‌شود؛ دامنه سنجش اعلام می‌شود
+✅ ریسک چندبعدی سنجیده می‌شود، نه فقط موجودی
+✅ تنوع مسیر قطعی تفسیر نمی‌شود
+✅ همبستگی، علت نامیده نمی‌شود
+✅ دامنه جدول‌های فرآیند صریح است
+✅ «انتظار» با «زمان کار» یکی گرفته نمی‌شود
+
+==============================================================================
+نتیجه: 46 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_1_runtime_diagnostics
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.14s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_2_diagnose_business_semantics
+██████████████████████████████████████████████████████████████████████████████
+......                                                                   [100%]
+6 passed in 0.49s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_3_relation_health_contract
+██████████████████████████████████████████████████████████████████████████████
+......                                                                   [100%]
+6 passed in 0.48s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_4_streamlit_load_performance
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.74s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_5_import_license_continuity
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.76s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_7_multi_pr_and_chatbot
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 1.47s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_8_sqlite_reader_isolation
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.45s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_9_material_text_search
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.65s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_4_resilience_editorial
+██████████████████████████████████████████████████████████████████████████████
+....                                                                     [100%]
+4 passed in 0.93s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_business_dwh
+██████████████████████████████████████████████████████████████████████████████
+...                                                                      [100%]
+3 passed in 0.68s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  test_v29_reliability_gate
+██████████████████████████████████████████████████████████████████████████████
+......                                                                   [100%]
+6 passed in 0.49s
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱) الگوریتمی و بیزینسی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V21 — مجموعه تست‌های صحت
+==============================================================================
+
+── ۱) نرمال‌سازی و کلیدها ──
+✅ clean_key فقط پسوند '.0' را حذف می‌کند (FIX-1)  → '1.05' → '1.05' (نسخه قبلی: '15')
+✅ clean_bl کلید کوتاه را رد می‌کند
+✅ clean_employee_code بخش عددی را zero-pad می‌کند (FIX-12)
+✅ is_empty_val مقدار '0' و 'نامشخص' را تهی می‌شمارد (FIX-9)
+✅ num_safe جداکننده هزارگان و ارقام فارسی (FIX-2)  → '1.234.567' → 1234567.0
+✅ CalendarEngine تاریخ شمسی را بدون jdatetime تبدیل می‌کند  → 2025-04-04
+✅ CalendarEngine تاریخ میلادی را می‌خواند
+
+── ۲) موتورهای بیزینسی و ریاضی ──
+✅ تشخیص برات/یوزانس
+✅ تشخیص روش پرداخت از واژگان YAML  → اعتبار اسنادی → LC
+✅ جریمه پلکانی ۱٪ تا ۶ ماه سپس ۲٪  → 183,333 ریال برای ۳۶۵ روز تأخیر
+✅ ویبول: رسوب صفر ⇒ بقای ۱۰۰٪
+✅ ویبول: t=η ⇒ بقا ≈ ۳۶.۸٪  → 36.8٪
+✅ ویبول: ترخیص درصدی بقا را بالا می‌برد
+✅ بیزین: شواهد کامل > شواهد صفر  → 93.8٪ در برابر 10.0٪
+✅ امتیاز ریسک بدترین حالت ⇒ بحرانی  → 100.0 → 🔴 بحرانی
+✅ امتیاز ریسک بهترین حالت ⇒ پایین  → 0.4 → 🟢 پایین
+
+── ۳) گارد ضد باگ B1 (راوی کور) ──
+✅ راوی بدون ستون‌های شاهد خطای صریح می‌دهد (B1)  → "راوی زودتر از ساخت ستون\u200cهای مشتق فراخوانی شده است. ستون\u200cهای
+
+── ۴) اجرای کامل خط لوله روی داده مصنوعی ──
+2026-09-22 21:15:21,464 | INFO    | ==========================================================================================
+🚀 GSI 29.7.7 — تاریخ مرجع: 2026-08-31
+==========================================================================================
+2026-09-22 21:15:21,466 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-22 21:15:21,468 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-22 21:15:21,470 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-22 21:15:21,473 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-22 21:15:21,474 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-22 21:15:21,476 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-22 21:15:21,478 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-22 21:15:21,479 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (IKCO + SAPCO ÷ نیاز روزانه) + مقاومت‌های زنجیره
+2026-09-22 21:15:21,481 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-22 21:15:21,482 | INFO    |     54 │ process_integrity │ یکپارچگی زنجیره فرایند و حفظ شواهد
+2026-09-22 21:15:21,485 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-22 21:15:21,493 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-22 21:15:21,495 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-22 21:15:21,500 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-22 21:15:21,502 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-22 21:15:21,505 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-22 21:15:21,507 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-22 21:15:21,512 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-22 21:15:21,516 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-22 21:15:21,520 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-22 21:15:21,534 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW Export.xlsx
+2026-09-22 21:15:21,569 | INFO    |    ✅ [ntsw] Import Licence: 3 ردیف | 3 پرونده | 3 ثبت سفارش
+2026-09-22 21:15:21,591 | INFO    |    ✅ [ntsw] Release Commitment: 4 ردیف تعهد → 3 کد ثبت سفارش
+2026-09-22 21:15:21,608 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 2 کد ثبت سفارش
+2026-09-22 21:15:21,626 | INFO    | 🔌 اتصال موفق به سورس 'abbasi' → BLs Tracking.xlsx
+2026-09-22 21:15:21,646 | INFO    | 📥 [abbasi] شیت «BLs Tracking» خوانده شد — 6 ردیف × 23 ستون
+2026-09-22 21:15:21,659 | INFO    | 🔌 اتصال موفق به سورس 'sata' → SATA Tracking.xlsx
+2026-09-22 21:15:21,673 | INFO    | 📥 [sata] شیت «Sata Tracking» خوانده شد — 5 ردیف × 23 ستون
+2026-09-22 21:15:21,682 | INFO    |    🔑 [sata] کلید ثبت سفارش از ستون «ثبت سفارش» ساخته شد — 5 از 5 ردیف (5 کد یکتا)
+2026-09-22 21:15:21,687 | INFO    | 🔌 اتصال موفق به سورس 'clearance' → 2 فایل
+2026-09-22 21:15:21,713 | INFO    | 📥 [clearance] شیت «Air Clearance» خوانده شد — 1 ردیف × 28 ستون
+2026-09-22 21:15:21,729 | INFO    | 📥 [clearance] شیت «Sea Clearance» خوانده شد — 4 ردیف × 28 ستون
+2026-09-22 21:15:21,731 | INFO    |    📚 [clearance] 2 شیت داده از 2 فایل ادغام شد — مجموع 5 ردیف
+2026-09-22 21:15:21,744 | INFO    |    🛃 [clearance] 5 ردیف — 1 ترخیص کامل، 1 ترخیص درصدی، 5 کد تعرفه
+2026-09-22 21:15:21,753 | INFO    | 🔌 اتصال موفق به سورس 'cotage' → Cottage Tracking.xlsx
+2026-09-22 21:15:21,765 | INFO    | 📥 [cotage] شیت «Cottage Tracking» خوانده شد — 2 ردیف × 22 ستون
+2026-09-22 21:15:21,769 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,784 | INFO    | 🔌 اتصال موفق به سورس 'oracle' → Oracle.xlsx
+2026-09-22 21:15:21,811 | INFO    | 🔌 اتصال موفق به سورس 'fx_transaction' → Foreign Exchange Transaction.xlsx
+2026-09-22 21:15:21,846 | INFO    |    💱 [fx] 0 ارز، 3 ردیف با کد ثبت سفارش
+2026-09-22 21:15:21,854 | INFO    | 🔌 اتصال موفق به سورس 'credit' → Credit Dept.xlsx
+2026-09-22 21:15:21,866 | INFO    | 📥 [credit] شیت «PURCREDIT» خوانده شد — 2 ردیف × 23 ستون
+2026-09-22 21:15:21,870 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,883 | INFO    | 🔌 اتصال موفق به سورس 'ilappend' → IL Append.xlsx
+2026-09-22 21:15:21,894 | INFO    | 📥 [ilappend] شیت «Append» خوانده شد — 3 ردیف × 7 ستون
+2026-09-22 21:15:21,897 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,901 | INFO    |    🔑 [il] کلید ثبت سفارش از ستون «شماره ثبت سفارش» (3 ردیف)
+2026-09-22 21:15:21,906 | INFO    | 🔌 اتصال موفق به سورس 'sap' → Comparison (SAP).xlsx
+2026-09-22 21:15:21,921 | INFO    | 📥 [sap] شیت «Data» خوانده شد — 3 ردیف × 13 ستون
+2026-09-22 21:15:21,924 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,927 | WARNING |    ⚠️ [sap] ستون «PR_ITEM» یافت نشد (کاندیدها: ['Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,929 | WARNING |    ⚠️ [sap] ستون «MATERIAL» یافت نشد (کاندیدها: ['Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,931 | WARNING |    ⚠️ [sap] ستون «MATERIAL_DESC» یافت نشد (کاندیدها: ['Material Description']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,933 | WARNING |    ⚠️ [sap] ستون «SHORT_TEXT» یافت نشد (کاندیدها: ['Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,935 | WARNING |    ⚠️ [sap] ستون «REQ_QTY» یافت نشد (کاندیدها: ['Quantity requested']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,937 | WARNING |    ⚠️ [sap] ستون «UOM» یافت نشد (کاندیدها: ['Unit of Measure']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,938 | WARNING |    ⚠️ [sap] ستون «MATERIAL_GROUP» یافت نشد (کاندیدها: ['Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,940 | WARNING |    ⚠️ [sap] ستون «PURCH_GROUP_DESC» یافت نشد (کاندیدها: ['Purgroup Description']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,942 | WARNING |    ⚠️ [sap] ستون «REQUISITIONER» یافت نشد (کاندیدها: ['Requisitioner']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,944 | WARNING |    ⚠️ [sap] ستون «REQUISITION_DATE» یافت نشد (کاندیدها: ['Requisition date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,946 | WARNING |    ⚠️ [sap] ستون «CREATED_BY» یافت نشد (کاندیدها: ['Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,948 | WARNING |    ⚠️ [sap] ستون «RELEASE_DATE» یافت نشد (کاندیدها: ['Release Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,950 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,952 | WARNING |    ⚠️ [sap] ستون «HEADER_PURCHASE_ORDER» یافت نشد (کاندیدها: ['Purchase order']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,954 | WARNING |    ⚠️ [sap] ستون «QTY_ORDERED» یافت نشد (کاندیدها: ['Quantity ordered']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,956 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,958 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,960 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,962 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,964 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,967 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,972 | WARNING |    ⚠️ [sap] ستون «PLANT» یافت نشد (کاندیدها: ['Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,974 | WARNING |    ⚠️ [sap] ستون «GOODS_RECEIPT» یافت نشد (کاندیدها: ['Goods Receipt']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,976 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,978 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE» یافت نشد (کاندیدها: ['Delivery Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,980 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,982 | WARNING |    ⚠️ [sap] ستون «REQ_TRACKING_NO» یافت نشد (کاندیدها: ['Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,983 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,985 | WARNING |    ⚠️ [sap] ستون «TOTAL_VALUE» یافت نشد (کاندیدها: ['Total Value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,987 | WARNING |    ⚠️ [sap] ستون «CURRENCY» یافت نشد (کاندیدها: ['Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,989 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,992 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,994 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,996 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 21:15:21,998 | WARNING |    ⚠️ [sap] ستون «VALUATION_PRICE» یافت نشد (کاندیدها: ['Valuation Price']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,000 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_ITEM» یافت نشد (کاندیدها: ['Purchase Order Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,002 | WARNING |    ⚠️ [sap] ستون «PURCHASE_ORDER_DATE» یافت نشد (کاندیدها: ['Purchase Order Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,005 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,006 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,008 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,010 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,012 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,014 | WARNING |    ⚠️ [sap] ستون «PACK_NO» یافت نشد (کاندیدها: ['pack.Pack Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,017 | WARNING |    ⚠️ [sap] ستون «PACK_PR_ITEM» یافت نشد (کاندیدها: ['pack.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,018 | WARNING |    ⚠️ [sap] ستون «PACK_QTY» یافت نشد (کاندیدها: ['pack.Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,021 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,023 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_NO» یافت نشد (کاندیدها: ['pack.order Num']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,027 | WARNING |    ⚠️ [sap] ستون «PACK_RESPONSIBLE» یافت نشد (کاندیدها: ['pack.Responsible']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,031 | WARNING |    ⚠️ [sap] ستون «PACK_PACKED» یافت نشد (کاندیدها: ['pack.Packed']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,037 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,039 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,042 | WARNING |    ⚠️ [sap] ستون «PACK_MATERIAL» یافت نشد (کاندیدها: ['pack.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,044 | WARNING |    ⚠️ [sap] ستون «PACK_MPN_MATERIAL» یافت نشد (کاندیدها: ['pack.MPN: Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,046 | WARNING |    ⚠️ [sap] ستون «PO_ITEM» یافت نشد (کاندیدها: ['po.Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,048 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,050 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,052 | WARNING |    ⚠️ [sap] ستون «PO_SHORT_TEXT» یافت نشد (کاندیدها: ['po.Short Text']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,054 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL» یافت نشد (کاندیدها: ['po.Material']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,056 | WARNING |    ⚠️ [sap] ستون «PO_COMPANY_CODE» یافت نشد (کاندیدها: ['po.Company Code']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,058 | WARNING |    ⚠️ [sap] ستون «PO_PLANT» یافت نشد (کاندیدها: ['po.Plant']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,059 | WARNING |    ⚠️ [sap] ستون «PO_STORAGE_LOCATION» یافت نشد (کاندیدها: ['po.Storage Location']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,061 | WARNING |    ⚠️ [sap] ستون «PO_REQ_TRACKING_NO» یافت نشد (کاندیدها: ['po.Req. Tracking Number']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,063 | WARNING |    ⚠️ [sap] ستون «PO_MATERIAL_GROUP» یافت نشد (کاندیدها: ['po.Material Group']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,065 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,067 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['po.Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,068 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,070 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_UNIT» یافت نشد (کاندیدها: ['po.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,072 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_QTY» یافت نشد (کاندیدها: ['po.Order Quantity']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,073 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,075 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,077 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,079 | WARNING |    ⚠️ [sap] ستون «PO_NET_PRICE» یافت نشد (کاندیدها: ['po.Net Order Price']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,081 | WARNING |    ⚠️ [sap] ستون «PO_CURRENCY» یافت نشد (کاندیدها: ['po.Currency']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,083 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,086 | WARNING |    ⚠️ [sap] ستون «PO_NET_VALUE» یافت نشد (کاندیدها: ['po.Net Order Value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,088 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,090 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,096 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,098 | WARNING |    ⚠️ [sap] ستون «PO_PR_ITEM» یافت نشد (کاندیدها: ['po.Item of requisition']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,100 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,102 | WARNING |    ⚠️ [sap] ستون «PO_DOC_TYPE» یافت نشد (کاندیدها: ['po.Purchasing Doc. Type']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,104 | WARNING |    ⚠️ [sap] ستون «PO_SUPPLIER» یافت نشد (کاندیدها: ['po.Supplier']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,106 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_DATE» یافت نشد (کاندیدها: ['po.Document Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,108 | WARNING |    ⚠️ [sap] ستون «PO_CREATED_BY» یافت نشد (کاندیدها: ['po.Created By']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,109 | WARNING |    ⚠️ [sap] ستون «PO_REG_FILE» یافت نشد (کاندیدها: ['po.شماره پرونده']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,111 | WARNING |    ⚠️ [sap] ستون «PO_YOUR_REFERENCE» یافت نشد (کاندیدها: ['po.Your Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,113 | WARNING |    ⚠️ [sap] ستون «PO_OUR_REFERENCE» یافت نشد (کاندیدها: ['po.Our Reference']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,170 | INFO    |    ⚙️ [sap] raw=3 | PR-item=3 | workflow=3 | PO-item=0 | PR=3
+2026-09-22 21:15:22,264 | INFO    | 🔌 اتصال موفق به سورس 'doccheck' → Document Checking.xlsx
+2026-09-22 21:15:22,285 | INFO    | 📥 [doccheck] شیت «Checking» خوانده شد — 2 ردیف × 6 ستون
+2026-09-22 21:15:22,291 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,293 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,298 | INFO    |    📑 [doccheck] 2 سند — بارنامه 0 ردیف، سفارش 2 ردیف (کلید ادغام: سفارش)
+2026-09-22 21:15:22,309 | INFO    | 🔌 اتصال موفق به سورس 'hr' → HR_Main_Updated.xlsx
+2026-09-22 21:15:22,324 | INFO    | 📥 [hr] شیت «Sheet1» خوانده شد — 4 ردیف × 29 ستون
+2026-09-22 21:15:22,336 | INFO    |    👥 [hr] 4 پرسنل — 3 فعال
+2026-09-22 21:15:22,342 | INFO    | 🔌 اتصال موفق به سورس 'moghavemat' → Commercial Expert Data.xlsx
+2026-09-22 21:15:22,356 | INFO    | 📥 [moghavemat] شیت «Expert Data» خوانده شد — 6 ردیف × 38 ستون
+2026-09-22 21:15:22,367 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,371 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-22 21:15:22,393 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-22 21:15:22,396 | INFO    |    🧩 [moghavemat] فایل چندنوعی است — Data type: ['Pre Purchase Approval Data', 'Purchase Approval Data']
+2026-09-22 21:15:22,436 | INFO    |    📊 [moghavemat] 6 قلم در 6 سفارش تجمیع شد؛ 6 موقعیت موجودی Order×Material و 6 رابطه Order×Material×PR×PR Item ساخته شد.
+2026-09-22 21:15:22,454 | INFO    | 📦 13 از 13 سورس برای ادامه Run آماده است: ['ntsw', 'abbasi', 'sata', 'clearance', 'cotage', 'oracle', 'fx_transaction', 'credit', 'ilappend', 'sap', 'doccheck', 'hr', 'moghavemat']
+2026-09-22 21:15:22,474 | INFO    | 🧱 جمعیت اصلی Tier-1: 6 ردیف | 6 سفارش | 3 ثبت سفارش | 5 شاهد بارنامه عباسی.
+2026-09-22 21:15:22,488 | INFO    |    🔑 [MATERIAL] کد متریال / شماره فنی: 6 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_MATERIAL
+2026-09-22 21:15:22,494 | INFO    |    🔗 [moghavemat/inventory] ادغام با کلید مرکب KEY_ORDER + KEY_MATERIAL
+2026-09-22 21:15:22,500 | INFO    | 🔗 [moghavemat/inventory] ادغام روی __CK_moghavemat/inventory__ انجام شد — 6 ردیف منطبق از 6
+2026-09-22 21:15:22,504 | INFO    |    🔑 [PR] شماره درخواست خرید: 6 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_KEY_PR
+2026-09-22 21:15:22,510 | INFO    | 🔗 [sap] ادغام روی KEY_PR انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:22,517 | INFO    | 🔗 [oracle] ادغام روی KEY_MATERIAL انجام شد — 6 ردیف منطبق از 6
+2026-09-22 21:15:22,534 | INFO    | 🔗 [sata] ادغام روی KEY_BL انجام شد — 5 ردیف منطبق از 6
+2026-09-22 21:15:22,540 | INFO    |    🧹 [clearance] 0 ردیف بدون کلید و 1 ردیف تکراری حذف شد (5 → 4)
+2026-09-22 21:15:22,546 | INFO    | 🔗 [clearance] ادغام روی KEY_BL انجام شد — 4 ردیف منطبق از 6
+2026-09-22 21:15:22,554 | INFO    | 🔗 [cotage] ادغام روی KEY_BL انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:22,561 | INFO    | 🔗 [doccheck] ادغام روی KEY_ORDER انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:22,565 | WARNING | ⚠️ [ilappend] ستون‌های هم‌نام کنار گذاشته شدند: ['KEY_REG_FILE']
+2026-09-22 21:15:22,569 | INFO    | 🔗 [ilappend] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:22,577 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-22 21:15:22,581 | INFO    | 🔗 [fx_transaction] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:22,591 | INFO    | 🔗 [credit] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:22,595 | INFO    |    🔑 [REG] کد ثبت سفارش (۸ رقمی): 5 از 6 ردیف (6 مقدار یکتا) — منابع: ntsw.NTSW_KEY_REG → sata.SATA_KEY_REG
+2026-09-22 21:15:22,603 | INFO    | 🔗 [ntsw_commitment] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-22 21:15:22,609 | INFO    | 🔗 [ntsw_allocation] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-22 21:15:22,612 | INFO    | 🧭 [resolver] «شماره بارنامه» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:22,615 | INFO    | 🧭 [resolver] «شماره سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:22,620 | INFO    | 🧭 [resolver] «شماره فنی» از 3 سورس حل شد — 5 تعارض ثبت گردید.
+2026-09-22 21:15:22,626 | INFO    | 🧭 [resolver] «شرح کالا» از 5 سورس حل شد — 6 تعارض ثبت گردید.
+2026-09-22 21:15:22,631 | INFO    | 🧭 [resolver] «ثبت سفارش» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-22 21:15:22,652 | INFO    | 👤 نقش‌های کارشناسی: کارشناس اعتبارات 83٪ (3 نفر) | کارشناس ترخیص 67٪ (1 نفر) | کارشناس کنترل اسناد 33٪ (1 نفر)
+2026-09-22 21:15:22,654 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-22 21:15:22,709 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-22 21:15:22,713 | INFO    | 🏢 تطبیق سازمانی: 6 از 6 ردیف به HR وصل شد.
+2026-09-22 21:15:22,715 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-22 21:15:22,751 | INFO    | 🎯 حوزه‌های مسئولیت: کارشناس خرید 100% (4 نفر) | کارشناس بازرگانی 83% (3 نفر) | کارشناس حمل و لجستیک 67% (1 نفر)
+2026-09-22 21:15:22,753 | INFO    | 👤 مالک قطعه برای 6 از 6 ردیف شناسایی شد (100%).
+2026-09-22 21:15:22,755 | INFO    | 🧩 6 ردیف شکاف داده مالک دارد — ردیف‌ها حذف نشدند؛ علت در ستون «PART_OWNER_DATA_GAP» ثبت شد.
+2026-09-22 21:15:22,758 | INFO    | ⏳ بیشترین انتظار روی «کارشناس خرید» است — 3 ردیف.
+2026-09-22 21:15:22,769 | INFO    | 🧮 [supply-position] پوشش مؤلفه‌ها: STOCK_IKCO 100.0% (6/6) | STOCK_SAPCO 100.0% (6/6) | SUPPLIER_QTY 100.0% (6/6) | IN_TRANSIT_QTY 100.0% (6/6) | IN_CUSTOMS_QTY 100.0% (6/6)
+2026-09-22 21:15:22,772 | INFO    | 🔗 [supply-position] KEY_MATERIAL معتبر 6/6 | DAILY_NEED معتبر 6/6 | Oracle کامل 6 | Expert کامل 6
+2026-09-22 21:15:22,774 | INFO    | 📦 [supply-position] کامل 6 | ناقص 0 | فاقد داده 0 | تعارض 0; Missing هرگز Zero نشده است.
+2026-09-22 21:15:22,791 | INFO    | 🏭 [warehouse] اظهارشده 0 | با تأخیر 1 | شکاف شاهد 2 | تناقض تاریخ 2 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+2026-09-22 21:15:22,813 | INFO    | 🔧 مقاومت قطعی برای 6 از 6 ردیف — UNKNOWN=0, پوشش ناقص=0, طبقات={'بحرانی': 1, 'در حال بحرانی شدن': 1, 'توقف خط': 1, 'تحت نظر': 1, 'ایمن': 1, 'بدون مصرف': 1}
+2026-09-22 21:15:22,926 | INFO    | 🧭 [process-integrity] 6 پرونده فرایندی | 185 شاهد | 19 شکاف صریح | 0 شاهد بدون کلید (حفظ‌شده برای اتصال بعدی)
+2026-09-22 21:15:22,983 | INFO    | 💱 [fx-trace] 5 پرونده ثبت سفارش | 18 رویداد | 2 مغایرت/شکاف
+2026-09-22 21:15:23,076 | INFO    | 💸 [money-control] 5 پرونده | 55 مرحله | 22 رویداد مبلغی | 4 تطبیق ارزی | 3 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-22 21:15:23,106 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 5 پرونده | 0 signal | enforce خودکار=0
+2026-09-22 21:15:23,170 | INFO    | 🎯 [case-actions] 7 پیشنهاد برای 5 پرونده | Draft Email، نیازمند تأیید کاربر
+2026-09-22 21:15:23,252 | WARNING | 🚨 3 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+2026-09-22 21:15:23,325 | INFO    | 🔄 لاگ رویداد: 21 رویداد یکتا در 5 پرونده (0 ردیف تکراری منبع ادغام شد) · 5 مسیر متمایز · میانه چرخه پرونده‌های بسته nan روز.
+2026-09-22 21:15:23,346 | INFO    | 🔍 [conformance] 5 از 5 پرونده قابل‌ارزیابی انحراف دارند · 1 پرونده شاهد کافی ندارند · میانگین انطباق 52.2٪ (فقط قابل‌ارزیابی‌ها)
+2026-09-22 21:15:23,349 | INFO    | ↕️ مرتب‌سازی بر اساس بحرانی بودن: CRITICALITY_SORT → امتیاز ریسک
+2026-09-22 21:15:23,351 | INFO    | ⏱️ کندترین مرحله‌ها: money_flow_control 0.09s | eventlog 0.07s | process_integrity 0.07s
+2026-09-22 21:15:23,355 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 0 سفارش یکتا خارج از سورس، از 6 ردیف دارای سفارش.
+2026-09-22 21:15:23,360 | INFO    | 📊 افراز دو محوری:
+2026-09-22 21:15:23,362 | INFO    |    • کل ردیف: 6
+2026-09-22 21:15:23,364 | INFO    |    • بارنامه یکتا: 5
+2026-09-22 21:15:23,365 | INFO    |    • P1 — فاقد بارنامه و سفارش: 1
+2026-09-22 21:15:23,367 | INFO    |    • P2 — فقط بارنامه: 0
+2026-09-22 21:15:23,368 | INFO    |    • P3 — بارنامه و سفارش: 5
+2026-09-22 21:15:23,370 | INFO    |    • M1 — جمعیت اصلی کارشناسان/NTSW: 6
+2026-09-22 21:15:23,371 | INFO    |    • M2 — فاقد منبع درجه‌اول، دارای ساتا/کوتاژ: 0
+2026-09-22 21:15:23,373 | INFO    |    • M3 — تعیین تکلیف: 0
+2026-09-22 21:15:23,542 | INFO    | 🏁 خط لوله با موفقیت پایان یافت.
+
+Traceback (most recent call last):
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_validation.py", line 333, in <module>
+    result = test_pipeline()
+             ^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/tests/test_validation.py", line 155, in test_pipeline
+    res = Pipeline().run(build_report=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/pipeline.py", line 350, in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/bridge.py", line 62, in run_pipeline
+    wh.publish(rid,slots=('report','dwh'))
+  File "/workspace/scratch/58b6b78e0919/work/GSI_V29_7_6_SAP_SEMANTIC_DWH_SMART_CHATBOT/gsi_2976/gsi/warehouse/store.py", line 249, in publish
+    raise QualityGateBlockedError(rid, failed)
+gsi.warehouse.store.QualityGateBlockedError: Quality gate blocked publish: sqlite:INTEGRITY_CHECK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۹) دیتاورهوس و مخاطبان V28
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 17 موفق | 0 ناموفق
+
+test_backup (__main__.Tests.test_backup) ... ok
+test_blob_idempotent (__main__.Tests.test_blob_idempotent) ... ok
+test_capture_rerun (__main__.Tests.test_capture_rerun) ... ok
+test_config_revision_audit_transaction (__main__.Tests.test_config_revision_audit_transaction) ... ok
+test_contact_invalid_atomic (__main__.Tests.test_contact_invalid_atomic) ... ok
+test_contacts_and_membership (__main__.Tests.test_contacts_and_membership) ... ok
+test_decimal (__main__.Tests.test_decimal) ... ok
+test_empty_frame (__main__.Tests.test_empty_frame) ... ok
+test_explicit_scope (__main__.Tests.test_explicit_scope) ... ok
+test_failed_run_not_published (__main__.Tests.test_failed_run_not_published) ... ok
+test_frame_roundtrip (__main__.Tests.test_frame_roundtrip) ... ok
+test_hidden_formula_preserved (__main__.Tests.test_hidden_formula_preserved) ... ok
+test_html_custom_fields_role_widgets (__main__.Tests.test_html_custom_fields_role_widgets) ... ok
+test_no_network_db (__main__.Tests.test_no_network_db) ... ok
+test_nonfinite_roundtrip (__main__.Tests.test_nonfinite_roundtrip) ... ok
+test_scope_does_not_expand_for_manager (__main__.Tests.test_scope_does_not_expand_for_manager) ... ok
+test_wrong_database (__main__.Tests.test_wrong_database) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.096s
+
+OK
+
+
+══════════════════════════════════════════════════════════════════════════════
+جمع کل: 859 تست موفق | 7 ناموفق
+مجموعه‌های ناموفق: ۴) معماری، اختلاف نسخه و لاگ رویداد ، ۵) قرارداد گزارش (باگ موجودی/مقاومت) ، ۳) مقاومت قطعه و بحرانی بودن ، ۲) کتابخانه قوانین و سورس مقاومت ، ۲۰) صف تخصیص، اقدام پرونده و موجودی V26.20 ، ۱) الگوریتمی و بیزینسی
+══════════════════════════════════════════════════════════════════════════════

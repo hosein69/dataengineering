@@ -1,0 +1,300 @@
+........................................................................ [ 75%]
+..........FEE....F......                                                 [100%]
+==================================== ERRORS ====================================
+_________________________ ERROR at setup of test_excel _________________________
+
+    def test_pipeline():
+        print("\n── ۴) اجرای کامل خط لوله روی داده مصنوعی ──")
+>       res = Pipeline().run(build_report=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_validation.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gsi/pipeline.py:347: in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/warehouse/bridge.py:18: in run_pipeline
+    result=pipeline._run_warehouse(build_report)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:355: in _run_warehouse
+    df = self.build_base()
+         ^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:178: in build_base
+    df, pop_diag, pop_meta = build_primary_population(self.sources)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sources = {'abbasi': {}, 'clearance': {}, 'cotage': {}, 'credit': {}, ...}
+
+    def build_primary_population(sources: Dict[str, Dict[str, pd.DataFrame]]) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+        """Build full-report population from tier-1 sources and enrich with Abbasi BLs."""
+        expert = _frame(sources, "moghavemat", "main")
+        ntsw_rows = _ntsw_reg_rows(sources)
+        bridge, diagnostics = build_ntsw_order_reg_bridge(sources)
+    
+        has_expert = isinstance(expert, pd.DataFrame) and not expert.empty
+        has_ntsw = not ntsw_rows.empty
+        if not has_expert and not has_ntsw:
+>           raise RuntimeError("جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.")
+E           RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+
+gsi/resolve/population.py:211: RuntimeError
+---------------------------- Captured stdout setup -----------------------------
+
+── ۴) اجرای کامل خط لوله روی داده مصنوعی ──
+2026-09-22 12:55:17,220 | INFO    | ==========================================================================================
+🚀 GSI 29.7.5 — تاریخ مرجع: 2026-09-22
+==========================================================================================
+2026-09-22 12:55:17,222 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-22 12:55:17,224 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-22 12:55:17,226 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-22 12:55:17,227 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-22 12:55:17,228 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-22 12:55:17,230 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-22 12:55:17,231 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-22 12:55:17,232 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (IKCO + SAPCO ÷ نیاز روزانه) + مقاومت‌های زنجیره
+2026-09-22 12:55:17,233 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-22 12:55:17,235 | INFO    |     54 │ process_integrity │ یکپارچگی زنجیره فرایند و حفظ شواهد
+2026-09-22 12:55:17,236 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-22 12:55:17,237 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-22 12:55:17,238 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-22 12:55:17,239 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-22 12:55:17,241 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-22 12:55:17,243 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-22 12:55:17,244 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-22 12:55:17,246 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-22 12:55:17,247 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-22 12:55:17,249 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-22 12:55:17,252 | WARNING | ❌ اتصال به سورس 'fx_transaction' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:17,253 | WARNING | ⏭️ سورس «fx_transaction» (خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,255 | WARNING | ❌ اتصال به سورس 'credit' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:17,256 | WARNING | ⏭️ سورس «credit» (اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,257 | WARNING | ❌ اتصال به سورس 'ilappend' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:17,258 | WARNING | ⏭️ سورس «ilappend» (الحاقیه ثبت سفارش) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,261 | WARNING | ❌ اتصال به سورس 'sap' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:17,262 | WARNING | ⏭️ سورس «sap» (گردش کار درخواست خرید (PR) در SAP) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,264 | WARNING | ❌ اتصال به سورس 'doccheck' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\26-M.Mohamadi)
+2026-09-22 12:55:17,266 | WARNING | ⏭️ سورس «doccheck» (بررسی و مغایرت اسناد (سطح سند)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,267 | WARNING | ❌ اتصال به سورس 'hr' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\03-Reports\01-HR)
+2026-09-22 12:55:17,272 | WARNING | 🕰️ [hr] واکشی جدید ناموفق بود؛ آخرین Snapshot منتشرشده استفاده شد.
+2026-09-22 12:55:17,273 | WARNING | ❌ اتصال به سورس 'ntsw' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:17,275 | WARNING | ⏭️ سورس «ntsw» (مرجع درجه‌اول و سازنده جمعیت: مجوز واردات + تعهدات ارزی + تخصیص ارز) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,278 | WARNING | ❌ اتصال به سورس 'abbasi' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:17,281 | WARNING | ⏭️ سورس «abbasi» (ردیابی بارنامه‌ها (enrichment لجستیکی درجه‌دوم؛ سازنده جمعیت نیست)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,283 | WARNING | ❌ اتصال به سورس 'sata' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:17,284 | WARNING | ⏭️ سورس «sata» (پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات (شاهد درجه‌دوم)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,286 | WARNING | ❌ اتصال به سورس 'clearance' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL\Clearance)
+2026-09-22 12:55:17,287 | WARNING | ⏭️ سورس «clearance» (ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,288 | WARNING | ❌ اتصال به سورس 'cotage' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:17,290 | WARNING | ⏭️ سورس «cotage» (کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,291 | WARNING | ❌ اتصال به سورس 'oracle' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:17,293 | WARNING | ⏭️ سورس «oracle» (متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,296 | WARNING | ❌ اتصال به سورس 'moghavemat' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\DataTeam\Data_Ware_House\GS_Combine\OUTPUT)
+2026-09-22 12:55:17,298 | WARNING | ⏭️ سورس «moghavemat» (مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:17,299 | INFO    | 📦 1 از 13 سورس برای ادامه Run آماده است: ['hr']
+_______________________ ERROR at setup of test_v25_fixes _______________________
+
+    def test_pipeline():
+        print("\n── ۴) اجرای کامل خط لوله روی داده مصنوعی ──")
+>       res = Pipeline().run(build_report=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_validation.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gsi/pipeline.py:347: in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/warehouse/bridge.py:18: in run_pipeline
+    result=pipeline._run_warehouse(build_report)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:355: in _run_warehouse
+    df = self.build_base()
+         ^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:178: in build_base
+    df, pop_diag, pop_meta = build_primary_population(self.sources)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sources = {'abbasi': {}, 'clearance': {}, 'cotage': {}, 'credit': {}, ...}
+
+    def build_primary_population(sources: Dict[str, Dict[str, pd.DataFrame]]) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+        """Build full-report population from tier-1 sources and enrich with Abbasi BLs."""
+        expert = _frame(sources, "moghavemat", "main")
+        ntsw_rows = _ntsw_reg_rows(sources)
+        bridge, diagnostics = build_ntsw_order_reg_bridge(sources)
+    
+        has_expert = isinstance(expert, pd.DataFrame) and not expert.empty
+        has_ntsw = not ntsw_rows.empty
+        if not has_expert and not has_ntsw:
+>           raise RuntimeError("جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.")
+E           RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+
+gsi/resolve/population.py:211: RuntimeError
+=================================== FAILURES ===================================
+________________________________ test_pipeline _________________________________
+
+    def test_pipeline():
+        print("\n── ۴) اجرای کامل خط لوله روی داده مصنوعی ──")
+>       res = Pipeline().run(build_report=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_validation.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gsi/pipeline.py:347: in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/warehouse/bridge.py:18: in run_pipeline
+    result=pipeline._run_warehouse(build_report)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:355: in _run_warehouse
+    df = self.build_base()
+         ^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:178: in build_base
+    df, pop_diag, pop_meta = build_primary_population(self.sources)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sources = {'abbasi': {}, 'clearance': {}, 'cotage': {}, 'credit': {}, ...}
+
+    def build_primary_population(sources: Dict[str, Dict[str, pd.DataFrame]]) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+        """Build full-report population from tier-1 sources and enrich with Abbasi BLs."""
+        expert = _frame(sources, "moghavemat", "main")
+        ntsw_rows = _ntsw_reg_rows(sources)
+        bridge, diagnostics = build_ntsw_order_reg_bridge(sources)
+    
+        has_expert = isinstance(expert, pd.DataFrame) and not expert.empty
+        has_ntsw = not ntsw_rows.empty
+        if not has_expert and not has_ntsw:
+>           raise RuntimeError("جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.")
+E           RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+
+gsi/resolve/population.py:211: RuntimeError
+----------------------------- Captured stdout call -----------------------------
+
+── ۴) اجرای کامل خط لوله روی داده مصنوعی ──
+2026-09-22 12:55:16,837 | INFO    | ==========================================================================================
+🚀 GSI 29.7.5 — تاریخ مرجع: 2026-09-22
+==========================================================================================
+2026-09-22 12:55:16,840 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-22 12:55:16,842 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-22 12:55:16,843 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-22 12:55:16,846 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-22 12:55:16,848 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-22 12:55:16,850 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-22 12:55:16,851 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-22 12:55:16,853 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (IKCO + SAPCO ÷ نیاز روزانه) + مقاومت‌های زنجیره
+2026-09-22 12:55:16,855 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-22 12:55:16,857 | INFO    |     54 │ process_integrity │ یکپارچگی زنجیره فرایند و حفظ شواهد
+2026-09-22 12:55:16,858 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-22 12:55:16,860 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-22 12:55:16,861 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-22 12:55:16,864 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-22 12:55:16,866 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-22 12:55:16,868 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-22 12:55:16,869 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-22 12:55:16,871 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-22 12:55:16,872 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-22 12:55:16,875 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-22 12:55:16,881 | WARNING | ❌ اتصال به سورس 'fx_transaction' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:16,883 | WARNING | ⏭️ سورس «fx_transaction» (خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,885 | WARNING | ❌ اتصال به سورس 'credit' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:16,886 | WARNING | ⏭️ سورس «credit» (اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,890 | WARNING | ❌ اتصال به سورس 'ilappend' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:16,891 | WARNING | ⏭️ سورس «ilappend» (الحاقیه ثبت سفارش) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,893 | WARNING | ❌ اتصال به سورس 'sap' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:16,895 | WARNING | ⏭️ سورس «sap» (گردش کار درخواست خرید (PR) در SAP) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,896 | WARNING | ❌ اتصال به سورس 'doccheck' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\26-M.Mohamadi)
+2026-09-22 12:55:16,898 | WARNING | ⏭️ سورس «doccheck» (بررسی و مغایرت اسناد (سطح سند)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,899 | WARNING | ❌ اتصال به سورس 'hr' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\03-Reports\01-HR)
+2026-09-22 12:55:16,904 | WARNING | 🕰️ [hr] واکشی جدید ناموفق بود؛ آخرین Snapshot منتشرشده استفاده شد.
+2026-09-22 12:55:16,905 | WARNING | ❌ اتصال به سورس 'ntsw' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:16,907 | WARNING | ⏭️ سورس «ntsw» (مرجع درجه‌اول و سازنده جمعیت: مجوز واردات + تعهدات ارزی + تخصیص ارز) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,908 | WARNING | ❌ اتصال به سورس 'abbasi' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:16,910 | WARNING | ⏭️ سورس «abbasi» (ردیابی بارنامه‌ها (enrichment لجستیکی درجه‌دوم؛ سازنده جمعیت نیست)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,911 | WARNING | ❌ اتصال به سورس 'sata' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:16,913 | WARNING | ⏭️ سورس «sata» (پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات (شاهد درجه‌دوم)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,914 | WARNING | ❌ اتصال به سورس 'clearance' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL\Clearance)
+2026-09-22 12:55:16,916 | WARNING | ⏭️ سورس «clearance» (ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,917 | WARNING | ❌ اتصال به سورس 'cotage' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:16,921 | WARNING | ⏭️ سورس «cotage» (کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,923 | WARNING | ❌ اتصال به سورس 'oracle' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:16,934 | WARNING | ⏭️ سورس «oracle» (متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,935 | WARNING | ❌ اتصال به سورس 'moghavemat' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\DataTeam\Data_Ware_House\GS_Combine\OUTPUT)
+2026-09-22 12:55:16,936 | WARNING | ⏭️ سورس «moghavemat» (مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:16,942 | INFO    | 📦 1 از 13 سورس برای ادامه Run آماده است: ['hr']
+________________________________ test_eventlog _________________________________
+
+    def test_eventlog():
+        print("\n── ۵) لاگ رویداد (استاندارد Celonis) ──")
+        logging.disable(logging.INFO)
+        from gsi.pipeline import Pipeline
+    
+>       res = Pipeline().run(build_report=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_architecture.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+gsi/pipeline.py:347: in run
+    return run_pipeline(self,build_report,PACKAGE_VERSION)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/warehouse/bridge.py:18: in run_pipeline
+    result=pipeline._run_warehouse(build_report)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:355: in _run_warehouse
+    df = self.build_base()
+         ^^^^^^^^^^^^^^^^^
+gsi/pipeline.py:178: in build_base
+    df, pop_diag, pop_meta = build_primary_population(self.sources)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sources = {'abbasi': {}, 'clearance': {}, 'cotage': {}, 'credit': {}, ...}
+
+    def build_primary_population(sources: Dict[str, Dict[str, pd.DataFrame]]) -> Tuple[pd.DataFrame, pd.DataFrame, dict]:
+        """Build full-report population from tier-1 sources and enrich with Abbasi BLs."""
+        expert = _frame(sources, "moghavemat", "main")
+        ntsw_rows = _ntsw_reg_rows(sources)
+        bridge, diagnostics = build_ntsw_order_reg_bridge(sources)
+    
+        has_expert = isinstance(expert, pd.DataFrame) and not expert.empty
+        has_ntsw = not ntsw_rows.empty
+        if not has_expert and not has_ntsw:
+>           raise RuntimeError("جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.")
+E           RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+
+gsi/resolve/population.py:211: RuntimeError
+----------------------------- Captured stdout call -----------------------------
+
+── ۵) لاگ رویداد (استاندارد Celonis) ──
+2026-09-22 12:55:30,739 | WARNING | ❌ اتصال به سورس 'fx_transaction' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:30,745 | WARNING | ⏭️ سورس «fx_transaction» (خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,748 | WARNING | ❌ اتصال به سورس 'credit' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:30,750 | WARNING | ⏭️ سورس «credit» (اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,753 | WARNING | ❌ اتصال به سورس 'ilappend' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:30,755 | WARNING | ⏭️ سورس «ilappend» (الحاقیه ثبت سفارش) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,758 | WARNING | ❌ اتصال به سورس 'sap' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:30,761 | WARNING | ⏭️ سورس «sap» (گردش کار درخواست خرید (PR) در SAP) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,764 | WARNING | ❌ اتصال به سورس 'doccheck' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\26-M.Mohamadi)
+2026-09-22 12:55:30,767 | WARNING | ⏭️ سورس «doccheck» (بررسی و مغایرت اسناد (سطح سند)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,774 | WARNING | ❌ اتصال به سورس 'hr' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\03-Reports\01-HR)
+2026-09-22 12:55:30,781 | WARNING | 🕰️ [hr] واکشی جدید ناموفق بود؛ آخرین Snapshot منتشرشده استفاده شد.
+2026-09-22 12:55:30,782 | WARNING | ❌ اتصال به سورس 'ntsw' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign)
+2026-09-22 12:55:30,784 | WARNING | ⏭️ سورس «ntsw» (مرجع درجه‌اول و سازنده جمعیت: مجوز واردات + تعهدات ارزی + تخصیص ارز) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,786 | WARNING | ❌ اتصال به سورس 'abbasi' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:30,787 | WARNING | ⏭️ سورس «abbasi» (ردیابی بارنامه‌ها (enrichment لجستیکی درجه‌دوم؛ سازنده جمعیت نیست)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,789 | WARNING | ❌ اتصال به سورس 'sata' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:30,791 | WARNING | ⏭️ سورس «sata» (پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات (شاهد درجه‌دوم)) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,793 | WARNING | ❌ اتصال به سورس 'clearance' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL\Clearance)
+2026-09-22 12:55:30,797 | WARNING | ⏭️ سورس «clearance» (ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,801 | WARNING | ❌ اتصال به سورس 'cotage' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:30,802 | WARNING | ⏭️ سورس «cotage» (کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,804 | WARNING | ❌ اتصال به سورس 'oracle' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\03-Data\01-Foreign\BLs TOTAL)
+2026-09-22 12:55:30,805 | WARNING | ⏭️ سورس «oracle» (متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت) در دسترس نیست؛ رد شد.
+2026-09-22 12:55:30,807 | WARNING | ❌ اتصال به سورس 'moghavemat' برقرار نشد: پوشه یافت نشد (\\ikco.com\data-share\Global Sourcing\11-Governance & Integration\DataTeam\Data_Ware_House\GS_Combine\OUTPUT)
+2026-09-22 12:55:30,808 | WARNING | ⏭️ سورس «moghavemat» (مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک) در دسترس نیست؛ رد شد.
+=========================== short test summary info ============================
+FAILED tests/test_validation.py::test_pipeline - RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+FAILED tests/test_architecture.py::test_eventlog - RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+ERROR tests/test_validation.py::test_excel - RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+ERROR tests/test_validation.py::test_v25_fixes - RuntimeError: جمعیت اصلی قابل ساخت نیست: هر دو سورس درجه‌اول کارشناسان و NTSW خالی‌اند.
+2 failed, 92 passed, 1 deselected, 2 errors in 22.32s

@@ -1,0 +1,55 @@
+%% GSI final operational flow — Flowchart Maker swimlane view
+flowchart LR
+  subgraph U["کاربر مجاز"]
+    A(["شروع"])
+    B["انتخاب دامنه / اجرا"]
+    DL["دریافت بسته محلی"]
+    EP(["پایان محلی"])
+  end
+
+  subgraph C["هسته GSI"]
+    V["اعتبارسنجی منبع"]
+    Q{"Quality Gate عبور کرد؟"}
+    H["توقف Fail-closed"]
+    S[("انتشار Snapshot")]
+  end
+
+  subgraph P["Process Intelligence"]
+    EC["اعتبارسنجی Event Contract"]
+    PR["محاسبه وضعیت / مسیر / Handoff"]
+    PC{"Pattern config فعال است؟"}
+    PV["اعتبارسنجی config"]
+    PG{"config معتبر است؟"}
+    PM["Match مشاهده‌ای + lineage"]
+    PB["ساخت HTML / Excel / EML / manifest"]
+  end
+
+  subgraph F["فایل / Outlook"]
+    PP{"انتشار شبکه خواسته شده؟"}
+    PA{"Automation / Share باز است؟"}
+    PH["توقف انتشار"]
+    PU["lock → staging → hash → rename"]
+    OD["Outlook draft بدون Send"]
+    ES(["پایان منتشرشده"])
+  end
+
+  A --> B --> V --> Q
+  Q -->|"خیر"| H --> EP
+  Q -->|"بله"| S --> EC --> PR --> PC
+  PC -->|"خیر"| PB
+  PC -->|"بله"| PV --> PG
+  PG -->|"خیر"| H
+  PG -->|"بله"| PM --> PB
+  PB --> DL --> PP
+  PP -->|"خیر"| EP
+  PP -->|"بله"| PA
+  PA -->|"خیر"| PH --> EP
+  PA -->|"بله"| PU --> OD --> ES
+
+  classDef data fill:#EEF2F4,stroke:#0B1F33,color:#0B1F33
+  classDef process fill:#E7F1F2,stroke:#0A7C86,color:#076670
+  classDef decision fill:#FFF6DF,stroke:#C79A4A,color:#7A5A15
+  classDef blocked fill:#F8EAEA,stroke:#8B2E2E,color:#6F1D1D
+  class V,S,EC,PR,PV,PM,PB,PU,OD,B,DL process
+  class Q,PC,PG,PP,PA decision
+  class H,PH blocked

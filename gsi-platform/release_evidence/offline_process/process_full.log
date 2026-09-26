@@ -1,0 +1,55 @@
+........................................................................ [ 12%]
+........................................................................ [ 25%]
+........................................................................ [ 37%]
+........................................................................ [ 50%]
+........................................................................ [ 62%]
+........................................................................ [ 75%]
+........................................................................ [ 87%]
+.......................................................................  [100%]
+=============================== warnings summary ===============================
+tests/test_architecture.py::test_eventlog
+  /root/.local/lib/python3.12/site-packages/_pytest/python.py:171: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_architecture.py::test_eventlog returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_contracts_report.py::test_report_keys_exist
+  /root/.local/lib/python3.12/site-packages/_pytest/python.py:171: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_contracts_report.py::test_report_keys_exist returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_criticality.py::test_pipeline
+  /root/.local/lib/python3.12/site-packages/_pytest/python.py:171: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_criticality.py::test_pipeline returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_offline_process_integration.py::test_invalid[EVENTTIME-bad]
+  /workspace/scratch/acc6ed5818f1/work/integrated/gsi/process_intelligence/core.py:33: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+    df["EVENTTIME"] = pd.to_datetime(df.EVENTTIME, errors="coerce", utc=True)
+
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_html_tabs_are_structurally_isolated
+tests/test_report_composer_tab_isolation_v284.py::test_process_and_actions_follow_authorized_scope
+tests/test_report_composer_tab_isolation_v284.py::test_timeline_has_local_escape_runtime
+tests/test_report_composer_tab_isolation_v284.py::test_timeline_has_local_escape_runtime
+  /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/numpy/lib/_nanfunctions_impl.py:1214: RuntimeWarning: Mean of empty slice
+    return np.nanmean(a, axis, out=out, keepdims=keepdims)
+
+tests/test_rules_and_moghavemat.py::test_moghavemat
+  /root/.local/lib/python3.12/site-packages/_pytest/python.py:171: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_rules_and_moghavemat.py::test_moghavemat returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_validation.py::test_pipeline
+  /root/.local/lib/python3.12/site-packages/_pytest/python.py:171: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_validation.py::test_pipeline returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+575 passed, 13 warnings in 186.39s (0:03:06)

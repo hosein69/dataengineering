@@ -1,0 +1,53 @@
+{
+  "snapshot_date": "2026-09-24",
+  "sources": [
+    {
+      "id": "SRC-CBI-FX-INDEX",
+      "authority": "OFFICIAL_PRIMARY",
+      "title": "مقررات ارزی بانک مرکزی",
+      "url": "https://www.cbi.ir/datedlist/3354.aspx",
+      "observed": true,
+      "notes": "Official index observed; section dates captured in local summary."
+    },
+    {
+      "id": "SRC-CBI-SEC7",
+      "authority": "OFFICIAL_PRIMARY",
+      "title": "بخش هفتم - نحوه رسیدگی به تعهدات ارزی ناشی از واردات کالا",
+      "url": "https://www.cbi.ir/page/2569.aspx",
+      "observed": "PARTIAL_PREVIOUS_REVIEW",
+      "notes": "Used conservatively; current fetch timed out. No unstated current legal deadline is encoded."
+    },
+    {
+      "id": "SRC-ICE-OFFICIAL-CHANNEL",
+      "authority": "OFFICIAL_CHANNEL",
+      "title": "مرکز مبادله ایران",
+      "url": "https://t.me/s/igceiran",
+      "observed": true,
+      "notes": "Operational announcement source, not case-level proof."
+    },
+    {
+      "id": "SRC-ICE-MERCHANT",
+      "authority": "OFFICIAL_SERVICE",
+      "title": "درگاه بازرگانان بازار ارز تجاری",
+      "url": "https://merchant.ice.ir/",
+      "observed": "REFERENCED_BY_OFFICIAL_CHANNEL",
+      "notes": "Reference only; case evidence must come from actual source output."
+    },
+    {
+      "id": "SRC-NTSW",
+      "authority": "OFFICIAL_SYSTEM",
+      "title": "سامانه جامع تجارت",
+      "url": "https://www.ntsw.ir/",
+      "observed": "ACCESS_INCOMPLETE",
+      "notes": "No unseen web text used as legal oracle."
+    },
+    {
+      "id": "SRC-EPL",
+      "authority": "OFFICIAL_SYSTEM",
+      "title": "سامانه EPL/گمرک",
+      "url": "https://epl.ir/",
+      "observed": "ACCESS_INCOMPLETE",
+      "notes": "No unseen web text used as legal oracle."
+    }
+  ]
+}

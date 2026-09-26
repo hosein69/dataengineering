@@ -1,0 +1,10 @@
+......                                                                   [100%]
+=============================== warnings summary ===============================
+tests/test_criticality.py::test_pipeline
+  /opt/pyvenv/lib/python3.13/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_criticality.py::test_pipeline returned <class 'gsi.pipeline.PipelineResult'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 1 warning in 6.32s

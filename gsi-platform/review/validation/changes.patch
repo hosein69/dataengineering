@@ -1,0 +1,1352 @@
+--- original/app/warehouse_view.py
++++ rc/app/warehouse_view.py
+@@ -36,20 +36,20 @@
+                 st.code(rid)
+             except Exception as ex:st.error(str(ex))
+     with history:
+-        with wh.db() as c:
++        with wh.read_db() as c:
+             st.dataframe(pd.read_sql_query('SELECT * FROM wh_run ORDER BY started DESC LIMIT 100',c),hide_index=True)
+             st.dataframe(pd.read_sql_query('SELECT * FROM wh_source_reconciliation ORDER BY id DESC LIMIT 300',c),hide_index=True)
+ 
+     with quality:
+         st.subheader('Reliability Gate / قرارداد Grain و Schema')
+         st.caption('شاخه خراب تا حد ممکن قرنطینه می‌شود و Run برای تشخیص ادامه می‌یابد؛ فقط خطای ساختاری/بحرانی Publish را متوقف می‌کند. WARN/DEGRADED دیده می‌شوند اما کل فرآیند را نمی‌خوابانند.')
+-        with wh.db() as c:
++        with wh.read_db() as c:
+             runs=pd.read_sql_query("SELECT id,started,finished,status,error FROM wh_run ORDER BY started DESC LIMIT 50",c)
+         if runs.empty:
+             st.info('هنوز Run ثبت نشده است.')
+         else:
+             rid=st.selectbox('Run برای ممیزی',runs['id'].tolist(),format_func=lambda x: x[:12])
+-            with wh.db() as c:
++            with wh.read_db() as c:
+                 q=pd.read_sql_query('SELECT contract,code,severity,passed,detail FROM wh_quality_check WHERE run_id=? ORDER BY seq',c,params=(rid,))
+                 cur=pd.read_sql_query('SELECT slot,run_id FROM wh_current ORDER BY slot',c)
+             if q.empty: st.warning('این Run قدیمی است و Quality Gate جدید برای آن ثبت نشده است.')
+@@ -67,11 +67,11 @@
+             st.caption('Pointerهای جاری باید به یک Run سالم اشاره کنند.')
+             st.dataframe(cur,hide_index=True,width="stretch")
+ 
+-    with wh.db() as c:
++    with wh.read_db() as c:
+         has_business=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='dwh_relation'").fetchone()
+     if has_business:
+         with st.expander('نقشه بیزینس و Relation Explorer',expanded=False):
+-            with wh.db() as c:
++            with wh.read_db() as c:
+                 dims=pd.read_sql_query("SELECT entity_type,count(*) AS n FROM dwh_entity GROUP BY entity_type ORDER BY entity_type",c)
+                 rel=pd.read_sql_query("SELECT left_type,right_type,source,frame,count(*) AS evidence_links FROM dwh_relation GROUP BY left_type,right_type,source,frame ORDER BY evidence_links DESC LIMIT 300",c)
+                 unresolved=pd.read_sql_query("SELECT run_id,source,frame,reason_code,count(*) AS n FROM dwh_unresolved_relation GROUP BY run_id,source,frame,reason_code ORDER BY n DESC LIMIT 200",c)
+@@ -80,6 +80,7 @@
+                 ompi=(pd.read_sql_query("SELECT order_key,material_key,pr_key,pr_item,evidence_count,source_rows,last_seen_run FROM dwh_bridge_order_material_pr_item ORDER BY order_key,material_key,pr_key,pr_item LIMIT 1000",c)
+                       if has_ompi else pd.DataFrame())
+             st.markdown('**Dimensions / Entities**'); st.dataframe(dims,hide_index=True,width="stretch")
++            st.caption('As-of DWH run: ' + str(wh.current_run('dwh') or 'No published evidence'))
+             st.markdown('**Direct-evidence bridges**'); st.dataframe(rel,hide_index=True,width="stretch")
+             st.markdown('**Registration Hub — REG_FILE ≠ REG**'); st.dataframe(hub,hide_index=True,width="stretch")
+             if not ompi.empty:
+@@ -93,7 +94,7 @@
+         st.subheader('Source Profiler — هدر و چند ردیف خام')
+         st.caption('برای تشخیص تغییر ساختار، هدر واقعی و ردیف‌های فیزیکی Raw/Bronze همان نسخه فایل نمایش داده می‌شود.')
+         from gsi.warehouse.store import loads
+-        with wh.db() as c:
++        with wh.read_db() as c:
+             sheets=c.execute('''SELECT s.file_id,f.name,s.name,s.metadata
+                                 FROM wh_sheet s JOIN wh_file f ON f.id=s.file_id
+                                 ORDER BY f.created DESC,s.name LIMIT 500''').fetchall()
+@@ -107,7 +108,7 @@
+             except Exception:
+                 md={}
+             st.json(md,expanded=False)
+-            with wh.db() as c:
++            with wh.read_db() as c:
+                 rows=c.execute('SELECT row_no,payload FROM wh_raw_row WHERE file_id=? AND sheet=? ORDER BY row_no LIMIT 8',(fid,sh)).fetchall()
+             decoded=[]
+             for rn,payload in rows:
+@@ -120,19 +121,19 @@
+ 
+     with data:
+         from gsi.warehouse.marts import totals
+-        with wh.db() as c: files=c.execute("SELECT DISTINCT i.file_id,f.name FROM wh_ingest i JOIN wh_file f ON f.id=i.file_id WHERE i.source IN ('fx_transaction','ntsw') ORDER BY i.id DESC").fetchall()
++        with wh.read_db() as c: files=c.execute("SELECT DISTINCT i.file_id,f.name FROM wh_ingest i JOIN wh_file f ON f.id=i.file_id WHERE i.source IN ('fx_transaction','ntsw') ORDER BY i.id DESC").fetchall()
+         if files:
+             chosen_file=st.selectbox('جمع مبالغ به تفکیک ارز و نسخه فایل',files,format_func=lambda r:r[1]+' | '+r[0][:12])
+             st.dataframe(pd.DataFrame(totals(chosen_file[0])),hide_index=True)
+             st.caption('جمع مبالغ با Decimal محاسبه می‌شود؛ ارزها، انواع مبلغ و نسخه‌های فایل با یکدیگر جمع نمی‌شوند.')
+-        with wh.db() as c: frames=c.execute('SELECT id,layer,name,row_count,created FROM wh_frame ORDER BY created DESC LIMIT 300').fetchall()
++        with wh.read_db() as c: frames=c.execute('SELECT id,layer,name,row_count,created FROM wh_frame ORDER BY created DESC LIMIT 300').fetchall()
+         if frames:
+             choice=st.selectbox('جدول و نسخه',frames,format_func=lambda r:f'{r[2]} | {r[1]} | {r[3]} ردیف | {r[4]}')
+             df=wh.read_frame(choice[0]);st.dataframe(df,hide_index=True)
+-            st.download_button('دریافت جدول CSV',df.to_csv(index=False).encode('utf-8-sig'),file_name='warehouse_table.csv')
++            st.download_button('دریافت جدول CSV',df.to_csv(index=False).encode('utf-8-sig'),file_name='warehouse_' + choice[0] + '.csv', key='warehouse_csv_' + choice[0], on_click='ignore')
+         else:st.info('هنوز جدولی ثبت نشده است.')
+     with issues:
+-        with wh.db() as c:
++        with wh.read_db() as c:
+             st.dataframe(pd.read_sql_query('SELECT * FROM wh_issue ORDER BY id DESC LIMIT 300',c),hide_index=True)
+             st.dataframe(pd.read_sql_query('SELECT * FROM wh_audit ORDER BY id DESC LIMIT 300',c),hide_index=True)
+     with backup:
+@@ -140,7 +141,9 @@
+         if st.button('آماده‌سازی پشتیبان SQLite'):
+             with tempfile.TemporaryDirectory() as tmp:
+                 p=wh.backup(Path(tmp)/'warehouse_backup.sqlite')
+-                st.download_button('دریافت پشتیبان',p.read_bytes(),file_name='warehouse_backup.sqlite')
++                st.session_state['warehouse_backup_bytes'] = p.read_bytes()
++        if 'warehouse_backup_bytes' in st.session_state:
++            st.download_button('دریافت پشتیبان',st.session_state['warehouse_backup_bytes'],file_name='warehouse_backup.sqlite',key='warehouse_backup_download',on_click='ignore')
+ 
+     with historical:
+         st.caption('لایه سازگاری V26.17/18 برای روند KPI، Timeline پرونده، Transition و Audit تاریخی؛ مستقل از Warehouse اصلی V28.')
+--- original/gsi/adapters/a40_oracle.py
++++ rc/gsi/adapters/a40_oracle.py
+@@ -115,13 +115,16 @@
+                         vals=pd.to_numeric(grp[field],errors='coerce')
+                         if vals.notna().any():
+                             chosen[field]=vals.max()
++                            chosen[field + '_SOURCE_SHEETS'] = ' | '.join(sorted(set(grp.loc[vals.eq(vals.max()), 'ORC_SOURCE_SHEET'].astype(str))))
+                 # Foreign share is a ratio, not additive. Keep the greatest
+                 # populated observation so the value stays conservative and
+                 # report-selectable in Studio.
+                 fs=self.p('FOREIGN_SHARE')
+                 if fs in grp.columns:
+                     vals=pd.to_numeric(grp[fs],errors='coerce')
+-                    if vals.notna().any(): chosen[fs]=vals.max()
++                    if vals.notna().any():
++                        chosen[fs]=vals.max()
++                        chosen[fs + '_SOURCE_SHEETS'] = ' | '.join(sorted(set(grp.loc[vals.eq(vals.max()), 'ORC_SOURCE_SHEET'].astype(str))))
+ 
+                 # Preserve explicit evidence of the two Oracle demand headers.
+                 for _,r in grp.iterrows():
+--- original/gsi/adapters/a50_ntsw.py
++++ rc/gsi/adapters/a50_ntsw.py
+@@ -122,11 +122,23 @@
+             c[p("CURRENCY")] = c[p("CURRENCY")].map(rb.normalize_currency)
+             for f in ("INITIAL_COMMIT", "BALANCE"):
+                 c[p(f)] = c[p(f)].map(num_safe)
+-            if c.groupby(KEY_REG)[p('CURRENCY')].nunique().gt(1).any():
+-                raise ValueError('تعهد یک ثبت سفارش چند ارز دارد؛ تجمیع به یک مبلغ مجاز نیست. جزئیات در دیتاورهوس محفوظ است.')
+-            if c[[p('INITIAL_COMMIT'),p('BALANCE')]].isna().any().any():
+-                raise ValueError('مبلغ تعهد نامعلوم یا نامعتبر است؛ صفر فرض نمی‌شود.')
+-            out["commitment"] = self._agg_commitment(c)
++            out["commitment_rows"] = c.copy()
++            invalid = c[[p('INITIAL_COMMIT'),p('BALANCE')]].isna().any(axis=1)
++            invalid |= c.groupby(KEY_REG)[p('CURRENCY')].transform('nunique').gt(1)
++            invalid |= c[KEY_REG].map(clean_key).eq('') | c[p('CURRENCY')].map(clean_key).eq('')
++            # A repeated native ID is a snapshot, never another monetary event.
++            native_id = p('COMMIT_ROW')
++            if native_id in c:
++                keyed = c[native_id].map(clean_key).ne('')
++                for _, g in c[keyed].groupby([KEY_REG, native_id], dropna=False):
++                    if len(g[[p('INITIAL_COMMIT'), p('BALANCE'), p('CURRENCY')]].drop_duplicates()) > 1:
++                        invalid.loc[g.index] = True
++            out["commitment_quarantine"] = c.loc[invalid].assign(DQ_REASON='INVALID_OR_CONFLICTING_COMMITMENT')
++            valid = c.loc[~invalid].copy()
++            if native_id in valid:
++                keyed = valid[native_id].map(clean_key).ne('')
++                valid = pd.concat([valid.loc[keyed].drop_duplicates([KEY_REG,native_id]), valid.loc[~keyed]], ignore_index=True)
++            out["commitment"] = self._agg_commitment(valid)
+             log.info(f"   ✅ [ntsw] Release Commitment: {len(c)} ردیف تعهد → "
+                      f"{len(out['commitment'])} کد ثبت سفارش")
+         else:
+@@ -167,6 +179,10 @@
+             return c
+         rows: List[Dict[str, Any]] = []
+         for reg, g in c.groupby(KEY_REG, sort=False):
++            native_id = p("COMMIT_ROW")
++            if native_id in g:
++                has_id = g[native_id].map(clean_key).ne("")
++                g = pd.concat([g.loc[has_id].drop_duplicates([native_id]), g.loc[~has_id]], ignore_index=True)
+             statuses = [normalize_persian_text(s) for s in g[p("RELEASE_STATUS")]]
+             unresolved = [s for s in statuses if any(u in s for u in _UNRESOLVED)]
+             deadlines = [d for d in (CalendarEngine.parse(x) for x in g[p("DEADLINE")]) if d]
+@@ -220,7 +236,7 @@
+ 
+         a[p("REQUEST_KEY")] = a.apply(request_key, axis=1)
+         # آخرین snapshot هر request برنده است؛ مبلغ فقط همان یک بار وارد ledger می‌شود.
+-        a = (a.sort_values("_ord")
++        a = (a.sort_values("_ord", kind="mergesort")
+               .drop_duplicates(subset=[p("REQUEST_KEY")], keep="last")
+               .copy())
+ 
+@@ -229,10 +245,12 @@
+             proc = normalize_persian_text(row.get(p("ALLOC_PROCESS"), ""))
+             alloc_date = CalendarEngine.parse(row.get(p("ALLOC_DATE"), ""))
+             text = f"{status} {proc}"
++            if any(k in text for k in _REJECTED_STATES):
++                return "REJECTED"
++            if any(k in text for k in ("نشده", "عدم", "not approved")):
++                return "OPEN"
+             if alloc_date or any(k in text for k in _ALLOCATED_STATES):
+                 return "ALLOCATED"
+-            if any(k in text for k in _REJECTED_STATES):
+-                return "REJECTED"
+             return "OPEN"
+ 
+         a[p("REQUEST_STATE")] = a.apply(state, axis=1)
+@@ -256,7 +274,7 @@
+                                         a[p("ALLOC_DATE")])]
+         rows: List[Dict[str, Any]] = []
+         for reg, g in a.groupby(KEY_REG, sort=False):
+-            g = g.sort_values("_ord")
++            g = g.sort_values("_ord", kind="mergesort")
+             last = g.iloc[-1]
+             allocated = g[g[p("REQUEST_STATE")].eq("ALLOCATED")]
+             open_q = g[g[p("REQUEST_STATE")].eq("OPEN")]
+@@ -267,7 +285,11 @@
+             def amount(frame: pd.DataFrame) -> float:
+                 if frame.empty:
+                     return 0.0
+-                return float(pd.to_numeric(frame[p("REQ_AMOUNT")], errors="coerce").fillna(0).sum())
++                currencies = {clean_key(v) for v in g[p("REQ_CURRENCY")]}
++                values = pd.to_numeric(frame[p("REQ_AMOUNT")], errors="coerce")
++                if len(currencies) != 1 or not next(iter(currencies), "") or values.isna().any():
++                    return float("nan")  # Native request ledger retains each currency and amount.
++                return float(values.sum())
+ 
+             alloc_amt = amount(allocated)
+             open_amt = amount(open_q)
+--- original/gsi/adapters/a60_finance.py
++++ rc/gsi/adapters/a60_finance.py
+@@ -452,6 +452,12 @@
+         pr = pr.sort_values([KEY_PR, "SAP_PR_ITEM", "__SORT", "SAP_SOURCE_ROW"], kind="stable")
+         pr_items = pr.groupby([KEY_PR, "SAP_PR_ITEM"], dropna=False, as_index=False).tail(1).drop(columns=["__SORT"], errors="ignore")
+         pr_items = pr_items.reset_index(drop=True)
++        # PR grain cannot carry one arbitrary PO from a split procurement.
++        counts = po_counts = raw_rows.groupby([KEY_PR, "SAP_PR_ITEM"], dropna=False)[KEY_PO].nunique()
++        pr_items["SAP_PO_COUNT"] = [int(counts.get((row[KEY_PR], row["SAP_PR_ITEM"]), 0)) for _, row in pr_items.iterrows()]
++        for column in [c for c in pr_items if c.startswith("SAP_PO_") and c != "SAP_PO_COUNT"] + [KEY_PO, "SAP_QTY_ORDERED", "SAP_HEADER_PURCHASE_ORDER"]:
++            if column in pr_items:
++                pr_items.loc[pr_items["SAP_PO_COUNT"].gt(1), column] = pd.NA
+ 
+         # PO-item current fact. A PR may legitimately feed several purchasing docs.
+         po = raw_rows[raw_rows[KEY_PO].astype(str).str.strip().ne("")].copy()
+@@ -534,9 +540,10 @@
+ 
+         # تقلیل سطح سند → سطح سفارش با نگه‌داشتن آخرین وضعیت
+         from ..dataio.merge import dedupe_on_key
++        doc_rows = out.copy()
+         out = dedupe_on_key(out, KEY_ORDER, keep_by=p("SUBMIT_DATE"),
+                             label="doccheck→سفارش")
+-        return {"main": out}
++        return {"main": out, "doc_rows": doc_rows}
+ 
+ 
+ @register
+--- original/gsi/adapters/base.py
++++ rc/gsi/adapters/base.py
+@@ -114,7 +114,7 @@
+         wh = Warehouse()
+         for name, data in out.items():
+             frame_id = wh.frame(data, 'standardized', self.key + '/' + name)
+-            out[name] = wh.read_frame(frame_id)
++            # The original frame is already in memory; SQLite persistence is independently gated.
+         rec.elapsed_s = round(time.time() - t0, 3)
+         rec.frames = len(out)
+         rec.rows = int(sum(len(f) for f in out.values()))
+@@ -154,7 +154,10 @@
+                 cols[target] = pd.Series("", index=df.index, dtype=object)
+                 log.warning(f"   ⚠️ [{self.key}] ستون «{std_name}» یافت نشد "
+                             f"(کاندیدها: {candidates[:3]}) — با مقدار خالی پر شد.")
+-        return pd.DataFrame(cols, index=df.index)
++        result = pd.DataFrame(cols, index=df.index)
++        result.attrs['source_headers'] = [str(c) for c in df.columns]
++        result.attrs['missing_mappings'] = [name for name, aliases in mapping.items() if find_col(df, aliases, exclude=exclude) is None]
++        return result
+ 
+     def add_bl_key(self, out: pd.DataFrame, src: pd.DataFrame,
+                    candidates: Optional[List[str]] = None) -> pd.DataFrame:
+--- original/gsi/adapters/moghavemat.py
++++ rc/gsi/adapters/moghavemat.py
+@@ -404,7 +404,7 @@
+                 p("VENDOR_CODE"): first_valid(g[p("VENDOR_CODE")]),
+                 p("VENDOR_PI_NO"): first_valid(g[p("VENDOR_PI_NO")]),
+                 p("CURRENCY"): first_valid(g[p("CURRENCY")]),
+-                p("PI_VALUE_SUM"): float(g[p("PI_LINE_VALUE")].sum()),
++                p("PI_VALUE_SUM"): (float(g[p("PI_LINE_VALUE")].sum(min_count=len(g))) if g[p("CURRENCY")].fillna("").nunique(dropna=False) == 1 and str(first_valid(g[p("CURRENCY")])).strip() else float("nan")),
+                 p("PI_ADDITIONAL_SUM"): float(g[p("PI_ADDITIONAL")].sum()),
+                 p("ORDER_QTY_SUM"): float(g[p("QTY_IN_ORDER")].sum()),
+                 p("PART_QTY_SUM"): float(g[p("QTY_IN_PART")].sum()),
+--- original/gsi/cashflow/dwh.py
++++ rc/gsi/cashflow/dwh.py
+@@ -282,7 +282,7 @@
+     if isinstance(com, pd.DataFrame) and not com.empty:
+         for i, r in com.reset_index(drop=True).iterrows():
+             reg = _source_reg("ntsw", r)
+-            ref = _first(r.get("NTSW_COMMIT_ROWS"), f"commitment#{i+1}")
++            ref = f"{reg}:commitment-summary"
+             _event(events, source="ntsw", frame="commitment", idx=i, case_id=reg,
+                    kind="COMMITMENT", date=r.get("NTSW_COMMIT_DATE"),
+                    amount=r.get("NTSW_INITIAL_COMMIT"), currency=r.get("NTSW_CURRENCY"),
+@@ -309,6 +309,14 @@
+     if isinstance(fx, pd.DataFrame) and not fx.empty:
+         for i, r in fx.reset_index(drop=True).iterrows():
+             reg = _source_reg("fx_transaction", r)
++            if not reg:
++                order = _clean(r.get(KEY_ORDER)); bl = _clean(r.get(KEY_BL))
++                candidates = {x for x in (order_to_reg.get(order), bl_to_reg.get(bl)) if x}
++                if len(candidates) == 1:
++                    reg = next(iter(candidates))
++                else:
++                    diagnostics.append({"code":"UNRESOLVED_FINANCIAL_EVIDENCE", "entity_type":"fx_transaction", "entity_key":order or bl,
++                                        "detail":f"row={i+1}; candidates={sorted(candidates)}; native source row retained"})
+             ref = f"fx#{i+1}"
+             buy_id = _event(events, source="fx_transaction", frame="main", idx=i, case_id=reg,
+                             kind="FX_BUY", date=r.get("FX_BUY_DATE"), amount=r.get("FX_AMOUNT"),
+@@ -316,7 +324,7 @@
+                             note="شاهد خرید ارز از DWH؛ جزئیات حساب بانکی در این سورس موجود نیست")
+             if _clean(r.get("FX_PAID_AMOUNT")) and _clean(r.get("FX_PAID_CURRENCY")):
+                 pay_id = _event(events, source="fx_transaction", frame="main", idx=i, case_id=reg,
+-                                kind="PAYMENT", date=_first(r.get("FX_RECEIPT_DATE"), r.get("FX_SWIFT_DATE"), r.get("FX_BUY_DATE")),
++                                kind="PAYMENT", date=r.get("FX_RECEIPT_DATE"),
+                                 amount=r.get("FX_PAID_AMOUNT"), currency=r.get("FX_PAID_CURRENCY"), native_ref=ref+":payment",
+                                 note="شاهد پرداخت ذی‌نفع از DWH؛ بدون ساخت حساب بانکی فرضی")
+                 # Same native source row is direct provenance that the supplier payment
+@@ -339,6 +347,14 @@
+     if isinstance(credit, pd.DataFrame) and not credit.empty:
+         for i, r in credit.reset_index(drop=True).iterrows():
+             reg = _source_reg("credit", r)
++            if not reg:
++                order = _clean(r.get(KEY_ORDER)); bl = _clean(r.get(KEY_BL))
++                candidates = {x for x in (order_to_reg.get(order), bl_to_reg.get(bl)) if x}
++                if len(candidates) == 1:
++                    reg = next(iter(candidates))
++                else:
++                    diagnostics.append({"code":"UNRESOLVED_FINANCIAL_EVIDENCE", "entity_type":"credit", "entity_key":order or bl,
++                                        "detail":f"row={i+1}; candidates={sorted(candidates)}; native source row retained"})
+             ref = f"credit#{i+1}"
+             if _clean(r.get("CRD_RIAL_AMOUNT")):
+                 _event(events, source="credit", frame="main", idx=i, case_id=reg,
+--- original/gsi/core/columns.py
++++ rc/gsi/core/columns.py
+@@ -45,7 +45,9 @@
+     norm_map = {}
+     for col in df.columns:
+         n = _norm(col)
+-        if n and n not in norm_map:
++        if n and n in norm_map and norm_map[n] != col:
++            raise ValueError(f"AMBIGUOUS_NORMALIZED_HEADER: {norm_map[n]} / {col}")
++        if n:
+             norm_map[n] = col
+ 
+     cands = [c for c in candidates]
+@@ -58,6 +60,7 @@
+ 
+     # فاز ۲: تطبیق جزئی امتیازدهی‌شده — کوتاه‌ترین ستون منطبق برنده است
+     best: Optional[tuple[float, str]] = None
++    tied = False
+     for rank, cand in enumerate(cands):
+         nc = _norm(cand)
+         if not nc:
+@@ -71,6 +74,11 @@
+                 score = rank * 10 + extra
+                 if best is None or score < best[0]:
+                     best = (score, col_orig)
++                    tied = False
++                elif score == best[0] and col_orig != best[1]:
++                    tied = True
++    if tied:
++        raise ValueError("AMBIGUOUS_HEADER_MAPPING: " + str(cands))
+     return best[1] if best else None
+ 
+ 
+--- original/gsi/dataio/merge.py
++++ rc/gsi/dataio/merge.py
+@@ -39,7 +39,7 @@
+     if df is None or df.empty or key not in df.columns:
+         return df
+     n0 = len(df)
+-    out = df[df[key].astype(str).str.strip() != ""].copy()
++    out = df[df[key].notna() & ~df[key].astype(str).str.strip().str.lower().isin(["", "nan", "none", "<na>"])].copy()
+     n_empty = n0 - len(out)
+     if keep_by and keep_by in out.columns:
+         # ⚠️ مرتب‌سازی رشته‌ای روی تاریخ شمسی، داده سالم را بی‌صدا می‌خورد:
+@@ -95,10 +95,12 @@
+         left = left.copy()
+         right = right.copy()
+         for frame in (left, right):
+-            joined = frame[parts[0]].astype(str)
+-            for c in parts[1:]:
+-                joined = joined + "|" + frame[c].astype(str)
+-            frame[tmp] = joined
++            import json
++            valid = frame[parts].notna().all(axis=1)
++            for c in parts:
++                valid &= ~frame[c].astype(str).str.strip().str.lower().isin(["", "nan", "none", "<na>"])
++            frame[tmp] = [json.dumps([str(v) for v in row], ensure_ascii=False) if ok else ""
++                          for row, ok in zip(frame[parts].itertuples(index=False, name=None), valid)]
+         log.info(f"   🔗 [{label}] ادغام با کلید مرکب {' + '.join(parts)}")
+         out = safe_merge(left, right.drop(columns=parts, errors="ignore"),
+                          tmp, label, keep_by=keep_by, columns=columns, strict=strict,
+@@ -116,6 +118,11 @@
+     if columns:
+         keep = [key] + [c for c in columns if c in r.columns and c != key]
+         r = r[keep]
++    duplicates = r[r[key].notna() & r.duplicated(subset=[key], keep=False)]
++    if not duplicates.empty:
++        health.current().find("ادغام", health.WARN,
++                              f"{label}: projection of {len(duplicates)} RHS observations onto {key}",
++                              "Native rows remain in source evidence; this table is a representative compatibility projection, not an additive fact.")
+     r = dedupe_on_key(r, key, keep_by=keep_by, label=label)
+     if r.empty:
+         log.warning(f"⚠️ [{label}] پس از پاک‌سازی کلید، رکوردی نماند؛ ادغام رد شد.")
+@@ -128,7 +135,7 @@
+         r = r.drop(columns=clash)
+ 
+     n_before = len(left)
+-    merged = left.merge(r, on=key, how="left")
++    merged = left.merge(r, on=key, how="left", validate="many_to_one")
+     n_after = len(merged)
+ 
+     if n_after != n_before:
+--- original/gsi/dataio/reader.py
++++ rc/gsi/dataio/reader.py
+@@ -142,7 +142,9 @@
+     with tempfile.TemporaryDirectory(prefix='gsi_input_') as tmp:
+         local_targets = []
+         for f, (fid, blob, sheets) in captures.items():
+-            local = os.path.join(tmp, fid + os.path.splitext(f)[1])
++            directory = os.path.join(tmp, fid)
++            os.makedirs(directory, exist_ok=True)
++            local = os.path.join(directory, os.path.basename(f))
+             with open(local, 'wb') as handle: handle.write(blob)
+             local_targets.append(local)
+         return _read_targets(spec, local_targets)
+@@ -196,6 +198,7 @@
+             df = read_sheet(f, sheet, spec.key)
+             if df is not None and not df.empty:
+                 df["_SOURCE_FILE"] = os.path.basename(f)
++                df["_SOURCE_SHEET"] = sheet or "__first__"
+                 frames.append(df)
+         if frames:
+             label = sheet or "__first__"
+--- original/gsi/factsheet.py
++++ rc/gsi/factsheet.py
+@@ -36,7 +36,8 @@
+ _ROOT = os.path.dirname(_PKG)
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+-VERSION = "29.7.6"
++VERSION = "29.7.7"
++RELEASE_CHANNEL = "rc1"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 17
+--- original/gsi/knowledge_desk/indexer.py
++++ rc/gsi/knowledge_desk/indexer.py
+@@ -142,6 +142,7 @@
+     stats={"scanned":0,"indexed":0,"unchanged":0,"quarantined":0,"deleted":0,"chunks":0}
+     conn=_connect(cfg.db_path); init_db(conn)
+     seen=set()
++    scanned_roots=[]
+     with conn:
+         for source_type, root in _source_roots(cfg):
+             rp=Path(root)
+@@ -149,16 +150,19 @@
+                 conn.execute("INSERT INTO kb_quarantine(path,source_type,reason_code,detail) VALUES(?,?,?,?)",
+                              (str(rp),source_type,"ROOT_NOT_FOUND","Folder does not exist or is not accessible"))
+                 stats["quarantined"]+=1; continue
++            scanned_roots.append(rp.resolve())
+             for p in _iter_files(root, cfg.publish_path):
+                 stats["scanned"]+=1; key=str(p.resolve()); seen.add(key)
+                 try:
+                     st=p.stat(); existing=conn.execute("SELECT * FROM kb_documents WHERE path=?",(key,)).fetchone()
+                     if existing and int(existing["mtime_ns"])==st.st_mtime_ns and int(existing["size_bytes"])==st.st_size:
++                        conn.execute("UPDATE kb_documents SET status='ACTIVE' WHERE document_id=?",(existing["document_id"],))
+                         stats["unchanged"]+=1; continue
+                     digest=_sha256(p)
+                     if existing and existing["file_hash"]==digest:
+                         conn.execute("UPDATE kb_documents SET mtime_ns=?,size_bytes=?,status='ACTIVE',error=NULL,indexed_at=CURRENT_TIMESTAMP WHERE document_id=?",
+                                      (st.st_mtime_ns,st.st_size,existing["document_id"]))
++                        conn.execute("UPDATE kb_documents SET status='ACTIVE' WHERE document_id=?",(existing["document_id"],))
+                         stats["unchanged"]+=1; continue
+                     text,_=extract_text(p); chunks=chunk_text(text)
+                     if not chunks: raise RuntimeError("EMPTY_TEXT")
+@@ -184,7 +188,7 @@
+                         conn.execute("UPDATE kb_documents SET status='QUARANTINED',error=? WHERE document_id=?",(str(ex)[:1500],existing["document_id"]))
+         # only mark files missing from configured roots as deleted; keep audit row
+         for row in conn.execute("SELECT document_id,path FROM kb_documents WHERE status!='DELETED'").fetchall():
+-            if row["path"] not in seen:
++            if row["path"] not in seen and any(Path(row["path"]).is_relative_to(root) for root in scanned_roots):
+                 conn.execute("UPDATE kb_documents SET status='DELETED' WHERE document_id=?",(row["document_id"],)); stats["deleted"]+=1
+         conn.execute("INSERT OR REPLACE INTO kb_meta(key,value) VALUES('last_indexed_at', datetime('now'))")
+     conn.close(); return stats
+--- original/gsi/knowledge_desk/operational.py
++++ rc/gsi/knowledge_desk/operational.py
+@@ -44,6 +44,8 @@
+ 
+ 
+ def _published_run(conn) -> str:
++    if conn.execute("SELECT 1 FROM sqlite_master WHERE name='dwh_entity'").fetchone() and not conn.execute("SELECT 1 FROM sqlite_master WHERE name='wh_semantic_snapshot'").fetchone():
++        raise RuntimeError("LEGACY_SEMANTIC_REBUILD_REQUIRED")
+     row = conn.execute("SELECT run_id FROM wh_current WHERE slot='dwh'").fetchone()
+     if not row:
+         row = conn.execute("SELECT run_id FROM wh_current WHERE slot='report'").fetchone()
+@@ -98,7 +100,8 @@
+             if x["type"] == "REG":
+                 regs.add(x["key"]); reg_evidence.append({"order":order, **x})
+ 
+-    latest_pr = _payload(pr_rows[-1][2]) if pr_rows else {}
++    pr_payloads = [_payload(r[2]) for r in pr_rows]
++    latest_pr = max(pr_payloads, key=lambda p: (_pick(p, "SAP_CHANGED_ON_ISO", "SAP_RELEASE_DATE_ISO", "SAP_REQUISITION_DATE_ISO"), str(p.get("SAP_PR_ITEM", "")))) if pr_payloads else {}
+     latest_wf = _payload(wf_rows[-1][1]) if wf_rows else {}
+     status = _pick(latest_wf, "SAP_PROCESSING_STATUS", "SAP_OVERALL_RELEASE", "SAP_PACK_PACKED") or _pick(latest_pr, "SAP_PROCESSING_STATUS", "SAP_OVERALL_RELEASE")
+     release = _pick(latest_pr, "SAP_RELEASE_DATE_ISO")
+@@ -114,6 +117,8 @@
+     return {
+         "kind":"PR", "key":pr, "run_id":run_id,
+         "pr_items":len(pr_rows), "po_items":len(po_rows), "workflow_events":len(wf_rows),
++        "workflow_observations":len(wf_rows), "evidence_state":"OBSERVED", "confidence":"SOURCE_OBSERVED",
++        "item_evidence":[{"business_key":f"{pr}/{row[0]}", "value":_payload(row[2]), "source":"sap/pr_items", "as_of_run":run_id, "evidence_date":_pick(_payload(row[2]), "SAP_CHANGED_ON_ISO", "SAP_REQUISITION_DATE_ISO")} for row in pr_rows],
+         "materials":materials, "pos":pos, "orders":orders, "regs":sorted(regs),
+         "expert_intake":bool(expert_evidence), "allocation_requests":alloc, "commitments":commitments,
+         "status":status, "requisition_date":req_date, "release_date":release, "supplier":supplier,
+@@ -131,7 +136,7 @@
+     if typ == "PR":
+         lines=[f"PR {key} در Business DWH منتشرشده مشاهده شد."]
+         if x.get("requisition_date"): lines.append(f"تاریخ درخواست استاندارد: {x['requisition_date']}.")
+-        lines.append(f"اقلام PR: {x['pr_items']}؛ رویدادهای Workflow: {x['workflow_events']}؛ اقلام PO مرتبط: {x['po_items']}.")
++        lines.append(f"اقلام PR: {x['pr_items']}؛ مشاهدات Workflow: {x['workflow_events']}؛ اقلام PO مرتبط: {x['po_items']}.")
+         lines.append("ورود به فایل کارشناسان: " + ("مشاهده شده" if x.get("expert_intake") else "شاهد مستقیم مشاهده نشد" ) + ".")
+         if x.get("status"): lines.append(f"آخرین وضعیت SAP قابل مشاهده: {x['status']}.")
+         if x.get("release_date"): lines.append(f"Release Date: {x['release_date']}.")
+@@ -141,6 +146,7 @@
+         if x.get("regs"): lines.append("REGهای قابل دستیابی از روابط مستقیم ORDER→REG: " + ", ".join(x["regs"][:12]) + ".")
+         if x.get("regs"): lines.append(f"درخواست‌های تخصیص NTSW: {x['allocation_requests']}؛ تعهدهای ارزی موجود: {x['commitments']}.")
+         lines.append(f"As-of published DWH run: {x['run_id']}.")
++        lines.append("Source: sap/pr_items, sap/po_items, sap/workflow_rows؛ جزئیات روابط در semantic.relations.")
+         lines.append("توجه: نبود شاهد به معنی انجام‌نشدن قطعی مرحله نیست؛ فقط یعنی در DWH منتشرشده شاهد قابل‌استناد مشاهده نشده است.")
+         return "\n".join(lines)
+     rels=x.get("relations") or []
+@@ -158,12 +164,14 @@
+ def operational_search(question: str, limit: int = 6) -> List[Dict[str, Any]]:
+     """Return structured operational hits for explicit business identifiers."""
+     ids=[]
+-    for x in _ID_RE.findall(str(question or "")):
++    explicit = re.findall(r"\b(?:ORDER|BL|MATERIAL|PO|PR|REG)\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9._/-]*)", str(question or ""), re.I)
++    for x in _ID_RE.findall(str(question or "")) + explicit:
+         if x not in ids: ids.append(x)
+     if not ids:
+         return []
+     try:
+         wh=Warehouse(initialize=False)
++        if not wh.path.exists(): return []
+         with wh.read_db() as conn:
+             run_id=_published_run(conn)
+             if not run_id: return []
+@@ -182,14 +190,15 @@
+                     })
+                     if len(out) >= limit: return out
+             return out
+-    except Exception:
+-        return []
++    except Exception as exc:
++        raise RuntimeError("OPERATIONAL_SOURCE_UNAVAILABLE") from exc
+ 
+ 
+ def operational_chunks(limit: int = 20000) -> List[Dict[str, Any]]:
+     """Compact published-PR snapshot for the zero-server static chatbot."""
+     try:
+         wh=Warehouse(initialize=False)
++        if not wh.path.exists(): return []
+         with wh.read_db() as conn:
+             run_id=_published_run(conn)
+             if not run_id: return []
+@@ -200,5 +209,5 @@
+                 out.append({"id":f"op-pr-{i}","title":f"وضعیت عملیاتی PR {pr}","source":"Published Business DWH",
+                             "source_type":"operational_dwh","chunk_no":0,"body":_render(sem)})
+             return out
+-    except Exception:
+-        return []
++    except Exception as exc:
++        raise RuntimeError("OPERATIONAL_SOURCE_UNAVAILABLE") from exc
+--- original/gsi/knowledge_desk/query.py
++++ rc/gsi/knowledge_desk/query.py
+@@ -59,8 +59,13 @@
+ def answer(cfg: KnowledgeDeskConfig, question: str, limit:int=6) -> Dict:
+     # Operational DWH evidence has precedence for explicit business identifiers;
+     # documentary knowledge remains the authority for policies/how-to questions.
+-    op_hits=operational_search(question,limit)
+-    doc_hits=search(cfg,question,limit)
++    policy = any(word in question.lower() for word in ("policy", "procedure", "how to", "رویه", "آیین نامه", "دستورالعمل"))
++    operational = not policy and bool(re.search(r"(?<!\d)\d{6,16}(?!\d)|\b(?:ORDER|BL|MATERIAL|PO|PR|REG)\s*[:#]?\s*[A-Za-z0-9]", question, re.I))
++    try:
++        op_hits=operational_search(question,limit) if operational else []
++    except RuntimeError:
++        return {"answer":"منبع عملیاتی در دسترس نیست؛ وضعیت پرونده قابل تأیید نیست.", "sources":[], "status":"SOURCE_UNAVAILABLE"}
++    doc_hits=[] if operational else search(cfg,question,limit)
+     hits=op_hits + doc_hits; toks=_tokens(question)
+     if not hits:
+         ans="در پایگاه دانش و Business DWH منتشرشده مدرک کافی برای پاسخ قابل‌استناد پیدا نشد. سؤال برای تکمیل دانش ثبت شد."
+--- original/gsi/pipeline.py
++++ rc/gsi/pipeline.py
+@@ -153,6 +153,9 @@
+                     detail["fallback_error"] = f"{type(fx).__name__}: {fx}"
+                 if fallback:
+                     self.sources[key] = fallback
++                    for name, data in fallback.items():
++                        data.attrs.setdefault('source_origin_run', (meta or {}).get('run_id'))
++                        wh.frame(data, 'standardized', key + '/' + name)
+                     self.source_fallbacks[key] = {**detail, **(meta or {}),
+                                                   "frames": sorted(fallback),
+                                                   "mode": "last_published_standardized"}
+@@ -380,9 +383,9 @@
+         return res
+ 
+     # ═══════ گزارش ═══════
+-    def build_report(self, res: PipelineResult) -> str:
++    def build_report(self, res: PipelineResult, path: str | None = None) -> str:
+         # خروجی رسمی روزانه: تاریخ در ابتدای نام + نام ثابت، داخل پوشه همان روز.
+-        path = SETTINGS.daily_report_path(self.today)
++        path = path or SETTINGS.daily_report_path(self.today)
+         b = ExcelDashboardBuilder(path)
+         main = res.main
+         active = main[~main["IS_CANCELLED"].astype(bool)] if "IS_CANCELLED" in main else main
+--- original/gsi/resolve/process_evidence.py
++++ rc/gsi/resolve/process_evidence.py
+@@ -104,7 +104,7 @@
+ 
+ def _row_ref(source: str, frame: str, idx: int, row: Mapping[str, Any]) -> str:
+     raw = "|".join(f"{k}={_s(v)}" for k, v in sorted(row.items()) if _s(v))
+-    return f"{source}/{frame}:{sha1(raw.encode('utf-8')).hexdigest()[:16] if raw else idx+1}"
++    return f"{source}/{frame}:{idx+1}:{sha1(raw.encode('utf-8')).hexdigest()[:16]}"
+ 
+ 
+ def _state_from_text(v: Any) -> str:
+@@ -114,7 +114,10 @@
+         return "OBSERVED"
+     negative = ("cancel", "reject", "rework", "fail", "ابطال", "لغو", "رد", "ناموفق", "متوقف")
+     positive = ("complete", "approved", "done", "closed", "success", "تایید", "تأیید", "تکمیل", "مختومه", "انجام")
+-    if any(x in s for x in negative):
++    import re
++    if any(x in s for x in ("نشده", "عدم", "not approved", "not completed", "بازگشت داده")):
++        return "NEGATIVE_OBSERVED"
++    if any(re.search(r"(?<!\w)" + re.escape(x) + r"(?!\w)", s) for x in negative):
+         return "NEGATIVE_OBSERVED"
+     if any(x in s for x in positive):
+         return "POSITIVE_OBSERVED"
+@@ -218,7 +221,7 @@
+                         zero = False
+                         try: zero = (not is_empty_val(bal) and float(bal) == 0)
+                         except Exception: zero = False
+-                        if zero or (("رفع" in rel or "sett" in rel.lower()) and "نشده" not in rel):
++                        if rel.strip().lower() in {"رفع تعهد شده", "رفع تعهد کامل", "settled", "released"}:
+                             _emit(rows, source, frame, idx, raw, "SETTLEMENT",
+                                   event_date=_date_first(raw, ["NTSW_RELEASE_DATE"]), status=rel,
+                                   detail="NTSW settlement/balance observation; not a synthetic cash event")
+@@ -226,12 +229,12 @@
+                     if _s(raw.get("FX_BUY_DATE")) or not is_empty_val(raw.get("FX_AMOUNT")):
+                         _emit(rows, source, frame, idx, raw, "FX_PURCHASE", event_date=_s(raw.get("FX_BUY_DATE")), status=raw.get("FX_STATUS"))
+                     if _s(raw.get("FX_RECEIPT_DATE")) or not is_empty_val(raw.get("FX_PAID_AMOUNT")):
+-                        _emit(rows, source, frame, idx, raw, "PAYMENT", event_date=_date_first(raw, ["FX_RECEIPT_DATE", "FX_SWIFT_DATE"]), status=raw.get("FX_STATUS"))
++                        _emit(rows, source, frame, idx, raw, "PAYMENT", event_date=_date_first(raw, ["FX_RECEIPT_DATE"]), status=raw.get("FX_STATUS"))
+                 elif source == "credit":
+                     if _s(raw.get("CRD_FUND_DATE")) or not is_empty_val(raw.get("CRD_RIAL_AMOUNT")):
+                         _emit(rows, source, frame, idx, raw, "FUNDING", event_date=_s(raw.get("CRD_FUND_DATE")), status=raw.get("CRD_STATUS"))
+                     if _s(raw.get("CRD_SWIFT_DATE")):
+-                        _emit(rows, source, frame, idx, raw, "PAYMENT", event_date=_s(raw.get("CRD_SWIFT_DATE")), status=raw.get("CRD_STATUS"), detail="SWIFT evidence")
++                        _emit(rows, source, frame, idx, raw, "SWIFT_SENT", event_date=_s(raw.get("CRD_SWIFT_DATE")), status=raw.get("CRD_STATUS"), detail="SWIFT evidence")
+                 elif source in {"abbasi", "sata"}:
+                     if keys.get("BL"):
+                         _emit(rows, source, frame, idx, raw, "SHIPMENT",
+@@ -275,7 +278,7 @@
+         return pd.DataFrame(), pd.DataFrame()
+     unmeasured_stages = set(unmeasured_stages or set())
+     uf = _UF()
+-    key_cols = [f"KEY_{x}" for x in ENTITY_COLS]
++    key_cols = [f"KEY_{x}" for x in ENTITY_COLS if x not in {"MATERIAL", "EMP"}]
+     row_nodes: list[list[str]] = []
+     for _, r in obs.iterrows():
+         nodes = [f"{c[4:]}:{_s(r.get(c))}" for c in key_cols if _s(r.get(c))]
+@@ -362,6 +365,11 @@
+             rows.append({
+                 "PROCESS_CASE_ID": cid, "STAGE_ORDER": pos + 1, "STAGE_CODE": code,
+                 "STAGE_FA": fa, "OWNER_DOMAIN": owner, "STATUS": status,
++                "EVIDENCE_STATE": ("OBSERVED" if len(z) else "NOT_MEASURED" if code in unmeasured_stages else "EVIDENCE_GAP" if pos < furthest else "NOT_OBSERVED"),
++                "COVERAGE_STATE": "SOURCE_COVERAGE_GAP" if code in unmeasured_stages else "MEASURED",
++                "COMPLETION_STATE": "COMPLETED" if not z.empty and any(_s(v).lower() in {"completed","done","تکمیل شده"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
++                "EXECUTION_STATE": "FAILED" if not z.empty and any(_s(v).lower() in {"failed","failure","ناموفق"} for v in z["OBSERVED_STATUS"]) else "NOT_OBSERVED",
++                "RELATION_STATE": "AMBIGUOUS" if not z.empty and z["EVIDENCE_STATE"].eq("NEGATIVE_OBSERVED").any() and z["EVIDENCE_STATE"].eq("POSITIVE_OBSERVED").any() else "NOT_OBSERVED",
+                 "OBSERVATION_COUNT": int(len(z)),
+                 "SOURCE_LIST": " | ".join(sorted(set(z["SOURCE"]))) if not z.empty else "",
+                 "RAW_STATUS_LIST": " | ".join(sorted({_s(x) for x in z["OBSERVED_STATUS"] if _s(x)})) if not z.empty else "",
+@@ -402,7 +410,6 @@
+             ("ORDER", _s(r.get("CANONICAL_ORDER") or r.get(KEY_ORDER))),
+             ("PR", _s(r.get(KEY_PR))),
+             ("BL", _s(r.get("CANONICAL_BL") or r.get(KEY_BL))),
+-            ("MATERIAL", _s(r.get("KEY_MATERIAL") or r.get(KEY_MATERIAL))),
+         ]
+         # Prefer the strongest available identifier.  If it maps to >1 components,
+         # expose ambiguity instead of intersecting/guessing through weaker keys.
+--- original/gsi/stages/s20_derive.py
++++ rc/gsi/stages/s20_derive.py
+@@ -23,8 +23,8 @@
+     # ── گمرک ──
+     "COTAGE_NO":          (["COT_NO"], "", False),
+     "SATA_NO":            (["SATA_NO"], "", False),
+-    "SATA_DATE":          (["SATA_DATE"], "", False),
+-    "DISCHARGE_DATE":     (["CL_DISCHARGE_DATE"], "", False),
++    "SATA_DATE":          (["SATA_TRACKING_DATE"], "", False),
++    "DISCHARGE_DATE":     (["BL_DISCHARGE_DATE"], "", False),
+     "ARRIVAL_DATE":       (["CL_ARRIVAL_DATE"], "", False),
+     "FULL_CLEAR_DATE":    (["CL_CLEAR_DATE", "COT_FULL_CLEAR_DATE", "CL_FULL_CLEAR_DATE"], "", False),
+     # سامانه جامع انبارها: قبض انبار تا V26.20 در فریم مبدأ می‌ماند و هرگز
+@@ -35,7 +35,7 @@
+     # ── حمل و پرونده ──
+     "NTSW_FILE_NO":       (["IL_FILE_NO"], "", False),
+     "BL_DATE":            (["BL_BL_DATE"], "", False),
+-    "SEGMENT":            (["BL_SEGMENT"], "تولیدی", False),
++    "SEGMENT":            (["BL_SEGMENT"], "", False),
+     "PAYMENT_METHOD":     (["SATA_PAYMENT_METHOD"], "", False),
+     "BARAT_DUE":          (["SATA_BARAT_DUE"], "", False),
+     # ── ارز و تعهد ──
+@@ -44,7 +44,7 @@
+     "CB_VALUE":           (["FX_CB_VALUE", "NTSW_INITIAL_COMMIT", "MOGH_PI_VALUE_SUM"], 0, True),
+     "BALANCE":            (["NTSW_BALANCE"], 0, True),
+     "DOC_SUBMIT_DATE":    (["DOC_SUBMIT_DATE"], "", False),
+-    "FIN_RECEIPT_DATE":   (["SATA_DOC_RECEIVED"], "", False),
++    "FIN_RECEIPT_DATE":   (["FINANCIAL_RECEIPT_DATE_EVIDENCE"], "", False),
+     "FX_STATUS":          (["FX_STATUS"], "", False),
+     "ALLOC_STATUS":       (["NTSW_ALLOC_STATUS"], "", False),
+     "ALLOC_REJECTED_F":   (["NTSW_ALLOC_REJECTED"], "", False),
+--- original/gsi/warehouse/bridge.py
++++ rc/gsi/warehouse/bridge.py
+@@ -15,7 +15,7 @@
+         for root in ('config','rules'):
+             for path in (Path(__file__).parents[1]/root).glob('*.yaml'):
+                 wh.blob(path.read_bytes(),path.name,'configuration',str(path))
+-        result=pipeline._run_warehouse(build_report)
++        result=pipeline._run_warehouse(False)
+         # Validate adapter outputs at their native grain *before publication*.
+         # The full run is allowed to finish so a blocked snapshot keeps all
+         # diagnostics; only the current pointers are protected by the gate.
+@@ -26,7 +26,7 @@
+         # the process model must survive as a SOURCE_OBSERVATION, including rows
+         # with no attachable business key (those are explicit orphans).
+         ps = result.extras.get('process_evidence_summary', {}) or {}
+-        if ps:
++        if True:  # Missing process summary must not disable the integrity gate.
+             checks.append(Check('process/evidence','PROCESS_ROW_PRESERVATION',BLOCK,
+                                 bool(ps.get('row_preservation_ok')),
+                                 {'expected_native_rows':ps.get('expected_native_rows',0),
+@@ -48,6 +48,15 @@
+         gate=evaluate(checks)
+         result.extras['quality_gate_passed']=gate.passed
+         result.extras['quality_gate_blocking_codes']=list(gate.blocking_codes)
++        if gate.passed and build_report:
++            from gsi.config.settings import SETTINGS
++            from gsi.report.extracts import write_expert_extracts, write_audit_report
++            destination = Path(SETTINGS.OUTPUT_DIR) / 'runs' / rid
++            destination.mkdir(parents=True, exist_ok=True)
++            result.dashboard_path = pipeline.build_report(result, path=str(destination / 'GSI_Report.xlsx'))
++            result.extract_paths = write_expert_extracts(result.main, str(destination / 'extracts'))
++            write_audit_report(result.audit, str(destination / 'GSI_Data_Conflicts_Audit.xlsx'))
++            report_metadata(result)
+     # Both report and DWH pointers move together; a failed gate leaves the prior
+     # good snapshot untouched while retaining diagnostics for forensics.
+     wh.publish(rid,slots=('report','dwh'))
+--- original/gsi/warehouse/business_dwh.py
++++ rc/gsi/warehouse/business_dwh.py
+@@ -189,17 +189,17 @@
+  payload TEXT NOT NULL);
+ CREATE INDEX IF NOT EXISTS dwh_unresolved_run ON dwh_unresolved_relation(run_id,source,frame);
+ 
+-CREATE VIEW IF NOT EXISTS dwh_registration_hub AS
+-SELECT DISTINCT
+- rf.business_key AS reg_file_key,
+- rr.right_key AS reg_key,
+- ro.right_key AS order_key
+-FROM dwh_entity rf
+-LEFT JOIN dwh_relation rr
+- ON rr.left_type='REG_FILE' AND rr.left_key=rf.business_key AND rr.right_type='REG'
+-LEFT JOIN dwh_relation ro
+- ON ro.left_type='REG_FILE' AND ro.left_key=rf.business_key AND ro.right_type='ORDER'
+-WHERE rf.entity_type='REG_FILE';
++DROP VIEW IF EXISTS dwh_registration_hub;
++CREATE VIEW dwh_registration_hub AS
++WITH regs AS (SELECT DISTINCT left_key f,right_key r FROM dwh_relation WHERE left_type='REG_FILE' AND right_type='REG'),
++ords AS (SELECT DISTINCT left_key f,right_key o FROM dwh_relation WHERE left_type='REG_FILE' AND right_type='ORDER'),
++card AS (SELECT business_key f,(SELECT count(*) FROM regs WHERE f=business_key) nr,
++(SELECT count(*) FROM ords WHERE f=business_key) no FROM dwh_entity WHERE entity_type='REG_FILE')
++SELECT card.f reg_file_key,regs.r reg_key,ords.o order_key FROM card
++LEFT JOIN regs ON regs.f=card.f LEFT JOIN ords ON ords.f=card.f WHERE nr<=1 AND no<=1
++UNION ALL SELECT card.f,regs.r,NULL FROM card JOIN regs ON regs.f=card.f WHERE nr>1 OR no>1
++UNION ALL SELECT card.f,NULL,ords.o FROM card JOIN ords ON ords.f=card.f WHERE nr>1 OR no>1;
++
+ '''
+ 
+ 
+@@ -303,15 +303,25 @@
+     counts = {"source_rows": 0, "entities": 0, "relations": 0, "unresolved": 0}
+     with wh.db() as conn:
+         conn.executescript(BUSINESS_SCHEMA)
++        from .snapshots import capture, tables
++        # Preserve a legacy publication before replacing mutable working tables.
++        has_snap = conn.execute("SELECT 1 FROM sqlite_master WHERE name='wh_semantic_snapshot'").fetchone()
++        previous = conn.execute("SELECT run_id FROM wh_current WHERE slot='dwh'").fetchone()
++        if previous and not has_snap:
++            conn.execute("INSERT INTO wh_issue(run_id,code,detail) VALUES(?,?,?)", (run_id, "LEGACY_SNAPSHOT_NOT_RECONSTRUCTABLE", dumps({"previous_run":previous[0],"action":"rebuild from archived run frames before historical use"})))
++        # Child tables first to retain FK enforcement. Raw archive is untouched.
++        names = tables(conn)
++        for name in sorted(names, key=lambda n: (n.startswith('dwh_dim_') or n == 'dwh_entity', n)):
++            conn.execute(f'DELETE FROM "{name}"')
+         # Diagnostics are per-run; current dimensions/relations are upserted.
+         conn.execute("DELETE FROM dwh_unresolved_relation WHERE run_id=?", (run_id,))
+         for source, frames in sources.items():
+             for frame, df in frames.items():
+                 if not isinstance(df, pd.DataFrame) or df.empty:
+                     continue
+-                for _, row in df.iterrows():
++                for ordinal, (_, row) in enumerate(df.iterrows()):
+                     payload = _row_payload(row)
+-                    rh = _row_hash(payload)
++                    rh = _row_hash(payload + ":" + str(ordinal))
+                     counts["source_rows"] += 1
+                     conn.execute(
+                         "INSERT INTO dwh_fact_source_row(source,frame,row_hash,payload,first_seen_run,last_seen_run) VALUES(?,?,?,?,?,?) "
+@@ -319,6 +329,12 @@
+                         (source, frame, rh, payload, run_id, run_id),
+                     )
+                     keys = _source_business_keys(source, row, df.columns)
++                    if source == "sap" and frame == "raw_rows":
++                        po_pr = _clean(row.get("SAP_PO_PR", ""))
++                        if po_pr and keys.get("PR") and po_pr != keys["PR"]:
++                            conn.execute("INSERT INTO dwh_unresolved_relation(run_id,source,frame,row_hash,reason_code,payload) VALUES(?,?,?,?,?,?)",
++                                         (run_id, source, frame, rh, "SAP_HEADER_PO_PR_CONFLICT", payload))
++                            counts["unresolved"] += 1
+                     for typ, key in keys.items():
+                         if key:
+                             _upsert_entity(conn, typ, key, run_id)
+@@ -328,6 +344,12 @@
+                     if relation_frame:
+                         for lt, rt in DIRECT_PAIRS:
+                             lk, rk = keys.get(lt, ""), keys.get(rt, "")
++                            if source == "sap" and (lt, rt) == ("PR", "PO"):
++                                lk = _clean(row.get("SAP_PO_PR", "")) or lk
++                            if source == "sap" and (lt, rt) == ("PO", "MATERIAL"):
++                                rk = _clean(row.get("SAP_PO_MATERIAL", "")) or rk
++                            if lk: _upsert_entity(conn, lt, lk, run_id)
++                            if rk: _upsert_entity(conn, rt, rk, run_id)
+                             if lk and rk:
+                                 _upsert_relation(conn, run_id, source, frame, lt, lk, rt, rk)
+                     # Targeted unresolved cases for the registration-file hub.
+@@ -409,8 +431,10 @@
+         if isinstance(sap_po, pd.DataFrame) and not sap_po.empty:
+             for _, row in sap_po.iterrows():
+                 po = _clean(row.get(KEY_PO, "")); item = _clean(row.get("SAP_PO_ITEM", ""))
+-                pr = _clean(row.get(KEY_PR, "")); pri = _clean(row.get("SAP_PO_PR_ITEM", "")) or _clean(row.get("SAP_PR_ITEM", ""))
+-                mat = _clean(row.get(KEY_MATERIAL, ""))
++                explicit_pr = _clean(row.get("SAP_PO_PR", ""))
++                pr = explicit_pr or _clean(row.get(KEY_PR, ""))
++                pri = _clean(row.get("SAP_PO_PR_ITEM", "")) if explicit_pr else _clean(row.get("SAP_PR_ITEM", ""))
++                mat = _clean(row.get("SAP_PO_MATERIAL", "")) or _clean(row.get(KEY_MATERIAL, ""))
+                 if not po: continue
+                 _upsert_entity(conn, "PO", po, run_id)
+                 if pr: _upsert_entity(conn, "PR", pr, run_id)
+@@ -477,4 +501,5 @@
+         counts["sap_pr_items"] = conn.execute("SELECT count(*) FROM dwh_fact_sap_pr_item").fetchone()[0]
+         counts["sap_po_items"] = conn.execute("SELECT count(*) FROM dwh_fact_sap_po_item").fetchone()[0]
+         counts["sap_workflow"] = conn.execute("SELECT count(*) FROM dwh_fact_sap_workflow").fetchone()[0]
++        capture(conn, run_id)
+     return counts
+--- original/gsi/warehouse/reliability.py
++++ rc/gsi/warehouse/reliability.py
+@@ -198,6 +198,10 @@
+     for k in key_cols:
+         complete_mask &= ~_blank(df[k])
+ 
++    if c.nullable_key and key_cols:
++        usable = ~_blank(df[key_cols[0]])
++        checks.append(Check(c.name, "USABLE_KEY_EVIDENCE", BLOCK, bool(usable.any()) or df.empty,
++                            {"usable_rows": int(usable.sum()), "total": len(df)}))
+     if not c.nullable_key:
+         bad = int((~complete_mask).sum())
+         complete = int(complete_mask.sum())
+@@ -219,7 +223,7 @@
+ 
+     # Grain uniqueness is meaningful only for rows whose natural key is complete.
+     # Blank evidence rows must not collapse into a fake duplicate key.
+-    dup_base = df.loc[complete_mask] if len(df) else df
++    dup_base = (df.loc[~_blank(df[key_cols[0]])] if c.nullable_key else df.loc[complete_mask]) if len(df) else df
+     dup_mask_local = dup_base.duplicated(subset=key_cols, keep=False) if len(dup_base) else pd.Series([], dtype=bool)
+     dup_mask = pd.Series(False, index=df.index)
+     if len(dup_base):
+@@ -282,7 +286,13 @@
+     failures = getattr(pipeline, "source_failures", {}) or {}
+     fallbacks = getattr(pipeline, "source_fallbacks", {}) or {}
+     merge_failures = getattr(pipeline, "merge_failures", []) or []
+-    critical_sources = {"abbasi", "ntsw", "ilappend"}
++    critical_sources = {"ntsw", "ilappend"}
++    for source, frames in (getattr(pipeline, 'sources', {}) or {}).items():
++        if not any(isinstance(df, pd.DataFrame) and not df.empty for df in frames.values()):
++            out.append(Check(f"source/{source}", "SOURCE_COVERAGE_GAP", DEGRADED, False, {"state":"NOT_OBSERVED"}))
++        for name, df in frames.items():
++            if 'quarantine' in name and isinstance(df, pd.DataFrame) and not df.empty:
++                out.append(Check(f"{source}/{name}", "QUARANTINED_SOURCE_ROWS", DEGRADED, False, {"rows":len(df)}))
+     for source, detail in failures.items():
+         sev = BLOCK if source in critical_sources else DEGRADED
+         out.append(Check(f"source/{source}", "SOURCE_LOAD_FAILED", sev, False, dict(detail)))
+@@ -306,11 +316,15 @@
+     """
+     out: list[Check] = []
+     with wh.db() as conn:
++        conn.execute("CREATE TABLE IF NOT EXISTS wh_schema_candidate(run_id TEXT,contract TEXT,fingerprint TEXT,columns_json TEXT,updated TEXT,PRIMARY KEY(run_id,contract))")
+         for source, frames in sources.items():
+             for frame, df in frames.items():
+                 if not isinstance(df, pd.DataFrame):
+                     continue
+                 name = f"{source}/{frame}"
++                missing_maps = df.attrs.get('missing_mappings', [])
++                if missing_maps:
++                    out.append(Check(name, 'SOURCE_MAPPING_COVERAGE', WARN, False, {'missing':missing_maps, 'source_headers':df.attrs.get('source_headers', [])}))
+                 cols = [str(c) for c in df.columns]
+                 dtypes = {str(c): str(df[c].dtype) for c in df.columns}
+                 fp = schema_fingerprint(df)
+@@ -320,10 +334,10 @@
+                 ).fetchone()
+                 if row is None:
+                     conn.execute(
+-                        "INSERT INTO wh_schema_baseline(contract,fingerprint,columns_json,updated) VALUES(?,?,?,?)",
+-                        (name, fp, json.dumps({"columns": cols, "dtypes": dtypes}, ensure_ascii=False), pd.Timestamp.utcnow().isoformat()),
++                        "INSERT OR REPLACE INTO wh_schema_candidate(run_id,contract,fingerprint,columns_json,updated) VALUES(?,?,?,?,?)",
++                        (run_id, name, fp, json.dumps({"columns": cols, "dtypes": dtypes}, ensure_ascii=False), pd.Timestamp.utcnow().isoformat()),
+                     )
+-                    out.append(Check(name, "SCHEMA_BASELINE_CREATED", INFO, True, {"columns": cols}))
++                    out.append(Check(name, "SCHEMA_BASELINE_CANDIDATE", INFO, True, {"columns": cols}))
+                     continue
+                 old = json.loads(row[1])
+                 old_cols = list(old.get("columns", []))
+--- original/gsi/warehouse/snapshots.py
++++ rc/gsi/warehouse/snapshots.py
+@@ -0,0 +1,46 @@
++"""Run-scoped semantic snapshots; omission is not a business deletion event."""
++from __future__ import annotations
++import re
++
++def tables(conn):
++    return [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name GLOB 'dwh_*' ORDER BY name")]
++
++def capture(conn, run_id: str) -> None:
++    conn.execute("CREATE TABLE IF NOT EXISTS wh_semantic_snapshot(run_id TEXT PRIMARY KEY REFERENCES wh_run(id))")
++    if conn.execute("SELECT 1 FROM wh_semantic_snapshot WHERE run_id=?", (run_id,)).fetchone():
++        raise ValueError("Semantic snapshot is immutable: " + run_id)
++    for name in tables(conn):
++        assert re.fullmatch(r"dwh_[a-z0-9_]+", name)
++        target = "snap_" + name
++        conn.execute(f'CREATE TABLE IF NOT EXISTS "{target}" AS SELECT CAST(NULL AS TEXT) AS snapshot_run, * FROM "{name}" WHERE 0')
++        conn.execute(f'CREATE INDEX IF NOT EXISTS "idx_{target}_run" ON "{target}"(snapshot_run)')
++        for operation in ('UPDATE', 'DELETE'):
++            conn.execute(f"CREATE TRIGGER IF NOT EXISTS immutable_{target}_{operation} BEFORE {operation} ON \"{target}\" BEGIN SELECT RAISE(ABORT, 'Immutable semantic snapshot'); END")
++        columns = [r[1] for r in conn.execute(f'PRAGMA table_info("{name}")')]
++        for key in ('pr_key','po_key','reg_key','business_key','left_key','right_key','source'):
++            if key in columns:
++                conn.execute(f'CREATE INDEX IF NOT EXISTS "idx_{target}_{key}" ON "{target}"(snapshot_run,"{key}")')
++        conn.execute(f'INSERT INTO "{target}" SELECT ?, * FROM "{name}"', (run_id,))
++    conn.execute("INSERT INTO wh_semantic_snapshot VALUES(?)", (run_id,))
++
++def bind_published(conn) -> None:
++    """Connection-local views pin all business reads to one published run."""
++    if not conn.execute("SELECT 1 FROM sqlite_master WHERE name='wh_semantic_snapshot'").fetchone():
++        # Legacy mutable rows cannot prove their published as-of state.
++        for name in tables(conn):
++            conn.execute(f'CREATE TEMP VIEW "{name}" AS SELECT * FROM main."{name}" WHERE 0')
++        return
++    row = conn.execute("SELECT run_id FROM wh_current WHERE slot IN ('dwh','report') ORDER BY CASE slot WHEN 'dwh' THEN 0 ELSE 1 END LIMIT 1").fetchone()
++    rid = row[0] if row else ''
++    literal = "'" + rid.replace("'", "''") + "'"
++    for name in tables(conn):
++        target = "snap_" + name
++        if not conn.execute("SELECT 1 FROM sqlite_master WHERE name=?", (target,)).fetchone():
++            continue
++        cols = [r[1] for r in conn.execute(f'PRAGMA table_info("{name}")')]
++        projection = ','.join('"' + c + '"' for c in cols)
++        conn.execute(f'CREATE TEMP VIEW "{name}" AS SELECT {projection} FROM main."{target}" WHERE snapshot_run={literal}')
++    # Rebind dependent views so they resolve the connection-local base tables.
++    for name, sql in conn.execute("SELECT name,sql FROM sqlite_master WHERE type='view' AND name GLOB 'dwh_*'").fetchall():
++        definition = sql[sql.upper().index(' AS') + 3:]
++        conn.execute(f'CREATE TEMP VIEW "{name}" AS ' + definition)
+--- original/gsi/warehouse/store.py
++++ rc/gsi/warehouse/store.py
+@@ -120,7 +120,7 @@
+                     raise RuntimeError('Unsupported warehouse schema version')
+                 if existing and 'wh_meta' not in existing:
+                     raise ValueError('فایل انتخابی دیتاورهوس GSI نیست؛ دیتابیس قبلی بازنویسی نمی‌شود.')
+-                if 'wh_meta' in existing and version==1:
++                if 'wh_meta' in existing and version==1 and {'wh_quality_check','wh_schema_baseline','wh_publish_event'}.issubset(existing):
+                     return
+             except sqlite3.OperationalError:
+                 # Initialization callers may legitimately race a writer. Use the
+@@ -159,6 +159,9 @@
+         c=sqlite3.connect(uri, uri=True, timeout=max(0.1, timeout_ms/1000))
+         try:
+             c.execute(f'PRAGMA busy_timeout={int(timeout_ms)}')
++            c.execute('BEGIN')
++            from .snapshots import bind_published
++            bind_published(c)
+             c.execute('PRAGMA query_only=ON')
+             c.execute('PRAGMA foreign_keys=ON')
+             yield c
+@@ -236,11 +239,16 @@
+         slots=tuple(dict.fromkeys(slots))
+         if not slots: raise ValueError('At least one publish slot is required')
+         with self.db() as c:
++            c.execute('BEGIN IMMEDIATE')
++            newer=c.execute("SELECT 1 FROM wh_current p JOIN wh_run old ON old.id=p.run_id JOIN wh_run candidate ON candidate.id=? WHERE old.started > candidate.started LIMIT 1",(rid,)).fetchone()
++            if newer: raise ValueError('Publication cannot move backwards to an older run')
+             if c.execute('SELECT status FROM wh_run WHERE id=?',(rid,)).fetchone()!=('completed',):
+                 raise ValueError('Only completed runs may be published')
+             failed=c.execute("SELECT contract,code FROM wh_quality_check WHERE run_id=? AND severity IN ('BLOCK','CRITICAL','FATAL') AND passed=0",(rid,)).fetchall()
+             if failed:
+                 raise QualityGateBlockedError(rid, failed)
++            if c.execute("SELECT 1 FROM sqlite_master WHERE name='wh_schema_candidate'").fetchone():
++                c.execute("INSERT OR IGNORE INTO wh_schema_baseline SELECT contract,fingerprint,columns_json,updated FROM wh_schema_candidate WHERE run_id=?", (rid,))
+             for slot in slots:
+                 c.execute('INSERT INTO wh_current(slot,run_id) VALUES(?,?) ON CONFLICT(slot) DO UPDATE SET run_id=excluded.run_id',(slot,rid))
+             c.execute('INSERT INTO wh_publish_event(at,run_id,slots) VALUES(?,?,?)',(now(),rid,dumps(list(slots))))
+@@ -274,7 +282,7 @@
+     def frame(self,df,layer,name):
+         if not df.columns.is_unique: raise ValueError('Duplicate frame columns must be disambiguated before storage')
+         fid=uuid.uuid4().hex
+-        meta={'columns':list(df.columns),'dtypes':[str(d) for d in df.dtypes],'index':list(df.index),'index_name':df.index.name,'index_dtype':str(df.index.dtype)}
++        meta={'columns':list(df.columns),'dtypes':[str(d) for d in df.dtypes],'index':list(df.index),'index_name':df.index.name,'index_dtype':str(df.index.dtype),'attrs':dict(df.attrs)}
+         rows=[(fid,i,dumps(list(row))) for i,row in enumerate(df.itertuples(index=False,name=None))]
+         with self.db() as c:
+             c.execute('INSERT INTO wh_frame VALUES(?,?,?,?,?,?,?)',(fid,RUN.get(),layer,name,dumps(meta),len(df),now()))
+@@ -313,6 +321,7 @@
+         if len(data)!=expected_rows: raise RuntimeError('Warehouse row count mismatch')
+         df=pd.DataFrame(data,columns=meta['columns'],index=pd.Index(meta['index'],dtype=meta.get('index_dtype')));df.index.name=meta['index_name']
+         for col,dtype in zip(meta['columns'],meta['dtypes']): df[col]=df[col].astype(dtype)
++        df.attrs.update(meta.get('attrs', {}))
+         self._write_frame_cache(fid,df)
+         return df
+     def backup(self,path):
+--- original/requirements.txt
++++ rc/requirements.txt
+@@ -9,7 +9,7 @@
+ cryptography>=42.0    # AES-256-GCM برای پروفایل/اسنپ‌شات رمزگذاری‌شده کاربران
+ 
+ # ── داشبورد و Studio ──
+-streamlit>=1.35
++streamlit>=1.49
+ plotly>=5.20
+ streamlit-sortables==0.3.1
+ 
+--- original/run_all_tests.py
++++ rc/run_all_tests.py
+@@ -9,6 +9,7 @@
+ import subprocess
+ import sys
+ import ast
++import tempfile
+ from pathlib import Path
+ 
+ for _s in (sys.stdout, sys.stderr):
+@@ -84,10 +85,15 @@
+         print("\u2588" * 78)
+         # یک بار اجرا، خروجی هم چاپ و هم تحلیل می‌شود
+         try:
+-            out = subprocess.run(test_command(path), cwd=ROOT, env=env,
+-                                 capture_output=True, text=True,
+-                                 encoding="utf-8", errors="replace",
+-                                 timeout=SUITE_TIMEOUT_S)
++            # Standalone legacy scripts do not load pytest's isolation fixture.
++            # Keep each suite independent; multi-run scenarios share their own
++            # explicit database within the suite.
++            with tempfile.TemporaryDirectory(prefix="gsi-suite-") as suite_dir:
++                suite_env = dict(env, GSI_DWH_PATH=str(Path(suite_dir) / "warehouse.sqlite"))
++                out = subprocess.run(test_command(path), cwd=ROOT, env=suite_env,
++                                     capture_output=True, text=True,
++                                     encoding="utf-8", errors="replace",
++                                     timeout=SUITE_TIMEOUT_S)
+         except subprocess.TimeoutExpired as ex:
+             print((ex.stdout or "") if isinstance(ex.stdout, str)
+                   else (ex.stdout or b"").decode("utf-8", "replace"))
+--- original/tests/conftest.py
++++ rc/tests/conftest.py
+@@ -24,3 +24,8 @@
+     yield
+     failures=getattr(request.module,'FAIL',[])
+     assert not failures, 'Legacy checks failed: '+repr(failures)
++
++
++@pytest.fixture(autouse=True)
++def isolated_operational_store(tmp_path, monkeypatch):
++    monkeypatch.setenv('GSI_DWH_PATH', str(tmp_path / 'isolated_operational.sqlite'))
+--- original/tests/test_material_runtime_visible_v29_6_4.py
++++ rc/tests/test_material_runtime_visible_v29_6_4.py
+@@ -1,3 +1,4 @@
++from gsi.factsheet import VERSION
+ import pandas as pd
+ from gsi.studio_core.html_export import build_dynamic_html
+ 
+@@ -13,7 +14,7 @@
+         {'id':'b','title':'B','fields':['ORG_DEPT'], 'blocks':['table']},
+     ]
+     out = build_dynamic_html(df, '2026-09-21', tabs=tabs, selected_fields=['CANONICAL_ORDER'])
+-    assert 'Build 29.7.5' in out
++    assert f'Build {VERSION}' in out
+     # Material must be injected into both tab schemas, not rendered as a global supply table.
+     assert out.count('KEY_MATERIAL') >= 2
+     assert out.count('data-filter-mode="contains"') >= 2
+--- original/tests/test_material_supply_html_v29_6_5.py
++++ rc/tests/test_material_supply_html_v29_6_5.py
+@@ -1,3 +1,4 @@
++from gsi.factsheet import VERSION
+ import pandas as pd
+ from gsi.studio_core.report_builder import ReportSpec, build
+ 
+@@ -32,4 +33,4 @@
+     # Same business records are carried in the independent material view payload.
+     assert 'MAT-001' in h and 'MAT-002' in h
+     # Build marker proves runtime package.
+-    assert 'Build 29.7.5' in h
++    assert f'Build {VERSION}' in h
+--- original/tests/test_rc_integrity.py
++++ rc/tests/test_rc_integrity.py
+@@ -0,0 +1,163 @@
++"""Independent review counterexamples, 29.7.7-rc1."""
++import pandas as pd
++import pytest
++from gsi.warehouse.store import Warehouse, QualityGateBlockedError
++from gsi.warehouse.business_dwh import build
++from gsi.warehouse.reliability import Check, BLOCK, validate_frame
++from gsi.resolve.process_evidence import build_process_inventory, _state_from_text
++from gsi.dataio.merge import safe_merge
++from gsi.adapters.a60_finance import SapAdapter
++
++def sap_rows(status='OLD'):
++ return pd.DataFrame([{'Purchase Requisition':'6500029693','Item of requisition':'10','Material':'PRMAT','Processing status':status,'Changed On':'2026-01-01','po.Purchasing Document':'4500000001','po.Item':'10','po.Purchase Requisition':'6500029693','po.Material':'POMAT'}])
++def publish(wh,sources):
++ with wh.run({'test':'rc'}) as rid:build(wh,sources,rid)
++ wh.publish(rid)
++ return rid
++
++def test_blocked_run_isolation(tmp_path,monkeypatch):
++ from gsi.cashflow.dwh import _published_source_frames
++ from gsi.knowledge_desk.operational import operational_search
++ wh=Warehouse(tmp_path/'w.sqlite');monkeypatch.setenv('GSI_DWH_PATH',str(wh.path))
++ sources={'sap':SapAdapter().transform({'Data':sap_rows()}),'ntsw':{'commitment':pd.DataFrame([{'KEY_REG':'88000001','NTSW_BALANCE':50}])}}
++ first=publish(wh,sources);before=operational_search('PR 6500029693')[0]
++ with wh.run({'blocked':True}) as second:
++  sources['sap']=SapAdapter().transform({'Data':sap_rows('NEW_BLOCKED')});build(wh,sources,second)
++  wh.record_quality(second,[Check('test','BLOCK',BLOCK,False,{})])
++ with pytest.raises(QualityGateBlockedError):wh.publish(second)
++ assert operational_search('PR 6500029693')[0]==before
++ frames,rid=_published_source_frames(wh)
++ assert rid==first and frames['ntsw']['commitment'].iloc[0]['NTSW_BALANCE']==50
++
++def test_published_omission_preserves_history(tmp_path):
++ wh=Warehouse(tmp_path/'w.sqlite');first=publish(wh,{'sap':SapAdapter().transform({'Data':sap_rows()})});publish(wh,{})
++ with wh.read_db() as c:assert c.execute('SELECT count(*) FROM dwh_fact_sap_pr_item').fetchone()[0]==0
++ with wh.db() as c:assert c.execute('SELECT count(*) FROM snap_dwh_fact_sap_pr_item WHERE snapshot_run=?',(first,)).fetchone()[0]==1
++
++def test_no_publication_no_public_evidence(tmp_path):
++ wh=Warehouse(tmp_path/'w.sqlite')
++ with wh.run({}) as rid:build(wh,{'sap':SapAdapter().transform({'Data':sap_rows()})},rid)
++ with wh.read_db() as c:assert c.execute('SELECT count(*) FROM dwh_entity').fetchone()[0]==0
++
++def test_replay_relation_counts(tmp_path):
++ wh=Warehouse(tmp_path/'w.sqlite');s={'abbasi':{'main':pd.DataFrame([{'KEY_ORDER':'A','KEY_BL':'BL1'}])}}
++ publish(wh,s);publish(wh,s)
++ with wh.read_db() as c:assert c.execute('SELECT max(evidence_count) FROM dwh_relation').fetchone()[0]==1
++
++def test_shared_dimensions_do_not_merge():
++ obs,cases,m=build_process_inventory({'abbasi':{'main':pd.DataFrame([{'KEY_ORDER':'A','KEY_MATERIAL':'M','KEY_EMP':'E','KEY_BL':'BL1'},{'KEY_ORDER':'B','KEY_MATERIAL':'M','KEY_EMP':'E','KEY_BL':'BL2'}])}})
++ assert len(cases)==2 and set(cases.ORDER_COUNT)=={1}
++
++def test_duplicate_orphan_preservation():
++ obs,_,_=build_process_inventory({'abbasi':{'main':pd.DataFrame([{'KEY_ORDER':'A'},{'KEY_ORDER':'A'},{'KEY_ORDER':''}])}})
++ assert sum(obs.STAGE_CODE=='SOURCE_OBSERVATION')==3
++ assert sum(obs.EVIDENCE_STATE=='ORPHAN_NO_BUSINESS_KEY')==1
++
++def test_downstream_gap():
++ obs,_,m=build_process_inventory({'abbasi':{'main':pd.DataFrame([{'KEY_ORDER':'A','KEY_BL':'BL1'}])}})
++ assert 'SHIPMENT' in set(obs.STAGE_CODE) and 'EVIDENCE_GAP' in set(m.STATUS)
++ assert 'PLANNING_PR' not in set(obs.STAGE_CODE)
++
++@pytest.mark.parametrize('status,expected',[('مورد تایید','POSITIVE_OBSERVED'),('در گردش','OBSERVED'),('تایید نشده','NEGATIVE_OBSERVED'),('مورد بررسی','OBSERVED')])
++def test_polarity(status,expected):assert _state_from_text(status)==expected
++
++@pytest.mark.parametrize('balance',[0,50])
++def test_balance_not_settlement(balance):
++ obs,_,_=build_process_inventory({'ntsw':{'commitment':pd.DataFrame([{'KEY_REG':'88000001','NTSW_BALANCE':balance}])}})
++ assert 'SETTLEMENT' not in set(obs.STAGE_CODE)
++
++def test_swift_not_payment():
++ obs,_,_=build_process_inventory({'credit':{'main':pd.DataFrame([{'KEY_ORDER':'A','CRD_SWIFT_DATE':'2026-01-01'}])}})
++ assert 'PAYMENT' not in set(obs.STAGE_CODE) and 'SWIFT_SENT' in set(obs.STAGE_CODE)
++
++@pytest.mark.parametrize('left,right',[(('',''),('','')),((None,None),(None,None)),(('A|B',''),('A','B|')),(('A',None),('A',None))])
++def test_null_and_delimiter_keys(left,right):
++ l=pd.DataFrame([dict(zip(['A','B'],left))]);r=pd.DataFrame([dict(zip(['A','B'],right))]);r['VALUE']=99
++ out=safe_merge(l,r,['A','B'],'rc')
++ assert 'VALUE' not in out or out.VALUE.isna().all()
++
++def test_po_own_identity(tmp_path):
++ raw=sap_rows();raw['po.Purchase Requisition']='6500029999';raw['po.Item of requisition']='90'
++ wh=Warehouse(tmp_path/'w.sqlite');publish(wh,{'sap':SapAdapter().transform({'Data':raw})})
++ with wh.read_db() as c:
++  fact=c.execute('SELECT pr_key,pr_item,material_key FROM dwh_fact_sap_po_item').fetchone()
++  assert fact[0]=='6500029999' and fact[2]=='POMAT'
++  assert c.execute("SELECT count(*) FROM dwh_relation WHERE left_type='PR' AND left_key='6500029693' AND right_type='PO'").fetchone()[0]==0
++
++def test_no_hub_product(tmp_path):
++ wh=Warehouse(tmp_path/'w.sqlite');publish(wh,{'ntsw':{'import_license':pd.DataFrame([{'KEY_REG_FILE':'F','KEY_REG':'R1'},{'KEY_REG_FILE':'F','KEY_REG':'R2'}])},'ilappend':{'main':pd.DataFrame([{'KEY_REG_FILE':'F','KEY_ORDER':'A'},{'KEY_REG_FILE':'F','KEY_ORDER':'B'}])}})
++ with wh.read_db() as c:
++  rows=c.execute('SELECT * FROM dwh_registration_hub').fetchall()
++  assert len(rows)==4 and not any(reg and order for _,reg,order in rows)
++
++def test_nullable_uniqueness():
++ checks=validate_frame('sap/pr_items',pd.DataFrame([{'KEY_PR':'6500029693','SAP_PR_ITEM':''}]*2))
++ assert any(x.code=='GRAIN_UNIQUENESS' and not x.passed for x in checks)
++
++def test_legacy_schema_upgrade(tmp_path):
++ import sqlite3
++ path=tmp_path/'w.sqlite'
++ with sqlite3.connect(path) as c:c.executescript('CREATE TABLE wh_meta(key TEXT PRIMARY KEY,value TEXT); PRAGMA user_version=1;')
++ wh=Warehouse(path)
++ with wh.db() as c:assert c.execute("SELECT 1 FROM sqlite_master WHERE name='wh_quality_check'").fetchone()
++
++def test_download_rerun_contract():
++ import ast
++ from pathlib import Path
++ tree=ast.parse((Path(__file__).parents[1]/'app/warehouse_view.py').read_text())
++ calls=[n for n in ast.walk(tree) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='download_button']
++ assert len(calls)==2
++ assert all(any(k.arg=='on_click' and isinstance(k.value,ast.Constant) and k.value.value=='ignore' for k in n.keywords) for n in calls)
++
++def test_missing_process_summary_blocks_before_files(tmp_path,monkeypatch):
++ from types import SimpleNamespace
++ from datetime import date
++ from gsi.warehouse.bridge import run_pipeline
++ monkeypatch.setenv('GSI_DWH_PATH',str(tmp_path/'gate.sqlite'))
++ empty=pd.DataFrame();result=SimpleNamespace(df=empty,main=empty,to_resolve=empty,excluded=empty,extras={},dashboard_path='')
++ def run(flag):
++  assert flag is False
++  return result
++ def forbidden(*args,**kwargs):raise AssertionError('Files must not be written before passing quality gate')
++ pipeline=SimpleNamespace(today=date(2026,9,22),sources={},_run_warehouse=run,build_report=forbidden)
++ with pytest.raises(QualityGateBlockedError):run_pipeline(pipeline,True,'test')
++ assert not list(tmp_path.glob('*.xlsx'))
++
++def test_blocked_schema_does_not_become_baseline(tmp_path):
++ from gsi.warehouse.reliability import schema_drift_checks
++ wh=Warehouse(tmp_path/'schema.sqlite')
++ with wh.run({}) as rid:
++  schema_drift_checks(wh,{'x':{'main':pd.DataFrame({'BAD':[1]})}},rid)
++  wh.record_quality(rid,[Check('test','BAD',BLOCK,False,{})])
++ with pytest.raises(QualityGateBlockedError):wh.publish(rid)
++ with wh.db() as c:assert c.execute('SELECT count(*) FROM wh_schema_baseline').fetchone()[0]==0
++
++def test_snapshot_cannot_be_updated(tmp_path):
++ import sqlite3
++ wh=Warehouse(tmp_path/'s.sqlite');publish(wh,{'sap':SapAdapter().transform({'Data':sap_rows()})})
++ with pytest.raises(sqlite3.IntegrityError):
++  with wh.db() as c:c.execute("UPDATE snap_dwh_fact_sap_pr_item SET material_key='FORGED'")
++
++def test_backend_error_not_absence(tmp_path,monkeypatch):
++ from gsi.knowledge_desk.query import answer
++ from gsi.knowledge_desk.config import KnowledgeDeskConfig
++ path=tmp_path/'broken.sqlite';path.write_bytes(b'invalid database');monkeypatch.setenv('GSI_DWH_PATH',str(path))
++ result=answer(KnowledgeDeskConfig(db_path=str(tmp_path/'kb.sqlite')),'PR 6500029693')
++ assert result['status']=='SOURCE_UNAVAILABLE'
++
++def test_kb_outage_then_restoration(tmp_path):
++ from gsi.knowledge_desk.indexer import build_index,status
++ from gsi.knowledge_desk.config import KnowledgeDeskConfig
++ source=tmp_path/'docs';source.mkdir();(source/'policy.md').write_text('Valid documented procurement policy. Keep this evidence during an outage.')
++ cfg=KnowledgeDeskConfig(knowledge_path=str(source),db_path=str(tmp_path/'kb.sqlite'))
++ build_index(cfg);assert status(cfg)['documents']==1
++ source.rename(tmp_path/'offline');build_index(cfg);assert status(cfg)['documents']==1
++ (tmp_path/'offline').rename(source);build_index(cfg);assert status(cfg)['documents']==1
++
++def test_mixed_currency_allocation_unknown_and_native_intact():
++ from gsi.adapters.a50_ntsw import NtswAdapter
++ a=NtswAdapter();p=a.p
++ raw=pd.DataFrame([{'KEY_REG':'88000001',p('REQ_ROW'):str(i),p('REQ_AMOUNT'):100,p('REQ_CURRENCY'):cur,p('REQ_DATE'):'2026-01-01',p('APPROVE_DATE'):'',p('ALLOC_DATE'):'',p('ALLOC_STATUS'):'تایید نشده',p('ALLOC_PROCESS'):'',p('REQ_TYPE'):'',p('QUEUE_RANK'):'',p('FX_SOURCE'):'',p('FX_RATE_TYPE'):'',p('FX_RATE_NUMERIC'):None,p('ALLOC_BRANCH'):''} for i,cur in enumerate(['USD','EUR'])])
++ ledger=a._allocation_request_ledger(raw);summary=a._agg_allocation(ledger)
++ assert len(ledger)==2 and set(ledger[p('REQUEST_STATE')])=={'OPEN'}
++ assert pd.isna(summary.iloc[0][p('OPEN_QUEUE_AMOUNT')])
+--- original/tests/test_sap_semantic_dwh_v29_7_6.py
++++ rc/tests/test_sap_semantic_dwh_v29_7_6.py
+@@ -53,7 +53,7 @@
+         counts=build(wh, {'sap':frames}, rid)
+     assert counts['sap_pr_items'] == 1
+     assert counts['sap_po_items'] == 2
+-    with wh.read_db() as c:
++    with wh.db() as c:
+         assert c.execute('select count(*) from dwh_fact_sap_pr_item').fetchone()[0] == 1
+         assert c.execute('select count(*) from dwh_fact_sap_po_item').fetchone()[0] == 2
+         rel=c.execute("select count(*) from dwh_relation where left_type='PR' and right_type='PO' and source='sap'").fetchone()[0]
+--- original/tests/test_v26_20_2_engine_hardening.py
++++ rc/tests/test_v26_20_2_engine_hardening.py
+@@ -270,9 +270,15 @@
+           str(list(t.columns)))
+     check("جدول از نزدیک‌ترین انقضا مرتب می‌شود",
+           list(t["روز باقی‌مانده"]) == sorted(t["روز باقی‌مانده"]))
++    from unittest.mock import patch
++    with patch("gsi.rulebook.get_rulebook", return_value=before):
++        before_labels = [k for k, _ in summary_rows()]
++    with patch("gsi.rulebook.get_rulebook", return_value=after):
++        after_labels = [k for k, _ in summary_rows()]
+     check("خلاصه سلامت، انقضای نزدیک را اعلام می‌کند",
+-          any("انقضا" in k for k, _ in summary_rows()),
+-          str([k for k, _ in summary_rows()]))
++          any("انقضا" in k for k in before_labels)
++          and any("منقضی" in k for k in after_labels),
++          str((before_labels, after_labels)))
+     check("doctor پنجره اعتبار را بررسی می‌کند",
+           "expiring_soon" in open(os.path.join(ROOT, "gsi/doctor.py"),
+                                   encoding="utf-8").read())
+--- original/tests/test_v29_4_2_diagnose_business_semantics.py
++++ rc/tests/test_v29_4_2_diagnose_business_semantics.py
+@@ -28,7 +28,10 @@
+     assert "664931855" not in d._left_keys_for("ntsw", "commitment", KEY_REG)
+ 
+ 
+-def test_sap_is_diagnosed_by_pr_but_excluded_while_source_is_known_incomplete():
++def test_sap_is_diagnosed_by_pr_but_excluded_while_source_is_known_incomplete(monkeypatch):
++    from gsi import diagnose
++    original = diagnose._known_incomplete
++    monkeypatch.setattr(diagnose, '_known_incomplete', lambda source, frame: True if source == 'sap' else original(source, frame))
+     from gsi.diagnose import JoinDiagnostics
+     from gsi.adapters.base import KEY_PR
+ 
+--- original/tests/test_v29_4_3_relation_health_contract.py
++++ rc/tests/test_v29_4_3_relation_health_contract.py
+@@ -19,7 +19,10 @@
+     assert row["شدت"] == "INFO"
+ 
+ 
+-def test_incomplete_sap_is_informational_not_false_error():
++def test_incomplete_sap_is_informational_not_false_error(monkeypatch):
++    from gsi import diagnose
++    original = diagnose._known_incomplete
++    monkeypatch.setattr(diagnose, '_known_incomplete', lambda source, frame: True if source == 'sap' else original(source, frame))
+     from gsi.diagnose import JoinDiagnostics
+     from gsi.adapters.base import KEY_PR
+ 
+--- original/tests/test_v29_reliability_gate.py
++++ rc/tests/test_v29_reliability_gate.py
+@@ -58,7 +58,8 @@
+     second={'x':{'main':pd.DataFrame({'A':[1],'C':[3]})}}
+     with wh.run({'n':1}) as r1:
+         c1=schema_drift_checks(wh,first,r1)
+-    assert any(x.code=='SCHEMA_BASELINE_CREATED' for x in c1)
++    assert any(x.code=='SCHEMA_BASELINE_CANDIDATE' for x in c1)
++    wh.publish(r1)
+     with wh.run({'n':2}) as r2:
+         c2=schema_drift_checks(wh,second,r2)
+     drift=[x for x in c2 if x.code=='SCHEMA_DRIFT'][0]
+--- original/tests/test_validation.py
++++ rc/tests/test_validation.py
+@@ -275,7 +275,7 @@
+     check("فایل مجزای هر کارشناس ساخته شد", len(res.extract_paths) >= 2,
+           f"{len(res.extract_paths)} فایل در expert_extracts")
+     check("گزارش ممیزی تعارضات ساخته شد",
+-          os.path.exists(os.path.join(DIRS["output"], "GSI_Data_Conflicts_Audit.xlsx")))
++          os.path.exists(os.path.join(os.path.dirname(res.dashboard_path), "GSI_Data_Conflicts_Audit.xlsx")))
+ 
+ 
+ # ═══════════ ۱۰) اصلاحات نسخه ۲۵ — باگ‌های فساد خاموش داده ═══════════

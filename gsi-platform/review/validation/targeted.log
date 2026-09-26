@@ -1,0 +1,111 @@
+.F......                                                                 [100%]
+=================================== FAILURES ===================================
+_______ test_business_dwh_persists_sap_facts_and_direct_pr_po_relations ________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-5/test_business_dwh_persists_sap0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fd5c57df290>
+
+    def test_business_dwh_persists_sap_facts_and_direct_pr_po_relations(tmp_path, monkeypatch):
+        path=tmp_path/'wh.sqlite'; monkeypatch.setenv('GSI_DWH_PATH',str(path))
+        wh=Warehouse(path)
+        frames=SapAdapter().transform({'Data':_sap_rows()})
+        with wh.run({'test':'sap-v2976'}) as rid:
+            counts=build(wh, {'sap':frames}, rid)
+        assert counts['sap_pr_items'] == 1
+        assert counts['sap_po_items'] == 2
+        with wh.read_db() as c:
+>           assert c.execute('select count(*) from dwh_fact_sap_pr_item').fetchone()[0] == 1
+E           assert 0 == 1
+
+tests/test_sap_semantic_dwh_v29_7_6.py:57: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-09-22 20:59:53,131 | WARNING |    ⚠️ [sap] ستون «STATUS_ID» یافت نشد (کاندیدها: ['Status ID']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,132 | WARNING |    ⚠️ [sap] ستون «NOTIFICATION» یافت نشد (کاندیدها: ['Notification']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,133 | WARNING |    ⚠️ [sap] ستون «WORKFLOW_STATUS» یافت نشد (کاندیدها: ['WorkFlow Status']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,134 | WARNING |    ⚠️ [sap] ستون «PR_STATUS_TEXT» یافت نشد (کاندیدها: ['PR Status Text']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,135 | WARNING |    ⚠️ [sap] ستون «TASK_STATUS» یافت نشد (کاندیدها: ['Tasks Status']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,136 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,137 | WARNING |    ⚠️ [sap] ستون «CHANGED_BY» یافت نشد (کاندیدها: ['Changed By']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,149 | WARNING |    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,153 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,154 | WARNING |    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,155 | WARNING |    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,157 | WARNING |    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,158 | WARNING |    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,159 | WARNING |    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,161 | WARNING |    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,163 | WARNING |    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,165 | WARNING |    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,167 | WARNING |    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,171 | WARNING |    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,172 | WARNING |    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,173 | WARNING |    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,176 | WARNING |    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,177 | WARNING |    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,178 | WARNING |    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,179 | WARNING |    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,180 | WARNING |    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,183 | WARNING |    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,186 | WARNING |    ⚠️ [sap] ستون «COMPARISON_ID» یافت نشد (کاندیدها: ['pack.Comparision ID', 'Comparision ID', 'Comparison ID']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,188 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,189 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,191 | WARNING |    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,192 | WARNING |    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,195 | WARNING |    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,197 | WARNING |    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,199 | WARNING |    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,200 | WARNING |    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,201 | WARNING |    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,204 | WARNING |    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,205 | WARNING |    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,206 | WARNING |    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,207 | WARNING |    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,209 | WARNING |    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+2026-09-22 20:59:53,240 | INFO    |    ⚙️ [sap] raw=2 | PR-item=1 | workflow=2 | PO-item=2 | PR=1
+------------------------------ Captured log call -------------------------------
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «STATUS_ID» یافت نشد (کاندیدها: ['Status ID']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «NOTIFICATION» یافت نشد (کاندیدها: ['Notification']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «WORKFLOW_STATUS» یافت نشد (کاندیدها: ['WorkFlow Status']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PR_STATUS_TEXT» یافت نشد (کاندیدها: ['PR Status Text']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «TASK_STATUS» یافت نشد (کاندیدها: ['Tasks Status']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «CHANGED_BY» یافت نشد (کاندیدها: ['Changed By']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «DELIVERY_FROM_TO» یافت نشد (کاندیدها: ['Deliv. date(From/to)']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «SUPPLIER_NAME» یافت نشد (کاندیدها: ['Name of Supplier']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «DELETION_IND» یافت نشد (کاندیدها: ['Deletion Indicator']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PROCESSING_STATUS» یافت نشد (کاندیدها: ['Processing status']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «ITEM_CATEGORY» یافت نشد (کاندیدها: ['Item Category']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «ACCT_ASSIGNMENT_CAT» یافت نشد (کاندیدها: ['Acct Assignment Cat.']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «SUPPLIER_MATERIAL» یافت نشد (کاندیدها: ['Supplier Mat. No.']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «DELIVERY_DATE_CATEGORY» یافت نشد (کاندیدها: ['Deliv. date category']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PR_TYPE» یافت نشد (کاندیدها: ['PR Type']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «GR_NON_VALUATED» یافت نشد (کاندیدها: ['GR Non-Valuated']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «OVERALL_RELEASE» یافت نشد (کاندیدها: ['Overall release of requisitions']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «MFR_PART_PROFILE» یافت نشد (کاندیدها: ['Mfr Part Profile']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «LANGUAGE» یافت نشد (کاندیدها: ['Language Key']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «GR_PROCESSING_TIME» یافت نشد (کاندیدها: ['GR processing time']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PRICE_UNIT» یافت نشد (کاندیدها: ['Price Unit']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «MANUFACTURER» یافت نشد (کاندیدها: ['Manufacturer']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «FRAMEWORK_ORDER_ITEM» یافت نشد (کاندیدها: ['Framework order item']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «DESIRED_VENDOR» یافت نشد (کاندیدها: ['Desired Vendor']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «RELEASE_STRATEGY» یافت نشد (کاندیدها: ['Release strategy']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PACK_ORDER_UNIT» یافت نشد (کاندیدها: ['pack.Order Unit']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «COMPARISON_ID» یافت نشد (کاندیدها: ['pack.Comparision ID', 'Comparision ID', 'Comparison ID']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['pack.Commision No', 'Commision No', 'Commission No']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['pack.Commision Date', 'Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_DOCUMENT_ITEM» یافت نشد (کاندیدها: ['po.Document Item']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_DELETION_IND» یافت نشد (کاندیدها: ['po.Deletion Indicator']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_INFO_REC» یافت نشد (کاندیدها: ['po.Purchasing Info Rec.']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_TARGET_QTY» یافت نشد (کاندیدها: ['po.Target Quantity']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_ORDER_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Order Price Unit']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_QTY_CONVERSION» یافت نشد (کاندیدها: ['po.Quantity Conversion']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_DENOMINATOR» یافت نشد (کاندیدها: ['po.Denominator']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_PRICE_UNIT» یافت نشد (کاندیدها: ['po.Price Unit']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_GROSS_VALUE» یافت نشد (کاندیدها: ['po.Gross order value']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_DELIVERY_COMPLETED» یافت نشد (کاندیدها: ['po.Delivery Completed']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_RFQ» یافت نشد (کاندیدها: ['po.RFQ']) — با مقدار خالی پر شد.
+WARNING  GSI:base.py:155    ⚠️ [sap] ستون «PO_MFR_PART_NO» یافت نشد (کاندیدها: ['po.Manufacturer Part No.']) — با مقدار خالی پر شد.
+INFO     GSI:a60_finance.py:490    ⚙️ [sap] raw=2 | PR-item=1 | workflow=2 | PO-item=2 | PR=1
+=========================== short test summary info ============================
+FAILED tests/test_sap_semantic_dwh_v29_7_6.py::test_business_dwh_persists_sap_facts_and_direct_pr_po_relations
+1 failed, 7 passed in 1.13s

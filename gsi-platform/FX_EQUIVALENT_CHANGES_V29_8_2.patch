@@ -1,0 +1,1720 @@
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/CHANGELOG.md /mnt/data/gsi_29_8_2_work/CHANGELOG.md
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/CHANGELOG.md	2026-09-23 13:45:08.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/CHANGELOG.md	2026-09-23 14:54:01.339935620 +0000
+@@ -1,3 +1,32 @@
++# Current release: GSI 29.8.2 RC4-OPT2
++
++Scope: source-authority FX equivalents and currency-safe financial outputs, built
++on 29.8.1 RC4-OPT1.
++
++**Source equivalents are now first-class facts.** FX purchase rows preserve and
++aggregate source-reported EUR/IRR equivalents with explicit coverage. Credit
++rows expose source-reported EUR/IRR equivalents with LC-level snapshot dedupe;
++conflicting values are withheld and flagged instead of guessed.
++
++**NTSW commitment equivalent is explicit reference valuation.** Release
++Commitment remains the authority for the native balance. EUR/IRR equivalents are
++computed only from evidence belonging to the same REG and same currency. No
++cross-case/global FX rate is used. The exact basis is stored beside every
++reference equivalent.
++
++**Mixed currency remains mixed.** Native EUR/USD/CNY amounts are never summed
++into a naked total. A weighted purchase rate is numeric only for single-currency
++cases; multi-currency cases receive a per-currency rate display rather than a
++misleading zero or blended rate.
++
++**Compatibility preserved.** Existing decision/export contracts remain in their
++legacy positions; equivalent columns/cards are additive. The 29.8.1 warehouse
++performance hardening remains intact.
++
++Validation: `VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md`.
++
++---
++
+ # Current release: GSI 29.8.0 RC4
+ 
+ Scope: output integrity and usability, measured against the RC3 package and the
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md /mnt/data/gsi_29_8_2_work/FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md	2026-09-23 14:54:55.716931563 +0000
+@@ -0,0 +1,96 @@
++# GSI 29.8.2 RC4-OPT2 — معماری Authority نرخ ارز و Equivalent
++
++## هدف
++این اصلاح برای «ساخت نرخ جدید» نیست. سورس‌های موجود GSI از قبل نرخ ارز و معادل‌های
++EUR/IRR را در چند نقطه گزارش می‌کنند. هدف نسخه 29.8.2 این است که همان Source Facts
++بدون مخلوط‌کردن ارزها، بدون دوباره‌شماری fan-out و با lineage روشن وارد KPI و Report شوند.
++
++## Source Authority
++
++### 1. خرید ارز (`fx_transaction`)
++فیلدهای مستقیم Source:
++- `FX_AMOUNT` — مبلغ Native خرید ارز
++- `FX_CURRENCY` — ارز Native
++- `FX_RATE` — نرخ خرید ارز گزارش‌شده
++- `FX_EUR_VALUE` — معادل یورویی گزارش‌شده Source
++- `FX_RIAL_VALUE` — مبلغ/معادل ریالی گزارش‌شده Source
++
++قانون 29.8.2:
++- Native فقط درون همان Currency جمع می‌شود.
++- `FX_EUR_VALUE` و `FX_RIAL_VALUE` چون واحد مشترک دارند قابل جمع‌اند، اما coverage
++  نیز کنار آن‌ها نگه داشته می‌شود تا missing equivalent به صفر تبدیل نشود.
++- اگر یک REG چند ارز خرید داشته باشد، `FX_PURCHASED_AMOUNT` عمداً خالی/NaN است و
++  `FX_PURCHASED_NATIVE_DISPLAY` مقادیر را به تفکیک Currency نگه می‌دارد.
++
++### 2. اعتبارات (`credit`)
++فیلدهای مستقیم Source:
++- `CRD_EUR_AMOUNT` — مبلغ به یورو
++- `CRD_RIAL_AMOUNT` — مبلغ به ریال
++- `CRD_LC_NO` — شماره اعتبار/حواله
++
++قانون 29.8.2:
++- Equivalent مستقیم Credit باز محاسبه نمی‌شود؛ همان مقدار Source مصرف می‌شود.
++- Snapshotهای تکراری یک `CRD_LC_NO` یک‌بار شمرده می‌شوند.
++- اگر یک LC برای یک Equivalent دو مقدار متناقض داشته باشد، مقدار conflict شده
++  withheld می‌شود و `FX_CREDIT_EQ_STATUS=CONFLICTING_SOURCE_EQUIVALENTS` ثبت می‌شود.
++- چند ردیف بدون LC که هویت مستقل آن‌ها اثبات‌پذیر نیستند به‌صورت محافظه‌کارانه
++  جمع نمی‌شوند.
++
++### 3. مانده تعهد NTSW
++`NTSW_BALANCE` و `NTSW_CURRENCY` Source authority مبلغ Native مانده‌اند.
++در قرارداد فعلی Release Commitment ستون مستقیمی برای «معادل EUR مانده» یا
++«معادل IRR مانده» وجود ندارد. بنابراین فیلدهای زیر reference valuation هستند:
++- `FX_NTSW_BALANCE_EUR_EQ`
++- `FX_NTSW_BALANCE_RIAL_EQ`
++
++این اعداد به‌عنوان «گزارش مستقیم NTSW» برچسب نمی‌خورند.
++
++## ترتیب Authority برای Reference Valuation مانده NTSW
++
++### EUR
++1. اگر Currency خود تعهد EUR باشد: identity، یعنی 1 EUR = 1 EUR.
++2. در غیر این صورت: نسبت `sum(FX_EUR_VALUE) / sum(FX_AMOUNT)` فقط روی ردیف‌های
++   خرید ارز **همان REG + همان Currency**.
++3. اگر شاهد موجود نباشد: EUR Equivalent خالی می‌ماند.
++
++### IRR
++1. اگر Currency خود تعهد IRR باشد: identity.
++2. `sum(FX_RIAL_VALUE) / sum(FX_AMOUNT)` روی همان REG + Currency.
++3. در نبود آن، نرخ `FX_RATE` همان REG + Currency.
++4. در نبود شاهد خرید ارز، آخرین نرخ Allocation فقط از **همان REG + همان Currency**.
++5. اگر هیچ‌کدام وجود نداشته باشد: IRR Equivalent خالی می‌ماند.
++
++فیلدهای `FX_NTSW_EUR_EQ_BASIS` و `FX_NTSW_RIAL_EQ_BASIS` دقیقاً اعلام می‌کنند
++کدام قاعده عدد را ساخته است. هیچ global rate و هیچ نرخ پرونده دیگر استفاده نمی‌شود.
++
++## نرخ خرید چندارزی
++`FX_PURCHASE_WAVG_RATE` فقط وقتی معنی دارد که REG یک Currency خرید داشته باشد.
++در پرونده چندارزی این فیلد NaN می‌ماند و `FX_PURCHASE_RATE_DISPLAY` نرخ هر Currency
++را جدا نشان می‌دهد. مقدار صفر به‌عنوان placeholder نرخ ممنوع شده است.
++
++## Decision Surfaces اصلاح‌شده
++- Pipeline / FX Ledger
++- Studio KPI
++- Dashboard KPI و scatter
++- Money Flow Control Tower
++- Excel FX Traceability
++- Commitment / Scorecard Excel
++- HTML process/commitment visualizations
++- field catalog و export metadata
++
++قراردادهای قدیمی Excel/UI تا حد امکان حفظ شده‌اند؛ ستون‌ها/اطلاعات جدید additive هستند.
++
++## Invariants تصمیم‌ساز
++1. EUR + USD + CNY به‌عنوان Native هرگز یک naked total نمی‌شوند.
++2. Missing equivalent هیچ‌وقت صفر تلقی نمی‌شود.
++3. نرخ از REG دیگر ممنوع است.
++4. نرخ از Currency دیگر ممنوع است.
++5. Source Equivalent مستقیم بر محاسبه مجدد مقدم است.
++6. fan-out BL/Material نباید مبلغ REG را چندبار کند.
++7. conflict Source به‌جای guess علامت می‌خورد.
++8. Reference valuation مانده NTSW باید Basis قابل ممیزی داشته باشد.
++
++## محدودیت
++این اصلاح از قرارداد فیلدهای کد و داده‌های تست بسته تأیید شده است، اما workbookهای واقعی
++UNC شبکه سازمانی در محیط ممیزی حاضر نبودند. بنابراین production reconciliation روی فایل
++واقعی هنوز gate نهایی است و این بسته production certification محسوب نمی‌شود.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/KNOWN_LIMITATIONS.md /mnt/data/gsi_29_8_2_work/KNOWN_LIMITATIONS.md
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/KNOWN_LIMITATIONS.md	2026-09-23 14:27:19.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/KNOWN_LIMITATIONS.md	2026-09-23 14:54:01.342475395 +0000
+@@ -1,3 +1,27 @@
++# Current release: GSI 29.8.2 RC4-OPT2
++
++معادل‌های خرید ارز و Credit که مستقیماً در Source گزارش شده‌اند در این نسخه
++حفظ و در خروجی‌ها استفاده می‌شوند. با این حال `FX_NTSW_BALANCE_EUR_EQ` و
++`FX_NTSW_BALANCE_RIAL_EQ` **معادل گزارش‌شده توسط NTSW نیستند**؛ چون در قرارداد
++فعلی Release Commitment چنین ستون مستقیمی وجود ندارد. این دو فیلد reference
++valuation هستند و Basis آن‌ها کنار عدد ذخیره می‌شود.
++
++برای مانده NTSW نرخ از پرونده دیگر یا ارز دیگر استفاده نمی‌شود. اگر برای همان
++REG+Currency شاهد کافی نباشد Equivalent خالی می‌ماند. نرخ Allocation فقط fallback
++IRR همان پرونده/ارز است. Source-reported EUR/IRR Credit نیز با شماره LC dedupe
++می‌شود؛ conflict در یک LC باعث withheld شدن همان Equivalent می‌شود، نه انتخاب
++دلخواه یک مقدار.
++
++Coverage خرید ارز row-based است، نه amount-weighted بین ارزهای متفاوت؛ چون ساختن
++یک denominator از native amountهای EUR/USD/CNY خودش نیازمند تبدیل ارز است.
++
++اعتبارسنجی production روی workbookهای واقعی شبکه/UNC سازمانی در این محیط انجام
++نشده است. بنابراین صحت mapping هدرها و reconciliation نهایی باید روی Snapshot
++واقعی سازمان نیز اجرا شود. این محدودیت مانع از پاس شدن regressionهای کد نیست،
++اما مانع از ادعای production certification است.
++
++---
++
+ # Current release: GSI 29.8.1 RC4-OPT1
+ 
+ این نسخه F031 را در **سطوح تصمیم‌ساز بررسی‌شده** محدود می‌کند: Studio KPI،
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/PACKAGE_INFO.json /mnt/data/gsi_29_8_2_work/PACKAGE_INFO.json
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/PACKAGE_INFO.json	2026-09-23 14:27:48.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/PACKAGE_INFO.json	2026-09-23 14:56:32.998637952 +0000
+@@ -1,18 +1,22 @@
+ {
+-  "version": "29.8.1",
+-  "release_channel": "rc4-opt1",
+-  "base": "29.8.0 RC4",
+-  "scope": "performance and decision-facing financial accuracy hardening",
+-  "business_logic_changed": false,
++  "version": "29.8.2",
++  "release_channel": "rc4-opt2",
++  "base": "29.8.1 RC4-OPT1",
++  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening",
++  "business_logic_changed": true,
+   "source_authority_changed": false,
+   "key_changes": [
+-    "Chunk SQLite frame JSON persistence without changing transaction or round-trip semantics",
+-    "Reuse content-addressed Excel physical archive for identical workbook captures",
+-    "Avoid retaining legacy workbook physical-cell maps when downstream only needs archived bytes",
+-    "Centralize REG-grain currency-aware commitment and penalty summaries",
+-    "Prevent unknown commitment balance from being shown as zero/settled in reviewed decision surfaces",
+-    "Remove cross-currency naked totals from Studio, Excel, email, insight and historical outputs"
++    "Expose source-reported FX purchase EUR/IRR equivalents and explicit coverage without cross-currency native aggregation",
++    "Expose source-reported Credit EUR/IRR equivalents with LC-level snapshot deduplication and conflict quarantine",
++    "Value NTSW commitment balance only from same-REG same-currency source evidence and expose the exact valuation basis",
++    "Never borrow an FX rate from another registration or another currency",
++    "Use NTSW Allocation rate only as a same-case same-currency IRR fallback when purchase evidence is unavailable",
++    "Keep mixed-currency purchase amounts and rates separated; no naked native total and no zero pseudo-rate",
++    "Add EUR/IRR equivalent decision views to Studio, dashboard, Excel, HTML/process views while preserving legacy column/card contracts",
++    "Retain 29.8.1 I/O and persistence optimizations"
+   ],
+   "production_certified": false,
+-  "validation": "VALIDATION_V29_8_1_OPT.md"
++  "validation": "VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md",
++  "regulatory_rulebook_changed": false,
++  "financial_semantics_changed": true
+ }
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/PACKAGE_INFO_V29_8_2.json /mnt/data/gsi_29_8_2_work/PACKAGE_INFO_V29_8_2.json
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/PACKAGE_INFO_V29_8_2.json	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/PACKAGE_INFO_V29_8_2.json	2026-09-23 14:56:32.998693805 +0000
+@@ -0,0 +1,22 @@
++{
++  "version": "29.8.2",
++  "release_channel": "rc4-opt2",
++  "base": "29.8.1 RC4-OPT1",
++  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening",
++  "business_logic_changed": true,
++  "source_authority_changed": false,
++  "key_changes": [
++    "Expose source-reported FX purchase EUR/IRR equivalents and explicit coverage without cross-currency native aggregation",
++    "Expose source-reported Credit EUR/IRR equivalents with LC-level snapshot deduplication and conflict quarantine",
++    "Value NTSW commitment balance only from same-REG same-currency source evidence and expose the exact valuation basis",
++    "Never borrow an FX rate from another registration or another currency",
++    "Use NTSW Allocation rate only as a same-case same-currency IRR fallback when purchase evidence is unavailable",
++    "Keep mixed-currency purchase amounts and rates separated; no naked native total and no zero pseudo-rate",
++    "Add EUR/IRR equivalent decision views to Studio, dashboard, Excel, HTML/process views while preserving legacy column/card contracts",
++    "Retain 29.8.1 I/O and persistence optimizations"
++  ],
++  "production_certified": false,
++  "validation": "VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md",
++  "regulatory_rulebook_changed": false,
++  "financial_semantics_changed": true
++}
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/README.md /mnt/data/gsi_29_8_2_work/README.md
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/README.md	2026-09-23 14:27:19.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/README.md	2026-09-23 14:54:01.336811330 +0000
+@@ -1,3 +1,28 @@
++# GSI 29.8.2 RC4-OPT2 — Source-authority FX Equivalent hardening
++
++این نسخه روی 29.8.1 RC4-OPT1 ساخته شده و authority سورس یا RuleBook را عوض
++نمی‌کند. هدف آن این است که اطلاعاتی که **همین حالا در Sourceها وجود دارد** —
++نرخ ارز، معادل EUR و معادل IRR — در لایه Semantic و خروجی‌های تصمیم‌ساز به‌درستی
++مصرف شود، بدون اینکه EUR/USD/CNY به‌صورت Native با هم جمع شوند.
++
++قاعده authority در این نسخه روشن است: برای خرید ارز، `FX_EUR_VALUE` و
++`FX_RIAL_VALUE` همان Source مرجع مستقیم‌اند؛ برای اعتبارات، `CRD_EUR_AMOUNT` و
++`CRD_RIAL_AMOUNT` مرجع مستقیم‌اند. مانده تعهد NTSW در Release Commitment معادل
++مستقیم EUR/IRR ندارد، بنابراین Equivalent آن فقط یک **reference valuation** است و
++تنها از شاهد **همان REG + همان Currency** ساخته می‌شود. Basis هر عدد در خروجی
++ذخیره می‌شود و نرخ پرونده یا ارز دیگری هرگز قرض گرفته نمی‌شود.
++
++برای پرونده چندارزی، `FX_PURCHASED_AMOUNT` عدد بی‌واحد تولید نمی‌کند؛ Native به
++تفکیک ارز نمایش داده می‌شود. نرخ موزون نیز فقط برای تک‌ارز عددی است و در
++پرونده چندارزی نرخ هر ارز جدا نمایش داده می‌شود. Equivalentهای مستقیم Credit با
++شماره LC dedupe می‌شوند و conflict به‌جای حدس‌زدن عدد، صریح علامت می‌خورد.
++
++جزئیات در `FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md` و نتیجه تست‌ها در
++`VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md` است. این بسته production certification
++نیست چون workbookهای واقعی UNC/شبکه سازمانی در محیط ممیزی در دسترس نبودند.
++
++---
++
+ # نسخه مبتنی بر نقشه سورس‌ها
+ 
+ ابتدا SOURCE_ROADMAP_FA.md و UPDATED_CODE_AND_REPO_REVIEW_FA.md را بخوانید. evidence.txt شامل نمونه واقعی است، نه تمام فایل‌های تولیدی. مسیر SAP با GSI_GS_FULL_CHAIN قابل تنظیم است. در فایل رجیستری سفارشی، native_sheets مربوط به SAP و file_names مربوط به هر دو فایل خرید ارز را نیز منتقل کنید. هیچ ریپوی یادگیری وارد وابستگی‌ها نشده است. نتایج RC2 زیر تاریخی هستند؛ لاگ جاری در review/roadmap/final_full_regression.log قرار دارد.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md /mnt/data/gsi_29_8_2_work/VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md	2026-09-23 14:55:00.696905139 +0000
+@@ -0,0 +1,48 @@
++# Validation — GSI 29.8.2 RC4-OPT2
++
++## دامنه
++اعتبارسنجی این نسخه روی تغییرات Source-authority FX Equivalent، backward compatibility
++خروجی‌های مالی و regression مسیرهای Cash Flow / Warehouse / Process انجام شده است.
++
++## تست‌های اختصاصی 29.8.2
++فایل `tests/test_fx_equivalent_authority_v29_8_2.py` موارد زیر را پوشش می‌دهد:
++- جداسازی native amount چندارزی و جمع صحیح Equivalentهای مستقیم EUR/IRR.
++- عدم تبدیل missing equivalent به صفر و نمایش coverage.
++- استفاده از Source Equivalent فقط برای همان REG + همان Currency.
++- ممنوعیت استفاده از نرخ پرونده یا ارز دیگر.
++- fallback نرخ Allocation فقط برای همان REG + Currency.
++- identity برای تعهد Native EUR.
++- dedupe fan-out در جمع Portfolio Equivalent.
++- integration Stage برای خرید همزمان USD/EUR.
++- dedupe Snapshot تکراری Credit بر مبنای LC.
++- عدم guess در conflict Equivalent یک LC.
++- انتشار مستقیم `CRD_EUR_AMOUNT` / `CRD_RIAL_AMOUNT` در FX Ledger.
++
++نتیجه آخرین اجرای اختصاصی: **10 passed**.
++
++## Money Flow regression بعد از اصلاح نرخ چندارزی
++مجموعه تست FX Equivalent + Money Flow اجرا شد و نتیجه: **17 passed**.
++در پرونده چندارزی نرخ موزون واحد تولید نمی‌شود؛ نرخ‌ها به تفکیک Currency نمایش داده می‌شوند.
++
++## Regression گسترده پیش از بسته‌بندی
++دو مجموعه regression مرتبط با RC4 در همین worktree اجرا شده‌اند:
++- مجموعه decision/export/FX/RC integrity: **109 passed**.
++- مجموعه cashflow/DWH/process/source/warehouse: **92 passed**.
++
++پس از تغییرات نهایی version/docs و Credit exposure، همان مجموعه‌ها مجدداً قبل از بسته‌بندی
++اجرا می‌شوند؛ نتیجه نهایی بسته در انتهای این فایل ثبت می‌شود.
++
++## نکات دقت
++- `FX_EUR_VALUE`, `FX_RIAL_VALUE`, `CRD_EUR_AMOUNT`, `CRD_RIAL_AMOUNT` Source facts
++  هستند و به‌صورت مستقیم حفظ می‌شوند.
++- `FX_NTSW_BALANCE_*_EQ` Source-reported NTSW equivalent نیست؛ reference valuation است.
++- basis هر reference valuation قابل مشاهده است.
++- partial Source coverage پنهان نمی‌شود.
++
++## محدودیت محیط
++workbookهای واقعی UNC/شبکه سازمانی در این محیط موجود نبودند؛ بنابراین header mapping و
++reconciliation نهایی production باید روی Snapshot واقعی سازمان اجرا شود. این محدودیت به
++معنی failure تست کد نیست، اما مانع ادعای production certification است.
++
++## Final package gate
++این بخش پس از compile, regression, manifest verification و hash بسته تکمیل می‌شود.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/app/dashboard.py /mnt/data/gsi_29_8_2_work/app/dashboard.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/app/dashboard.py	2026-09-23 13:29:59.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/app/dashboard.py	2026-09-23 14:44:41.295726694 +0000
+@@ -370,17 +370,19 @@
+                    "بحرانی‌ترین قطعه", critical=(not pd.isna(low) and low < 10)),
+               unsafe_allow_html=True)
+ 
+-c = st.columns(4)
+-from gsi.report.financial_summary import commitment_display
++c = st.columns(5)
++from gsi.report.financial_summary import commitment_display, commitment_equivalent_display
+ bal = commitment_display(df)
++bal_eq = commitment_equivalent_display(df)
+ overdue = int((num(df, "روزهای تأخیر").fillna(0) > 0).sum())
+-c[0].markdown(card("جمع مانده تعهد", bal, "ثبت سفارش یکتا؛ تفکیک ارز"), unsafe_allow_html=True)
+-c[1].markdown(card("تعهدات معوق", overdue, "عبور از مهلت قانونی",
++c[0].markdown(card("جمع مانده تعهد", bal, "Native؛ ثبت سفارش یکتا/ارز"), unsafe_allow_html=True)
++c[1].markdown(card("معادل مانده تعهد", bal_eq, "EUR / IRR؛ فقط شاهد همان پرونده"), unsafe_allow_html=True)
++c[2].markdown(card("تعهدات معوق", overdue, "عبور از مهلت قانونی",
+                    critical=overdue > 0), unsafe_allow_html=True)
+-c[2].markdown(card("میانگین رسوب", f"{num(df, 'روزهای رسوب').mean():,.1f} روز"
++c[3].markdown(card("میانگین رسوب", f"{num(df, 'روزهای رسوب').mean():,.1f} روز"
+                    if num(df, "روزهای رسوب").notna().any() else "—",
+                    "از تاریخ تخلیه"), unsafe_allow_html=True)
+-c[3].markdown(card("میانگین ریسک", f"{num(df, 'امتیاز ریسک').mean():,.1f}"
++c[4].markdown(card("میانگین ریسک", f"{num(df, 'امتیاز ریسک').mean():,.1f}"
+                    if num(df, "امتیاز ریسک").notna().any() else "—",
+                    "موتور ۸ مؤلفه‌ای"), unsafe_allow_html=True)
+ 
+@@ -505,17 +507,24 @@
+                                   font=dict(family="IRANSans Light"))
+                 st.plotly_chart(fig, width="stretch")
+ 
+-        if {"مانده تعهد", "روزهای تأخیر"} <= set(df.columns):
+-            s2 = df.copy()
+-            for cx in ("مانده تعهد", "روزهای تأخیر"):
+-                s2[cx] = pd.to_numeric(s2[cx], errors="coerce")
+-            s2 = s2.dropna(subset=["مانده تعهد", "روزهای تأخیر"])
+-            s2 = s2[s2["مانده تعهد"] > 0]
++        if {"FX_NTSW_BALANCE_EUR_EQ", "روزهای تأخیر"} <= set(df.columns):
++            # Cross-currency scatter must share one unit. Use only source-backed
++            # EUR equivalents; unavailable cases are not coerced to zero.
++            keep = [c for c in ["CANONICAL_REG", "CANONICAL_ORDER",
++                                "FX_NTSW_BALANCE_EUR_EQ", "روزهای تأخیر"] if c in df.columns]
++            s2 = df[keep].copy()
++            s2["FX_NTSW_BALANCE_EUR_EQ"] = pd.to_numeric(s2["FX_NTSW_BALANCE_EUR_EQ"], errors="coerce")
++            s2["روزهای تأخیر"] = pd.to_numeric(s2["روزهای تأخیر"], errors="coerce")
++            if "CANONICAL_REG" in s2.columns:
++                s2 = s2.drop_duplicates("CANONICAL_REG")
++            s2 = s2.dropna(subset=["FX_NTSW_BALANCE_EUR_EQ", "روزهای تأخیر"])
++            s2 = s2[s2["FX_NTSW_BALANCE_EUR_EQ"] > 0]
+             if not s2.empty:
+-                fig = px.scatter(s2, x="روزهای تأخیر", y="مانده تعهد",
++                fig = px.scatter(s2, x="روزهای تأخیر", y="FX_NTSW_BALANCE_EUR_EQ",
+                                  color_discrete_sequence=[AMBER],
+                                  hover_name=s2.get("CANONICAL_ORDER"),
+-                                 title="مانده تعهد در برابر روزهای تأخیر")
++                                 title="معادل یورویی مانده تعهد در برابر روزهای تأخیر")
++                fig.update_yaxes(title="مانده تعهد — معادل EUR منبع‌محور")
+                 fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
+                                   paper_bgcolor="rgba(0,0,0,0)", height=480,
+                                   font=dict(family="IRANSans Light"))
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/app/process_view.py /mnt/data/gsi_29_8_2_work/app/process_view.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/app/process_view.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/app/process_view.py	2026-09-23 14:52:14.167265315 +0000
+@@ -102,14 +102,27 @@
+             if not z.empty:
+                 lrow = z.iloc[0]
+ 
+-        c = st.columns(6)
++        def _money(v, decimals=0, prefix=""):
++            n = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
++            return "—" if pd.isna(n) else f"{prefix}{float(n):,.{decimals}f}"
++
++        c = st.columns(7)
+         c[0].metric("مرحله جاری", str(row.get("FX_CURRENT_STAGE") or "—"))
+         c[1].metric("روز تا نزدیک‌ترین مهلت",
+                     f"{int(row.get('FX_DAYS_REMAINING', 0)):+d}" if str(row.get("FX_DEADLINE_DATE") or "") else "—")
+-        c[2].metric("خرید ارز", f"{float(lrow.get('FX_PURCHASED_AMOUNT', 0) if lrow is not None else 0):,.2f}")
+-        c[3].metric("خروج ریالی ثبت‌شده", f"{float(lrow.get('FX_RIAL_OUTFLOW_REPORTED', 0) if lrow is not None else 0):,.0f}")
+-        c[4].metric("اثر ریالی تبدیل", f"{float(row.get('FX_CONVERSION_IMPACT_RIAL', 0) or 0):,.0f}")
+-        c[5].metric("جابجایی بدون شاهد مجوز", f"{int(row.get('FX_UNAUTHORIZED_REALLOCATION_COUNT', 0) or 0):,}")
++        native = str(lrow.get("FX_PURCHASED_NATIVE_DISPLAY") or "—") if lrow is not None else "—"
++        c[2].metric("خرید ارز (Native)", native)
++        c[3].metric("معادل یورویی خرید", _money(lrow.get("FX_EUR_EQUIVALENT") if lrow is not None else None, 2, "€ "))
++        c[4].metric("معادل ریالی خرید", _money(lrow.get("FX_RIAL_OUTFLOW_REPORTED") if lrow is not None else None, 0, "IRR "))
++        c[5].metric("اثر ریالی تبدیل", _money(row.get("FX_CONVERSION_IMPACT_RIAL"), 0, "IRR "))
++        c[6].metric("جابجایی بدون شاهد مجوز", f"{int(row.get('FX_UNAUTHORIZED_REALLOCATION_COUNT', 0) or 0):,}")
++        if lrow is not None:
++            st.caption(
++                f"پوشش Equivalent خرید ارز — EUR: {float(lrow.get('FX_EQ_EUR_COVERAGE_PCT', 0) or 0):.1f}% · "
++                f"IRR: {float(lrow.get('FX_EQ_RIAL_COVERAGE_PCT', 0) or 0):.1f}% · "
++                f"مانده NTSW: {_money(lrow.get('FX_NTSW_BALANCE_EUR_EQ'), 2, '€ ')} / "
++                f"{_money(lrow.get('FX_NTSW_BALANCE_RIAL_EQ'), 0, 'IRR ')}"
++            )
+         if str(row.get("FX_DEADLINE_DATE") or ""):
+             st.caption(f"نزدیک‌ترین مهلت: **{row.get('FX_DEADLINE_DATE')}** · مبنا: {row.get('FX_DEADLINE_BASIS') or '—'}")
+ 
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/app/studio.py /mnt/data/gsi_29_8_2_work/app/studio.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/app/studio.py	2026-09-23 14:17:57.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/app/studio.py	2026-09-23 14:42:16.972654078 +0000
+@@ -42,7 +42,7 @@
+ from gsi.studio_core.filters import FilterState, apply_filters, filter_options
+ from gsi.studio_core.html_export import build_dynamic_html
+ from gsi.report.supply_views import build_material_view, build_bl_view, build_dept_view
+-from gsi.report.financial_summary import commitment_display
++from gsi.report.financial_summary import commitment_display, commitment_equivalent_display
+ 
+ try:
+     import plotly.express as px
+@@ -345,6 +345,7 @@
+     min_res = fnum(v, 1) if pd.notna(v) else "—"
+ 
+ commit = commitment_display(fdf) if "مانده تعهد" in fdf.columns else "—"
++commit_eq = commitment_equivalent_display(fdf) if "مانده تعهد" in fdf.columns else "—"
+ 
+ # ── هدر زنده ──────────────────────────────────────────────────────────────
+ motion.hero(
+@@ -367,7 +368,8 @@
+     ("ایمن", str(band_count("SAFE")), "بیش از ۴۵ روز", STATUS["good"], "✓"),
+     ("کمترین مقاومت", min_res, "بحرانی‌ترین قطعه", STATUS["stockout"], "⏱"),
+     ("سفارش بحرانی", str(uniq_where("ORDER_CRITICAL", "CANONICAL_ORDER")), "پرونده‌های درگیر", STATUS["serious"], "◈"),
+-    ("جمع مانده تعهد", commit, "سورس NTSW", STATUS["neutral"], "₪"),
++    ("جمع مانده تعهد", commit, "Native / NTSW", STATUS["neutral"], "₪"),
++    ("معادل مانده تعهد", commit_eq, "EUR / IRR با نرخ همان پرونده", STATUS["neutral"], "€"),
+ ]
+ st.markdown('<div class="kpi-row">' + "".join(kpi_card(*c) for c in cards) + "</div>",
+             unsafe_allow_html=True)
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/app/ui_kit.py /mnt/data/gsi_29_8_2_work/app/ui_kit.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/app/ui_kit.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/app/ui_kit.py	2026-09-23 14:47:16.452614132 +0000
+@@ -70,8 +70,9 @@
+     critical = band_count(df, "CRITICAL")
+     becoming = band_count(df, "BECOMING_CRITICAL")
+     low = num(df, "مقاومت (روز)").min()
+-    from gsi.report.financial_summary import commitment_display
++    from gsi.report.financial_summary import commitment_display, commitment_equivalent_display
+     bal = commitment_display(df)
++    bal_eq = commitment_equivalent_display(df)
+     overdue = int((num(df, "روزهای تأخیر").fillna(0) > 0).sum())
+     crit_bl = int(df.loc[df["BL_CRITICAL"].astype(bool), "CANONICAL_BL"].replace("", pd.NA).nunique()) if "BL_CRITICAL" in df and "CANONICAL_BL" in df else 0
+     crit_ord = int(df.loc[df["ORDER_CRITICAL"].astype(bool), "CANONICAL_ORDER"].replace("", pd.NA).nunique()) if "ORDER_CRITICAL" in df and "CANONICAL_ORDER" in df else 0
+@@ -93,7 +94,8 @@
+          "value": "—" if pd.isna(low) else f"{low:,.1f} روز",
+          "sub": "بحرانی‌ترین قطعه",
+          "critical": bool(not pd.isna(low) and low < 10)},
+-        {"label": "جمع مانده تعهد", "value": bal, "sub": "ثبت سفارش یکتا؛ تفکیک ارز",
++        {"label": "جمع مانده تعهد", "value": bal,
++         "sub": "Native؛ " + bal_eq if bal_eq != "معادل منبع‌محور در دسترس نیست" else "Native؛ ثبت سفارش یکتا/ارز",
+          "critical": False},
+         {"label": "تعهدات معوق", "value": overdue, "sub": "عبور از مهلت قانونی",
+          "critical": overdue > 0},
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/factsheet.py /mnt/data/gsi_29_8_2_work/gsi/factsheet.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/factsheet.py	2026-09-23 14:27:19.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/factsheet.py	2026-09-23 14:54:01.163118732 +0000
+@@ -36,7 +36,7 @@
+ _ROOT = os.path.dirname(_PKG)
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+-VERSION = "29.8.1"
++VERSION = "29.8.2"
+ RELEASE_CHANNEL = "rc4-opt1"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/finance/__init__.py /mnt/data/gsi_29_8_2_work/gsi/finance/__init__.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/finance/__init__.py	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/finance/__init__.py	2026-09-23 14:40:25.493497134 +0000
+@@ -0,0 +1,9 @@
++# -*- coding: utf-8 -*-
++"""Financial semantic helpers.
++
++This package contains source-authority preserving financial transformations.
++It must never invent an FX rate when the source evidence is absent.
++"""
++from .equivalents import commitment_equivalents, summarize_fx_purchases
++
++__all__ = ["commitment_equivalents", "summarize_fx_purchases"]
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/finance/equivalents.py /mnt/data/gsi_29_8_2_work/gsi/finance/equivalents.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/finance/equivalents.py	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/finance/equivalents.py	2026-09-23 14:51:21.373254239 +0000
+@@ -0,0 +1,355 @@
++# -*- coding: utf-8 -*-
++"""Source-authority preserving FX equivalents.
++
++The corporate sources already carry reported FX rates and EUR/IRR equivalents.
++This module makes that evidence usable without silently mixing currencies.
++
++Authority order
++---------------
++* Purchase totals: source-reported ``FX_EUR_VALUE`` / ``FX_RIAL_VALUE``.
++* Commitment native amount: NTSW Release Commitment.
++* Commitment EUR/IRR *reference equivalent*: only evidence observed for the
++  same REG and same currency is eligible.  No global/cross-case rate is used.
++* For IRR only, NTSW Allocation rate is a fallback if no same-case purchase
++  equivalent/rate is available.
++
++A commitment equivalent produced here is explicitly a reference valuation,
++not a claim that NTSW itself reported an equivalent balance.
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Any, Optional
++
++import pandas as pd
++
++from ..adapters.base import KEY_REG
++from ..core.jalali import CalendarEngine
++from ..core.text import clean_key, is_empty_val
++
++EPS = 1e-12
++
++
++def _text(v: Any) -> str:
++    return "" if is_empty_val(v, treat_zero_as_empty=False) else str(v).strip()
++
++
++def _num(v: Any) -> Optional[float]:
++    try:
++        x = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
++        return float(x) if pd.notna(x) else None
++    except Exception:
++        return None
++
++
++def _positive(v: Any) -> Optional[float]:
++    x = _num(v)
++    return x if x is not None and x > EPS else None
++
++
++def _currency(v: Any) -> str:
++    return _text(v).upper()
++
++
++def _fmt(v: float) -> str:
++    return f"{v:,.2f}"
++
++
++def _native_display(frame: pd.DataFrame, amount_col: str, currency_col: str) -> str:
++    if frame is None or frame.empty or amount_col not in frame.columns or currency_col not in frame.columns:
++        return "—"
++    z = frame[[amount_col, currency_col]].copy()
++    z[amount_col] = pd.to_numeric(z[amount_col], errors="coerce")
++    z[currency_col] = z[currency_col].map(_currency)
++    z = z[z[amount_col].notna() & z[currency_col].ne("")]
++    if z.empty:
++        return "—"
++    totals = z.groupby(currency_col, sort=True)[amount_col].sum()
++    return " | ".join(f"{_fmt(float(v))} {cur}" for cur, v in totals.items())
++
++
++@dataclass(frozen=True)
++class EquivalentResult:
++    native_display: str
++    single_currency: str
++    single_native_amount: Optional[float]
++    source_eur_total: Optional[float]
++    source_rial_total: Optional[float]
++    eur_coverage_pct: float
++    rial_coverage_pct: float
++
++
++@dataclass(frozen=True)
++class CreditEquivalentResult:
++    source_eur_total: Optional[float]
++    source_rial_total: Optional[float]
++    status: str
++    logical_credit_count: int
++
++
++def summarize_credit_equivalents(frame: Optional[pd.DataFrame]) -> CreditEquivalentResult:
++    """Safely aggregate direct Credit-source EUR/IRR equivalents.
++
++    ``CRD_EUR_AMOUNT`` and ``CRD_RIAL_AMOUNT`` are already common-unit source
++    facts.  Repeated snapshots of the same LC must not be double counted, so
++    rows are collapsed by ``CRD_LC_NO`` when available.  If one LC carries
++    conflicting reported values, the conflicted unit is withheld rather than
++    guessed.  Multiple unidentified (blank-LC) non-identical rows are also
++    treated as ambiguous.
++    """
++    if frame is None or frame.empty:
++        return CreditEquivalentResult(None, None, "NO_CREDIT_SOURCE", 0)
++    z = frame.copy()
++    for c in ("CRD_EUR_AMOUNT", "CRD_RIAL_AMOUNT"):
++        if c not in z.columns:
++            z[c] = pd.NA
++        z[c] = pd.to_numeric(z[c], errors="coerce")
++    if "CRD_LC_NO" not in z.columns:
++        z["CRD_LC_NO"] = ""
++    z["__lc"] = z["CRD_LC_NO"].map(_text)
++
++    groups: list[pd.DataFrame] = []
++    identified = z[z["__lc"].ne("")]
++    if not identified.empty:
++        groups.extend(g.copy() for _, g in identified.groupby("__lc", sort=False))
++
++    unknown = z[z["__lc"].eq("")].copy()
++    ambiguous_unknown = False
++    if not unknown.empty:
++        # Exact duplicate unidentified rows are one observation; distinct rows
++        # cannot be proven to be distinct credits, so do not sum them.
++        sig_cols = [c for c in ("CRD_EUR_AMOUNT", "CRD_RIAL_AMOUNT", "CRD_CURRENCY",
++                                "CRD_PROFORMA_VALUE") if c in unknown.columns]
++        u = unknown.drop_duplicates(subset=sig_cols or None)
++        if len(u) == 1:
++            groups.append(u)
++        else:
++            ambiguous_unknown = True
++
++    eur_values: list[float] = []
++    rial_values: list[float] = []
++    eur_conflict = False
++    rial_conflict = False
++    for g in groups:
++        for col, target, conflict_name in (
++            ("CRD_EUR_AMOUNT", eur_values, "eur"),
++            ("CRD_RIAL_AMOUNT", rial_values, "rial"),
++        ):
++            vals = pd.to_numeric(g[col], errors="coerce").dropna().unique().tolist()
++            if len(vals) == 1:
++                target.append(float(vals[0]))
++            elif len(vals) > 1:
++                if conflict_name == "eur":
++                    eur_conflict = True
++                else:
++                    rial_conflict = True
++
++    eur_total = None if eur_conflict or ambiguous_unknown or not eur_values else float(sum(eur_values))
++    rial_total = None if rial_conflict or ambiguous_unknown or not rial_values else float(sum(rial_values))
++    if ambiguous_unknown:
++        status = "AMBIGUOUS_UNIDENTIFIED_CREDIT_ROWS"
++    elif eur_conflict or rial_conflict:
++        status = "CONFLICTING_SOURCE_EQUIVALENTS"
++    elif eur_total is not None and rial_total is not None:
++        status = "EUR_AND_IRR_REPORTED"
++    elif eur_total is not None:
++        status = "EUR_REPORTED"
++    elif rial_total is not None:
++        status = "IRR_REPORTED"
++    else:
++        status = "NO_REPORTED_EQUIVALENT"
++    return CreditEquivalentResult(eur_total, rial_total, status, len(groups))
++
++
++def summarize_fx_purchases(frame: Optional[pd.DataFrame]) -> EquivalentResult:
++    """Summarize FX purchase rows without adding unlike native currencies.
++
++    EUR/IRR equivalents are additive because they already share a unit.  A
++    reported-equivalent total is returned only for observed values.  Coverage
++    is deliberately row-based because native amounts from unlike currencies
++    cannot form a valid common denominator without another conversion step.
++    This makes partial source coverage visible without inventing a rate.
++    """
++    if frame is None or frame.empty:
++        return EquivalentResult("—", "", None, None, None, 0.0, 0.0)
++
++    f = frame.copy()
++    for c in ("FX_AMOUNT", "FX_EUR_VALUE", "FX_RIAL_VALUE"):
++        if c not in f.columns:
++            f[c] = pd.NA
++        f[c] = pd.to_numeric(f[c], errors="coerce")
++    if "FX_CURRENCY" not in f.columns:
++        f["FX_CURRENCY"] = ""
++    f["FX_CURRENCY"] = f["FX_CURRENCY"].map(_currency)
++    valid = f["FX_AMOUNT"].notna() & f["FX_CURRENCY"].ne("")
++    f = f.loc[valid].copy()
++    if f.empty:
++        return EquivalentResult("—", "", None, None, None, 0.0, 0.0)
++
++    native_display = _native_display(f, "FX_AMOUNT", "FX_CURRENCY")
++    currencies = sorted(set(f["FX_CURRENCY"]))
++    single_currency = currencies[0] if len(currencies) == 1 else ""
++    single_native_amount = float(f["FX_AMOUNT"].sum()) if single_currency else None
++
++    # Coverage is row-based.  Cross-currency native amounts are never added to
++    # form a denominator because that would itself require an FX conversion.
++    row_count = len(f)
++    eur_mask = f["FX_EUR_VALUE"].notna()
++    rial_mask = f["FX_RIAL_VALUE"].notna()
++    eur_total = float(f.loc[eur_mask, "FX_EUR_VALUE"].sum()) if eur_mask.any() else None
++    rial_total = float(f.loc[rial_mask, "FX_RIAL_VALUE"].sum()) if rial_mask.any() else None
++    eur_cov = round(100.0 * int(eur_mask.sum()) / row_count, 1) if row_count else 0.0
++    rial_cov = round(100.0 * int(rial_mask.sum()) / row_count, 1) if row_count else 0.0
++    return EquivalentResult(native_display, single_currency, single_native_amount,
++                            eur_total, rial_total, eur_cov, rial_cov)
++
++
++def _weighted_ratio(frame: pd.DataFrame, numerator: str) -> tuple[Optional[float], int, int]:
++    if frame is None or frame.empty or "FX_AMOUNT" not in frame.columns or numerator not in frame.columns:
++        return None, 0, 0
++    amount = pd.to_numeric(frame["FX_AMOUNT"], errors="coerce")
++    num = pd.to_numeric(frame[numerator], errors="coerce")
++    eligible = amount.gt(EPS)
++    usable = eligible & num.notna() & num.gt(EPS)
++    if not usable.any():
++        return None, int(eligible.sum()), 0
++    den = float(amount.loc[usable].sum())
++    if den <= EPS:
++        return None, int(eligible.sum()), int(usable.sum())
++    return float(num.loc[usable].sum()) / den, int(eligible.sum()), int(usable.sum())
++
++
++def _weighted_rate(frame: pd.DataFrame) -> tuple[Optional[float], int, int]:
++    if frame is None or frame.empty or "FX_AMOUNT" not in frame.columns or "FX_RATE" not in frame.columns:
++        return None, 0, 0
++    amount = pd.to_numeric(frame["FX_AMOUNT"], errors="coerce")
++    rate = pd.to_numeric(frame["FX_RATE"], errors="coerce")
++    eligible = amount.gt(EPS)
++    usable = eligible & rate.notna() & rate.gt(EPS)
++    if not usable.any():
++        return None, int(eligible.sum()), 0
++    den = float(amount.loc[usable].sum())
++    if den <= EPS:
++        return None, int(eligible.sum()), int(usable.sum())
++    return float((amount.loc[usable] * rate.loc[usable]).sum()) / den, int(eligible.sum()), int(usable.sum())
++
++
++def _latest_allocation_rate(frame: Optional[pd.DataFrame], currency: str) -> Optional[float]:
++    if frame is None or frame.empty or "NTSW_FX_RATE_NUMERIC" not in frame.columns:
++        return None
++    z = frame.copy()
++    if "NTSW_REQ_CURRENCY" in z.columns:
++        z = z[z["NTSW_REQ_CURRENCY"].map(_currency).eq(currency)]
++    if z.empty:
++        return None
++    z["__rate"] = pd.to_numeric(z["NTSW_FX_RATE_NUMERIC"], errors="coerce")
++    z = z[z["__rate"].gt(EPS)]
++    if z.empty:
++        return None
++
++    def dt_key(row: pd.Series) -> str:
++        for c in ("NTSW_ALLOC_DATE", "NTSW_APPROVE_DATE", "NTSW_REQ_DATE"):
++            d = CalendarEngine.parse(row.get(c))
++            if d:
++                return d.isoformat()
++        return ""
++
++    z["__date"] = z.apply(dt_key, axis=1)
++    z = z.sort_values("__date", kind="mergesort")
++    return float(z.iloc[-1]["__rate"])
++
++
++def commitment_equivalents(
++    *,
++    reg: Any,
++    currency: Any,
++    balance: Any,
++    initial: Any = None,
++    fx_rows: Optional[pd.DataFrame] = None,
++    allocation_rows: Optional[pd.DataFrame] = None,
++) -> dict[str, Any]:
++    """Return EUR/IRR reference equivalents for an NTSW commitment.
++
++    Only source evidence belonging to the same registration and currency is
++    eligible.  The basis fields make the exact authority visible to reports.
++    """
++    reg_s = clean_key(reg)
++    cur = _currency(currency)
++    bal = _num(balance)
++    ini = _num(initial)
++    result: dict[str, Any] = {
++        "FX_NTSW_CURRENCY": cur,
++        "FX_NTSW_BALANCE_EUR_EQ": None,
++        "FX_NTSW_BALANCE_RIAL_EQ": None,
++        "FX_NTSW_INITIAL_EUR_EQ": None,
++        "FX_NTSW_INITIAL_RIAL_EQ": None,
++        "FX_NTSW_EUR_RATE_PER_UNIT": None,
++        "FX_NTSW_RIAL_RATE_PER_UNIT": None,
++        "FX_NTSW_EUR_EQ_BASIS": "NO_SAME_CASE_SOURCE_RATE",
++        "FX_NTSW_RIAL_EQ_BASIS": "NO_SAME_CASE_SOURCE_RATE",
++        "FX_NTSW_EQ_STATUS": "UNAVAILABLE",
++    }
++    if not reg_s or not cur or bal is None:
++        return result
++
++    f = fx_rows.copy() if fx_rows is not None else pd.DataFrame()
++    if not f.empty:
++        if KEY_REG in f.columns:
++            f = f[f[KEY_REG].map(clean_key).eq(reg_s)]
++        if "FX_CURRENCY" in f.columns:
++            f = f[f["FX_CURRENCY"].map(_currency).eq(cur)]
++
++    # EUR authority: identity for EUR, otherwise source-reported EUR equivalent
++    # on same-case purchase rows.
++    eur_rate: Optional[float] = None
++    if cur == "EUR":
++        eur_rate = 1.0
++        result["FX_NTSW_EUR_EQ_BASIS"] = "NTSW_NATIVE_EUR"
++    else:
++        eur_rate, eligible, usable = _weighted_ratio(f, "FX_EUR_VALUE")
++        if eur_rate is not None:
++            coverage = "COMPLETE" if eligible and usable == eligible else "PARTIAL"
++            result["FX_NTSW_EUR_EQ_BASIS"] = f"FX_SOURCE_REPORTED_EUR_{coverage}_SAME_REG_CURRENCY"
++
++    # IRR authority: identity for IRR; source-reported rial equivalent; source
++    # purchase rate; finally NTSW allocation rate from same REG+currency.
++    rial_rate: Optional[float] = None
++    if cur == "IRR":
++        rial_rate = 1.0
++        result["FX_NTSW_RIAL_EQ_BASIS"] = "NTSW_NATIVE_IRR"
++    else:
++        rial_rate, eligible, usable = _weighted_ratio(f, "FX_RIAL_VALUE")
++        if rial_rate is not None:
++            coverage = "COMPLETE" if eligible and usable == eligible else "PARTIAL"
++            result["FX_NTSW_RIAL_EQ_BASIS"] = f"FX_SOURCE_REPORTED_RIAL_{coverage}_SAME_REG_CURRENCY"
++        else:
++            rial_rate, eligible, usable = _weighted_rate(f)
++            if rial_rate is not None:
++                coverage = "COMPLETE" if eligible and usable == eligible else "PARTIAL"
++                result["FX_NTSW_RIAL_EQ_BASIS"] = f"FX_SOURCE_RATE_{coverage}_SAME_REG_CURRENCY"
++            else:
++                alloc = allocation_rows
++                if alloc is not None and not alloc.empty and KEY_REG in alloc.columns:
++                    alloc = alloc[alloc[KEY_REG].map(clean_key).eq(reg_s)]
++                rial_rate = _latest_allocation_rate(alloc, cur)
++                if rial_rate is not None:
++                    result["FX_NTSW_RIAL_EQ_BASIS"] = "NTSW_ALLOCATION_LATEST_RATE_SAME_REG_CURRENCY"
++
++    if eur_rate is not None:
++        result["FX_NTSW_EUR_RATE_PER_UNIT"] = eur_rate
++        result["FX_NTSW_BALANCE_EUR_EQ"] = bal * eur_rate
++        if ini is not None:
++            result["FX_NTSW_INITIAL_EUR_EQ"] = ini * eur_rate
++    if rial_rate is not None:
++        result["FX_NTSW_RIAL_RATE_PER_UNIT"] = rial_rate
++        result["FX_NTSW_BALANCE_RIAL_EQ"] = bal * rial_rate
++        if ini is not None:
++            result["FX_NTSW_INITIAL_RIAL_EQ"] = ini * rial_rate
++
++    if eur_rate is not None and rial_rate is not None:
++        result["FX_NTSW_EQ_STATUS"] = "EUR_AND_IRR_AVAILABLE"
++    elif eur_rate is not None:
++        result["FX_NTSW_EQ_STATUS"] = "EUR_AVAILABLE"
++    elif rial_rate is not None:
++        result["FX_NTSW_EQ_STATUS"] = "IRR_AVAILABLE"
++    return result
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/report/dashboard.py /mnt/data/gsi_29_8_2_work/gsi/report/dashboard.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/report/dashboard.py	2026-09-23 14:22:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/report/dashboard.py	2026-09-23 14:56:32.998433889 +0000
+@@ -25,7 +25,7 @@
+ from ..rulebook import get_rulebook
+ from .palette import (LuxuryPalette as P, NUM_FORMAT_CURRENCY, NUM_FORMAT_INT,
+                       NUM_FORMAT_PCT)
+-from .financial_summary import commitment_display, penalty_display
++from .financial_summary import commitment_display, penalty_display, commitment_equivalent_display
+ 
+ SHEET_EXEC = "۱. خلاصه اجرایی"
+ SHEET_MATRIX = "۲. کالبدشکافی ۳ لایه‌ای ماتریسی"
+@@ -294,14 +294,18 @@
+         headers = ["شماره ثبت سفارش", "شماره بارنامه", "نوع پرونده", "ارز",
+                    "تعهد اولیه", "مانده تعهد", "تاریخ ایجاد تعهد", "مهلت رفع تعهد",
+                    "مهلت قانونی محاسبه‌شده", "روزهای تأخیر", "جریمه برآوردی",
+-                   "وضعیت رفع تعهد", "تخصیص ارز", "وضعیت کلی هشدار", "شرح هشدارها"]
++                   "وضعیت رفع تعهد", "تخصیص ارز", "وضعیت کلی هشدار", "شرح هشدارها",
++                   "معادل یورویی مانده", "معادل ریالی مانده", "مبنای معادل EUR", "مبنای معادل IRR"]
+         self._write_header(ws, headers,
+-                           widths=[18, 20, 14, 10, 18, 18, 16, 16, 20, 14, 18, 18, 14, 16, 70])
++                           widths=[18, 20, 14, 10, 18, 18, 16, 16, 20, 14, 18, 18, 14, 16, 70,
++                                   20, 22, 34, 34])
+ 
+         cols = ["CANONICAL_REG", "CANONICAL_BL", "نوع پرونده", "NTSW_CURRENCY",
+                 "NTSW_INITIAL_COMMIT", "مانده تعهد", "NTSW_COMMIT_DATE", "NTSW_DEADLINE",
+                 "مهلت قانونی رفع تعهد", "روزهای تأخیر", "جریمه برآوردی",
+-                "NTSW_RELEASE_STATUS", "ALLOC_STATUS", "وضعیت کلی هشدار", "شرح هشدارها"]
++                "NTSW_RELEASE_STATUS", "ALLOC_STATUS", "وضعیت کلی هشدار", "شرح هشدارها",
++                "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
++                "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS"]
+         r = 2
+         for _, row in df.iterrows():
+             for i, key in enumerate(cols, start=1):
+@@ -309,9 +313,10 @@
+             status = str(row.get("وضعیت کلی هشدار", "سبز"))
+             color = {"قرمز": P.CRITICAL_FILL, "زرد": dx.SUSPECT_FILL}.get(status, P.GREEN_L3)
+             self._style_row(ws, r, len(headers), color)
+-            for i in (5, 6, 11):
++            for i in (5, 6, 11, 16, 17):
+                 ws.cell(row=r, column=i).number_format = NUM_FORMAT_CURRENCY
+-            ws.cell(row=r, column=15).alignment = P.align("right", wrap=True)
++            for i in (15, 18, 19):
++                ws.cell(row=r, column=i).alignment = P.align("right", wrap=True)
+             r += 1
+ 
+         last = r - 1
+@@ -319,8 +324,10 @@
+             # جمع تصمیم‌ساز باید در دانه ثبت سفارش و به تفکیک ارز باشد.
+             # SUBTOTAL روی ردیف‌های BL×Material هم fan-out را چندبرابر می‌کرد
+             # و هم ارزهای متفاوت را بدون واحد با هم جمع می‌زد.
+-            ws.cell(row=last + 2, column=4, value="جمع قابل اتکا (ثبت سفارش/ارز):").font = P.font_body(bold=True)
++            ws.cell(row=last + 2, column=4, value="جمع Native قابل اتکا (REG/ارز):").font = P.font_body(bold=True)
+             ws.cell(row=last + 2, column=6, value=commitment_display(df)).font = P.font_body(bold=True)
++            ws.cell(row=last + 3, column=4, value="معادل منبع‌محور EUR / IRR:").font = P.font_body(bold=True)
++            ws.cell(row=last + 3, column=6, value=commitment_equivalent_display(df)).font = P.font_body(bold=True)
+             ws.cell(row=last + 2, column=11, value=penalty_display(df)).font = P.font_body(bold=True)
+             ws.conditional_formatting.add(
+                 f"J2:J{last}",
+@@ -332,8 +339,9 @@
+         ws = self._new_sheet(SHEET_SCORECARD)
+         headers = ["معاونت", "مدیریت", "مدیر", "رئیس", "کارشناس", "کد پرسنلی",
+                    "تعداد بارنامه یکتا", "بحرانی", "میانگین روز رسوب",
+-                   "میانگین امتیاز ریسک", "جمع مانده تعهد", "جمع جریمه"]
+-        self._write_header(ws, headers, widths=[22, 24, 20, 20, 22, 14, 18, 12, 18, 18, 20, 20])
++                   "میانگین امتیاز ریسک", "جمع مانده تعهد", "جمع جریمه",
++                   "معادل مانده EUR/IRR"]
++        self._write_header(ws, headers, widths=[22, 24, 20, 20, 22, 14, 18, 12, 18, 18, 20, 20, 32])
+ 
+         # FIX-7 + FIX-8: تجمیع بر اساس بارنامه یکتا، اما وضعیت بحرانی از
+         # «پرونده بحرانی» خوانده می‌شود؛ نه از اولین ردیف بارنامه.
+@@ -379,6 +387,7 @@
+                 round(pd.to_numeric(g.get("امتیاز ریسک", 0), errors="coerce").mean() or 0, 1),
+                 commitment_display(g),
+                 penalty_display(g),
++                commitment_equivalent_display(g),
+             ]
+             for i, v in enumerate(vals, start=1):
+                 ws.cell(row=r, column=i, value=self._cell_value(v))
+@@ -869,11 +878,16 @@
+         "KEY_REG", "BL_COUNT", "FX_CURRENT_STAGE", "FX_STAGE_PROGRESS_PCT",
+         "FX_CONTROL_RISK_SCORE", "FX_CONTROL_RISK_BAND", "FX_DEADLINE_DATE",
+         "FX_DAYS_REMAINING", "FX_DEADLINE_BASIS", "FX_MONEY_STAGE",
+-        "FX_ALLOC_STATUS", "FX_ALLOCATION_ROUTE", "FX_PURCHASED_AMOUNT",
+-        "FX_PURCHASE_WAVG_RATE", "FX_SUPPLIER_CURRENCIES", "FX_RIAL_OUTFLOW_REPORTED",
++        "FX_ALLOC_STATUS", "FX_ALLOCATION_ROUTE", "FX_PURCHASED_NATIVE_DISPLAY",
++        "FX_EUR_EQUIVALENT", "FX_EQ_EUR_COVERAGE_PCT",
++        "FX_RIAL_OUTFLOW_REPORTED", "FX_EQ_RIAL_COVERAGE_PCT",
++        "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED", "FX_CREDIT_EQ_STATUS",
++        "FX_PURCHASE_WAVG_RATE", "FX_PURCHASE_RATE_DISPLAY", "FX_SUPPLIER_CURRENCIES",
+         "FX_CONVERSION_IMPACT_RIAL", "FX_CONVERSION_STATUS", "FX_REALLOCATION_STATUS",
+         "FX_UNAUTHORIZED_REALLOCATION_COUNT", "FX_NTSW_INITIAL", "FX_NTSW_RELEASED",
+-        "FX_NTSW_BALANCE", "FX_RELEASE_PCT", "FX_TRACE_SCORE",
++        "FX_NTSW_BALANCE", "FX_NTSW_CURRENCY", "FX_NTSW_BALANCE_EUR_EQ",
++        "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS",
++        "FX_RELEASE_PCT", "FX_TRACE_SCORE",
+         "FX_CUSTOMS_DOC_OBLIGATION", "FX_DIFFERENTIAL_OBLIGATION", "FX_COLLATERAL_STATUS",
+         "FX_ANOMALY_COUNT", "FX_ANOMALIES", "FX_KNOWLEDGE_SIGNAL_COUNT",
+         "FX_ROOT_CAUSE_HINTS", "FX_EVIDENCE_REQUIREMENTS", "FX_RATE_SEMANTIC_GAPS",
+@@ -886,13 +900,24 @@
+         "FX_CONTROL_RISK_BAND":"سطح ریسک", "FX_DEADLINE_DATE":"نزدیک‌ترین مهلت",
+         "FX_DAYS_REMAINING":"روز باقی‌مانده", "FX_DEADLINE_BASIS":"مبنای مهلت",
+         "FX_MONEY_STAGE":"مرحله پول/ارز", "FX_ALLOC_STATUS":"وضعیت تخصیص",
+-        "FX_ALLOCATION_ROUTE":"مسیر تخصیص", "FX_PURCHASED_AMOUNT":"خرید ارز",
+-        "FX_PURCHASE_WAVG_RATE":"نرخ موزون خرید", "FX_SUPPLIER_CURRENCIES":"ارز پرداختی تامین‌کننده",
+-        "FX_RIAL_OUTFLOW_REPORTED":"ارزش ریالی خرید ارز", "FX_CONVERSION_IMPACT_RIAL":"اثر ریالی تبدیل",
++        "FX_ALLOCATION_ROUTE":"مسیر تخصیص", "FX_PURCHASED_NATIVE_DISPLAY":"خرید ارز Native",
++        "FX_EUR_EQUIVALENT":"معادل یورویی خرید (Source)",
++        "FX_EQ_EUR_COVERAGE_PCT":"پوشش معادل EUR (%)",
++        "FX_RIAL_OUTFLOW_REPORTED":"معادل ریالی خرید (Source)",
++        "FX_EQ_RIAL_COVERAGE_PCT":"پوشش معادل IRR (%)",
++        "FX_CREDIT_EUR_REPORTED":"معادل EUR اعتبار (Source)",
++        "FX_CREDIT_RIAL_REPORTED":"معادل IRR اعتبار (Source)",
++        "FX_CREDIT_EQ_STATUS":"وضعیت Equivalent اعتبار",
++        "FX_PURCHASE_WAVG_RATE":"نرخ موزون خرید (تک‌ارز)", "FX_PURCHASE_RATE_DISPLAY":"نرخ خرید به تفکیک ارز", "FX_SUPPLIER_CURRENCIES":"ارز پرداختی تامین‌کننده",
++        "FX_CONVERSION_IMPACT_RIAL":"اثر ریالی تبدیل",
+         "FX_CONVERSION_STATUS":"وضعیت تبدیل", "FX_REALLOCATION_STATUS":"وضعیت جابجایی",
+         "FX_UNAUTHORIZED_REALLOCATION_COUNT":"جابجایی بدون شاهد مجوز",
+         "FX_NTSW_INITIAL":"تعهد اولیه NTSW", "FX_NTSW_RELEASED":"رفع‌شده NTSW",
+-        "FX_NTSW_BALANCE":"مانده NTSW", "FX_RELEASE_PCT":"رفع تعهد (%)",
++        "FX_NTSW_BALANCE":"مانده NTSW", "FX_NTSW_CURRENCY":"ارز تعهد NTSW",
++        "FX_NTSW_BALANCE_EUR_EQ":"معادل EUR مانده NTSW",
++        "FX_NTSW_BALANCE_RIAL_EQ":"معادل IRR مانده NTSW",
++        "FX_NTSW_EUR_EQ_BASIS":"مبنای EUR مانده", "FX_NTSW_RIAL_EQ_BASIS":"مبنای IRR مانده",
++        "FX_RELEASE_PCT":"رفع تعهد (%)",
+         "FX_TRACE_SCORE":"پوشش رهگیری (%)", "FX_CUSTOMS_DOC_OBLIGATION":"تعهد سند ترخیص",
+         "FX_DIFFERENTIAL_OBLIGATION":"تعهد مابه‌التفاوت", "FX_COLLATERAL_STATUS":"وثیقه",
+         "FX_ANOMALY_COUNT":"مغایرت", "FX_ANOMALIES":"شرح مغایرت",
+@@ -910,7 +935,11 @@
+     for rr,(_,row) in enumerate(ledger[cols].iterrows(),r0+1):
+         for cc,c in enumerate(cols,1):
+             cell=ws.cell(rr,cc,self._cell_value(row[c])); cell.font=P.font_body(); cell.border=P.thin_border(); cell.alignment=P.align("right",wrap=c in {"FX_CUSTOMS_DOC_OBLIGATION","FX_DIFFERENTIAL_OBLIGATION","FX_COLLATERAL_STATUS","FX_ANOMALIES","FX_DEADLINE_BASIS","FX_ROOT_CAUSE_HINTS","FX_EVIDENCE_REQUIREMENTS","FX_RATE_SEMANTIC_GAPS"})
+-            if c in {"FX_PURCHASED_AMOUNT","FX_RIAL_OUTFLOW_REPORTED","FX_CONVERSION_IMPACT_RIAL","FX_NTSW_INITIAL","FX_NTSW_RELEASED","FX_NTSW_BALANCE"}: cell.number_format=NUM_FORMAT_CURRENCY
++            if c in {"FX_EUR_EQUIVALENT","FX_RIAL_OUTFLOW_REPORTED","FX_CREDIT_EUR_REPORTED",
++                     "FX_CREDIT_RIAL_REPORTED","FX_CONVERSION_IMPACT_RIAL",
++                     "FX_NTSW_INITIAL","FX_NTSW_RELEASED","FX_NTSW_BALANCE",
++                     "FX_NTSW_BALANCE_EUR_EQ","FX_NTSW_BALANCE_RIAL_EQ"}:
++                cell.number_format=NUM_FORMAT_CURRENCY
+     ws.freeze_panes=f"A{r0+1}"; ws.auto_filter.ref=f"A{r0}:{get_column_letter(len(cols))}{r0+len(ledger)}"
+ 
+     r=r0+len(ledger)+3
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/report/financial_summary.py /mnt/data/gsi_29_8_2_work/gsi/report/financial_summary.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/report/financial_summary.py	2026-09-23 14:20:32.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/report/financial_summary.py	2026-09-23 14:41:33.413141349 +0000
+@@ -209,3 +209,82 @@
+     if len(currencies) != 1:
+         return None, None, display
+     return float(summary["amount"].sum()), currencies[0], display
++
++
++def commitment_equivalent_summary(df: pd.DataFrame) -> dict[str, object]:
++    """Aggregate source-backed commitment equivalents at REG grain.
++
++    ``FX_NTSW_BALANCE_EUR_EQ`` and ``FX_NTSW_BALANCE_RIAL_EQ`` are generated
++    only from same-REG/same-currency source evidence by the FX traceability
++    stage.  This helper deduplicates main-table fan-out and reports coverage so
++    a partial equivalent can never masquerade as a complete portfolio total.
++    """
++    result: dict[str, object] = {
++        "eur": None, "irr": None, "covered": 0, "total": 0,
++        "eur_covered": 0, "irr_covered": 0, "status": "UNAVAILABLE",
++    }
++    if df is None or df.empty:
++        return result
++    reg = _pick(df, _REGISTRATION_CANDIDATES)
++    if reg is None:
++        return result
++    cols = [reg]
++    for c in ("FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_EQ_STATUS"):
++        if c in df.columns:
++            cols.append(c)
++    if len(cols) == 1:
++        return result
++
++    z = df[cols].copy()
++    z["__reg"] = z[reg].astype(str).str.strip()
++    z = z[z["__reg"].ne("")]
++    if z.empty:
++        return result
++
++    # One FX-equivalent value per REG is expected. Conflicting fan-out values
++    # are excluded rather than arbitrarily selected.
++    rows = []
++    for key, g in z.groupby("__reg", sort=False):
++        row: dict[str, object] = {"reg": key}
++        conflict = False
++        for c in ("FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ"):
++            if c not in g.columns:
++                row[c] = None
++                continue
++            vals = pd.to_numeric(g[c], errors="coerce").dropna().unique().tolist()
++            if len(vals) > 1:
++                conflict = True
++                break
++            row[c] = float(vals[0]) if vals else None
++        if not conflict:
++            rows.append(row)
++    result["total"] = len(rows)
++    if not rows:
++        return result
++
++    eur_vals = [r["FX_NTSW_BALANCE_EUR_EQ"] for r in rows if r.get("FX_NTSW_BALANCE_EUR_EQ") is not None]
++    irr_vals = [r["FX_NTSW_BALANCE_RIAL_EQ"] for r in rows if r.get("FX_NTSW_BALANCE_RIAL_EQ") is not None]
++    result["eur_covered"] = len(eur_vals)
++    result["irr_covered"] = len(irr_vals)
++    result["covered"] = min(len(eur_vals), len(irr_vals))
++    result["eur"] = float(sum(eur_vals)) if eur_vals else None
++    result["irr"] = float(sum(irr_vals)) if irr_vals else None
++    if len(eur_vals) == len(rows) and len(irr_vals) == len(rows):
++        result["status"] = "COMPLETE"
++    elif eur_vals or irr_vals:
++        result["status"] = "PARTIAL"
++    return result
++
++
++def commitment_equivalent_display(df: pd.DataFrame) -> str:
++    """Human-readable EUR/IRR commitment equivalent with explicit coverage."""
++    s = commitment_equivalent_summary(df)
++    total = int(s["total"] or 0)
++    if not total:
++        return "معادل منبع‌محور در دسترس نیست"
++    parts: list[str] = []
++    if s["eur"] is not None:
++        parts.append(f"€ {float(s['eur']):,.2f} ({int(s['eur_covered'])}/{total} پرونده)")
++    if s["irr"] is not None:
++        parts.append(f"IRR {float(s['irr']):,.0f} ({int(s['irr_covered'])}/{total} پرونده)")
++    return " | ".join(parts) if parts else "معادل منبع‌محور در دسترس نیست"
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s55_fx_traceability.py /mnt/data/gsi_29_8_2_work/gsi/stages/s55_fx_traceability.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s55_fx_traceability.py	2026-09-23 14:37:56.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/stages/s55_fx_traceability.py	2026-09-23 14:51:49.534771359 +0000
+@@ -25,6 +25,8 @@
+ from ..core.jalali import CalendarEngine
+ from ..core.text import is_empty_val, num_safe
+ from ..dataio.logging_setup import log
++from ..finance.equivalents import (commitment_equivalents, summarize_credit_equivalents,
++                                   summarize_fx_purchases)
+ from .base import (ColumnSpec, FMT_CURRENCY, FMT_DECIMAL, GROUP_ANALYTIC,
+                    GROUP_DETAIL, PipelineContext, Stage, register)
+ 
+@@ -81,8 +83,15 @@
+     tolerant = True
+     requires = ["CANONICAL_REG"]
+     provides = [
+-        "FX_CASE_KEY", "FX_PURCHASED_AMOUNT", "FX_RIAL_OUTFLOW_REPORTED",
+-        "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
++        "FX_CASE_KEY", "FX_PURCHASED_AMOUNT", "FX_PURCHASED_CURRENCY",
++        "FX_PURCHASED_NATIVE_DISPLAY", "FX_RIAL_OUTFLOW_REPORTED",
++        "FX_EUR_EQUIVALENT", "FX_EQ_EUR_COVERAGE_PCT", "FX_EQ_RIAL_COVERAGE_PCT",
++        "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE", "FX_NTSW_CURRENCY",
++        "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
++        "FX_NTSW_INITIAL_EUR_EQ", "FX_NTSW_INITIAL_RIAL_EQ",
++        "FX_NTSW_EUR_RATE_PER_UNIT", "FX_NTSW_RIAL_RATE_PER_UNIT",
++        "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS", "FX_NTSW_EQ_STATUS",
++        "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED", "FX_CREDIT_EQ_STATUS",
+         "FX_MONEY_STAGE", "FX_CUSTOMS_DOC_OBLIGATION", "FX_DIFFERENTIAL_OBLIGATION",
+         "FX_COLLATERAL_STATUS", "FX_ALLOCATION_ROUTE", "FX_TRACE_SCORE",
+         "FX_ANOMALY_COUNT", "FX_ANOMALIES", "FX_EVIDENCE_STATUS",
+@@ -98,10 +107,20 @@
+         ctx.extras["fx_anomalies"] = anomalies
+ 
+         if ledger.empty:
++            nullable_numeric = {
++                "FX_PURCHASED_AMOUNT", "FX_RIAL_OUTFLOW_REPORTED", "FX_EUR_EQUIVALENT",
++                "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
++                "FX_NTSW_INITIAL_EUR_EQ", "FX_NTSW_INITIAL_RIAL_EQ",
++                "FX_NTSW_EUR_RATE_PER_UNIT", "FX_NTSW_RIAL_RATE_PER_UNIT",
++                "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED",
++            }
++            zero_numeric = {
++                "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
++                "FX_EQ_EUR_COVERAGE_PCT", "FX_EQ_RIAL_COVERAGE_PCT",
++                "FX_TRACE_SCORE", "FX_ANOMALY_COUNT",
++            }
+             for c in self.provides:
+-                df[c] = 0 if c in {"FX_PURCHASED_AMOUNT", "FX_RIAL_OUTFLOW_REPORTED",
+-                                   "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
+-                                   "FX_TRACE_SCORE", "FX_ANOMALY_COUNT"} else ""
++                df[c] = pd.NA if c in nullable_numeric else (0 if c in zero_numeric else "")
+             return df
+ 
+         # نگاشت یک‌به‌چند امن: ledger یک ردیف برای هر REG است.
+@@ -113,12 +132,25 @@
+             if c in m.columns:
+                 df[c] = regs.map(m[c].to_dict())
+ 
+-        num_cols = {"FX_PURCHASED_AMOUNT", "FX_RIAL_OUTFLOW_REPORTED", "FX_NTSW_INITIAL",
+-                    "FX_NTSW_RELEASED", "FX_NTSW_BALANCE", "FX_TRACE_SCORE", "FX_ANOMALY_COUNT"}
+-        for c in num_cols:
++        nullable_numeric = {
++            "FX_PURCHASED_AMOUNT", "FX_RIAL_OUTFLOW_REPORTED", "FX_EUR_EQUIVALENT",
++            "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
++            "FX_NTSW_INITIAL_EUR_EQ", "FX_NTSW_INITIAL_RIAL_EQ",
++            "FX_NTSW_EUR_RATE_PER_UNIT", "FX_NTSW_RIAL_RATE_PER_UNIT",
++            "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED",
++        }
++        zero_numeric = {
++            "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
++            "FX_EQ_EUR_COVERAGE_PCT", "FX_EQ_RIAL_COVERAGE_PCT",
++            "FX_TRACE_SCORE", "FX_ANOMALY_COUNT",
++        }
++        for c in nullable_numeric:
++            if c in df.columns:
++                df[c] = pd.to_numeric(df[c], errors="coerce")
++        for c in zero_numeric:
+             if c in df.columns:
+                 df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+-        for c in set(self.provides) - num_cols:
++        for c in set(self.provides) - nullable_numeric - zero_numeric:
+             if c in df.columns:
+                 df[c] = df[c].fillna("")
+ 
+@@ -142,6 +174,7 @@
+         cr = ctx.sheet("credit", "main")
+         cm = ctx.sheet("ntsw", "commitment")
+         al = ctx.sheet("ntsw", "allocation")
++        al_rows = ctx.sheet("ntsw", "allocation_rows")
+ 
+         def groups(t: Optional[pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+             if t is None or t.empty or KEY_REG not in t.columns:
+@@ -149,7 +182,7 @@
+             z = t[t[KEY_REG].map(_s) != ""].copy()
+             return {str(k): g for k, g in z.groupby(z[KEY_REG].map(_s), sort=False)}
+ 
+-        gfx, gcr, gcm, gal = map(groups, (fx, cr, cm, al))
++        gfx, gcr, gcm, gal, gal_rows = map(groups, (fx, cr, cm, al, al_rows))
+         gmain = {str(k): g for k, g in df[df["CANONICAL_REG"].map(_s) != ""].groupby(
+             df["CANONICAL_REG"].map(_s), sort=False)}
+ 
+@@ -159,14 +192,23 @@
+             c = gcr.get(reg, pd.DataFrame())
+             n = gcm.get(reg, pd.DataFrame())
+             a = gal.get(reg, pd.DataFrame())
++            ar = gal_rows.get(reg, pd.DataFrame())
+             d = gmain.get(reg, pd.DataFrame())
+ 
+-            fx_amount = float(pd.to_numeric(f.get("FX_AMOUNT"), errors="coerce").fillna(0).sum()) if not f.empty else 0.0
+-            fx_rial = float(pd.to_numeric(f.get("FX_RIAL_VALUE"), errors="coerce").fillna(0).sum()) if not f.empty else 0.0
+-            fx_eur = float(pd.to_numeric(f.get("FX_EUR_VALUE"), errors="coerce").fillna(0).sum()) if not f.empty else 0.0
++            purchase = summarize_fx_purchases(f)
++            credit_eq = summarize_credit_equivalents(c)
++            fx_amount = purchase.single_native_amount
++            fx_rial = purchase.source_rial_total
++            fx_eur = purchase.source_eur_total
++            has_fx_purchase = purchase.native_display != "—"
+ 
+             initial = _num(n.iloc[0].get("NTSW_INITIAL_COMMIT")) if not n.empty else 0.0
+             balance = _num(n.iloc[0].get("NTSW_BALANCE")) if not n.empty else 0.0
++            ntsw_currency = _first_nonempty(n, "NTSW_CURRENCY")
++            eq = commitment_equivalents(
++                reg=reg, currency=ntsw_currency, balance=balance, initial=initial,
++                fx_rows=f, allocation_rows=ar,
++            )
+             released = max(0.0, initial - balance)
+             alloc_amount = _num(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else 0.0
+             open_queue_amount = _num(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else 0.0
+@@ -199,7 +241,7 @@
+                 money_stage = "شاهد سوئیفت موجود"
+             elif fund_date:
+                 money_stage = "تأمین وجه بانکی ثبت شده"
+-            elif fx_amount > EPS or buy_date:
++            elif has_fx_purchase or buy_date:
+                 money_stage = "خرید ارز ثبت شده"
+             elif allocated or alloc_date:
+                 money_stage = "تخصیص ارز ثبت شده"
+@@ -222,9 +264,21 @@
+             row = {
+                 "KEY_REG": reg, "FX_CASE_KEY": f"REG:{reg}",
+                 "BL_COUNT": len(bls), "BL_LIST": " | ".join(bls),
+-                "FX_PURCHASED_AMOUNT": round(fx_amount, 2),
+-                "FX_RIAL_OUTFLOW_REPORTED": round(fx_rial, 2),
+-                "FX_EUR_EQUIVALENT": round(fx_eur, 2),
++                # Native purchase amount is numeric only when the case has a single
++                # purchase currency.  Mixed-currency native totals are exposed as text
++                # and never collapsed to a naked number.
++                "FX_PURCHASED_AMOUNT": (round(fx_amount, 2) if fx_amount is not None else None),
++                "FX_PURCHASED_CURRENCY": purchase.single_currency,
++                "FX_PURCHASED_NATIVE_DISPLAY": purchase.native_display,
++                "FX_RIAL_OUTFLOW_REPORTED": (round(fx_rial, 2) if fx_rial is not None else None),
++                "FX_EUR_EQUIVALENT": (round(fx_eur, 2) if fx_eur is not None else None),
++                "FX_EQ_EUR_COVERAGE_PCT": purchase.eur_coverage_pct,
++                "FX_EQ_RIAL_COVERAGE_PCT": purchase.rial_coverage_pct,
++                "FX_CREDIT_EUR_REPORTED": (round(credit_eq.source_eur_total, 2)
++                                            if credit_eq.source_eur_total is not None else None),
++                "FX_CREDIT_RIAL_REPORTED": (round(credit_eq.source_rial_total, 2)
++                                             if credit_eq.source_rial_total is not None else None),
++                "FX_CREDIT_EQ_STATUS": credit_eq.status,
+                 "FX_CURRENCIES": _set_text(f.get("FX_CURRENCY", pd.Series(dtype=str))) if not f.empty else "",
+                 "FX_FIRST_BUY_DATE": _earliest_date(f, "FX_BUY_DATE") if not f.empty else "",
+                 "FX_LAST_BUY_DATE": buy_date,
+@@ -233,6 +287,7 @@
+                 "FX_EXCHANGES": _set_text(f.get("FX_EXCHANGE", pd.Series(dtype=str))) if not f.empty else "",
+                 "FX_NTSW_INITIAL": round(initial, 2), "FX_NTSW_RELEASED": round(released, 2),
+                 "FX_NTSW_BALANCE": round(balance, 2),
++                **eq,
+                 "FX_RELEASE_PCT": round(100 * released / initial, 1) if initial > EPS else 0.0,
+                 "FX_NTSW_RELEASE_STATUS": _first_nonempty(n, "NTSW_RELEASE_STATUS"),
+                 "FX_ALLOC_REQUEST_AMOUNT": round(alloc_amount + open_queue_amount, 2),
+@@ -369,8 +424,10 @@
+         # سطح پرونده: نسبت‌های مالی فقط وقتی ارز/مبنای مبلغ قابل مقایسه باشد.
+         for i, r in ledger.iterrows():
+             reg = _s(r["KEY_REG"])
+-            initial, bal, purchased = map(_num, (r["FX_NTSW_INITIAL"], r["FX_NTSW_BALANCE"],
+-                                                 r["FX_PURCHASED_AMOUNT"]))
++            initial, bal = map(_num, (r["FX_NTSW_INITIAL"], r["FX_NTSW_BALANCE"]))
++            purchased_raw = r.get("FX_PURCHASED_AMOUNT")
++            purchased = _num(purchased_raw) if pd.notna(purchased_raw) else 0.0
++            has_purchase = _s(r.get("FX_PURCHASED_NATIVE_DISPLAY")) not in {"", "—"}
+             if initial > EPS and bal - initial > EPS:
+                 flag(reg, "BALANCE_GT_INITIAL", "CRITICAL",
+                      "مانده تعهد از تعهد اولیه بزرگ‌تر است",
+@@ -384,11 +441,16 @@
+                 flag(reg, "CLEARED_BUT_COMMITMENT_OPEN", "MEDIUM",
+                      "کالا ترخیص کامل شده اما مانده تعهد هنوز باز است؛ پس از تفکیک ۱۴۰۵ می‌تواند ناشی از مابه‌التفاوت/تطبیق باشد",
+                      f"balance={bal:,.2f}")
+-            if purchased > EPS and initial > EPS and r.get("FX_CURRENCIES") and purchased > initial * 1.02:
++            comparable_purchase = (
++                purchased > EPS and initial > EPS
++                and _s(r.get("FX_PURCHASED_CURRENCY"))
++                and _s(r.get("FX_PURCHASED_CURRENCY")) == _s(r.get("FX_NTSW_CURRENCY"))
++            )
++            if comparable_purchase and purchased > initial * 1.02:
+                 flag(reg, "FX_PURCHASE_GT_COMMITMENT", "HIGH",
+                      "مبلغ خرید ارز بیش از ۱۰۲٪ تعهد اولیه ثبت شده؛ نیازمند تطبیق ارز/اصلاحیه",
+                      f"purchase={purchased:,.2f}; initial={initial:,.2f}")
+-            if _s(r.get("FX_MONEY_STAGE")) == "شاهد سوئیفت موجود" and purchased <= EPS:
++            if _s(r.get("FX_MONEY_STAGE")) == "شاهد سوئیفت موجود" and not has_purchase:
+                 flag(reg, "SWIFT_WITHOUT_FX_PURCHASE", "MEDIUM",
+                      "سوئیفت ثبت شده ولی خرید ارز در سورس تراکنش ارزی پیدا نشد",
+                      _s(r.get("FX_SWIFT_DATE")))
+@@ -412,14 +474,21 @@
+     def columns(self) -> List[ColumnSpec]:
+         return [
+             ColumnSpec("FX_MONEY_STAGE", "مرحله پول/ارز", 24, GROUP_DETAIL, order=70),
+-            ColumnSpec("FX_PURCHASED_AMOUNT", "خرید ارز ثبت‌شده", 20, GROUP_ANALYTIC,
++            ColumnSpec("FX_PURCHASED_NATIVE_DISPLAY", "خرید ارز Native", 28, GROUP_ANALYTIC, order=88),
++            ColumnSpec("FX_EUR_EQUIVALENT", "معادل EUR خرید (Source)", 22, GROUP_ANALYTIC,
+                        fmt=FMT_CURRENCY, order=89),
+-            ColumnSpec("FX_RIAL_OUTFLOW_REPORTED", "ارزش ریالی خرید ارز", 20, GROUP_ANALYTIC,
++            ColumnSpec("FX_RIAL_OUTFLOW_REPORTED", "معادل IRR خرید (Source)", 24, GROUP_ANALYTIC,
+                        fmt=FMT_CURRENCY, order=90),
+             ColumnSpec("FX_NTSW_RELEASED", "رفع‌شده در NTSW", 20, GROUP_ANALYTIC,
+                        fmt=FMT_CURRENCY, order=91),
+-            ColumnSpec("FX_NTSW_BALANCE", "مانده NTSW", 20, GROUP_ANALYTIC,
++            ColumnSpec("FX_NTSW_BALANCE", "مانده NTSW (Native)", 20, GROUP_ANALYTIC,
++                       fmt=FMT_CURRENCY, order=92),
++            ColumnSpec("FX_NTSW_BALANCE_EUR_EQ", "معادل EUR مانده NTSW", 22, GROUP_ANALYTIC,
++                       fmt=FMT_CURRENCY, order=92),
++            ColumnSpec("FX_NTSW_BALANCE_RIAL_EQ", "معادل IRR مانده NTSW", 24, GROUP_ANALYTIC,
+                        fmt=FMT_CURRENCY, order=92),
++            ColumnSpec("FX_NTSW_EUR_EQ_BASIS", "مبنای EUR مانده", 38, GROUP_ANALYTIC, wrap=True, order=92),
++            ColumnSpec("FX_NTSW_RIAL_EQ_BASIS", "مبنای IRR مانده", 38, GROUP_ANALYTIC, wrap=True, order=92),
+             ColumnSpec("FX_CUSTOMS_DOC_OBLIGATION", "تعهد سند ترخیص", 36,
+                        GROUP_ANALYTIC, wrap=True, order=93),
+             ColumnSpec("FX_DIFFERENTIAL_OBLIGATION", "تعهد مابه‌التفاوت", 36,
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s56_money_flow_control.py /mnt/data/gsi_29_8_2_work/gsi/stages/s56_money_flow_control.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s56_money_flow_control.py	2026-09-23 14:37:56.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/stages/s56_money_flow_control.py	2026-09-23 14:53:15.875874966 +0000
+@@ -94,7 +94,7 @@
+         "FX_DEADLINE_BASIS", "FX_CURRENT_STAGE", "FX_STAGE_PROGRESS_PCT",
+         "FX_REALLOCATION_STATUS", "FX_REALLOCATION_COUNT",
+         "FX_UNAUTHORIZED_REALLOCATION_COUNT", "FX_CONVERSION_STATUS",
+-        "FX_CONVERSION_IMPACT_RIAL", "FX_PURCHASE_WAVG_RATE",
++        "FX_CONVERSION_IMPACT_RIAL", "FX_PURCHASE_WAVG_RATE", "FX_PURCHASE_RATE_DISPLAY",
+         "FX_SUPPLIER_CURRENCIES", "FX_MONEY_RECON_STATUS",
+         "FX_MONEY_EVIDENCE_GAPS", "FX_OBLIGATION_RECON_STATUS",
+     ]
+@@ -148,11 +148,13 @@
+                 df[c] = regs.map(m[c].to_dict())
+         numeric = {"FX_CONTROL_RISK_SCORE", "FX_DAYS_REMAINING", "FX_STAGE_PROGRESS_PCT",
+                    "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
+-                   "FX_CONVERSION_IMPACT_RIAL", "FX_PURCHASE_WAVG_RATE"}
++                   "FX_CONVERSION_IMPACT_RIAL"}
+         for c in numeric:
+             if c in df.columns:
+                 df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+-        for c in set(self.provides) - numeric:
++        if "FX_PURCHASE_WAVG_RATE" in df.columns:
++            df["FX_PURCHASE_WAVG_RATE"] = pd.to_numeric(df["FX_PURCHASE_WAVG_RATE"], errors="coerce")
++        for c in set(self.provides) - numeric - {"FX_PURCHASE_WAVG_RATE"}:
+             if c in df.columns:
+                 df[c] = df[c].fillna("")
+ 
+@@ -164,9 +166,12 @@
+     def _empty_outputs(self, df: pd.DataFrame) -> None:
+         numeric = {"FX_CONTROL_RISK_SCORE", "FX_DAYS_REMAINING", "FX_STAGE_PROGRESS_PCT",
+                    "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
+-                   "FX_CONVERSION_IMPACT_RIAL", "FX_PURCHASE_WAVG_RATE"}
++                   "FX_CONVERSION_IMPACT_RIAL"}
+         for c in self.provides:
+-            df[c] = 0.0 if c in numeric else ""
++            if c == "FX_PURCHASE_WAVG_RATE":
++                df[c] = float("nan")
++            else:
++                df[c] = 0.0 if c in numeric else ""
+ 
+     # ───────────────────────── پل نرخ و تبدیل ارز ─────────────────────────
+     def _build_rate_bridge(self, ctx: PipelineContext) -> pd.DataFrame:
+@@ -683,15 +688,22 @@
+             elif supplier_curs: conv_status = "SAME_CURRENCY_OR_NO_CROSS"
+             else: conv_status = "NO_SUPPLIER_PAYMENT_DATA"
+ 
+-            # نرخ متوسط خرید فقط وقتی یک ارز خرید وجود دارد؛ مخلوط ارزها قابل میانگین‌گیری نیست.
++            # نرخ متوسط خرید فقط درون یک ارز معنی دارد. برای پرونده چندارزی
++            # عدد واحد تولید نمی‌کنیم و نرخ هر ارز را جداگانه نمایش می‌دهیم.
+             purchase_curs = sorted({_s(x) for x in rbridge.get("PURCHASE_CURRENCY", pd.Series(dtype=str)) if _s(x)}) if not rbridge.empty else []
+-            wavg = 0.0
+-            if len(purchase_curs) == 1 and not rbridge.empty:
+-                am = pd.to_numeric(rbridge["PURCHASE_AMOUNT"], errors="coerce").fillna(0)
+-                ri = pd.to_numeric(rbridge["PURCHASE_RIAL"], errors="coerce").fillna(0)
+-                if am.sum() > EPS:
+-                    wavg = float(ri.sum() / am.sum()) if ri.sum() > EPS else float(
+-                        (pd.to_numeric(rbridge["PURCHASE_RATE_RIAL"], errors="coerce").fillna(0) * am).sum() / am.sum())
++            rate_parts = []
++            for cur in purchase_curs:
++                cg = rbridge[rbridge["PURCHASE_CURRENCY"].map(_s).eq(cur)].copy()
++                am = pd.to_numeric(cg["PURCHASE_AMOUNT"], errors="coerce").fillna(0)
++                ri = pd.to_numeric(cg["PURCHASE_RIAL"], errors="coerce").fillna(0)
++                if am.sum() <= EPS:
++                    continue
++                cr = float(ri.sum() / am.sum()) if ri.sum() > EPS else float(
++                    (pd.to_numeric(cg["PURCHASE_RATE_RIAL"], errors="coerce").fillna(0) * am).sum() / am.sum())
++                if cr > EPS:
++                    rate_parts.append((cur, cr))
++            wavg = rate_parts[0][1] if len(rate_parts) == 1 else None
++            rate_display = " | ".join(f"{cur}: {rate:,.4f}" for cur, rate in rate_parts)
+ 
+             current_stage = ""
+             progress = 0.0
+@@ -754,7 +766,8 @@
+                 "FX_UNAUTHORIZED_REALLOCATION_COUNT": unauth,
+                 "FX_CONVERSION_STATUS": conv_status,
+                 "FX_CONVERSION_IMPACT_RIAL": round(impact, 2),
+-                "FX_PURCHASE_WAVG_RATE": round(wavg, 4),
++                "FX_PURCHASE_WAVG_RATE": (round(wavg, 4) if wavg is not None else None),
++                "FX_PURCHASE_RATE_DISPLAY": rate_display,
+                 "FX_SUPPLIER_CURRENCIES": supplier_curs,
+             })
+         return pd.DataFrame(rows)
+@@ -771,8 +784,9 @@
+                        fmt=FMT_DECIMAL, color_rule="scale_low_bad", order=101),
+             ColumnSpec("FX_DEADLINE_BASIS", "مبنای نزدیک‌ترین مهلت", 42, GROUP_ANALYTIC,
+                        wrap=True, order=102),
+-            ColumnSpec("FX_PURCHASE_WAVG_RATE", "نرخ موزون خرید ارز", 18, GROUP_ANALYTIC,
++            ColumnSpec("FX_PURCHASE_WAVG_RATE", "نرخ موزون خرید ارز (تک‌ارز)", 18, GROUP_ANALYTIC,
+                        fmt=FMT_DECIMAL, order=103),
++            ColumnSpec("FX_PURCHASE_RATE_DISPLAY", "نرخ خرید به تفکیک ارز", 28, GROUP_ANALYTIC, order=103),
+             ColumnSpec("FX_SUPPLIER_CURRENCIES", "ارز پرداختی به تأمین‌کننده", 20, GROUP_ANALYTIC, order=104),
+             ColumnSpec("FX_MONEY_RECON_STATUS", "وضعیت تطبیق صفر تا صد مبالغ", 24, GROUP_ANALYTIC, order=104),
+             ColumnSpec("FX_OBLIGATION_RECON_STATUS", "تطبیق معادله تعهد", 22, GROUP_ANALYTIC, order=104),
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s57_legacy_knowledge.py /mnt/data/gsi_29_8_2_work/gsi/stages/s57_legacy_knowledge.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/stages/s57_legacy_knowledge.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/stages/s57_legacy_knowledge.py	2026-09-23 14:45:19.173939984 +0000
+@@ -100,7 +100,13 @@
+                 basis.append(f"متن پرونده با الگوی «{item.title}» منطبق شد")
+ 
+             # 2) structural knowledge from the old OF workbook: Payment without BL.
+-            if _num(lr.get("FX_PURCHASED_AMOUNT")) > 0.01 and _num(lr.get("BL_COUNT")) <= 0:
++            has_purchase = (
++                _num(lr.get("FX_PURCHASED_AMOUNT")) > 0.01
++                or _s(lr.get("FX_PURCHASED_NATIVE_DISPLAY")) not in {"", "—"}
++                or _num(lr.get("FX_EUR_EQUIVALENT")) > 0.01
++                or _num(lr.get("FX_RIAL_OUTFLOW_REPORTED")) > 0.01
++            )
++            if has_purchase and _num(lr.get("BL_COUNT")) <= 0:
+                 item = catalog.get("LEGACY_PAYMENT_WITHOUT_BL")
+                 if item:
+                     matched[item.id] = item
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/studio_core/field_catalog.py /mnt/data/gsi_29_8_2_work/gsi/studio_core/field_catalog.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/studio_core/field_catalog.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/studio_core/field_catalog.py	2026-09-23 14:53:15.876086149 +0000
+@@ -103,10 +103,26 @@
+     "OPEN_COMMIT_ROWS": "ردیف‌های تعهد باز", "COMMIT_ROWS": "ردیف‌های تعهد",
+     "LEGAL_DEADLINE_DAYS": "مهلت کنترلی RuleBook (روز)",
+     "FX_CASE_KEY": "پرونده ارزی (ثبت سفارش)",
+-    "FX_PURCHASED_AMOUNT": "خرید ارز ثبت‌شده",
+-    "FX_RIAL_OUTFLOW_REPORTED": "ارزش ریالی خرید ارز",
++    "FX_PURCHASED_AMOUNT": "خرید ارز ثبت‌شده (تک‌ارزی)",
++    "FX_PURCHASED_NATIVE_DISPLAY": "خرید ارز Native به تفکیک ارز",
++    "FX_PURCHASED_CURRENCY": "ارز خرید (در حالت تک‌ارزی)",
++    "FX_EUR_EQUIVALENT": "معادل یورویی خرید ارز (گزارش‌شده سورس)",
++    "FX_RIAL_OUTFLOW_REPORTED": "معادل ریالی خرید ارز (گزارش‌شده سورس)",
++    "FX_EQ_EUR_COVERAGE_PCT": "پوشش معادل یورویی خرید (%)",
++    "FX_EQ_RIAL_COVERAGE_PCT": "پوشش معادل ریالی خرید (%)",
+     "FX_NTSW_INITIAL": "تعهد اولیه NTSW", "FX_NTSW_RELEASED": "رفع‌شده NTSW",
+-    "FX_NTSW_BALANCE": "مانده NTSW", "FX_MONEY_STAGE": "مرحله پول/ارز",
++    "FX_NTSW_BALANCE": "مانده NTSW", "FX_NTSW_CURRENCY": "ارز تعهد NTSW",
++    "FX_NTSW_BALANCE_EUR_EQ": "معادل یورویی مانده NTSW",
++    "FX_NTSW_BALANCE_RIAL_EQ": "معادل ریالی مانده NTSW",
++    "FX_NTSW_INITIAL_EUR_EQ": "معادل یورویی تعهد اولیه NTSW",
++    "FX_NTSW_INITIAL_RIAL_EQ": "معادل ریالی تعهد اولیه NTSW",
++    "FX_NTSW_EUR_EQ_BASIS": "مبنای تبدیل مانده به EUR",
++    "FX_NTSW_RIAL_EQ_BASIS": "مبنای تبدیل مانده به IRR",
++    "FX_NTSW_EQ_STATUS": "وضعیت پوشش Equivalent تعهد",
++    "FX_CREDIT_EUR_REPORTED": "معادل یورویی اعتبار (Source)",
++    "FX_CREDIT_RIAL_REPORTED": "معادل ریالی اعتبار (Source)",
++    "FX_CREDIT_EQ_STATUS": "وضعیت Equivalent اعتبار",
++    "FX_MONEY_STAGE": "مرحله پول/ارز",
+     "FX_CUSTOMS_DOC_OBLIGATION": "تعهد سند ترخیص",
+     "FX_DIFFERENTIAL_OBLIGATION": "تعهد مابه‌التفاوت",
+     "FX_COLLATERAL_STATUS": "وضعیت وثیقه", "FX_ALLOCATION_ROUTE": "مسیر تخصیص",
+@@ -120,7 +136,7 @@
+     "FX_REALLOCATION_COUNT": "تعداد جابه‌جایی بین پرونده‌ها",
+     "FX_UNAUTHORIZED_REALLOCATION_COUNT": "جابه‌جایی بدون شاهد مجوز",
+     "FX_CONVERSION_STATUS": "وضعیت تبدیل ارز", "FX_CONVERSION_IMPACT_RIAL": "اثر ریالی تبدیل ارز",
+-    "FX_PURCHASE_WAVG_RATE": "نرخ موزون خرید ارز", "FX_SUPPLIER_CURRENCIES": "ارز پرداختی به تأمین‌کننده",
++    "FX_PURCHASE_WAVG_RATE": "نرخ موزون خرید ارز (تک‌ارز)", "FX_PURCHASE_RATE_DISPLAY": "نرخ خرید به تفکیک ارز", "FX_SUPPLIER_CURRENCIES": "ارز پرداختی به تأمین‌کننده",
+     "ALLOCATED": "تخصیص‌یافته", "ALLOC_STATUS": "وضعیت تخصیص",
+     "ALLOC_PROCESS": "مرحله تخصیص", "ALLOC_DATE": "تاریخ تخصیص",
+     "ALLOC_REQUESTS": "تعداد درخواست تخصیص", "ALLOC_REJECTED_F": "تخصیص رد شده",
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/studio_core/html_export.py /mnt/data/gsi_29_8_2_work/gsi/studio_core/html_export.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/gsi/studio_core/html_export.py	2026-09-23 13:41:10.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/gsi/studio_core/html_export.py	2026-09-23 14:44:58.566832965 +0000
+@@ -569,6 +569,7 @@
+     # وابستگی نمودارها hidden وارد payload می‌شود: نمودار presentation است و
+     # نباید کاربر را مجبور کند فیلد پشتیبان را به جدول اضافه کند.
+     for c in ("روزهای رسوب", "مقاومت (روز)", "مانده تعهد", "روزهای تأخیر",
++              "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_CURRENCY",
+               "مقاومت انبار (روز)", "STAGE_FA", "ORDER_STAGE_FA", "CASE_KEY"):
+         if c in df.columns and c not in all_needed:
+             all_needed.append(c)
+@@ -840,8 +841,11 @@
+                                "FX_CONVERSION_IMPACT_RIAL"],
+         "warehouse_declaration": ["CANONICAL_BL", "WH_STATUS", "WH_STATUS_FA", "WH_CLEAR_DATE",
+                                   "WH_RECEIPT_DATE", "WH_LAG_DAYS", "WH_AGE_DAYS", "WH_CLEAR_BASIS"],
+-        "fx_ledger": ["KEY_REG", "FX_MONEY_STAGE", "FX_NTSW_BALANCE", "FX_TRACE_SCORE",
+-                      "FX_ANOMALY_COUNT", "FX_CONTROL_RISK_SCORE", "FX_CURRENT_STAGE",
++        "fx_ledger": ["KEY_REG", "FX_MONEY_STAGE", "FX_PURCHASED_NATIVE_DISPLAY",
++                      "FX_EUR_EQUIVALENT", "FX_RIAL_OUTFLOW_REPORTED",
++                      "FX_NTSW_BALANCE", "FX_NTSW_CURRENCY", "FX_NTSW_BALANCE_EUR_EQ",
++                      "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS",
++                      "FX_TRACE_SCORE", "FX_ANOMALY_COUNT", "FX_CONTROL_RISK_SCORE", "FX_CURRENT_STAGE",
+                       "FX_DEADLINE_DATE", "FX_DAYS_REMAINING", "FX_CONVERSION_IMPACT_RIAL",
+                       "FX_UNAUTHORIZED_REALLOCATION_COUNT"],
+     }
+@@ -1126,25 +1130,26 @@
+   return scatterChart(pts,title,Object.assign({xlabel:'روزهای رسوب',ylabel:'مقاومت (روز)',
+    quad:'رسوب بالا و مقاومت بالا'},o))}
+  if(k==='delay_vs_commitment'){
+-  const pts=[];for(const r of a){const x=N(r,'روزهای تأخیر'),y=N(r,'مانده تعهد');
++  const pts=[];for(const r of a){const x=N(r,'روزهای تأخیر'),y=N(r,'FX_NTSW_BALANCE_EUR_EQ');
+    if(x===null||y===null)continue;pts.push({x,y,k:S(r,'CANONICAL_ORDER'),b:S(r,'بحرانی (کوتاه)')})}
+-  return scatterChart(pts,title,Object.assign({xlabel:'روزهای تأخیر',ylabel:'مانده تعهد',
+-   quad:'تأخیر و مبلغ، هر دو بالا'},o))}
++  return scatterChart(pts,title,Object.assign({xlabel:'روزهای تأخیر',ylabel:'مانده تعهد — معادل EUR',
++   quad:'تأخیر و معادل یورویی، هر دو بالا'},o))}
+  if(k==='pareto_delay'){const m={};for(const r of a){const d=N(r,'روزهای تأخیر');
+    if(d===null||d<=0)continue;const key=S(r,'CANONICAL_ORDER').trim()||S(r,'KEY_REG').trim();
+    if(!key)continue;m[key]=Math.max(m[key]||0,d)}
+   return paretoChart(Object.entries(m).map(([k2,v])=>({k:k2,v})),title,o)}
+  if(k==='commitment'){
+-  const over=a.filter(r=>(parseFloat(S(r,'روزهای تأخیر'))||0)>0);
+-  const open=a.filter(r=>(parseFloat(S(r,'روزهای تأخیر'))||0)<=0&&(parseFloat(S(r,'مانده تعهد'))||0)>0);
+-  const done=a.filter(r=>(parseFloat(S(r,'مانده تعهد'))||0)<=0);
++  const eligible=a.filter(r=>N(r,'FX_NTSW_BALANCE_EUR_EQ')!==null);
++  const over=eligible.filter(r=>(parseFloat(S(r,'روزهای تأخیر'))||0)>0);
++  const open=eligible.filter(r=>(parseFloat(S(r,'روزهای تأخیر'))||0)<=0&&(parseFloat(S(r,'مانده تعهد'))||0)>0);
++  const done=eligible.filter(r=>(parseFloat(S(r,'مانده تعهد'))||0)<=0);
+   return barChart([
+-   {k:'معوق',v:sumUnique(over,'مانده تعهد',['KEY_REG','CANONICAL_ORDER']),
++   {k:'معوق',v:sumUnique(over,'FX_NTSW_BALANCE_EUR_EQ',['KEY_REG','CANONICAL_ORDER']),
+     c:'var(--st-critical)',ink:'var(--st-critical-ink)'},
+-   {k:'در مهلت',v:sumUnique(open,'مانده تعهد',['KEY_REG','CANONICAL_ORDER']),
++   {k:'در مهلت',v:sumUnique(open,'FX_NTSW_BALANCE_EUR_EQ',['KEY_REG','CANONICAL_ORDER']),
+     c:'var(--st-warning)',ink:'var(--st-warning-ink)'},
+-   {k:'تسویه‌شده',v:sumUnique(done,'مانده تعهد',['KEY_REG','CANONICAL_ORDER']),
+-    c:'var(--st-good)',ink:'var(--st-good-ink)'}],title,o)}
++   {k:'تسویه‌شده',v:sumUnique(done,'FX_NTSW_BALANCE_EUR_EQ',['KEY_REG','CANONICAL_ORDER']),
++    c:'var(--st-good)',ink:'var(--st-good-ink)'}],title+' — معادل EUR',o)}
+  if(k==='overdue_bucket'){const bins={'بدون تأخیر':0,'۱ تا ۷ روز':0,'۸ تا ۳۰ روز':0,
+    '۳۱ تا ۶۰ روز':0,'بیش از ۶۰ روز':0};
+   a.forEach(r=>{const d=parseFloat(S(r,'روزهای تأخیر'));
+@@ -1343,7 +1348,8 @@
+   (+b['FX_CONTROL_RISK_SCORE']||0)-(+a['FX_CONTROL_RISK_SCORE']||0)).slice(0,15);
+  const tab=rowsFx.length?('<div class="tablewrap"><table><thead><tr>'
+   +'<th scope="col">ثبت سفارش</th><th scope="col">مرحله جاری</th><th scope="col">ریسک</th>'
+-  +'<th scope="col">روز باقی</th><th scope="col">مانده تعهد</th>'
++  +'<th scope="col">روز باقی</th><th scope="col">مانده Native</th>'
++  +'<th scope="col">معادل EUR</th><th scope="col">معادل IRR</th>'
+   +'<th scope="col">اثر تبدیل (ریال)</th><th scope="col">جابجایی بدون مجوز</th>'
+   +'</tr></thead><tbody>'
+   +rowsFx.map(x=>{const c=byReg[S(x,'KEY_REG')]||x;
+@@ -1352,7 +1358,9 @@
+    const hasDue=String(c['FX_DEADLINE_DATE']||'').trim()!=='';
+    return '<tr><td>'+esc2(S(x,'KEY_REG'))+'</td><td>'+esc2(S(c,'FX_CURRENT_STAGE')||S(x,'FX_MONEY_STAGE'))
+     +'</td><td class="num">'+fmt(c['FX_CONTROL_RISK_SCORE'])+'</td><td class="num">'
+-    +(hasDue?fmt(c['FX_DAYS_REMAINING']):'—')+'</td><td class="num">'+fmt(x['FX_NTSW_BALANCE'])
++    +(hasDue?fmt(c['FX_DAYS_REMAINING']):'—')+'</td><td class="num">'+fmt(x['FX_NTSW_BALANCE'])+' '+esc2(S(x,'FX_NTSW_CURRENCY'))
++    +'</td><td class="num">'+fmt(x['FX_NTSW_BALANCE_EUR_EQ'])
++    +'</td><td class="num">'+fmt(x['FX_NTSW_BALANCE_RIAL_EQ'])
+     +'</td><td class="num">'+fmt(c['FX_CONVERSION_IMPACT_RIAL'])+'</td><td class="num">'
+     +fmt(c['FX_UNAUTHORIZED_REALLOCATION_COUNT'])+'</td></tr>'}).join('')
+   +'</tbody></table></div>'):'<p class="note">دفترکل FX در این اجرا موجود نیست.</p>';
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=MANIFEST.json' '--exclude=PACKAGE_SHA256.json' /mnt/data/gsi_29_8_1_baseline_for_fx/tests/test_fx_equivalent_authority_v29_8_2.py /mnt/data/gsi_29_8_2_work/tests/test_fx_equivalent_authority_v29_8_2.py
+--- /mnt/data/gsi_29_8_1_baseline_for_fx/tests/test_fx_equivalent_authority_v29_8_2.py	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_29_8_2_work/tests/test_fx_equivalent_authority_v29_8_2.py	2026-09-23 14:52:32.779740403 +0000
+@@ -0,0 +1,173 @@
++# -*- coding: utf-8 -*-
++"""V29.8.2 — source-backed EUR/IRR equivalents and currency-safe FX totals."""
++from datetime import date
++
++import pandas as pd
++import pytest
++
++from gsi.finance.equivalents import (commitment_equivalents, summarize_credit_equivalents,
++                                     summarize_fx_purchases)
++from gsi.report.financial_summary import commitment_equivalent_summary
++from gsi.rulebook import get_rulebook
++from gsi.stages.base import PipelineContext
++from gsi.stages.s55_fx_traceability import FxTraceabilityStage
++
++
++def test_purchase_summary_keeps_native_currencies_separate_but_sums_reported_equivalents():
++    fx = pd.DataFrame([
++        {"FX_AMOUNT": 100, "FX_CURRENCY": "EUR", "FX_EUR_VALUE": 100, "FX_RIAL_VALUE": 60_000_000},
++        {"FX_AMOUNT": 200, "FX_CURRENCY": "USD", "FX_EUR_VALUE": 180, "FX_RIAL_VALUE": 120_000_000},
++    ])
++    x = summarize_fx_purchases(fx)
++    assert x.single_native_amount is None
++    assert "100.00 EUR" in x.native_display and "200.00 USD" in x.native_display
++    assert x.source_eur_total == 280
++    assert x.source_rial_total == 180_000_000
++    assert x.eur_coverage_pct == 100 and x.rial_coverage_pct == 100
++
++
++def test_purchase_equivalent_coverage_is_explicit_not_silently_zero_filled():
++    fx = pd.DataFrame([
++        {"FX_AMOUNT": 100, "FX_CURRENCY": "USD", "FX_EUR_VALUE": 90, "FX_RIAL_VALUE": 60_000_000},
++        {"FX_AMOUNT": 50, "FX_CURRENCY": "USD", "FX_EUR_VALUE": None, "FX_RIAL_VALUE": None},
++    ])
++    x = summarize_fx_purchases(fx)
++    assert x.single_native_amount == 150
++    assert x.source_eur_total == 90
++    assert x.source_rial_total == 60_000_000
++    assert x.eur_coverage_pct == 50 and x.rial_coverage_pct == 50
++
++
++def test_commitment_uses_same_reg_same_currency_reported_equivalent_rates():
++    reg = "12345678"
++    fx = pd.DataFrame([
++        {"KEY_REG": reg, "FX_AMOUNT": 1000, "FX_CURRENCY": "USD",
++         "FX_EUR_VALUE": 900, "FX_RIAL_VALUE": 600_000_000, "FX_RATE": 590_000},
++        # Different currency must never enter the USD valuation.
++        {"KEY_REG": reg, "FX_AMOUNT": 100, "FX_CURRENCY": "EUR",
++         "FX_EUR_VALUE": 100, "FX_RIAL_VALUE": 70_000_000, "FX_RATE": 700_000},
++        # Different REG must never enter this valuation.
++        {"KEY_REG": "87654321", "FX_AMOUNT": 1000, "FX_CURRENCY": "USD",
++         "FX_EUR_VALUE": 500, "FX_RIAL_VALUE": 100_000_000, "FX_RATE": 100_000},
++    ])
++    out = commitment_equivalents(reg=reg, currency="USD", balance=500, initial=1000, fx_rows=fx)
++    assert out["FX_NTSW_BALANCE_EUR_EQ"] == pytest.approx(450)
++    assert out["FX_NTSW_BALANCE_RIAL_EQ"] == pytest.approx(300_000_000)
++    assert out["FX_NTSW_INITIAL_EUR_EQ"] == pytest.approx(900)
++    assert "SAME_REG_CURRENCY" in out["FX_NTSW_EUR_EQ_BASIS"]
++    assert "SOURCE_REPORTED_RIAL" in out["FX_NTSW_RIAL_EQ_BASIS"]
++
++
++def test_commitment_irr_falls_back_to_ntsw_allocation_same_case_rate_only():
++    reg = "12345678"
++    alloc = pd.DataFrame([
++        {"KEY_REG": reg, "NTSW_REQ_CURRENCY": "USD", "NTSW_FX_RATE_NUMERIC": 600_000,
++         "NTSW_REQ_DATE": "2026-01-01"},
++        {"KEY_REG": reg, "NTSW_REQ_CURRENCY": "USD", "NTSW_FX_RATE_NUMERIC": 620_000,
++         "NTSW_REQ_DATE": "2026-02-01"},
++        {"KEY_REG": reg, "NTSW_REQ_CURRENCY": "EUR", "NTSW_FX_RATE_NUMERIC": 700_000,
++         "NTSW_REQ_DATE": "2026-03-01"},
++    ])
++    out = commitment_equivalents(reg=reg, currency="USD", balance=100, allocation_rows=alloc)
++    assert out["FX_NTSW_BALANCE_RIAL_EQ"] == pytest.approx(62_000_000)
++    assert out["FX_NTSW_BALANCE_EUR_EQ"] is None
++    assert out["FX_NTSW_RIAL_EQ_BASIS"] == "NTSW_ALLOCATION_LATEST_RATE_SAME_REG_CURRENCY"
++
++
++def test_eur_commitment_has_identity_eur_equivalent_without_inventing_irr():
++    out = commitment_equivalents(reg="12345678", currency="EUR", balance=125.5)
++    assert out["FX_NTSW_BALANCE_EUR_EQ"] == pytest.approx(125.5)
++    assert out["FX_NTSW_BALANCE_RIAL_EQ"] is None
++    assert out["FX_NTSW_EUR_EQ_BASIS"] == "NTSW_NATIVE_EUR"
++
++
++def test_equivalent_portfolio_summary_deduplicates_bl_material_fanout():
++    df = pd.DataFrame([
++        {"KEY_REG":"R1", "FX_NTSW_BALANCE_EUR_EQ":100, "FX_NTSW_BALANCE_RIAL_EQ":60_000_000},
++        {"KEY_REG":"R1", "FX_NTSW_BALANCE_EUR_EQ":100, "FX_NTSW_BALANCE_RIAL_EQ":60_000_000},
++        {"KEY_REG":"R2", "FX_NTSW_BALANCE_EUR_EQ":200, "FX_NTSW_BALANCE_RIAL_EQ":120_000_000},
++    ])
++    s = commitment_equivalent_summary(df)
++    assert s["eur"] == 300
++    assert s["irr"] == 180_000_000
++    assert s["total"] == 2 and s["status"] == "COMPLETE"
++
++
++def test_fx_stage_mixed_purchase_currency_has_no_naked_native_total_and_values_commitment():
++    reg = "12345678"
++    sources = {
++        "fx_transaction": {"main": pd.DataFrame([
++            {"KEY_REG":reg, "FX_AMOUNT":100, "FX_CURRENCY":"USD", "FX_EUR_VALUE":90,
++             "FX_RIAL_VALUE":60_000_000, "FX_RATE":600_000, "FX_BUY_DATE":"2026-01-01"},
++            {"KEY_REG":reg, "FX_AMOUNT":50, "FX_CURRENCY":"EUR", "FX_EUR_VALUE":50,
++             "FX_RIAL_VALUE":35_000_000, "FX_RATE":700_000, "FX_BUY_DATE":"2026-01-02"},
++        ])},
++        "ntsw": {
++            "commitment": pd.DataFrame([{
++                "KEY_REG":reg, "NTSW_INITIAL_COMMIT":100, "NTSW_BALANCE":50,
++                "NTSW_CURRENCY":"USD", "NTSW_COMMIT_DATE":"2026-01-03",
++                "NTSW_RELEASE_STATUS":"رفع تعهد نشده",
++            }]),
++            "allocation": pd.DataFrame(),
++            "allocation_rows": pd.DataFrame(),
++        },
++        "credit": {"main": pd.DataFrame()},
++    }
++    ctx = PipelineContext(rb=get_rulebook(reload=True, as_of=date(2026, 9, 23)),
++                          today=date(2026, 9, 23), sources=sources)
++    df = pd.DataFrame([{"CANONICAL_REG":reg, "CANONICAL_BL":"B1", "IS_FULL_CLEARED":False}])
++    out = FxTraceabilityStage().run(df, ctx)
++    row = ctx.extras["fx_ledger"].iloc[0]
++    assert pd.isna(row["FX_PURCHASED_AMOUNT"])
++    assert "100.00 USD" in row["FX_PURCHASED_NATIVE_DISPLAY"]
++    assert row["FX_EUR_EQUIVALENT"] == 140
++    assert row["FX_RIAL_OUTFLOW_REPORTED"] == 95_000_000
++    # Commitment is USD, so only USD purchase evidence determines its reference equivalent.
++    assert row["FX_NTSW_BALANCE_EUR_EQ"] == pytest.approx(45)
++    assert row["FX_NTSW_BALANCE_RIAL_EQ"] == pytest.approx(30_000_000)
++    assert out["FX_NTSW_BALANCE_EUR_EQ"].iloc[0] == pytest.approx(45)
++
++
++
++def test_credit_direct_equivalents_dedupe_same_lc_snapshot():
++    cr = pd.DataFrame([
++        {"CRD_LC_NO":"LC1", "CRD_EUR_AMOUNT":500, "CRD_RIAL_AMOUNT":300_000_000},
++        {"CRD_LC_NO":"LC1", "CRD_EUR_AMOUNT":500, "CRD_RIAL_AMOUNT":300_000_000},
++        {"CRD_LC_NO":"LC2", "CRD_EUR_AMOUNT":200, "CRD_RIAL_AMOUNT":120_000_000},
++    ])
++    x = summarize_credit_equivalents(cr)
++    assert x.source_eur_total == 700
++    assert x.source_rial_total == 420_000_000
++    assert x.status == "EUR_AND_IRR_REPORTED"
++    assert x.logical_credit_count == 2
++
++
++def test_credit_conflicting_same_lc_equivalent_is_not_guessed():
++    cr = pd.DataFrame([
++        {"CRD_LC_NO":"LC1", "CRD_EUR_AMOUNT":500, "CRD_RIAL_AMOUNT":300_000_000},
++        {"CRD_LC_NO":"LC1", "CRD_EUR_AMOUNT":550, "CRD_RIAL_AMOUNT":300_000_000},
++    ])
++    x = summarize_credit_equivalents(cr)
++    assert x.source_eur_total is None
++    assert x.source_rial_total == 300_000_000
++    assert x.status == "CONFLICTING_SOURCE_EQUIVALENTS"
++
++
++def test_stage_exposes_credit_source_equivalents_without_recalculating_them():
++    reg = "12345678"
++    sources = {
++        "fx_transaction": {"main": pd.DataFrame()},
++        "ntsw": {"commitment": pd.DataFrame(), "allocation": pd.DataFrame(), "allocation_rows": pd.DataFrame()},
++        "credit": {"main": pd.DataFrame([
++            {"KEY_REG":reg, "CRD_LC_NO":"LC1", "CRD_EUR_AMOUNT":800,
++             "CRD_RIAL_AMOUNT":480_000_000, "CRD_PROFORMA_VALUE":900,
++             "CRD_PREPAYMENT":0, "CRD_REMAINING":100},
++        ])},
++    }
++    ctx = PipelineContext(rb=get_rulebook(reload=True, as_of=date(2026, 9, 23)),
++                          today=date(2026, 9, 23), sources=sources)
++    df = pd.DataFrame([{"CANONICAL_REG":reg, "CANONICAL_BL":"", "IS_FULL_CLEARED":False}])
++    out = FxTraceabilityStage().run(df, ctx)
++    assert out["FX_CREDIT_EUR_REPORTED"].iloc[0] == 800
++    assert out["FX_CREDIT_RIAL_REPORTED"].iloc[0] == 480_000_000
++    assert out["FX_CREDIT_EQ_STATUS"].iloc[0] == "EUR_AND_IRR_REPORTED"

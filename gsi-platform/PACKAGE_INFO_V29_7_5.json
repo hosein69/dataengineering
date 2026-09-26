@@ -1,0 +1,17 @@
+{
+  "version": "29.7.5",
+  "title": "Process Continuity + SAP Ready",
+  "base": "29.7.4",
+  "changes": [
+    "Preserve complete SAP workflow history in workflow_rows while keeping main latest-state projection",
+    "Add evidence-preserving end-to-end process ledger/cases/stage matrix",
+    "Keep keyless native rows as explicit orphan evidence",
+    "Separate NOT_MEASURED/SOURCE_COVERAGE_GAP from true EVIDENCE_GAP",
+    "Add PROCESS_ROW_PRESERVATION publication quality gate",
+    "Isolate exceptions from tolerant stages so independent flows continue",
+    "Expose process cases/stage matrix/orphans in process Excel sheet"
+  ],
+  "primary_population": "moghavemat + ntsw",
+  "cashflow": "published Business DWH first; no synthetic settlement/bank flow",
+  "sap_contract": "SAP-only PR evidence is retained in process inventory/DWH and can later link by exact PR co-observation without changing flat population grain"
+}

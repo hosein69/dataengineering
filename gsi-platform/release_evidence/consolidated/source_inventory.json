@@ -1,0 +1,170 @@
+{
+  "generated_at": "2026-09-24T22:36:52",
+  "sources": [
+    {
+      "source": "abbasi",
+      "role": "ردیابی بارنامه‌ها (enrichment لجستیکی درجه‌دوم؛ سازنده جمعیت نیست)",
+      "required": false,
+      "join_on": "BL",
+      "expected_sheets": [
+        "BLs Tracking"
+      ],
+      "configured_folder": "${BLS_TOTAL_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "moghavemat",
+      "role": "مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک",
+      "required": false,
+      "join_on": "ORDER",
+      "expected_sheets": [
+        "Expert Data"
+      ],
+      "configured_folder": "${GS_COMBINE_OUT_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "sata",
+      "role": "پل بارنامه ↔ ثبت سفارش + کد رهگیری ساتا + اعتبارات (شاهد درجه‌دوم)",
+      "required": false,
+      "join_on": "BL",
+      "expected_sheets": [
+        "Sata Tracking"
+      ],
+      "configured_folder": "${BLS_TOTAL_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "clearance",
+      "role": "ترخیص گمرکی — دریایی، هوایی، زمینی، چابهار",
+      "required": false,
+      "join_on": "BL",
+      "expected_sheets": [
+        null
+      ],
+      "configured_folder": "${CLEARANCE_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "cotage",
+      "role": "کوتاژ، ترخیص درصدی/کامل، مرز ورودی و گمرک مقصد",
+      "required": false,
+      "join_on": "BL",
+      "expected_sheets": [
+        "Cottage Tracking"
+      ],
+      "configured_folder": "${BLS_TOTAL_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "oracle",
+      "role": "متریال، موجودی ایران‌خودرو و ساپکو، نیاز روزانه — مبنای مقاومت",
+      "required": false,
+      "join_on": "MATERIAL",
+      "expected_sheets": [
+        null
+      ],
+      "configured_folder": "${BLS_TOTAL_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "ntsw",
+      "role": "مرجع درجه‌اول و سازنده جمعیت: مجوز واردات + تعهدات ارزی + تخصیص ارز",
+      "required": false,
+      "join_on": "REG",
+      "expected_sheets": [
+        "Release Commitment",
+        "Allocation",
+        "Import License",
+        "Import Licence"
+      ],
+      "configured_folder": "${FOREIGN_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "fx_transaction",
+      "role": "خرید ارز — نرخ، مبلغ، وضعیت، تاریخ اعتبار تخصیص",
+      "required": false,
+      "join_on": "REG",
+      "expected_sheets": [
+        null
+      ],
+      "configured_folder": "${FOREIGN_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "credit",
+      "role": "اعتبارات اسنادی — گشایش، ارزش پروفرما، آخرین وضعیت",
+      "required": false,
+      "join_on": "REG",
+      "expected_sheets": [
+        "PURCREDIT"
+      ],
+      "configured_folder": "${FOREIGN_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "ilappend",
+      "role": "الحاقیه ثبت سفارش",
+      "required": false,
+      "join_on": "REG",
+      "expected_sheets": [
+        "Append"
+      ],
+      "configured_folder": "${FOREIGN_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "sap",
+      "role": "برنامه‌ریزی و خرید SAP — PR Item / Workflow / PO Item",
+      "required": false,
+      "join_on": "PR",
+      "expected_sheets": [
+        "Data"
+      ],
+      "configured_folder": "${GS_FULL_CHAIN_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "doccheck",
+      "role": "بررسی و مغایرت اسناد (سطح سند)",
+      "required": false,
+      "join_on": "ORDER",
+      "expected_sheets": [
+        "Checking"
+      ],
+      "configured_folder": "${MOHAMADI_DIR}",
+      "status": "MISSING_OPTIONAL",
+      "files": []
+    },
+    {
+      "source": "hr",
+      "role": "پرسنل و سلسله‌مراتب سازمانی",
+      "required": true,
+      "join_on": "EMP",
+      "expected_sheets": [
+        null
+      ],
+      "configured_folder": "${HR_DIR}",
+      "status": "MISSING_REQUIRED",
+      "files": []
+    },
+    {
+      "source": "missmohammadi",
+      "enabled": false,
+      "status": "DISABLED"
+    }
+  ],
+  "data_dir": "/workspace/scratch/acc6ed5818f1/work/product"
+}

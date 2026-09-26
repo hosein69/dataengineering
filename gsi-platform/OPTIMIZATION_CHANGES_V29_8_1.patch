@@ -1,0 +1,1583 @@
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md /mnt/data/gsi_rc4_work/ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md
+--- /mnt/data/gsi_rc4_baseline/ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md	2026-09-23 14:27:19.937613874 +0000
+@@ -0,0 +1,75 @@
++# ممیزی معماری و بهینه‌سازی GSI 29.8.1 — RC4-OPT1
++
++## حکم معماری
++
++RC4 از نظر جهت معماری نیازمند بازنویسی نیست. مشکل اصلی در این ممیزی دو دسته بود:
++
++1. **هزینه I/O و حافظه در ingest/persistence** که برای حجم‌های بزرگ بی‌دلیل داده را دوباره در RAM تکثیر می‌کرد.
++2. **خروجی‌های مالی تصمیم‌ساز** که در چند مسیر از قرارداد Grain Registry عبور نمی‌کردند و می‌توانستند یک مانده سطح ثبت سفارش را روی جدول BL×Material چند بار جمع کنند یا ارزهای متفاوت را در یک عدد بی‌واحد ادغام کنند.
++
++اصل اصلاح این نسخه: business rule یا source authority تغییر نکند؛ فقط persistence کم‌هزینه‌تر و presentation/aggregation قابل اتکاتر شود.
++
++## یافته‌های Severity بالا
++
++### A-01 — fan-out مانده تعهد در خروجی‌های تصمیم‌ساز
++
++جدول اصلی می‌تواند در دانه بارنامه×متریال باشد، درحالی‌که «مانده تعهد» و «جریمه برآوردی» در دانه REG هستند. جمع ساده روی ردیف‌ها می‌تواند یک ثبت سفارش دارای چند بارنامه/متریال را چند برابر کند.
++
++مسیرهای اصلاح‌شده:
++
++- `app/studio.py`
++- `gsi/report/dashboard.py`
++- `gsi/report/charts.py`
++- `gsi/report/insight.py`
++- `gsi/studio_core/excel_export.py`
++- `gsi/integrations/daily_email.py`
++- `gsi/report/history.py`
++- `gsi/warehouse/historical_store.py`
++- `gsi/stages/s50_commitment.py`
++
++### A-02 — جمع cross-currency
++
++عددهایی مثل `100 EUR + 200 USD = 300` از نظر تصمیم‌سازی معتبر نیستند. `gsi/report/financial_summary.py` اکنون نقطه مرکزی نمایش مالی است و مبلغ را بر `(registration, currency)` یکتا می‌کند. خروجی چندارزی به شکل مستقل نمایش داده می‌شود، مثلاً `50.00 EUR | 100.00 USD`.
++
++### A-03 — unknown balance به‌عنوان zero/settled
++
++در قرارداد legacy موتور، مقدار نامعلوم می‌تواند همراه با `BALANCE_IS_UNKNOWN=True` عدد صفر داشته باشد. در نمودار قبلی `fillna(0)` و شرط `balance <= 0` می‌توانست این مورد را «تسویه‌شده» نشان دهد. مسیرهای تصمیم‌ساز اکنون flag را محترم می‌شمارند و مورد نامعلوم را از جمع عددی خارج و به‌صورت diagnostic آشکار می‌کنند.
++
++## بهینه‌سازی‌های Performance
++
++### P-01 — SQLite frame persistence
++
++`Warehouse.frame` قبلاً همه payloadهای JSON را در یک list بزرگ می‌ساخت و سپس `executemany` می‌کرد. نسخه جدید با `GSI_WAREHOUSE_FRAME_CHUNK_ROWS` (پیش‌فرض 1000) batch می‌نویسد، اما همان transaction واحد، `row_no`، metadata، dtype/index/attrs و atomicity را حفظ می‌کند.
++
++### P-02 — Excel physical archive reuse
++
++آرشیو Excel همچنان content-addressed و physical-cell است. اگر SHA همان workbook قبلاً کامل در `wh_sheet` موجود باشد، worksheet XML دوباره parse نمی‌شود. برای native reader در صورت نیاز rows از SQLite rehydrate می‌شوند.
++
++### P-03 — Legacy Excel ingest بدون cell-map اضافی
++
++برای readerهای Legacy که downstream خود فایل Excel را با pandas می‌خواند، `capture(..., keep_sheets=False)` استفاده می‌شود. bytes آرشیوی و physical audit همچنان ذخیره می‌شود، اما dict حجیم تمام cellها هم‌زمان در RAM نگه داشته نمی‌شود. در multi-file source نیز هر فایل بلافاصله پردازش و reference آن آزاد می‌شود.
++
++## benchmark محلی مصنوعی
++
++این اعداد **production throughput نیستند**؛ فقط مقایسه A/B روی یک ماشین و workload یکسان‌اند.
++
++| workload | RC4 | 29.8.1 OPT | تغییر |
++|---|---:|---:|---:|
++| SQLite frame، 12k×72 | 0.6615 s | 0.6394 s | حدود 3.3٪ سریع‌تر |
++| peak افزوده همان serialization | ~3.0 MiB | ~0.625 MiB | حدود 79٪ کمتر |
++| SQLite frame، 18k×120 | 1.729 s | 1.627 s | حدود 5.9٪ سریع‌تر |
++| capture مجدد workbook یکسان، 3×5000×18 | 1.189 s | 0.641 s | حدود 46٪ سریع‌تر |
++| legacy capture، 4×7000×16، peak افزوده | ~252 MiB | ~137 MiB | حدود 46٪ کمتر |
++
++اندازه DB در benchmark frame یکسان ماند؛ یعنی کاهش مصرف حافظه با حذف داده یا فشرده‌سازی lossy به‌دست نیامده است.
++
++## تصمیم‌های عمداً انجام‌نشده
++
++- فرمول‌های حقوقی/جریمه RuleBook تغییر نکردند.
++- Source authority و join keyها تغییر نکردند.
++- قرارداد legacy `CommitmentEngine` که unknown را همراه flag به numeric legacy تبدیل می‌کند شکسته نشد؛ اصلاح فقط در decision surfaces اعمال شد.
++- هیچ نرخ تبدیل FX برای تبدیل همه ارزها به یک ارز پایه جعل نشد. تا وقتی نرخ/تاریخ authority مشخص نباشد، ارزها جدا می‌مانند.
++
++## توصیه برای استقرار
++
++قبل از production sign-off یک reconciliation روی workbookهای واقعی سازمان اجرا شود: تعداد rows/sheets، SHA archive، تعداد REG یکتا، مجموع مانده به تفکیک currency، unknown flags، و مقایسه خروجی RC4 با RC4-OPT1. برای Streamlit نیز تست startup/browser باید در محیطی با dependencies رسمی اجرا شود.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/KNOWN_LIMITATIONS.md /mnt/data/gsi_rc4_work/KNOWN_LIMITATIONS.md
+--- /mnt/data/gsi_rc4_baseline/KNOWN_LIMITATIONS.md	2026-09-23 14:33:44.000000000 +0000
++++ /mnt/data/gsi_rc4_work/KNOWN_LIMITATIONS.md	2026-09-23 14:27:19.783226005 +0000
+@@ -1,9 +1,20 @@
+-# Current release: GSI 29.7.9 RC3
++# Current release: GSI 29.8.1 RC4-OPT1
+ 
+-Superseding scope: SOURCE_ROADMAP_FA.md and UPDATED_CODE_AND_REPO_REVIEW_FA.md. New evidence supplies 41 profiles and 1089 sampled rows, not full workbooks. F023 is partially mitigated (totals scoped; legacy chain/coverage still archive-wide). F028 clearance largest-sheet selection is replaced with contracted-header selection. No new UI or external AI dependency. Current validation: review/roadmap/final_full_regression.log. Historical RC2 assertions below retain their original scope/date.
++این نسخه F031 را در **سطوح تصمیم‌ساز بررسی‌شده** محدود می‌کند: Studio KPI،
++Excel commitment/scorecard/charts، Excel سفارشی، نمودار ایمیل، insight و
++history دیگر unknown balance را صفر فرض نمی‌کنند و جمع بین ارزهای متفاوت
++تولید نمی‌کنند. قرارداد عددی legacy در هسته `CommitmentEngine` هنوز برای
++backward compatibility باقی است و با `BALANCE_IS_UNKNOWN` همراه می‌شود؛
++بنابراین F031 در کل کدبیس «کاملاً بسته» اعلام نمی‌شود.
++
++اعتبارسنجی production روی workbookهای واقعی شبکه سازمانی در این محیط انجام
++نشده است. Streamlit نیز در محیط ممیزی نصب نبود، بنابراین دو تست browser/app
++که به `streamlit.testing` نیاز دارند اجرا نشدند. جزئیات در
++`VALIDATION_V29_8_1_OPT.md` ثبت شده است.
+ 
+ ---
+ 
++
+ # Known limitations — GSI 29.7.8 RC2
+ 
+ Production sign-off remains withheld. The package is a complete review delivery, not a certification of corporate data.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/PACKAGE_INFO.json /mnt/data/gsi_rc4_work/PACKAGE_INFO.json
+--- /mnt/data/gsi_rc4_baseline/PACKAGE_INFO.json	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/PACKAGE_INFO.json	2026-09-23 14:27:48.019902448 +0000
+@@ -1,17 +1,18 @@
+ {
+-  "version": "29.7.5",
+-  "title": "Process Continuity + SAP Ready",
+-  "base": "29.7.4",
+-  "changes": [
+-    "Preserve complete SAP workflow history in workflow_rows while keeping main latest-state projection",
+-    "Add evidence-preserving end-to-end process ledger/cases/stage matrix",
+-    "Keep keyless native rows as explicit orphan evidence",
+-    "Separate NOT_MEASURED/SOURCE_COVERAGE_GAP from true EVIDENCE_GAP",
+-    "Add PROCESS_ROW_PRESERVATION publication quality gate",
+-    "Isolate exceptions from tolerant stages so independent flows continue",
+-    "Expose process cases/stage matrix/orphans in process Excel sheet"
++  "version": "29.8.1",
++  "release_channel": "rc4-opt1",
++  "base": "29.8.0 RC4",
++  "scope": "performance and decision-facing financial accuracy hardening",
++  "business_logic_changed": false,
++  "source_authority_changed": false,
++  "key_changes": [
++    "Chunk SQLite frame JSON persistence without changing transaction or round-trip semantics",
++    "Reuse content-addressed Excel physical archive for identical workbook captures",
++    "Avoid retaining legacy workbook physical-cell maps when downstream only needs archived bytes",
++    "Centralize REG-grain currency-aware commitment and penalty summaries",
++    "Prevent unknown commitment balance from being shown as zero/settled in reviewed decision surfaces",
++    "Remove cross-currency naked totals from Studio, Excel, email, insight and historical outputs"
+   ],
+-  "primary_population": "moghavemat + ntsw",
+-  "cashflow": "published Business DWH first; no synthetic settlement/bank flow",
+-  "sap_contract": "SAP-only PR evidence is retained in process inventory/DWH and can later link by exact PR co-observation without changing flat population grain"
+-}
+\ No newline at end of file
++  "production_certified": false,
++  "validation": "VALIDATION_V29_8_1_OPT.md"
++}
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/PACKAGE_INFO_V29_8_1.json /mnt/data/gsi_rc4_work/PACKAGE_INFO_V29_8_1.json
+--- /mnt/data/gsi_rc4_baseline/PACKAGE_INFO_V29_8_1.json	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/PACKAGE_INFO_V29_8_1.json	2026-09-23 14:27:19.942228664 +0000
+@@ -0,0 +1,18 @@
++{
++  "version": "29.8.1",
++  "release_channel": "rc4-opt1",
++  "base": "29.8.0 RC4",
++  "scope": "performance and decision-facing financial accuracy hardening",
++  "business_logic_changed": false,
++  "source_authority_changed": false,
++  "key_changes": [
++    "Chunk SQLite frame JSON persistence without changing transaction or round-trip semantics",
++    "Reuse content-addressed Excel physical archive for identical workbook captures",
++    "Avoid retaining legacy workbook physical-cell maps when downstream only needs archived bytes",
++    "Centralize REG-grain currency-aware commitment and penalty summaries",
++    "Prevent unknown commitment balance from being shown as zero/settled in reviewed decision surfaces",
++    "Remove cross-currency naked totals from Studio, Excel, email, insight and historical outputs"
++  ],
++  "production_certified": false,
++  "validation": "VALIDATION_V29_8_1_OPT.md"
++}
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/README.md /mnt/data/gsi_rc4_work/README.md
+--- /mnt/data/gsi_rc4_baseline/README.md	2026-09-23 13:48:30.000000000 +0000
++++ /mnt/data/gsi_rc4_work/README.md	2026-09-23 14:27:19.783134179 +0000
+@@ -2,6 +2,25 @@
+ 
+ ابتدا SOURCE_ROADMAP_FA.md و UPDATED_CODE_AND_REPO_REVIEW_FA.md را بخوانید. evidence.txt شامل نمونه واقعی است، نه تمام فایل‌های تولیدی. مسیر SAP با GSI_GS_FULL_CHAIN قابل تنظیم است. در فایل رجیستری سفارشی، native_sheets مربوط به SAP و file_names مربوط به هر دو فایل خرید ارز را نیز منتقل کنید. هیچ ریپوی یادگیری وارد وابستگی‌ها نشده است. نتایج RC2 زیر تاریخی هستند؛ لاگ جاری در review/roadmap/final_full_regression.log قرار دارد.
+ 
++# GSI 29.8.1 RC4-OPT1 — performance + financial accuracy hardening
++
++این بسته روی RC4 ساخته شده و بازنویسی معماری نیست. دو هدف محدود دارد: کاهش
++مصرف RAM/I/O در Warehouse و بستن جمع‌های مالی تصمیم‌ساز که در دانه ردیف
++انجام می‌شدند. منطق RuleBook، authority سورس‌ها و فرمول هسته رفع تعهد تغییر
++نکرده است.
++
++تغییرات اصلی: نوشتن frameهای SQLite به‌صورت batch و اتمیک؛ reuse آرشیو
++physical-cell برای workbook تکراری؛ عدم نگهداری هم‌زمان cell-map فایل‌های
++Legacy در RAM؛ و یک summary مالی مشترک که «مانده تعهد/جریمه» را در دانه
++ثبت سفارش یکتا و به تفکیک ارز نمایش می‌دهد. `BALANCE_IS_UNKNOWN` در
++خروجی‌های تصمیم‌ساز دیگر صفر یا «تسویه‌شده» تلقی نمی‌شود. نمودارهای Excel،
++Studio، ایمیل مدیریتی، scorecard و history از همان قرارداد استفاده می‌کنند.
++
++جزئیات ممیزی، benchmark مصنوعی و محدودیت‌های اعتبارسنجی در
++`ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md` و `VALIDATION_V29_8_1_OPT.md` است.
++این نسخه production certification نیست؛ تست روی سورس‌های واقعی شبکه سازمانی
++در این محیط ممکن نبود.
++
+ # GSI 29.8.0 RC4 — output integrity delivery
+ 
+ Start with RC4_OUTPUT_INTEGRITY_FA.md, then CONFIRMATIONS_AND_LIMITS_FA.md and
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/VALIDATION_V29_8_1_OPT.md /mnt/data/gsi_rc4_work/VALIDATION_V29_8_1_OPT.md
+--- /mnt/data/gsi_rc4_baseline/VALIDATION_V29_8_1_OPT.md	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/VALIDATION_V29_8_1_OPT.md	2026-09-23 14:27:19.941308114 +0000
+@@ -0,0 +1,33 @@
++# Validation — GSI 29.8.1 RC4-OPT1
++
++## وضعیت
++
++**Release candidate hardening؛ نه production certification.**
++
++## تست‌های مستقیم اصلاحات
++
++- `tests/test_rc4_performance_hardening.py`: 3 تست — archive reuse، `keep_sheets=False`، round-trip دقیق frame chunking.
++- `tests/test_rc4_financial_accuracy_hardening.py`: 8 تست — REG fan-out، multi-currency، unknown balance، Excel total، scorecard، history، Stage KPI و Studio KPI.
++- مجموعه مستقیم performance/warehouse/Streamlit-static/output/process قبل از financial hardening: 74 تست پاس.
++- مجموعه ترکیبی financial/performance/legacy پس از اصلاح: 23 تست پاس.
++- `tests/test_rc4_financial_accuracy_hardening.py + tests/test_dashboard.py`: 16 تست پاس و warning مربوط به `Font.copy` نیز رفع شد.
++
++## محدودیت محیط تست
++
++- پکیج `streamlit` در محیط ممیزی نصب نبود. دو تست `streamlit.testing.v1.AppTest` در `test_fullstack_v29_6_10.py` و یک تست مشابه در `test_cashflow_v29_7.py` به همین علت قابل اجرا نبودند؛ این failure وابستگی محیط است، نه assertion کد.
++- اجرای کل `pytest tests` در محدودیت زمانی محیط پایان نیافت. اجرای broad با `-x` یک مشکل order/isolation در legacy test harness نشان داد (state مشترک `FAIL`)؛ اجرای همان تست به‌تنهایی پاس شد.
++- یک تست pipeline در اجرای ترکیبی پس از تغییر state محیط، به علت در دسترس نبودن UNC sourceها fail شد؛ همان تست به‌تنهایی روی package پاس شد. این نشان می‌دهد suite هنوز وابستگی به state/env دارد.
++- workbookهای واقعی شبکه سازمانی و دسترسی UNC تولید در این محیط وجود نداشت؛ بنابراین throughput و reconciliation production ادعا نمی‌شود.
++
++## invariantهای حفظ‌شده
++
++1. Archive bytes و physical cells حذف نمی‌شوند.
++2. frame write همچنان در transaction واحد انجام می‌شود.
++3. index، dtype، attrs و row order در round-trip حفظ می‌شوند.
++4. هیچ currency متفاوتی در decision-facing total به یک float بی‌واحد تبدیل نمی‌شود.
++5. unknown balance به zero/settled downgrade نمی‌شود.
++6. conflicting amount برای یک REG/currency به‌جای حدس زدن، صریحاً conflict اعلام می‌شود.
++
++## benchmark
++
++جزئیات و اعداد A/B در `ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md` ثبت شده‌اند. benchmarkها synthetic/local هستند و فقط برای مقایسه نسخه‌ها معتبرند.
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/app/studio.py /mnt/data/gsi_rc4_work/app/studio.py
+--- /mnt/data/gsi_rc4_baseline/app/studio.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/app/studio.py	2026-09-23 14:17:57.921070091 +0000
+@@ -42,6 +42,7 @@
+ from gsi.studio_core.filters import FilterState, apply_filters, filter_options
+ from gsi.studio_core.html_export import build_dynamic_html
+ from gsi.report.supply_views import build_material_view, build_bl_view, build_dept_view
++from gsi.report.financial_summary import commitment_display
+ 
+ try:
+     import plotly.express as px
+@@ -343,8 +344,7 @@
+     v = pd.to_numeric(fdf[RES_COL], errors="coerce").min()
+     min_res = fnum(v, 1) if pd.notna(v) else "—"
+ 
+-commit = fnum(pd.to_numeric(fdf.get("مانده تعهد"), errors="coerce").sum()) \
+-    if "مانده تعهد" in fdf.columns else "—"
++commit = commitment_display(fdf) if "مانده تعهد" in fdf.columns else "—"
+ 
+ # ── هدر زنده ──────────────────────────────────────────────────────────────
+ motion.hero(
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/MANIFEST.json /mnt/data/gsi_rc4_work/gsi/MANIFEST.json
+--- /mnt/data/gsi_rc4_baseline/gsi/MANIFEST.json	2026-09-23 14:37:56.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/MANIFEST.json	2026-09-23 14:27:29.396729741 +0000
+@@ -16,9 +16,9 @@
+   "cashflow/__main__.py": "32af257d574db60e",
+   "cashflow/dwh.py": "18415b23759643bd",
+   "cashflow/engine.py": "89acc32af74c781d",
+-  "cashflow/inputs.py": "aa71e8da14ec9517",
++  "cashflow/inputs.py": "357e55ecce70972b",
+   "cashflow/presentation.py": "c2628e7e558df165",
+-  "cashflow/report.py": "c75e0265d8d706a5",
++  "cashflow/report.py": "e3e200f27575abf2",
+   "cashflow/ui.py": "262d6186951fba28",
+   "config/__init__.py": "e3b0c44298fc1c14",
+   "config/authority.py": "594778e2c8331710",
+@@ -43,7 +43,7 @@
+   "dataio/join_keys.py": "f2fccf080289bf6d",
+   "dataio/logging_setup.py": "7a3338306f7e9b56",
+   "dataio/merge.py": "f5deae30ef6b0014",
+-  "dataio/reader.py": "512400569c9b29b4",
++  "dataio/reader.py": "8bf0a81b672f6b22",
+   "design/__init__.py": "edfb3e771f19a073",
+   "design/charts_js.py": "a49f1dbd36376675",
+   "design/components.py": "a2d244e67928538b",
+@@ -58,10 +58,10 @@
+   "engines/criticality.py": "d1bd358dc81a6ec9",
+   "engines/math_engine.py": "956021bba1eb3ac2",
+   "engines/risk.py": "dfddf283ea7b6a58",
+-  "factsheet.py": "388f7b6d271f31da",
++  "factsheet.py": "fa841c7e477ca4f8",
+   "health.py": "8c8ec1e7cd0efc6f",
+   "integrations/__init__.py": "d2efd88081d6ea06",
+-  "integrations/daily_email.py": "eaae0be8006bb6d8",
++  "integrations/daily_email.py": "47aff9d04914fc58",
+   "knowledge/__init__.py": "071410546f92a7e7",
+   "knowledge/legacy.py": "bc6e4f3edb79ba1d",
+   "knowledge_desk/__init__.py": "bdddcff32b5309cf",
+@@ -88,13 +88,14 @@
+   "personalization/store.py": "918eef20e40df6d1",
+   "pipeline.py": "d44e76f1338cd47b",
+   "report/__init__.py": "e3b0c44298fc1c14",
+-  "report/charts.py": "f7e06bdc9f9f0c1a",
+-  "report/dashboard.py": "e067a38e15c062d0",
++  "report/charts.py": "22ceec63d473aff6",
++  "report/dashboard.py": "61226a9a48777c54",
+   "report/extracts.py": "0dd9682c0e9a021c",
+-  "report/financial_summary.py": "5c3087beb4768254",
+-  "report/history.py": "9ceec546656b87e9",
+-  "report/insight.py": "7ee2d40429c83b35",
++  "report/financial_summary.py": "7930527312278426",
++  "report/history.py": "f38792bdd5c85845",
++  "report/insight.py": "6c8e56f93244a92e",
+   "report/palette.py": "b5d03bacc3375416",
++  "report/process_insights.py": "3aa349e3fad12d91",
+   "report/supply_views.py": "e8c291e74ff9782e",
+   "report/system_health.py": "d8dc0174b208dd2f",
+   "resolve/__init__.py": "e3b0c44298fc1c14",
+@@ -134,7 +135,7 @@
+   "stages/s38_supply_position.py": "39cb7b17d467e131",
+   "stages/s39_warehouse_declaration.py": "69e38eb0aeac6af3",
+   "stages/s40_criticality.py": "5409dcdc60ea0839",
+-  "stages/s50_commitment.py": "13bfe8b855db134e",
++  "stages/s50_commitment.py": "1b782e7aa4112014",
+   "stages/s54_process_integrity.py": "658b4848beac1710",
+   "stages/s55_fx_traceability.py": "9ed1a7ca7120bbce",
+   "stages/s56_money_flow_control.py": "b9d06392591fe8c7",
+@@ -149,41 +150,42 @@
+   "studio_core/access.py": "9235c310c3175dde",
+   "studio_core/access_control.py": "3304910bdf208a39",
+   "studio_core/chart_catalog.py": "5874f39e3cd21aad",
+-  "studio_core/composer.py": "0ddee55a92067263",
++  "studio_core/composer.py": "df754ae02eead97c",
+   "studio_core/designs.py": "3e7f289033fc204e",
+-  "studio_core/excel_export.py": "039549541bb25b76",
++  "studio_core/excel_export.py": "8e28c3ab2c5b2c4a",
+   "studio_core/field_catalog.py": "ca57ebf462df66f7",
+   "studio_core/filters.py": "b2321cc5e25f2972",
+   "studio_core/grain.py": "d60d18892864cf88",
+-  "studio_core/html_export.py": "8c6ef7c0ac19ac62",
++  "studio_core/html_export.py": "81b3dc4034053e07",
+   "studio_core/metric_registry.py": "c74432d638f57814",
+   "studio_core/pdf_export.py": "0f5605abc99e04b1",
++  "studio_core/process_views_html.py": "57c3526ef3bb6380",
+   "studio_core/registry.py": "474645204139b06d",
+-  "studio_core/report_builder.py": "3d5bc60fc8b1124b",
++  "studio_core/report_builder.py": "31d5ca90e53315c1",
+   "studio_core/runtime_data.py": "1c9eca0797a7856a",
+   "studio_core/semantic_metrics.py": "d59baf05cd7f3971",
+   "studio_core/templates.py": "0c4f4ba2eb38250c",
+   "version.py": "fb544dc6b730a655",
+   "voice.py": "31b7ba6dfb215991",
+   "warehouse/__init__.py": "40714183ffd2b640",
+-  "warehouse/__main__.py": "563ef790bd4541b2",
++  "warehouse/__main__.py": "3e6ae8299de1894e",
+   "warehouse/bridge.py": "5cccf77db1b5e3dc",
+   "warehouse/business_dwh.py": "109753163a0ae279",
+-  "warehouse/excel.py": "34d038ef905f482c",
++  "warehouse/excel.py": "e2144134db7d24b3",
+   "warehouse/fx_obligation.py": "c015b65c6212ca29",
+   "warehouse/historical_cli.py": "ea3f00b0550d355c",
+   "warehouse/historical_runtime.py": "abe85e0b829a569c",
+-  "warehouse/historical_store.py": "3e1873ed83082565",
++  "warehouse/historical_store.py": "506efa09a88bfdc2",
+   "warehouse/log_sink.py": "26db98681e7152eb",
+   "warehouse/marts.py": "16be7ffbeb2d9c9c",
+   "warehouse/material_search.py": "73158b6a38bc0300",
+   "warehouse/numeric.py": "f720b0be7af8eb44",
+   "warehouse/quality_gate.py": "d12e98ef26350e6b",
+   "warehouse/reliability.py": "49634b430457ffd8",
+-  "warehouse/service.py": "dce20bb2c0fe8e5e",
++  "warehouse/service.py": "b33549296983ae89",
+   "warehouse/snapshots.py": "fe35f20faf7adaf8",
+-  "warehouse/store.py": "ab01c7e445fe0cfe",
++  "warehouse/store.py": "88aeb1917e15c5fe",
+   "warehouse/writer_lock.py": "154ce442a0608614"
+  },
+- "package_version": "29.7.9"
++ "package_version": "29.8.1"
+ }
+\ No newline at end of file
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/dataio/reader.py /mnt/data/gsi_rc4_work/gsi/dataio/reader.py
+--- /mnt/data/gsi_rc4_baseline/gsi/dataio/reader.py	2026-09-23 14:31:30.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/dataio/reader.py	2026-09-23 14:09:01.929871755 +0000
+@@ -119,13 +119,15 @@
+     else:
+         log.info(f"🔌 اتصال موفق به سورس '{spec.key}' → {os.path.basename(targets[0])}")
+ 
+-    # Capture original bytes before any parsing; all sheets remain in the warehouse.
++    # Capture original bytes before any semantic parsing; every physical cell
++    # remains in the warehouse. Native OOXML adapters need the physical rows in
++    # Python. Legacy readers do not: retaining them duplicates the workbook in
++    # memory before pandas parses the exact archived bytes again.
+     from ..warehouse.excel import capture, frame
+-    from io import BytesIO
+-    captures = {f: capture(f, source_key) for f in targets}
+     if source_key in ('oracle', 'fx_transaction', 'ntsw'):
+         result = {}
+-        for f, (fid, blob, sheets) in captures.items():
++        for f in targets:
++            fid, blob, sheets = capture(f, source_key, keep_sheets=True)
+             for name, rows in sheets.items():
+                 df = frame(rows, source_key, name, fid)
+                 if source_key=='oracle':
+@@ -139,17 +141,26 @@
+                     if name in result:
+                         result[name] = pd.concat([result[name],df],ignore_index=True)
+                     else: result[name] = df
++            # Let each workbook's large physical-row structure be released before
++            # the next multi-file source is captured.
++            del sheets, blob
+         return result
+-    # The legacy readers now read the exact archived version, not a changing network file.
++
++    # Legacy readers parse the exact archived bytes, not a changing network file.
++    # Capture and materialize one file at a time so a multi-file source does not
++    # keep all workbook byte blobs + physical row dictionaries resident together.
+     import tempfile
+     with tempfile.TemporaryDirectory(prefix='gsi_input_') as tmp:
+         local_targets = []
+-        for f, (fid, blob, sheets) in captures.items():
++        for f in targets:
++            fid, blob, _ = capture(f, source_key, keep_sheets=False)
+             directory = os.path.join(tmp, fid)
+             os.makedirs(directory, exist_ok=True)
+             local = os.path.join(directory, os.path.basename(f))
+-            with open(local, 'wb') as handle: handle.write(blob)
++            with open(local, 'wb') as handle:
++                handle.write(blob)
+             local_targets.append(local)
++            del blob
+         return _read_targets(spec, local_targets)
+ 
+ 
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/factsheet.py /mnt/data/gsi_rc4_work/gsi/factsheet.py
+--- /mnt/data/gsi_rc4_baseline/gsi/factsheet.py	2026-09-23 13:45:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/factsheet.py	2026-09-23 14:27:19.783000661 +0000
+@@ -36,8 +36,8 @@
+ _ROOT = os.path.dirname(_PKG)
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+-VERSION = "29.8.0"
+-RELEASE_CHANNEL = "rc4"
++VERSION = "29.8.1"
++RELEASE_CHANNEL = "rc4-opt1"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 17
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/integrations/daily_email.py /mnt/data/gsi_rc4_work/gsi/integrations/daily_email.py
+--- /mnt/data/gsi_rc4_baseline/gsi/integrations/daily_email.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/integrations/daily_email.py	2026-09-23 14:19:42.891869568 +0000
+@@ -7,6 +7,8 @@
+ from pathlib import Path
+ from typing import Any, Dict, Iterable, Optional
+ import pandas as pd
++
++from ..report.financial_summary import commitment_status_summary
+ from ..config.settings import SETTINGS
+ from ..dataio.logging_setup import log
+ 
+@@ -364,15 +366,15 @@
+             ax.set_title(EMAIL_CHARTS["stock_vs_total"],fontsize=13,fontweight="bold"); ax.set_ylabel("روز"); ax.legend(frameon=False)
+             fig.tight_layout(); out.append(save(fig,"stock_vs_total",len(out)+1))
+ 
+-    if "commitment" in wanted and {"مانده تعهد","روزهای تأخیر"}.issubset(df.columns):
+-        bal=pd.to_numeric(df["مانده تعهد"],errors="coerce").fillna(0)
+-        overdue=pd.to_numeric(df["روزهای تأخیر"],errors="coerce").fillna(0)
+-        labs=["معوق","در مهلت","تسویه‌شده"]; masks=[overdue>0,(overdue<=0)&(bal>0),bal<=0]
+-        vals=[float(bal[m].sum()) for m in masks]
+-        fig,ax=plt.subplots(figsize=(8.8,3.7)); bars=ax.bar(labs,vals,color=[RED,ORANGE,GREEN],edgecolor="white")
+-        ax.set_title(EMAIL_CHARTS["commitment"],fontsize=13,fontweight="bold"); ax.set_ylabel("مانده تعهد")
+-        for b,v in zip(bars,vals): ax.text(b.get_x()+b.get_width()/2,v,f"{v:,.0f}",ha="center",va="bottom",fontsize=9)
+-        fig.tight_layout(); out.append(save(fig,"commitment",len(out)+1))
++    if "commitment" in wanted and "مانده تعهد" in df.columns:
++        csum, _diag = commitment_status_summary(df)
++        if not csum.empty:
++            labs=[f"{r.currency} · {r.status}" for r in csum.itertuples(index=False)]
++            vals=csum["amount"].astype(float).tolist()
++            fig,ax=plt.subplots(figsize=(8.8,3.7)); bars=ax.bar(labs,vals,edgecolor="white")
++            ax.set_title(EMAIL_CHARTS["commitment"],fontsize=13,fontweight="bold"); ax.set_ylabel("مانده تعهد (تفکیک ارز)")
++            for b,v in zip(bars,vals): ax.text(b.get_x()+b.get_width()/2,v,f"{v:,.0f}",ha="center",va="bottom",fontsize=9)
++            fig.tight_layout(); out.append(save(fig,"commitment",len(out)+1))
+ 
+     if "bottlenecks" in wanted:
+         x=None
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/report/charts.py /mnt/data/gsi_rc4_work/gsi/report/charts.py
+--- /mnt/data/gsi_rc4_baseline/gsi/report/charts.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/report/charts.py	2026-09-23 14:18:16.603986991 +0000
+@@ -44,6 +44,7 @@
+ from ..design import excel as dx
+ from ..design import tokens as T
+ from .palette import LuxuryPalette as P
++from .financial_summary import commitment_status_summary
+ 
+ SHEET_CHARTS = "۱۱. نمودارهای تحلیلی"
+ 
+@@ -258,30 +259,37 @@
+             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
+ 
+     # ── ۴) مانده تعهد بر حسب فاصله تا مهلت ──
+-    if "مانده تعهد" in df.columns and "روزهای تأخیر" in df.columns:
+-        bal = num("مانده تعهد").fillna(0)
+-        overdue = num("روزهای تأخیر").fillna(0)
+-        buckets = [("معوق", overdue > 0),
+-                   ("در مهلت", (overdue <= 0) & (bal > 0)),
+-                   ("تسویه‌شده", bal <= 0)]
+-        labels = [b[0] for b in buckets]
+-        vals = [float(bal[m].sum()) for _, m in buckets]
+-        counts = [int(m.sum()) for _, m in buckets]
+-        if sum(counts):
+-            r1, c1, r2, c2 = data.write("مانده تعهد بر حسب وضعیت مهلت", labels,
++    # دانه نمودار REG×Currency است؛ مقدار ناشناخته هرگز صفر/تسویه فرض نمی‌شود.
++    if "مانده تعهد" in df.columns:
++        summary, diag = commitment_status_summary(df)
++        if not summary.empty:
++            labels = [f"{r.currency} · {r.status}" for r in summary.itertuples(index=False)]
++            vals = [float(x) for x in summary["amount"]]
++            counts = [int(x) for x in summary["count"]]
++            r1, c1, r2, c2 = data.write("مانده تعهد بر حسب وضعیت مهلت و ارز", labels,
+                                         {"مانده تعهد": vals, "تعداد پرونده": counts})
+             ch = BarChart()
+             ch.type, ch.grouping = "col", "clustered"
+             ch.add_data(Reference(ws, min_col=c1 + 1, min_row=r1, max_row=r2),
+                         titles_from_data=True)
+             ch.set_categories(Reference(ws, min_col=c1, min_row=r1 + 1, max_row=r2))
+-            _style_chart(ch, "مانده تعهد ارزی")
++            _style_chart(ch, "مانده تعهد ارزی — تفکیک ارز")
+             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
+             ch.legend = None
+             _color_series(ch, [dx.X(T.STATUS["critical"].fill)])
+             _apply_chart_font(ch)
+             ws.add_chart(ch, anchors[n_charts]); n_charts += 1
+ 
++        excluded = sum(diag.values())
++        if excluded:
++            note_row = max(2, data.row)
++            ws.cell(row=note_row, column=data.col,
++                    value=("کنترل کیفیت نمودار تعهد: "
++                           f"{diag['unknown']} ثبت با مانده نامشخص، "
++                           f"{diag['conflict']} ثبت دارای مغایرت، "
++                           f"{diag['missing_key_or_currency']} ردیف با کلید/ارز ناقص؛ "
++                           "در مبلغ نمودار وارد نشده‌اند.")).font = P.font_body(bold=True)
++
+     # ── ۵) گلوگاه فرآیند ──
+     bott = (ctx_extras or {}).get("bottlenecks")
+     if bott is not None and not getattr(bott, "empty", True):
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/report/dashboard.py /mnt/data/gsi_rc4_work/gsi/report/dashboard.py
+--- /mnt/data/gsi_rc4_baseline/gsi/report/dashboard.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/report/dashboard.py	2026-09-23 14:22:00.623550767 +0000
+@@ -11,6 +11,7 @@
+ __contract__ = 3   # ← gsi/contracts.py
+ 
+ import os
++from copy import copy
+ from typing import Any, Dict, List, Optional
+ 
+ import pandas as pd
+@@ -24,6 +25,7 @@
+ from ..rulebook import get_rulebook
+ from .palette import (LuxuryPalette as P, NUM_FORMAT_CURRENCY, NUM_FORMAT_INT,
+                       NUM_FORMAT_PCT)
++from .financial_summary import commitment_display, penalty_display
+ 
+ SHEET_EXEC = "۱. خلاصه اجرایی"
+ SHEET_MATRIX = "۲. کالبدشکافی ۳ لایه‌ای ماتریسی"
+@@ -314,10 +316,12 @@
+ 
+         last = r - 1
+         if last >= 2:
+-            # جمع زنده مانده تعهد و جریمه (SUBTOTAL با فیلتر همگام است)
+-            ws.cell(row=last + 2, column=4, value="جمع کل:").font = P.font_body(bold=True)
+-            ws.cell(row=last + 2, column=6, value=f"=SUBTOTAL(109,F2:F{last})").number_format = NUM_FORMAT_CURRENCY
+-            ws.cell(row=last + 2, column=11, value=f"=SUBTOTAL(109,K2:K{last})").number_format = NUM_FORMAT_CURRENCY
++            # جمع تصمیم‌ساز باید در دانه ثبت سفارش و به تفکیک ارز باشد.
++            # SUBTOTAL روی ردیف‌های BL×Material هم fan-out را چندبرابر می‌کرد
++            # و هم ارزهای متفاوت را بدون واحد با هم جمع می‌زد.
++            ws.cell(row=last + 2, column=4, value="جمع قابل اتکا (ثبت سفارش/ارز):").font = P.font_body(bold=True)
++            ws.cell(row=last + 2, column=6, value=commitment_display(df)).font = P.font_body(bold=True)
++            ws.cell(row=last + 2, column=11, value=penalty_display(df)).font = P.font_body(bold=True)
+             ws.conditional_formatting.add(
+                 f"J2:J{last}",
+                 CellIsRule(operator="greaterThan", formula=["0"], fill=P.fill(dx.SCALE_BAD)))
+@@ -373,18 +377,20 @@
+                 int(g["CANONICAL_BL"].nunique()), crit,
+                 round(pd.to_numeric(g["روزهای رسوب"], errors="coerce").mean() or 0, 1),
+                 round(pd.to_numeric(g.get("امتیاز ریسک", 0), errors="coerce").mean() or 0, 1),
+-                round(pd.to_numeric(g.get("مانده تعهد", 0), errors="coerce").sum() or 0, 2),
+-                round(pd.to_numeric(g.get("جریمه برآوردی", 0), errors="coerce").sum() or 0, 2),
++                commitment_display(g),
++                penalty_display(g),
+             ]
+             for i, v in enumerate(vals, start=1):
+                 ws.cell(row=r, column=i, value=self._cell_value(v))
+             self._style_row(ws, r, len(headers), row_fill)
+             crit_cell = ws.cell(row=r, column=8)
+             crit_cell.font = P.font_body(bold=True)
+-            crit_cell.font = crit_cell.font.copy(color=crit_color)
++            crit_font = copy(crit_cell.font)
++            crit_font.color = crit_color
++            crit_cell.font = crit_font
+             crit_cell.alignment = P.align("center")
+-            for i in (11, 12):
+-                ws.cell(row=r, column=i).number_format = NUM_FORMAT_CURRENCY
++            # ستون‌های مالی عمداً رشته «مبلغ + ارز» هستند تا EUR/USD و ...
++            # هیچ‌گاه به شکل یک عدد بی‌واحد جمع نشوند.
+             r += 1
+         last = r - 1
+         if last >= 2:
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/report/financial_summary.py /mnt/data/gsi_rc4_work/gsi/report/financial_summary.py
+--- /mnt/data/gsi_rc4_baseline/gsi/report/financial_summary.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/report/financial_summary.py	2026-09-23 14:20:32.899789992 +0000
+@@ -1,31 +1,211 @@
+-"""Registration/currency-grain display totals; never add different currencies."""
++"""Currency-aware, grain-safe financial summaries for decision-facing outputs.
++
++Financial amounts such as commitment balance and penalty live at registration
++(REG) grain while the main fact table can be BL × material.  This module is the
++single place where those values are collapsed for presentation so reports do
++not silently double-count fan-out rows or add unlike currencies.
++"""
++from __future__ import annotations
++
+ from decimal import Decimal, InvalidOperation
++from typing import Iterable, Sequence
++
+ import pandas as pd
+ 
++_REGISTRATION_CANDIDATES = ("KEY_REG", "CANONICAL_REG")
++_CURRENCY_CANDIDATES = ("NTSW_CURRENCY", "CURRENCY", "ارز")
++_BALANCE_CANDIDATES = ("NTSW_BALANCE", "مانده تعهد")
+ 
+-def commitment_display(df: pd.DataFrame) -> str:
+-    amount = next((c for c in ('NTSW_BALANCE', 'مانده تعهد') if c in df), None)
+-    currency = next((c for c in ('NTSW_CURRENCY', 'CURRENCY', 'ارز') if c in df), None)
+-    registration = next((c for c in ('KEY_REG', 'CANONICAL_REG') if c in df), None)
++
++def _pick(df: pd.DataFrame, candidates: Iterable[str]) -> str | None:
++    return next((c for c in candidates if c in df.columns), None)
++
++
++def _truthy(value: object) -> bool:
++    if value is True:
++        return True
++    if value is False or value is None or pd.isna(value):
++        return False
++    return str(value).strip().lower() in {"1", "true", "yes", "y", "بله"}
++
++
++def _decimal(value: object) -> Decimal | None:
++    try:
++        out = Decimal(str(value))
++        return out if out.is_finite() else None
++    except (InvalidOperation, ValueError, TypeError):
++        return None
++
++
++def currency_amount_display(
++    df: pd.DataFrame,
++    amount_candidates: Sequence[str],
++    *,
++    unknown_flag: str | None = None,
++    unknown_message: str = "مبلغ نامشخص؛ جمع قابل اتکا نیست",
++) -> str:
++    """Return a REG-grain total split by currency.
++
++    The function deliberately returns text rather than a naked number.  A
++    currency-less total is not decision-safe for the multi-currency sourcing
++    population.  Duplicate fan-out rows are collapsed by registration and
++    currency; conflicting values are surfaced instead of being guessed.
++    """
+     if df.empty:
+-        return '—'
++        return "—"
++
++    amount = _pick(df, amount_candidates)
++    currency = _pick(df, _CURRENCY_CANDIDATES)
++    registration = _pick(df, _REGISTRATION_CANDIDATES)
+     if not all((amount, currency, registration)):
+-        return 'نیازمند کلید ثبت سفارش و ارز'
+-    groups = {}
+-    for row in df[[registration, currency, amount]].itertuples(index=False, name=None):
+-        reg, cur, value = row
++        return "نیازمند کلید ثبت سفارش و ارز"
++
++    cols = [registration, currency, amount]
++    if unknown_flag and unknown_flag in df.columns:
++        cols.append(unknown_flag)
++
++    groups: dict[tuple[str, str], set[Decimal]] = {}
++    for row in df[cols].itertuples(index=False, name=None):
++        reg, cur, value = row[:3]
++        is_unknown = _truthy(row[3]) if len(row) > 3 else False
++
+         if pd.isna(reg) or pd.isna(cur) or not str(reg).strip() or not str(cur).strip():
+-            return 'کلید یا ارز ناقص؛ جمع قابل اتکا نیست'
+-        try:
+-            value = Decimal(str(value))
+-            if not value.is_finite():
+-                raise InvalidOperation
+-        except (InvalidOperation, ValueError):
+-            return 'مانده نامشخص؛ جمع قابل اتکا نیست'
+-        groups.setdefault((str(reg).strip(), str(cur).strip()), set()).add(value)
+-    totals = {}
++            return "کلید یا ارز ناقص؛ جمع قابل اتکا نیست"
++        if is_unknown:
++            return unknown_message
++
++        dec = _decimal(value)
++        if dec is None:
++            return unknown_message
++        groups.setdefault((str(reg).strip(), str(cur).strip()), set()).add(dec)
++
++    totals: dict[str, Decimal] = {}
+     for (_, cur), values in groups.items():
+         if len(values) != 1:
+-            return 'مغایرت مانده برای ثبت سفارش؛ نیازمند بررسی'
++            return "مغایرت مبلغ برای ثبت سفارش؛ نیازمند بررسی"
+         totals[cur] = totals.get(cur, Decimal(0)) + next(iter(values))
+-    return ' | '.join(f'{value:,.2f} {cur}' for cur, value in sorted(totals.items()))
++
++    return " | ".join(f"{value:,.2f} {cur}" for cur, value in sorted(totals.items()))
++
++
++def commitment_display(df: pd.DataFrame) -> str:
++    """Decision-safe commitment balance, split by currency and REG grain."""
++    msg = currency_amount_display(
++        df,
++        _BALANCE_CANDIDATES,
++        unknown_flag="BALANCE_IS_UNKNOWN",
++        unknown_message="مانده نامشخص؛ جمع قابل اتکا نیست",
++    )
++    # Preserve the established, more specific wording for balance conflicts.
++    if msg == "مغایرت مبلغ برای ثبت سفارش؛ نیازمند بررسی":
++        return "مغایرت مانده برای ثبت سفارش؛ نیازمند بررسی"
++    return msg
++
++
++def penalty_display(df: pd.DataFrame) -> str:
++    """Decision-safe estimated penalty, split by currency and REG grain.
++
++    Penalty is calculated from commitment balance; an unknown source balance
++    therefore makes its total non-authoritative too.
++    """
++    return currency_amount_display(
++        df,
++        ("جریمه برآوردی",),
++        unknown_flag="BALANCE_IS_UNKNOWN",
++        unknown_message="مبنای جریمه نامشخص؛ جمع قابل اتکا نیست",
++    )
++
++
++def commitment_status_summary(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, int]]:
++    """Build chart-safe commitment totals by currency and deadline status.
++
++    One amount is accepted per (registration, currency).  Unknown balances,
++    missing keys/currencies, or conflicting duplicates are *not* converted to
++    zero and are counted in diagnostics instead.  Consequently an unknown
++    balance can never be mislabeled as settled.
++    """
++    columns = ["currency", "status", "amount", "count"]
++    diag = {"unknown": 0, "conflict": 0, "missing_key_or_currency": 0}
++    if df.empty:
++        return pd.DataFrame(columns=columns), diag
++
++    amount = _pick(df, _BALANCE_CANDIDATES)
++    currency = _pick(df, _CURRENCY_CANDIDATES)
++    registration = _pick(df, _REGISTRATION_CANDIDATES)
++    overdue = _pick(df, ("روزهای تأخیر",))
++    if not all((amount, currency, registration)):
++        diag["missing_key_or_currency"] = int(len(df))
++        return pd.DataFrame(columns=columns), diag
++
++    selected = [registration, currency, amount]
++    if overdue:
++        selected.append(overdue)
++    if "BALANCE_IS_UNKNOWN" in df.columns:
++        selected.append("BALANCE_IS_UNKNOWN")
++
++    # Operate on registration/currency groups so BL/material fan-out cannot
++    # multiply the same commitment amount.
++    accepted: list[tuple[str, str, Decimal]] = []
++    tmp = df[selected].copy()
++    tmp["__reg"] = tmp[registration].astype(str).str.strip()
++    tmp["__cur"] = tmp[currency].astype(str).str.strip()
++
++    missing = tmp["__reg"].eq("") | tmp["__cur"].eq("") | tmp[registration].isna() | tmp[currency].isna()
++    diag["missing_key_or_currency"] += int(missing.sum())
++    tmp = tmp.loc[~missing]
++
++    for (_, _), g in tmp.groupby(["__reg", "__cur"], sort=False, dropna=False):
++        cur = str(g["__cur"].iloc[0])
++        if "BALANCE_IS_UNKNOWN" in g.columns and g["BALANCE_IS_UNKNOWN"].map(_truthy).any():
++            diag["unknown"] += 1
++            continue
++
++        amounts = {_decimal(v) for v in g[amount].tolist()}
++        if None in amounts:
++            diag["unknown"] += 1
++            continue
++        if len(amounts) != 1:
++            diag["conflict"] += 1
++            continue
++        value = next(iter(amounts))
++
++        if value <= 0:
++            status = "تسویه‌شده"
++        elif overdue:
++            delays = pd.to_numeric(g[overdue], errors="coerce").dropna().unique().tolist()
++            if len(delays) == 0:
++                status = "مهلت نامشخص"
++            elif len(delays) > 1:
++                diag["conflict"] += 1
++                continue
++            else:
++                status = "معوق" if float(delays[0]) > 0 else "در مهلت"
++        else:
++            status = "مهلت نامشخص"
++        accepted.append((cur, status, value))
++
++    if not accepted:
++        return pd.DataFrame(columns=columns), diag
++
++    rows = pd.DataFrame(accepted, columns=["currency", "status", "amount"])
++    out = (rows.groupby(["currency", "status"], sort=True, as_index=False)
++               .agg(amount=("amount", lambda s: float(sum(s, Decimal(0)))),
++                    count=("amount", "size")))
++    return out[columns], diag
++
++
++def commitment_numeric_if_single_currency(df: pd.DataFrame) -> tuple[float | None, str | None, str]:
++    """Return a numeric balance only when a single authoritative currency exists.
++
++    Historical stores/charts sometimes require a numeric value.  In a mixed-
++    currency population returning a single float would destroy the unit, so the
++    numeric part is ``None`` and callers should persist/use the display text.
++    """
++    display = commitment_display(df)
++    summary, diag = commitment_status_summary(df)
++    if sum(diag.values()) or summary.empty:
++        return None, None, display
++    currencies = summary["currency"].dropna().astype(str).unique().tolist()
++    if len(currencies) != 1:
++        return None, None, display
++    return float(summary["amount"].sum()), currencies[0], display
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/report/history.py /mnt/data/gsi_rc4_work/gsi/report/history.py
+--- /mnt/data/gsi_rc4_baseline/gsi/report/history.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/report/history.py	2026-09-23 14:20:50.389826857 +0000
+@@ -21,6 +21,7 @@
+ from ..design import tokens as T
+ from ..design.excel import X
+ from ..studio_core.grain import safe_agg
++from .financial_summary import commitment_numeric_if_single_currency
+ 
+ SHEET_HISTORY = "۱۸. روند مدیریتی"
+ 
+@@ -35,7 +36,27 @@
+     band = df.get("کد طبقه بحرانی", df.get("بحرانی (کوتاه)", pd.Series("", index=df.index))).astype(str)
+     crit_mask = band.isin(["STOCKOUT", "CRITICAL", "توقف خط", "بحرانی"])
+     stop_mask = band.isin(["STOCKOUT", "توقف خط"])
+-    late = pd.to_numeric(df.get("روزهای تأخیر", pd.Series(0, index=df.index)), errors="coerce").fillna(0)
++    late = pd.to_numeric(df.get("روزهای تأخیر", pd.Series(0, index=df.index)), errors="coerce")
++
++    # Legacy datasets without currency/key metadata retain the historical numeric
++    # contract.  Once the authoritative REG/currency columns exist, a naked
++    # cross-currency float is intentionally not emitted.
++    has_fin_contract = (
++        "مانده تعهد" in df.columns
++        and any(c in df.columns for c in ("KEY_REG", "CANONICAL_REG"))
++        and any(c in df.columns for c in ("NTSW_CURRENCY", "CURRENCY", "ارز"))
++    )
++    if has_fin_contract:
++        bal_value, bal_currency, bal_display = commitment_numeric_if_single_currency(df)
++        overdue_df = df.loc[late > 0]
++        overdue_value, overdue_currency, overdue_display = commitment_numeric_if_single_currency(overdue_df)
++    else:
++        bal_value = round(safe_agg(df, "مانده تعهد", "sum"), 2) if "مانده تعهد" in df.columns else 0.0
++        overdue_value = round(safe_agg(df.loc[late.fillna(0) > 0], "مانده تعهد", "sum"), 2) if "مانده تعهد" in df.columns else 0.0
++        bal_currency = overdue_currency = None
++        bal_display = str(bal_value)
++        overdue_display = str(overdue_value)
++
+     return {
+         "تاریخ": str(ref_date)[:10],
+         "ردیف": len(df),
+@@ -44,8 +65,12 @@
+         "متریال یکتا": uniq("KEY_MATERIAL"),
+         "متریال بحرانی": int(df.loc[crit_mask, "KEY_MATERIAL"].replace("", pd.NA).nunique()) if "KEY_MATERIAL" in df.columns else int(crit_mask.sum()),
+         "متریال توقف خط": int(df.loc[stop_mask, "KEY_MATERIAL"].replace("", pd.NA).nunique()) if "KEY_MATERIAL" in df.columns else int(stop_mask.sum()),
+-        "مانده تعهد": round(safe_agg(df, "مانده تعهد", "sum"), 2) if "مانده تعهد" in df.columns else 0.0,
+-        "مانده تعهد معوق": round(safe_agg(df.loc[late > 0], "مانده تعهد", "sum"), 2) if "مانده تعهد" in df.columns else 0.0,
++        "مانده تعهد": bal_value,
++        "ارز مانده تعهد": bal_currency or ("چندارزی/نامشخص" if has_fin_contract else ""),
++        "مانده تعهد نمایشی": bal_display,
++        "مانده تعهد معوق": overdue_value,
++        "ارز مانده تعهد معوق": overdue_currency or ("چندارزی/نامشخص" if has_fin_contract else ""),
++        "مانده تعهد معوق نمایشی": overdue_display,
+         "میانگین مقاومت": round(safe_agg(df, "مقاومت (روز)", "mean"), 2) if "مقاومت (روز)" in df.columns else 0.0,
+         "میانگین رسوب": round(safe_agg(df, "روزهای رسوب", "mean"), 2) if "روزهای رسوب" in df.columns else 0.0,
+     }
+@@ -91,8 +116,8 @@
+         chart.add_data(Reference(ws, min_col=cidx, min_row=3, max_row=3+len(hist)), titles_from_data=True)
+         chart.set_categories(Reference(ws, min_col=1, min_row=4, max_row=3+len(hist)))
+         ws.add_chart(chart, "A8")
+-    if len(hist) >= 2 and "مانده تعهد" in cols:
+-        chart = LineChart(); chart.title = "روند مانده تعهد"; chart.height = 7; chart.width = 14
++    if len(hist) >= 2 and "مانده تعهد" in cols and pd.to_numeric(hist["مانده تعهد"], errors="coerce").notna().any():
++        chart = LineChart(); chart.title = "روند مانده تعهد — فقط تک‌ارزی"; chart.height = 7; chart.width = 14
+         cidx = cols.index("مانده تعهد") + 1
+         chart.add_data(Reference(ws, min_col=cidx, min_row=3, max_row=3+len(hist)), titles_from_data=True)
+         chart.set_categories(Reference(ws, min_col=1, min_row=4, max_row=3+len(hist)))
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/report/insight.py /mnt/data/gsi_rc4_work/gsi/report/insight.py
+--- /mnt/data/gsi_rc4_baseline/gsi/report/insight.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/report/insight.py	2026-09-23 14:20:11.139473382 +0000
+@@ -21,7 +21,7 @@
+ برای هر متریال، وضعیت هر پنج حلقه زنجیره کنار هم می‌آید تا معلوم شود
+ حلقهٔ پاره کجاست، به‌علاوه دو نمودار پراکنش:
+   • مقاومت در برابر روزهای رسوب (کدام قطعه هم بحرانی است هم گیر کرده)
+-  • مانده تعهد در برابر روزهای تأخیر (کجا جریمه انباشته می‌شود)
++  • امتیاز ریسک در برابر روزهای رسوب (کجا پیگیری هم فوری است هم پرریسک)
+ """
+ from __future__ import annotations
+ 
+@@ -40,6 +40,7 @@
+ from openpyxl.styles import Font
+ 
+ from .palette import LuxuryPalette as P
++from .financial_summary import commitment_display, penalty_display, commitment_status_summary
+ 
+ 
+ def _font(color: str, size: int = 11, bold: bool = False) -> Font:
+@@ -166,7 +167,7 @@
+         "بحرانی": crit,
+         "میانگین مقاومت": m("مقاومت (روز)"),
+         "میانگین رسوب": m("روزهای رسوب"),
+-        "مانده تعهد": m("مانده تعهد", "sum"),
++        "مانده تعهد": commitment_display(g) if "مانده تعهد" in g.columns else "—",
+         "میانگین ریسک": m("امتیاز ریسک"),
+     }
+ 
+@@ -200,15 +201,22 @@
+     if stuck.notna().sum():
+         out.append(("صدک ۹۰ روزهای رسوب", round(float(stuck.quantile(0.90)), 1),
+                     f"آستانه رسوب شدید: {rb.demurrage_critical_days()} روز"))
+-    bal, over = num("مانده تعهد").fillna(0), num("روزهای تأخیر").fillna(0)
+-    exposed = float(bal[over > 0].sum())
+-    if bal.sum() > 0:
+-        out.append(("مانده تعهد معوق", round(exposed, 0),
+-                    f"{round(exposed / max(float(bal.sum()), 1) * 100, 1)}٪ کل مانده"))
+-    pen = num("جریمه برآوردی").fillna(0)
+-    if pen.sum() > 0:
+-        out.append(("جریمه برآوردی", round(float(pen.sum()), 0),
+-                    "پلکانی طبق fx_governance.yaml"))
++    csum, cdiag = commitment_status_summary(g)
++    if not csum.empty:
++        for cur, cg in csum.groupby("currency", sort=True):
++            total_amount = float(cg["amount"].sum())
++            exposed = float(cg.loc[cg["status"] == "معوق", "amount"].sum())
++            if total_amount > 0:
++                out.append((f"مانده تعهد معوق ({cur})", round(exposed, 0),
++                            f"{round(exposed / total_amount * 100, 1)}٪ مانده همین ارز"))
++    if sum(cdiag.values()):
++        out.append(("تعهدات خارج از تجمیع", int(sum(cdiag.values())),
++                    "مانده نامشخص/مغایرت/کلید یا ارز ناقص؛ عمداً به صفر تبدیل نشده"))
++    if "جریمه برآوردی" in g.columns:
++        pen_text = penalty_display(g)
++        if pen_text not in {"—", "نیازمند کلید ثبت سفارش و ارز"}:
++            out.append(("جریمه برآوردی", pen_text,
++                        "سناریوی داخلی، در دانه ثبت سفارش و به تفکیک ارز"))
+     if "امتیاز انطباق (٪)" in g.columns:
+         conf = num("امتیاز انطباق (٪)")
+         if conf.notna().sum():
+@@ -316,7 +324,7 @@
+     headers = (["کد متریال", "شرح کالا", "طبقه بحرانی", "مقاومت (روز)",
+                 "نیاز روزانه", "موجودی کل"]
+                + [fa for _, fa, _ in LIFECYCLE]
+-               + ["اولین حلقه پاره", "روزهای رسوب", "مانده تعهد", "امتیاز ریسک"])
++               + ["اولین حلقه پاره", "روزهای رسوب", "تعهد مرتبط (ثبت/ارز)", "امتیاز ریسک"])
+     hr = 4
+     for i, h in enumerate(headers, start=1):
+         c = ws.cell(row=hr, column=i, value=h)
+@@ -345,7 +353,7 @@
+                       "— کامل —")
+         res = pd.to_numeric(g.get("مقاومت (روز)"), errors="coerce").min()
+         stuck = pd.to_numeric(g.get("روزهای رسوب"), errors="coerce").max()
+-        bal = pd.to_numeric(g.get("مانده تعهد"), errors="coerce").sum()
++        bal = commitment_display(g) if "مانده تعهد" in g.columns else "—"
+         risk = pd.to_numeric(g.get("امتیاز ریسک"), errors="coerce").max()
+         vals = ([mat,
+                  str(g.get("CANONICAL_GOODS_DESC", pd.Series([""])).iloc[0]),
+@@ -357,7 +365,7 @@
+                 + counts
+                 + [broken,
+                    0 if pd.isna(stuck) else float(stuck),
+-                   0 if pd.isna(bal) else float(bal),
++                   bal,
+                    0 if pd.isna(risk) else float(risk)])
+         for i, v in enumerate(vals, start=1):
+             ws.cell(row=r, column=i, value=v)
+@@ -368,7 +376,7 @@
+             cell.alignment = P.align("center")
+         for i in range(1, len(headers) + 1):
+             ws.cell(row=r, column=i).border = P.thin_border()
+-        rows.append((r, res, stuck, bal))
++        rows.append((r, res, stuck, risk))
+         r += 1
+ 
+     last = r - 1
+@@ -378,7 +386,7 @@
+     # ── نمودار پراکنش ۱: مقاومت در برابر رسوب ──
+     i_res = headers.index("مقاومت (روز)") + 1
+     i_stuck = headers.index("روزهای رسوب") + 1
+-    i_bal = headers.index("مانده تعهد") + 1
++    i_risk = headers.index("امتیاز ریسک") + 1
+ 
+     sc = ScatterChart()
+     sc.title = "مقاومت در برابر روزهای رسوب — ربع پایین‌راست خطرناک‌ترین است"
+@@ -395,14 +403,15 @@
+     sc.series.append(s)
+     ws.add_chart(sc, f"A{last + 3}")
+ 
+-    # ── نمودار پراکنش ۲: مانده تعهد در برابر رسوب ──
++    # ── نمودار پراکنش ۲: ریسک در برابر رسوب ──
++    # مانده تعهد چندارزی را نمی‌توان روی یک محور عددیِ بی‌واحد رسم کرد.
+     sc2 = ScatterChart()
+-    sc2.title = "مانده تعهد در برابر رسوب — کجا جریمه انباشته می‌شود؟"
++    sc2.title = "امتیاز ریسک در برابر رسوب — کجا پیگیری فوری‌تر است؟"
+     sc2.style = 2
+     sc2.x_axis.title = "روزهای رسوب"
+-    sc2.y_axis.title = "مانده تعهد"
++    sc2.y_axis.title = "امتیاز ریسک"
+     sc2.height, sc2.width = 9.5, 17
+-    ys2 = Reference(ws, min_col=i_bal, min_row=hr, max_row=last)
++    ys2 = Reference(ws, min_col=i_risk, min_row=hr, max_row=last)
+     s2 = Series(ys2, xs, title_from_data=True)
+     s2.marker = Marker(symbol="diamond", size=9)
+     s2.marker.graphicalProperties = GraphicalProperties(solidFill=_dx.X(_T.CATEGORICAL[3]))
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/stages/s50_commitment.py /mnt/data/gsi_rc4_work/gsi/stages/s50_commitment.py
+--- /mnt/data/gsi_rc4_baseline/gsi/stages/s50_commitment.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/stages/s50_commitment.py	2026-09-23 14:21:17.840349399 +0000
+@@ -62,11 +62,25 @@
+         # سنجه‌های تعهد در سطح REG هستند و پس از join ممکن است fan-out شوند.
+         from ..studio_core.grain import safe_agg
+         red = ctx.rb.status_label("red")
++        has_fin_contract = (
++            any(c in df.columns for c in ("KEY_REG", "CANONICAL_REG"))
++            and any(c in df.columns for c in ("NTSW_CURRENCY", "CURRENCY", "ارز"))
++        )
++        if has_fin_contract:
++            from ..report.financial_summary import commitment_display, penalty_display
++            balance_value = commitment_display(df)
++            penalty_value = penalty_display(df)
++            balance_note = "سورس NTSW — دانه REG و تفکیک ارز؛ جمع بین ارزهای متفاوت ممنوع"
++            penalty_note = "سناریوی داخلی طبق fx_governance.yaml — دانه REG و تفکیک ارز"
++        else:
++            # قرارداد backward-compatible برای تست/داده تاریخی فاقد ستون ارز.
++            balance_value = round(safe_agg(df, "مانده تعهد", "sum"), 2)
++            penalty_value = round(safe_agg(df, "جریمه برآوردی", "sum"), 2)
++            balance_note = "سورس NTSW — تجمیع دانه‌ای REG؛ ستون ارز در داده موجود نیست"
++            penalty_note = "سناریوی داخلی — تجمیع دانه‌ای REG؛ ستون ارز در داده موجود نیست"
+         return {
+             "تعهدات با هشدار قرمز": (int((df.get("وضعیت کلی هشدار") == red).sum()),
+                                       "عبور از آستانه کنترلی RuleBook؛ مبنای حقوقی در ستون مجزا"),
+-            "جمع مانده تعهد": (round(safe_agg(df, "مانده تعهد", "sum"), 2),
+-                                "سورس NTSW — تجمیع دانه‌ای REG"),
+-            "جمع جریمه برآوردی": (round(safe_agg(df, "جریمه برآوردی", "sum"), 2),
+-                                   "سناریوی داخلی طبق fx_governance.yaml — تجمیع دانه‌ای REG"),
++            "جمع مانده تعهد": (balance_value, balance_note),
++            "جمع جریمه برآوردی": (penalty_value, penalty_note),
+         }
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/studio_core/excel_export.py /mnt/data/gsi_rc4_work/gsi/studio_core/excel_export.py
+--- /mnt/data/gsi_rc4_baseline/gsi/studio_core/excel_export.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/studio_core/excel_export.py	2026-09-23 14:19:42.891553970 +0000
+@@ -6,6 +6,8 @@
+ from pathlib import Path
+ from typing import Iterable, List, Optional
+ import pandas as pd
++
++from ..report.financial_summary import commitment_status_summary
+ from openpyxl import load_workbook
+ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+ from openpyxl.utils import get_column_letter
+@@ -175,10 +177,11 @@
+         vc=df["ORG_DEPT"].fillna("").astype(str).replace("","نامشخص").value_counts().head(12).sort_values()
+         add_bar(EMAIL_CHARTS["org_workload"],vc.index.astype(str).tolist(),vc.values.tolist(),"D52")
+ 
+-    if "commitment" in selected and {"مانده تعهد","روزهای تأخیر"}.issubset(df.columns):
+-        bal=pd.to_numeric(df["مانده تعهد"],errors="coerce").fillna(0); overdue=pd.to_numeric(df["روزهای تأخیر"],errors="coerce").fillna(0)
+-        masks=[overdue>0,(overdue<=0)&(bal>0),bal<=0]; labs=["معوق","در مهلت","تسویه‌شده"]
+-        add_bar(EMAIL_CHARTS["commitment"],labs,[bal[m].sum() for m in masks],"D68")
++    if "commitment" in selected and "مانده تعهد" in df.columns:
++        csum, _diag = commitment_status_summary(df)
++        if not csum.empty:
++            labs=[f"{r.currency} · {r.status}" for r in csum.itertuples(index=False)]
++            add_bar(EMAIL_CHARTS["commitment"],labs,csum["amount"].tolist(),"D68")
+ 
+     for col in ("A","B"):
+         ws.column_dimensions[col].width = 34 if col=="A" else 18
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/warehouse/excel.py /mnt/data/gsi_rc4_work/gsi/warehouse/excel.py
+--- /mnt/data/gsi_rc4_baseline/gsi/warehouse/excel.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/warehouse/excel.py	2026-09-23 14:08:46.313226362 +0000
+@@ -1,15 +1,31 @@
+ """Read OOXML directly: preserve physical cells, hidden rows, formula/cache and source bytes.
+ No row filtering based on Excel display state. No forward-fill of transaction amounts.
++
++Performance invariants
++----------------------
++* Original source bytes are still hashed and archived on every ingest attempt.
++* Physical-cell audit is content-addressed by the archived file SHA-256. If the
++  exact same workbook bytes were already captured completely, repeated runs do
++  not parse every worksheet XML again.
++* Callers that only need the immutable archive can opt out of retaining the full
++  Python ``sheets`` object. This prevents a second in-memory copy of large source
++  workbooks while keeping every physical row in SQLite.
+ """
+ from io import BytesIO
+-from pathlib import Path, PurePosixPath
++import os
++from pathlib import Path
+ import posixpath
+ import xml.etree.ElementTree as ET
+ import zipfile
++
+ import pandas as pd
+-from .store import Warehouse,dumps
++
++from .store import Warehouse, dumps, loads
++
+ NS={'s':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+ R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id'
++
++
+ def colno(ref):
+     n=0
+     for c in ref:
+@@ -17,49 +33,137 @@
+         n=n*26+ord(c.upper())-64
+     return n
+ 
+-def capture(path,source):
++
++def _workbook_sheets(z):
++    """Return ``[(sheet_xml_element, member_path), ...]`` without parsing sheets."""
++    rels={r.attrib['Id']:r.attrib['Target']
++          for r in ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))}
++    items=[]
++    for sh in ET.fromstring(z.read('xl/workbook.xml')).findall('s:sheets/s:sheet',NS):
++        target=rels[sh.attrib[R]]
++        member=target.lstrip('/') if target.startswith('/') else posixpath.normpath('xl/'+target)
++        items.append((sh,member))
++    return items
++
++
++def _shared_strings(z):
++    if 'xl/sharedStrings.xml' not in z.namelist():
++        return []
++    root=ET.fromstring(z.read('xl/sharedStrings.xml'))
++    return [''.join(t.text or '' for t in e.findall('.//s:t',NS))
++            for e in root.findall('s:si',NS)]
++
++
++def _parse_sheet(z, sh, member, strings):
++    """Parse one worksheet into the exact physical-row audit representation."""
++    tree=ET.fromstring(z.read(member)); rows=[]; issues=[]
++    for row in tree.findall('s:sheetData/s:row',NS):
++        cells=[]
++        for cell in row.findall('s:c',NS):
++            value=cell.find('s:v',NS);formula=cell.find('s:f',NS);typ=cell.get('t','n')
++            raw=value.text if value is not None else None
++            val=raw
++            if typ=='s' and raw is not None: val=strings[int(raw)]
++            if typ=='inlineStr':val=''.join(t.text or '' for t in cell.findall('.//s:t',NS))
++            if raw is None and val is None and formula is None:continue
++            cells.append({'address':cell.get('r'),'type':typ,'style':cell.get('s'),
++                          'raw':raw,'value':val,
++                          'formula':formula.text if formula is not None else None})
++            if typ=='e' or (formula is not None and raw is None):
++                issues.append((int(row.get('r')),cell.get('r'),
++                               'CELL_ERROR' if typ=='e' else 'FORMULA_NO_CACHE'))
++        if cells:
++            rows.append({'row':int(row.get('r')),'hidden':row.get('hidden')=='1','cells':cells})
++    meta={'state':sh.get('state','visible'),'nonempty_rows':len(rows),
++          'hidden_rows':sum(r['hidden'] for r in rows),
++          'merges':[e.get('ref') for e in tree.findall('s:mergeCells/s:mergeCell',NS)],
++          'columns':[e.attrib for e in tree.findall('s:cols/s:col',NS)]}
++    return rows,issues,meta
++
++
++def _archived_sheet_names(wh, fid):
++    with wh.db() as c:
++        return {r[0] for r in c.execute('SELECT name FROM wh_sheet WHERE file_id=?',(fid,))}
++
++
++def _load_archived_rows(wh, fid, name):
++    with wh.db() as c:
++        return [loads(r[0]) for r in c.execute(
++            'SELECT payload FROM wh_raw_row WHERE file_id=? AND sheet=? ORDER BY row_no',
++            (fid,name))]
++
++
++def _store_sheet(wh, fid, name, meta, rows):
++    try:
++        chunk=max(1,int(os.environ.get('GSI_WAREHOUSE_RAW_CHUNK_ROWS','1000')))
++    except (TypeError,ValueError):
++        chunk=1000
++    with wh.db() as c:
++        c.execute('INSERT INTO wh_sheet VALUES(?,?,?)',(fid,name,dumps(meta)))
++        batch=[]
++        for r in rows:
++            batch.append((fid,name,r['row'],dumps(r)))
++            if len(batch)>=chunk:
++                c.executemany('INSERT INTO wh_raw_row VALUES(?,?,?,?)',batch)
++                batch.clear()
++        if batch:
++            c.executemany('INSERT INTO wh_raw_row VALUES(?,?,?,?)',batch)
++
++
++def capture(path,source,keep_sheets=True):
++    """Archive exact source bytes and physical-cell evidence.
++
++    ``keep_sheets=False`` is intended for legacy readers that will parse the
++    archived workbook with pandas afterwards. The physical audit is still fully
++    persisted; only the redundant Python copy is omitted from the return value.
++    """
+     path=Path(path); before=path.stat(); content=path.read_bytes(); after=path.stat()
+-    if (before.st_size,before.st_mtime_ns)!=(after.st_size,after.st_mtime_ns): raise RuntimeError('فایل هنگام خواندن تغییر کرد؛ دوباره اجرا کنید.')
++    if (before.st_size,before.st_mtime_ns)!=(after.st_size,after.st_mtime_ns):
++        raise RuntimeError('فایل هنگام خواندن تغییر کرد؛ دوباره اجرا کنید.')
+     wh=Warehouse();fid=wh.blob(content,path.name,source,str(path))
+     if path.suffix.lower() not in ('.xlsx','.xlsm'):
+         wh.issue('LEGACY_FORMAT','Original bytes retained; convert to XLSX for physical-cell audit',fid)
+         return fid,content,{}
+-    sheets={}
++
++    sheets={} if keep_sheets else None
+     with zipfile.ZipFile(BytesIO(content)) as z:
+-        strings=[]
+-        if 'xl/sharedStrings.xml' in z.namelist():
+-            strings=[''.join(t.text or '' for t in e.findall('.//s:t',NS)) for e in ET.fromstring(z.read('xl/sharedStrings.xml')).findall('s:si',NS)]
+-        rels={r.attrib['Id']:r.attrib['Target'] for r in ET.fromstring(z.read('xl/_rels/workbook.xml.rels'))}
+-        for sh in ET.fromstring(z.read('xl/workbook.xml')).findall('s:sheets/s:sheet',NS):
+-            name=sh.attrib['name']; target=rels[sh.attrib[R]]
+-            member=target.lstrip('/') if target.startswith('/') else posixpath.normpath('xl/'+target)
+-            tree=ET.fromstring(z.read(member)); rows=[]; issues=[]
+-            for row in tree.findall('s:sheetData/s:row',NS):
+-                cells=[]
+-                for cell in row.findall('s:c',NS):
+-                    value=cell.find('s:v',NS);formula=cell.find('s:f',NS);typ=cell.get('t','n')
+-                    raw=value.text if value is not None else None
+-                    val=raw
+-                    if typ=='s' and raw is not None: val=strings[int(raw)]
+-                    if typ=='inlineStr':val=''.join(t.text or '' for t in cell.findall('.//s:t',NS))
+-                    if raw is None and val is None and formula is None:continue
+-                    cells.append({'address':cell.get('r'),'type':typ,'style':cell.get('s'),'raw':raw,'value':val,'formula':formula.text if formula is not None else None})
+-                    if typ=='e' or (formula is not None and raw is None): issues.append((int(row.get('r')),cell.get('r'),'CELL_ERROR' if typ=='e' else 'FORMULA_NO_CACHE'))
+-                if cells: rows.append({'row':int(row.get('r')),'hidden':row.get('hidden')=='1','cells':cells})
+-            meta={'state':sh.get('state','visible'),'nonempty_rows':len(rows),'hidden_rows':sum(r['hidden'] for r in rows),'merges':[e.get('ref') for e in tree.findall('s:mergeCells/s:mergeCell',NS)],'columns':[e.attrib for e in tree.findall('s:cols/s:col',NS)]}
+-            sheets[name]=rows
+-            with wh.db() as c:
+-                sheet_seen=c.execute('SELECT 1 FROM wh_sheet WHERE file_id=? AND name=?',(fid,name)).fetchone()
+-            if not sheet_seen:
+-                with wh.db() as c:
+-                    c.execute('INSERT INTO wh_sheet VALUES(?,?,?)',(fid,name,dumps(meta)))
+-                    c.executemany('INSERT INTO wh_raw_row VALUES(?,?,?,?)',[(fid,name,r['row'],dumps(r)) for r in rows])
+-                for row,address,code in issues:wh.issue(code,{'cell':address},fid,name,row)
+-    return fid,content,sheets
++        workbook=_workbook_sheets(z)
++        workbook_names=[sh.attrib['name'] for sh,_ in workbook]
++        archived=_archived_sheet_names(wh,fid)
++        missing=[(sh,member) for sh,member in workbook if sh.attrib['name'] not in archived]
++
++        # Exact bytes + all workbook sheet names already archived means the
++        # physical-cell representation is immutable and can be reused safely.
++        # Legacy readers do not need it in Python at all.
++        if not missing:
++            if keep_sheets:
++                for name in workbook_names:
++                    sheets[name]=_load_archived_rows(wh,fid,name)
++            return fid,content,sheets or {}
++
++        # Shared strings can dominate memory; only build them if at least one
++        # worksheet actually needs first-time physical parsing.
++        strings=_shared_strings(z)
++        missing_names={sh.attrib['name'] for sh,_ in missing}
++        for sh,member in workbook:
++            name=sh.attrib['name']
++            if name not in missing_names:
++                if keep_sheets:
++                    sheets[name]=_load_archived_rows(wh,fid,name)
++                continue
++            rows,issues,meta=_parse_sheet(z,sh,member,strings)
++            _store_sheet(wh,fid,name,meta,rows)
++            if keep_sheets:
++                sheets[name]=rows
++            for row,address,code in issues:
++                wh.issue(code,{'cell':address},fid,name,row)
++    return fid,content,sheets or {}
++
+ 
+ def header_normal(value):
+     return ' '.join(str(value or '').translate(str.maketrans('يك','یک')).replace('\u200c',' ').split()).strip()
+ 
++
+ def frame(rows,source,sheet,fid):
+     if not rows:return pd.DataFrame()
+     # Operational sheets have a header signature; titles are never guessed as data.
+@@ -69,12 +173,12 @@
+     for r in rows[:20]:
+         vals={header_normal(c['value']) for c in r['cells']}
+         score=len(vals & wanted)
+-        if not wanted or score: candidates.append((score,-r['row'],r))
++        if not wanted or score:candidates.append((score,-r['row'],r))
+     if not candidates:return pd.DataFrame()
+     hdr=max(candidates,key=lambda x:(x[0],x[1]))[2] if wanted else rows[0]
+     if source=='fx_transaction' and max(x[0] for x in candidates)<2:return pd.DataFrame()
+     width=max(colno(c['address']) for r in rows for c in r['cells']); names=['']*width
+-    for c in hdr['cells']: names[colno(c['address'])-1]=header_normal(c['value'])
++    for c in hdr['cells']:names[colno(c['address'])-1]=header_normal(c['value'])
+     seen={};headers=[]
+     for i,name in enumerate(names):
+         name=name or f'__unnamed_{i+1}';seen[name]=seen.get(name,0)+1
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/warehouse/historical_store.py /mnt/data/gsi_rc4_work/gsi/warehouse/historical_store.py
+--- /mnt/data/gsi_rc4_baseline/gsi/warehouse/historical_store.py	2026-09-22 19:25:54.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/warehouse/historical_store.py	2026-09-23 14:21:03.189477483 +0000
+@@ -745,7 +745,18 @@
+                    else (float(v.mean()) if v.notna().any() else None))
+             metrics.append(("avg_resistance","میانگین مقاومت",None if val is None else float(val),None,"day"))
+         if "مانده تعهد" in df.columns and safe_agg is not None:
+-            metrics.append(("commitment_balance","مانده تعهد",float(safe_agg(df,"مانده تعهد","sum")),None,"amount"))
++            has_fin_contract = (
++                any(c in df.columns for c in ("KEY_REG", "CANONICAL_REG"))
++                and any(c in df.columns for c in ("NTSW_CURRENCY", "CURRENCY", "ارز"))
++            )
++            if has_fin_contract:
++                from ..report.financial_summary import commitment_numeric_if_single_currency
++                value, currency, display = commitment_numeric_if_single_currency(df)
++                metrics.append(("commitment_balance", "مانده تعهد", value, display, currency or "multi/unknown"))
++            else:
++                # Backward compatibility for legacy snapshots that genuinely lack
++                # currency metadata; still REG-grain safe, but unit cannot be proven.
++                metrics.append(("commitment_balance","مانده تعهد",float(safe_agg(df,"مانده تعهد","sum")),None,"amount"))
+         if isinstance(cases, pd.DataFrame) and not cases.empty and "THROUGHPUT_DAYS" in cases.columns:
+             v = pd.to_numeric(cases["THROUGHPUT_DAYS"], errors="coerce")
+             metrics.append(("avg_throughput","میانگین طول چرخه",float(v.mean()) if v.notna().any() else None,None,"day"))
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/gsi/warehouse/store.py /mnt/data/gsi_rc4_work/gsi/warehouse/store.py
+--- /mnt/data/gsi_rc4_baseline/gsi/warehouse/store.py	2026-09-23 13:26:07.000000000 +0000
++++ /mnt/data/gsi_rc4_work/gsi/warehouse/store.py	2026-09-23 14:08:13.163409540 +0000
+@@ -284,10 +284,28 @@
+         if not df.columns.is_unique: raise ValueError('Duplicate frame columns must be disambiguated before storage')
+         fid=uuid.uuid4().hex
+         meta={'columns':list(df.columns),'dtypes':[str(d) for d in df.dtypes],'index':list(df.index),'index_name':df.index.name,'index_dtype':str(df.index.dtype),'attrs':dict(df.attrs)}
+-        rows=[(fid,i,dumps(list(row))) for i,row in enumerate(df.itertuples(index=False,name=None))]
++
++        # Do not materialize the serialized form of an entire wide mart in RAM.
++        # On the production-scale report (hundreds of thousands of rows and
++        # hundreds of columns) the old ``rows=[...]`` temporarily duplicated the
++        # DataFrame as Python tuples + JSON strings before SQLite saw the first
++        # row.  Chunking changes only the write shape; the same row_no/payload
++        # contract and one atomic transaction are preserved.
++        try:
++            chunk_rows=max(1,int(os.environ.get('GSI_WAREHOUSE_FRAME_CHUNK_ROWS','1000')))
++        except (TypeError,ValueError):
++            chunk_rows=1000
++        iterator=enumerate(df.itertuples(index=False,name=None))
+         with self.db() as c:
+             c.execute('INSERT INTO wh_frame VALUES(?,?,?,?,?,?,?)',(fid,RUN.get(),layer,name,dumps(meta),len(df),now()))
+-            c.executemany('INSERT INTO wh_frame_row VALUES(?,?,?)',rows)
++            batch=[]
++            for i,row in iterator:
++                batch.append((fid,i,dumps(list(row))))
++                if len(batch)>=chunk_rows:
++                    c.executemany('INSERT INTO wh_frame_row VALUES(?,?,?)',batch)
++                    batch.clear()
++            if batch:
++                c.executemany('INSERT INTO wh_frame_row VALUES(?,?,?)',batch)
+         # Write the already-in-memory frame once for fast UI rehydration. This is
+         # disposable; all auditability and reconstruction still come from SQLite.
+         self._write_frame_cache(fid,df)
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/tests/test_rc4_financial_accuracy_hardening.py /mnt/data/gsi_rc4_work/tests/test_rc4_financial_accuracy_hardening.py
+--- /mnt/data/gsi_rc4_baseline/tests/test_rc4_financial_accuracy_hardening.py	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/tests/test_rc4_financial_accuracy_hardening.py	2026-09-23 14:21:48.223767808 +0000
+@@ -0,0 +1,122 @@
++from __future__ import annotations
++
++from pathlib import Path
++from types import SimpleNamespace
++
++import pandas as pd
++
++from gsi.report.dashboard import ExcelDashboardBuilder, SHEET_COMMIT, SHEET_SCORECARD
++from gsi.report.financial_summary import (
++    commitment_display,
++    commitment_numeric_if_single_currency,
++    commitment_status_summary,
++    penalty_display,
++)
++from gsi.report.history import snapshot
++from gsi.stages.s50_commitment import CommitmentStage
++
++
++def financial_frame() -> pd.DataFrame:
++    return pd.DataFrame({
++        "KEY_REG": ["R1", "R1", "R2", "R3"],
++        "CANONICAL_REG": ["R1", "R1", "R2", "R3"],
++        "CANONICAL_BL": ["B1", "B2", "B3", "B4"],
++        "NTSW_CURRENCY": ["USD", "USD", "EUR", "USD"],
++        "مانده تعهد": [100.0, 100.0, 50.0, 0.0],
++        "جریمه برآوردی": [10.0, 10.0, 5.0, 0.0],
++        "BALANCE_IS_UNKNOWN": [False, False, False, True],
++        "روزهای تأخیر": [3.0, 3.0, 0.0, 0.0],
++    })
++
++
++def test_commitment_display_dedupes_reg_splits_currency_and_respects_unknown():
++    df = financial_frame().iloc[:3].copy()
++    assert commitment_display(df) == "50.00 EUR | 100.00 USD"
++    assert penalty_display(df) == "5.00 EUR | 10.00 USD"
++
++    unknown = financial_frame().copy()
++    assert "نامشخص" in commitment_display(unknown)
++    assert "نامشخص" in penalty_display(unknown)
++
++
++def test_status_summary_never_turns_unknown_balance_into_settled():
++    summary, diag = commitment_status_summary(financial_frame())
++    assert diag["unknown"] == 1
++    assert diag["conflict"] == 0
++    got = {(r.currency, r.status): (r.amount, r.count) for r in summary.itertuples(index=False)}
++    assert got[("USD", "معوق")] == (100.0, 1)
++    assert got[("EUR", "در مهلت")] == (50.0, 1)
++    assert ("USD", "تسویه‌شده") not in got
++
++
++def test_numeric_financial_value_is_refused_for_mixed_currency():
++    value, currency, display = commitment_numeric_if_single_currency(financial_frame().iloc[:3])
++    assert value is None and currency is None
++    assert display == "50.00 EUR | 100.00 USD"
++
++    one = financial_frame().iloc[:2].copy()
++    value, currency, display = commitment_numeric_if_single_currency(one)
++    assert value == 100.0 and currency == "USD" and display == "100.00 USD"
++
++
++def test_excel_commitment_total_is_not_raw_subtotal(tmp_path: Path):
++    df = financial_frame().iloc[:3].copy()
++    b = ExcelDashboardBuilder(str(tmp_path / "x.xlsx"))
++    b.build_commitment(df)
++    ws = b.wb[SHEET_COMMIT]
++    total_row = len(df) + 3
++    assert ws.cell(total_row, 6).value == "50.00 EUR | 100.00 USD"
++    assert ws.cell(total_row, 11).value == "5.00 EUR | 10.00 USD"
++    assert not str(ws.cell(total_row, 6).value).startswith("=")
++
++
++def test_scorecard_finance_is_reg_grain_and_currency_aware(tmp_path: Path):
++    df = financial_frame().iloc[:3].copy()
++    df["ORG_VICE"] = "V"
++    df["ORG_DEPT"] = "D"
++    df["ORG_MANAGER"] = "M"
++    df["ORG_HEAD"] = "H"
++    df["CANONICAL_EXPERT"] = "E"
++    df["KEY_EMP"] = "1"
++    df["روزهای رسوب"] = [2.0, 3.0, 4.0]
++    df["امتیاز ریسک"] = [10.0, 20.0, 30.0]
++    df["BL_CRITICAL"] = False
++    df["BL_CRITICAL_LEVEL"] = "SAFE"
++
++    b = ExcelDashboardBuilder(str(tmp_path / "s.xlsx"))
++    b.build_scorecard(df)
++    ws = b.wb[SHEET_SCORECARD]
++    assert ws.cell(2, 11).value == "50.00 EUR | 100.00 USD"
++    assert ws.cell(2, 12).value == "5.00 EUR | 10.00 USD"
++
++
++def test_history_keeps_legacy_numeric_but_refuses_cross_currency_number():
++    legacy = pd.DataFrame({
++        "KEY_REG": ["R1", "R1", "R2"],
++        "مانده تعهد": [1000.0, 1000.0, 500.0],
++        "روزهای تأخیر": [5.0, 5.0, 0.0],
++    })
++    old = snapshot(legacy, "2026-09-23")
++    assert old["مانده تعهد"] == 1500.0
++    assert old["مانده تعهد معوق"] == 1000.0
++
++    mixed = financial_frame().iloc[:3].copy()
++    new = snapshot(mixed, "2026-09-23")
++    assert new["مانده تعهد"] is None
++    assert new["ارز مانده تعهد"] == "چندارزی/نامشخص"
++    assert new["مانده تعهد نمایشی"] == "50.00 EUR | 100.00 USD"
++
++
++def test_pipeline_kpi_becomes_currency_aware_when_currency_contract_exists():
++    df = financial_frame().iloc[:3].copy()
++    df["وضعیت کلی هشدار"] = ["قرمز", "قرمز", "سبز"]
++    ctx = SimpleNamespace(rb=SimpleNamespace(status_label=lambda _: "قرمز"))
++    k = CommitmentStage().kpis(df, ctx)
++    assert k["جمع مانده تعهد"][0] == "50.00 EUR | 100.00 USD"
++    assert k["جمع جریمه برآوردی"][0] == "5.00 EUR | 10.00 USD"
++
++
++def test_studio_kpi_uses_shared_financial_summary_not_raw_sum():
++    text = (Path(__file__).parents[1] / "app" / "studio.py").read_text(encoding="utf-8")
++    assert "commit = commitment_display(fdf)" in text
++    assert 'pd.to_numeric(fdf.get("مانده تعهد"), errors="coerce").sum()' not in text
+diff -ruN '--exclude=__pycache__' '--exclude=.pytest_cache' '--exclude=OPTIMIZATION_CHANGES_V29_8_1.patch' /mnt/data/gsi_rc4_baseline/tests/test_rc4_performance_hardening.py /mnt/data/gsi_rc4_work/tests/test_rc4_performance_hardening.py
+--- /mnt/data/gsi_rc4_baseline/tests/test_rc4_performance_hardening.py	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/gsi_rc4_work/tests/test_rc4_performance_hardening.py	2026-09-23 14:09:34.510547714 +0000
+@@ -0,0 +1,85 @@
++import pandas as pd
++
++
++def test_capture_can_archive_without_retaining_physical_rows_and_reuses_exact_bytes(tmp_path, monkeypatch):
++    db = tmp_path / 'warehouse.sqlite'
++    monkeypatch.setenv('GSI_DWH_PATH', str(db))
++    path = tmp_path / 'source.xlsx'
++    with pd.ExcelWriter(path) as writer:
++        pd.DataFrame({'A':['x','y'], 'B':[1,2]}).to_excel(writer, sheet_name='Data', index=False)
++        pd.DataFrame({'C':['z']}).to_excel(writer, sheet_name='Other', index=False)
++
++    from gsi.warehouse import excel
++    from gsi.warehouse.store import Warehouse
++
++    fid, blob, sheets = excel.capture(path, 'test_source', keep_sheets=False)
++    assert blob == path.read_bytes()
++    assert sheets == {}
++
++    wh = Warehouse()
++    with wh.db() as c:
++        names = {r[0] for r in c.execute('SELECT name FROM wh_sheet WHERE file_id=?', (fid,))}
++        stored = c.execute('SELECT count(*) FROM wh_raw_row WHERE file_id=?', (fid,)).fetchone()[0]
++    assert names == {'Data', 'Other'}
++    assert stored == 5  # 2 headers + 3 data rows
++
++    # The exact same content hash is already a complete physical archive. A
++    # repeated ingest must not parse worksheet XML again.
++    def forbidden(*args, **kwargs):
++        raise AssertionError('worksheet XML was reparsed for identical archived bytes')
++    monkeypatch.setattr(excel, '_parse_sheet', forbidden)
++    fid2, blob2, sheets2 = excel.capture(path, 'test_source', keep_sheets=False)
++    assert fid2 == fid and blob2 == blob and sheets2 == {}
++
++
++def test_capture_cached_native_rows_are_rehydratable(tmp_path, monkeypatch):
++    monkeypatch.setenv('GSI_DWH_PATH', str(tmp_path / 'warehouse.sqlite'))
++    path = tmp_path / 'native.xlsx'
++    pd.DataFrame({'ثبت سفارش':['R1','R2'], 'سفارش':['O1','O2'], 'نام بانک':['B1','B2']}).to_excel(path, index=False)
++
++    from gsi.warehouse import excel
++    fid, _, first = excel.capture(path, 'fx_transaction', keep_sheets=True)
++    assert first
++    sheet = next(iter(first))
++    first_rows = first[sheet]
++
++    # Second call is served from the immutable raw-row archive, but the native
++    # adapter receives the same physical representation.
++    fid2, _, second = excel.capture(path, 'fx_transaction', keep_sheets=True)
++    assert fid2 == fid
++    assert second[sheet] == first_rows
++    frame = excel.frame(second[sheet], 'fx_transaction', sheet, fid2)
++    assert list(frame['ثبت سفارش']) == ['R1','R2']
++
++
++def test_warehouse_frame_chunking_preserves_exact_roundtrip(tmp_path, monkeypatch):
++    monkeypatch.setenv('GSI_DWH_PATH', str(tmp_path / 'warehouse.sqlite'))
++    monkeypatch.setenv('GSI_WAREHOUSE_FRAME_CHUNK_ROWS', '2')
++    from gsi.warehouse.store import Warehouse
++
++    wh = Warehouse()
++    src = pd.DataFrame({
++        'INT': pd.Series([1,2,3,4,5], dtype='int64'),
++        'TXT': pd.Series(['الف','ب','ج','د','ه'], dtype='object'),
++        'FLOAT': pd.Series([1.5,2.5,3.5,4.5,5.5], dtype='float64'),
++    }, index=pd.Index([10,20,30,40,50], name='RID'))
++    # Series with default indexes above intentionally align to the custom index
++    # as NaN; use direct values while preserving explicit dtypes.
++    src = pd.DataFrame({
++        'INT': pd.array([1,2,3,4,5], dtype='int64'),
++        'TXT': pd.array(['الف','ب','ج','د','ه'], dtype='object'),
++        'FLOAT': pd.array([1.5,2.5,3.5,4.5,5.5], dtype='float64'),
++    }, index=pd.Index([10,20,30,40,50], name='RID'))
++    src.attrs['evidence'] = {'source':'unit'}
++
++    with wh.run({'test':'chunked-frame'}):
++        fid = wh.frame(src, 'mart', 'sample')
++
++    # Force SQLite rehydration instead of the disposable pickle cache.
++    wh._frame_cache_path(fid).unlink()
++    out = wh.read_frame(fid)
++    pd.testing.assert_frame_equal(out, src)
++    assert out.attrs == src.attrs
++    with wh.db() as c:
++        rows = c.execute('SELECT row_no FROM wh_frame_row WHERE frame_id=? ORDER BY row_no', (fid,)).fetchall()
++    assert [r[0] for r in rows] == list(range(len(src)))

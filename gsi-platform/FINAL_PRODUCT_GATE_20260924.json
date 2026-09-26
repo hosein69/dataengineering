@@ -1,0 +1,35 @@
+{
+  "product": "GSI 29.8.2 RC4-OPT2 H1 Final Product Rewrite",
+  "build_date": "2026-09-24",
+  "delivery_status": "FINAL_PRODUCT_BUILD_VALIDATED",
+  "validation_before_final_pack": {
+    "frozen_independent": "173/173 PASS",
+    "extended_independent": "77/77 PASS",
+    "affected_internal": "128/128 PASS",
+    "rewrite_specific": "9/9 PASS",
+    "compileall": "PASS",
+    "snapshot_excel_smoke": "PASS",
+    "streamlit_apptests": "3 ENVIRONMENT-BLOCKED; not counted as PASS"
+  },
+  "runtime_contract": {
+    "dwh_default": "D:\\GSI_DATA\\warehouse.sqlite",
+    "ui": "published_snapshot_only",
+    "refresh": "explicit_only",
+    "excel": "published_snapshot_no_etl",
+    "sap_raw_grain": [
+      "SAP_SOURCE_SHEET",
+      "SAP_SOURCE_ROW"
+    ],
+    "unknown_financial": "Missing remains Missing; source numeric zero remains zero"
+  },
+  "regulatory_governance": {
+    "status": "FAIL_CLOSED_PENDING_SUCCESSOR_RULES",
+    "expired_rules": [
+      "fx_governance.regulatory_snapshot.emergency_deadline_overlay_1405_05_14",
+      "customs.emergency_sata_waiver_1405"
+    ],
+    "expires_on": "2026-09-22",
+    "automatic_extension_performed": false
+  },
+  "runtime_acceptance": "First successful Windows refresh/publish against organization sources remains the operational acceptance event."
+}
