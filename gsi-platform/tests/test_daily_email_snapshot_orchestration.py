@@ -4,10 +4,10 @@
 Before this fix, ``create_daily_email`` unconditionally called
 ``Pipeline(today=d).run(build_report=True)`` -- a full pipeline re-run --
 every time it was invoked, independent of whatever ``python -m gsi refresh``
-had already published. RUNBOOK_FINAL_20260925_FA.md states Refresh must only
+had already published. docs/history/RUNBOOK_FINAL_20260925_FA.md states Refresh must only
 happen via an explicit action; a scheduled daily-email task silently
 triggered one anyway, and could collide with a concurrent publisher (see
-NETWORK_OUTLOOK_RELEASE_FA.md's "همزمان دو انتشار پشتیبانی نمی‌شود").
+docs/history/NETWORK_OUTLOOK_RELEASE_FA.md's "همزمان دو انتشار پشتیبانی نمی‌شود").
 
 These tests mock the two collaborators at their lazy-import source
 (``gsi.warehouse.service.last_report`` and ``gsi.pipeline.Pipeline``) so no

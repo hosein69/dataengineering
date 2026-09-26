@@ -15,3 +15,13 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# ── داده عملیاتی و کش runtime (هرگز داخل بسته/مخزن) ──
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.writer.lock
+*.writer.lock.meta.json
+D:\\GSI_DATA/
+_demo_html_out/
+offline_feedback/

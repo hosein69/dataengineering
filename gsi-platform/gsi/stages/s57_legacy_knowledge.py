@@ -30,6 +30,27 @@ def _num(v: Any) -> float:
         return 0.0
 
 
+def _group_by_reg(frame: Any, col: str) -> Dict[str, pd.DataFrame]:
+    """{REG: rows} in original row order — same rows a boolean filter returns."""
+    if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty or col not in frame.columns:
+        return {}
+    keys = frame[col].map(_s)
+    return {str(k): g for k, g in frame.groupby(keys, sort=False)}
+
+
+def _realloc_index(frame: Any) -> Dict[str, List[int]]:
+    """{REG: sorted row positions} where REG is the source *or* target."""
+    if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
+        return {}
+    index: Dict[str, Set[int]] = {}
+    for col in ("FROM_REG", "TO_REG"):
+        if col not in frame.columns:
+            continue
+        for pos, reg in enumerate(frame[col].map(_s)):
+            index.setdefault(reg, set()).add(pos)
+    return {reg: sorted(pos) for reg, pos in index.items()}
+
+
 def _join(values: Iterable[str]) -> str:
     out: List[str] = []
     for v in values:
@@ -72,7 +93,21 @@ class LegacyKnowledgeTransferStage(Stage):
 
         rows: List[Dict[str, Any]] = []
         case_summary: List[Dict[str, Any]] = []
-        by_reg = {str(k): g for k, g in df[df.get("CANONICAL_REG", pd.Series("", index=df.index)).map(_s) != ""].groupby(df.get("CANONICAL_REG").map(_s), sort=False)} if "CANONICAL_REG" in df.columns else {}
+        # Only free-text note/status columns are read per REG; group that narrow
+        # projection instead of splitting the full wide frame for every REG.
+        note_cols = [c for c in df.columns if any(k in str(c).upper() for k in ("NOTE", "STATUS", "DESC", "شرح", "وضعیت", "یادداشت"))]
+        if "CANONICAL_REG" in df.columns:
+            reg_keys = df["CANONICAL_REG"].map(_s)
+            narrow = df.loc[reg_keys != "", [c for c in note_cols if c != "CANONICAL_REG"]]
+            by_reg = {str(k): g for k, g in narrow.groupby(reg_keys[reg_keys != ""], sort=False)}
+        else:
+            by_reg = {}
+
+        # Index the per-REG evidence once. The loop below used to re-filter the
+        # full bridge/reallocation/anomaly frames for every ledger row (O(n²)).
+        bridge_by_reg = _group_by_reg(bridge, "KEY_REG")
+        anomalies_by_reg = _group_by_reg(anomalies, "KEY_REG")
+        realloc_by_reg = _realloc_index(realloc)
 
         for _, lr in ledger.iterrows():
             reg = _s(lr.get("KEY_REG"))
@@ -91,8 +126,7 @@ class LegacyKnowledgeTransferStage(Stage):
             ]
             g = by_reg.get(reg)
             if g is not None and not g.empty:
-                note_cols = [c for c in g.columns if any(k in str(c).upper() for k in ("NOTE", "STATUS", "DESC", "شرح", "وضعیت", "یادداشت"))]
-                for c in note_cols:
+                for c in g.columns:
                     text_parts.extend(_s(x) for x in g[c].head(50))
             text = " | ".join(x for x in text_parts if x)
             for item in catalog.match_text(text, kinds=["root_cause"]):
@@ -115,7 +149,7 @@ class LegacyKnowledgeTransferStage(Stage):
 
             # 3) Cross-currency semantics: do not invent P&L when evidence is missing.
             if bridge is not None and not bridge.empty and "KEY_REG" in bridge.columns:
-                bz = bridge[bridge["KEY_REG"].map(_s) == reg]
+                bz = bridge_by_reg.get(reg, bridge.iloc[0:0])
                 if not bz.empty and "STATUS" in bz.columns:
                     statuses = set(bz["STATUS"].map(_s))
                     if "CROSS_CURRENCY_EVIDENCE_GAP" in statuses:
@@ -127,8 +161,8 @@ class LegacyKnowledgeTransferStage(Stage):
 
             # 4) Reallocation: old FIFO is not authority; evidence of authorization wins.
             if realloc is not None and not realloc.empty:
-                rz = realloc[(realloc.get("FROM_REG", pd.Series("", index=realloc.index)).map(_s) == reg) |
-                             (realloc.get("TO_REG", pd.Series("", index=realloc.index)).map(_s) == reg)]
+                positions = realloc_by_reg.get(reg, [])
+                rz = realloc.iloc[positions] if positions else realloc.iloc[0:0]
                 if not rz.empty:
                     unexpl = rz[rz.get("STATUS", pd.Series("", index=rz.index)).map(_s) == "UNEXPLAINED"]
                     if not unexpl.empty:
@@ -137,7 +171,7 @@ class LegacyKnowledgeTransferStage(Stage):
 
             # 5) Existing anomalies can request the old evidence package, without declaring a cause.
             if anomalies is not None and not anomalies.empty and "KEY_REG" in anomalies.columns:
-                az = anomalies[anomalies["KEY_REG"].map(_s) == reg]
+                az = anomalies_by_reg.get(reg, anomalies.iloc[0:0])
                 if not az.empty:
                     codes = set(az.get("کد مغایرت", pd.Series(dtype=str)).map(_s))
                     if codes & {"CLEARED_BUT_COMMITMENT_OPEN", "RELEASED_WITH_BALANCE"}:

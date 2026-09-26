@@ -1,3 +1,38 @@
+# GSI 29.9.0 — full-package review (architecture · optimization · industrial data · UI/UX · full-stack) — 2026-09-26
+
+Full per-finding detail, evidence and before/after measurements: `GSI_REVIEW_REPORT_V29_9_0_FA.md`.
+
+**Data accuracy**
+- One canonical numeric parser (`gsi/core/numeric_parse.py`) behind `num_safe`, `warehouse.numeric.number` and `cashflow.engine.number`. Fixed: scientific notation stripped (`1e-05→105`, `1.5e16→1.516`), Persian decimal separator deleted (`1٫5→15`), SAP trailing minus and Unicode minus read as positive, bidi marks inside numbers, comma-decimal guessed in the Decimal cash-flow ledger (`1,5→15`).
+- Jalali calendar: invalid dates (month 13, day 31 of Mehr, Esfand 30 in a common year, month/day 0) are rejected instead of rolling over to another real date; `is_jalali_leap` fixed (1403 is leap) and now consistent with the converter; verified day-by-day against jdatetime for 1300–1499; ISO `T` timestamps and OOXML Excel serial dates parsed.
+- Join keys: bidi/zero-width/BOM/tatweel marks removed in `clean_key` and text normalization; Arabic alef-maqsura/keheh variants normalized.
+- Currency identity: longest-name match with Latin word boundaries; ambiguous values (`USD/EUR`) → blank; unknown values kept whole instead of truncated to a fabricated 3-letter code; 28 currencies added (CAD, HKD, AUD, OMR, QAR, SAR, PKR, SEK, NOK, DKK, IQD, KWD, …).
+- Unknown ≠ Zero in FX layers: allocation amounts, release %, event amounts, credit aggregates (now LC-deduped and single-currency), `FX_DAYS_REMAINING` without a deadline, “settled” with an unknown balance, commitment balance given as non-numeric text.
+- Commitment KPI: rows with neither registration key nor amount are excluded and disclosed instead of voiding the whole total.
+- Process explorer dates use the GSI calendar (Jalali-aware, D/M/Y); rate register falls back to `date` when `value_date` is blank.
+
+**Performance** (outputs verified identical)
+- Cash-flow engine indexed: 1,000 cases 24.5 s → 0.78 s; 10,000 cases / 148k events 11 s (was quadratic).
+- Pipeline: pandas `attrs` deep-copy eliminated (`SharedList`), O(n²) per-REG filters in s57 indexed, narrow group-bys in s40/moghavemat/s57, s58 stage lookup, fast paths in `is_empty_val` and warehouse `encode`. All 34 pipeline output frames bit-identical before/after.
+
+**Full-stack / platform**
+- Dashboard crashed at import on Python 3.11 (3.12-only f-string) — fixed; every source file is now compiled by a test.
+- `.streamlit/config.toml`: localhost only, usage telemetry off, Deploy toolbar hidden, brand theme from design tokens.
+- `RUN_FINANCIAL_WORKSPACE.cmd` used system Python, no `cd`, and listened on all interfaces — fixed.
+- All `.cmd` files ASCII + CRLF (`.gitattributes` enforces); `app/` is a regular package (the bundled UI kit's `app.py` could shadow it); UI-kit path registration is thread-safe.
+- Non-Windows default data root no longer creates a relative `D:\GSI_DATA` folder inside the package; `is_empty_val(pd.NA)` no longer raises.
+- Dependency upper bounds (`pandas<3`, `streamlit<2`, …).
+
+**UI/UX**
+- Material icons rendered as literal words (`keyboard_arrow_right`) — fixed; Jalali reference dates with bidi isolation everywhere the report date is shown; Jalali or ISO date input; default reference date = published snapshot (no false “stale” banner); cash-flow page RTL + brand theme; KPI cards never print a sentence at number size; absolute server path removed from Studio sidebar.
+
+**Architecture / packaging**
+- Root reduced from 219 to 24 files; 194 historical documents moved verbatim to `docs/history/`; new `docs/ARCHITECTURE_FA.md`; runbook at `docs/RUNBOOK_DWH_FA.md`; version 29.9.0; release builder version-driven; reproducible sample generator `tools/make_release_samples.py`.
+
+Validation: `python run_all_tests.py` → 1346 passed, 0 failed (input package on the same interpreter: 1253 passed, 7 suites failed).
+
+---
+
 # Customizable HTML + Cash Flow release — 2026-09-26
 
 - Added an offline HTML layout customizer to production report export: drag-and-drop block ordering, accessible move up/down controls, full/half/third/quarter sizing, hide/restore, reset, local persistence, and portable “download customized HTML” with the chosen layout embedded into the file itself.

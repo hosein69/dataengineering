@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Safe operational helper for the GSI 29.8.2 DWH.
+"""Safe operational helper for the GSI DWH (version-independent).
 
 This sidecar intentionally does not modify GSI business logic or schema.
 - status / verify use SQLite read-only mode and never initialize a database.
@@ -33,7 +33,10 @@ def _utf8() -> None:
 def _path() -> Path:
     raw = os.environ.get("GSI_DWH_PATH", "").strip()
     if not raw:
-        root = os.environ.get("GSI_DATA_ROOT", r"D:\GSI_DATA").strip() or r"D:\GSI_DATA"
+        # Same default as gsi.warehouse.store.default_data_root(): the documented
+        # D:\GSI_DATA on Windows; ~/GSI_DATA elsewhere (never a relative "D:\..." dir).
+        default = r"D:\GSI_DATA" if os.name == "nt" else str(Path.home() / "GSI_DATA")
+        root = os.environ.get("GSI_DATA_ROOT", default).strip() or default
         raw = str(Path(root) / "warehouse.sqlite")
     if raw.startswith(("\\\\", "//")):
         raise SystemExit("ERROR: operational SQLite DWH must be on a local disk, not UNC/network storage")

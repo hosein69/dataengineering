@@ -29,6 +29,18 @@ def _truthy(value: object) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y", "بله"}
 
 
+def _absent(value: object) -> bool:
+    """No amount at all (None/NaN/blank) — as opposed to an unparseable one."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def _decimal(value: object) -> Decimal | None:
     try:
         out = Decimal(str(value))
@@ -65,11 +77,20 @@ def currency_amount_display(
         cols.append(unknown_flag)
 
     groups: dict[tuple[str, str], set[Decimal]] = {}
+    unlinked = 0
     for row in df[cols].itertuples(index=False, name=None):
         reg, cur, value = row[:3]
         is_unknown = _truthy(row[3]) if len(row) > 3 else False
 
         if pd.isna(reg) or pd.isna(cur) or not str(reg).strip() or not str(cur).strip():
+            # V29.9: ردیفی که نه کلید ثبت سفارش/ارز دارد و نه مبلغ، تعهدی حمل
+            # نمی‌کند (مثلاً بارنامه‌ای که هنوز به ثبت سفارش وصل نشده). قبلاً
+            # همین ردیف کل KPI را «غیرقابل اتکا» می‌کرد؛ در داده واقعی یعنی
+            # همیشه. اکنون خارج از جمع شمرده و صریحاً افشا می‌شود. ردیفی که
+            # مبلغ دارد ولی کلید/ارز ندارد همچنان fail-closed است.
+            if _absent(value):
+                unlinked += 1
+                continue
             return "کلید یا ارز ناقص؛ جمع قابل اتکا نیست"
         if is_unknown:
             return unknown_message
@@ -79,13 +100,18 @@ def currency_amount_display(
             return unknown_message
         groups.setdefault((str(reg).strip(), str(cur).strip()), set()).add(dec)
 
+    if not groups:
+        return "کلید یا ارز ناقص؛ جمع قابل اتکا نیست" if unlinked else "—"
     totals: dict[str, Decimal] = {}
     for (_, cur), values in groups.items():
         if len(values) != 1:
             return "مغایرت مبلغ برای ثبت سفارش؛ نیازمند بررسی"
         totals[cur] = totals.get(cur, Decimal(0)) + next(iter(values))
 
-    return " | ".join(f"{value:,.2f} {cur}" for cur, value in sorted(totals.items()))
+    text = " | ".join(f"{value:,.2f} {cur}" for cur, value in sorted(totals.items()))
+    if unlinked:
+        text += f" · {unlinked:,} ردیف بدون ثبت سفارش/ارز و بدون مبلغ خارج از جمع"
+    return text
 
 
 def commitment_display(df: pd.DataFrame) -> str:

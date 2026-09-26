@@ -1,20 +1,21 @@
 # GSI — وابستگی‌های اجرا
 # پایتون ۳٫۱۱ یا بالاتر؛ SQLite باید serialize/deserialize را پشتیبانی کند
+# سقف نسخه‌ها = آخرین major تست‌شده. نصب آفلاین تکرارپذیر: requirements-validated.txt
 
 # ── هسته خط لوله ──
-pandas>=2.0
-numpy>=1.24
-openpyxl>=3.1
-PyYAML>=6.0          # کتابخانه قوانین gsi/rules/*.yaml بدون این بالا نمی‌آید
-cryptography>=42.0    # AES-256-GCM برای پروفایل/اسنپ‌شات رمزگذاری‌شده کاربران
+pandas>=2.0,<3        # pandas 3 تغییر پیش‌فرض string dtype و Copy-on-Write دارد؛ تست نشده
+numpy>=1.24,<3
+openpyxl>=3.1,<4
+PyYAML>=6.0,<7       # کتابخانه قوانین gsi/rules/*.yaml بدون این بالا نمی‌آید
+cryptography>=42.0,<47 # AES-256-GCM برای پروفایل/اسنپ‌شات رمزگذاری‌شده کاربران
 
 # ── داشبورد و Studio ──
-streamlit>=1.49
-plotly>=5.20
+streamlit>=1.49,<2     # .streamlit/config.toml و selectorهای CSS روی 1.x تست شده‌اند
+plotly>=5.20,<8
 streamlit-sortables==0.3.1
 
 # ── بسته ایمیل مدیریتی (python -m gsi email) ──
-matplotlib>=3.7      # نمودارهای PNG ایمیل؛ نبودش یعنی ModuleNotFoundError
+matplotlib>=3.7,<4    # نمودارهای PNG ایمیل؛ نبودش یعنی ModuleNotFoundError
 
 # ── اختیاری ──
 # jdatetime         # مبدل شمسی داخلی هست؛ این فقط جایگزین است

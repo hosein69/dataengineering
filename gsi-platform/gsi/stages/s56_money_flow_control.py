@@ -39,6 +39,12 @@ def _num(v: Any) -> float:
         return 0.0
 
 
+def _amount_text(v: Any) -> str:
+    """نمایش مبلغ شاهد؛ نامعلوم «نامعلوم» است نه 0.00."""
+    x = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
+    return "نامعلوم" if pd.isna(x) else f"{float(x):,.2f}"
+
+
 def _date(v: Any):
     return CalendarEngine.parse(v)
 
@@ -146,15 +152,17 @@ class MoneyFlowControlStage(Stage):
         for c in self.provides:
             if c in m.columns:
                 df[c] = regs.map(m[c].to_dict())
-        numeric = {"FX_CONTROL_RISK_SCORE", "FX_DAYS_REMAINING", "FX_STAGE_PROGRESS_PCT",
+        numeric = {"FX_CONTROL_RISK_SCORE", "FX_STAGE_PROGRESS_PCT",
                    "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
                    "FX_CONVERSION_IMPACT_RIAL"}
         for c in numeric:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
-        if "FX_PURCHASE_WAVG_RATE" in df.columns:
-            df["FX_PURCHASE_WAVG_RATE"] = pd.to_numeric(df["FX_PURCHASE_WAVG_RATE"], errors="coerce")
-        for c in set(self.provides) - numeric - {"FX_PURCHASE_WAVG_RATE"}:
+        nullable = {"FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING"}
+        for c in nullable:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+        for c in set(self.provides) - numeric - nullable:
             if c in df.columns:
                 df[c] = df[c].fillna("")
 
@@ -164,11 +172,11 @@ class MoneyFlowControlStage(Stage):
         return df
 
     def _empty_outputs(self, df: pd.DataFrame) -> None:
-        numeric = {"FX_CONTROL_RISK_SCORE", "FX_DAYS_REMAINING", "FX_STAGE_PROGRESS_PCT",
+        numeric = {"FX_CONTROL_RISK_SCORE", "FX_STAGE_PROGRESS_PCT",
                    "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
                    "FX_CONVERSION_IMPACT_RIAL"}
         for c in self.provides:
-            if c == "FX_PURCHASE_WAVG_RATE":
+            if c in ("FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING"):
                 df[c] = float("nan")
             else:
                 df[c] = 0.0 if c in numeric else ""
@@ -351,7 +359,11 @@ class MoneyFlowControlStage(Stage):
             bank_docs_date = _latest(d, "DOC_SUBMIT_DATE")
             balance = _num(lr.get("FX_NTSW_BALANCE"))
             initial = _num(lr.get("FX_NTSW_INITIAL"))
-            settled = bool(initial > EPS and balance <= EPS) or (
+            # V29.9: مانده نامعلوم (NaN) هرگز «تسویه‌شده» نیست؛ قبلاً _num آن را
+            # صفر می‌کرد و پرونده‌ی بدون شاهد مانده رفع‌تعهدشده نمایش داده می‌شد.
+            balance_known = pd.notna(pd.to_numeric(pd.Series([lr.get("FX_NTSW_BALANCE")]),
+                                                   errors="coerce").iloc[0])
+            settled = bool(initial > EPS and balance_known and balance <= EPS) or (
                 "رفع" in _s(lr.get("FX_NTSW_RELEASE_STATUS")) and
                 "نشده" not in _s(lr.get("FX_NTSW_RELEASE_STATUS")))
 
@@ -445,11 +457,11 @@ class MoneyFlowControlStage(Stage):
                 if code == "ORDER_REG": evidence = "REG موجود" + (f"؛ {reg_date.isoformat()}" if reg_date else "؛ تاریخ ثبت سفارش ناقص")
                 elif code == "ALLOCATION_QUEUE":
                     qrank = _s(a.iloc[0].get("NTSW_QUEUE_RANK")) if not a.empty else ""
-                    qamt = _num(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else 0.0
-                    evidence = f"درخواست باز={open_requests}; مبلغ باز={qamt:,.2f}" + (f"؛ رتبه={qrank}" if qrank else "؛ رتبه در export موجود نیست")
+                    qamt = _amount_text(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else "0.00"
+                    evidence = f"درخواست باز={open_requests}; مبلغ باز={qamt}" + (f"؛ رتبه={qrank}" if qrank else "؛ رتبه در export موجود نیست")
                 elif code == "ALLOCATION":
-                    aamt = _num(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else 0.0
-                    evidence = f"{_s(lr.get('FX_ALLOC_STATUS'))}; درخواست تخصیص‌یافته={allocated_requests}; مبلغ={aamt:,.2f}"
+                    aamt = _amount_text(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else "0.00"
+                    evidence = f"{_s(lr.get('FX_ALLOC_STATUS'))}; درخواست تخصیص‌یافته={allocated_requests}; مبلغ={aamt}"
                 elif code == "FX_PURCHASE": evidence = _s(lr.get("FX_CURRENCIES"))
                 elif code == "FUNDING": evidence = _s(lr.get("FX_FUND_DATE"))
                 elif code == "SWIFT_CONVERSION":
@@ -826,7 +838,8 @@ class MoneyFlowControlStage(Stage):
                 "KEY_REG": reg,
                 "FX_CONTROL_RISK_SCORE": score, "FX_CONTROL_RISK_BAND": band,
                 "FX_DEADLINE_DATE": deadline_date,
-                "FX_DAYS_REMAINING": deadline_days if deadline_days is not None else 0,
+                # بدون مهلت، «۰ روز باقی‌مانده» (سررسید امروز) گمراه‌کننده است.
+                "FX_DAYS_REMAINING": deadline_days if deadline_days is not None else float("nan"),
                 "FX_DEADLINE_STATUS": deadline_status, "FX_DEADLINE_BASIS": deadline_basis,
                 "FX_CURRENT_STAGE": current_stage, "FX_STAGE_PROGRESS_PCT": progress,
                 "FX_REALLOCATION_STATUS": rel_status, "FX_REALLOCATION_COUNT": len(rel),

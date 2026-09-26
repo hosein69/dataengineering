@@ -32,6 +32,11 @@ class QualityGateBlockedError(ValueError):
         }
 def now(): return datetime.now(timezone.utc).isoformat()
 def encode(x):
+    # Fast path for the overwhelmingly common plain cell values (exact types
+    # only: subclasses such as numpy.str_ still take the general path below).
+    t=type(x)
+    if t is str or t is int or t is bool or x is None: return x
+    if t is float: return x if math.isfinite(x) else {'$type':'float','value':repr(x)}
     import numpy as np
     import pandas as pd
     if x is pd.NA: return {'$type':'NA'}
@@ -122,9 +127,24 @@ def _unlink_with_retry(path, attempts: int = 5, delay: float = 0.15) -> bool:
     return not path.exists()
 
 
+def default_data_root() -> Path:
+    """Operational data root: ``GSI_DATA_ROOT`` or the documented default.
+
+    ``D:\\GSI_DATA`` is the documented Windows deployment root. On any other OS
+    that literal is a *relative* directory name, so a doctor probe or test run
+    used to create a folder literally named ``D:\\GSI_DATA`` inside the package
+    (and it was later shipped in a release ZIP). Non-Windows hosts use
+    ``~/GSI_DATA`` instead; Windows behaviour is unchanged.
+    """
+    configured = (os.getenv('GSI_DATA_ROOT') or '').strip()
+    if configured:
+        return Path(configured)
+    return Path(r'D:\GSI_DATA') if os.name == 'nt' else Path.home() / 'GSI_DATA'
+
+
 class Warehouse:
     def __init__(self,path=None,initialize=True):
-        default_path = Path(os.getenv('GSI_DATA_ROOT', r'D:\GSI_DATA')) / 'warehouse.sqlite'
+        default_path = default_data_root() / 'warehouse.sqlite'
         self.path=local_path(path or os.getenv('GSI_DWH_PATH') or default_path)
         self.path.parent.mkdir(parents=True,exist_ok=True)
         # IMPORTANT: dashboard readers must never run schema DDL.  Older builds

@@ -1,27 +1,21 @@
-GSI FINAL ONE PACKAGE — 2026-09-26
+GSI 29.9.0 — 2026-09-26
 
-فقط همین پوشه را روی یک دیسک محلی Extract کنید، مثلا:
-D:\GSI_APP\
+1) همین پوشه را روی یک دیسک محلی Extract کنید، مثلا:  D:\GSI_APP\
+   (نه مسیر شبکه/UNC؛ فقط فایل‌های سورس از شبکه خوانده می‌شوند)
 
-سپس فقط این فایل را اجرا کنید:
-00_RUN_GSI.cmd
+2) فقط این فایل را اجرا کنید:  00_RUN_GSI.cmd
+   اولین اجرا: محیط Python (.venv) نصب می‌شود، سپس Control Panel باز می‌شود.
 
-در اولین اجرا اگر محیط Python آماده نباشد، نصب runtime انجام می‌شود و سپس Control Panel باز می‌شود.
+3) ترتیب اولین راه‌اندازی در Control Panel:
+   Doctor  ←  Refresh data  ←  Verify published DWH  ←  Start GSI
 
-ترتیب اولین راه‌اندازی در Control Panel:
-1) Doctor
-2) Refresh data
-3) Verify published DWH
-4) Start GSI
+   دفعات بعد فقط Start GSI.   داده جدید: Refresh ← Verify ← Start.
+   Excel: Export Excel.   فضای مالی: RUN_FINANCIAL_WORKSPACE.cmd
 
-برای دفعات بعد فقط Start GSI کافی است.
-برای ورود داده جدید: Refresh -> Verify -> Start.
-برای Excel: Export Excel.
+DWH پیش‌فرض:      D:\GSI_DATA\warehouse.sqlite
+تنظیم مسیرها فقط در: OPS\GSI_ENV.cmd
 
-DWH پیش‌فرض:
-D:\GSI_DATA\warehouse.sqlite
-
-تنظیم مسیرها فقط در:
-OPS\GSI_ENV.cmd
-
-Core نهایی GSI دست‌نخورده است؛ این بسته فقط OPS را کنار Core قرار داده و یک Entry Point ساده اضافه کرده است.
+چه چیزی در این نسخه عوض شد؟   GSI_REVIEW_REPORT_V29_9_0_FA.md
+راهنمای نصب:                   INSTALL.md
+محدودیت‌های باز:               KNOWN_LIMITATIONS.md
+اسناد نسخه‌های قبل:            docs\history\

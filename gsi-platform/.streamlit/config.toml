@@ -1,0 +1,29 @@
+# پیکربندی Streamlit برای همه اپ‌های GSI (Studio، Dashboard، فضای مالی).
+# Streamlit این فایل را از پوشه جاری می‌خواند؛ همه launcherها ابتدا به ریشه
+# بسته cd می‌کنند. رنگ‌ها عیناً از gsi/design/tokens.py هستند و تست
+# tests/test_platform_hardening_v29_9.py هم‌خوانی آن‌ها را قفل می‌کند.
+
+[server]
+# فقط روی همین کامپیوتر. بدون این خط Streamlit روی همه کارت‌های شبکه گوش
+# می‌دهد و داده مالی/تعهد ارزی از شبکه داخلی قابل مشاهده می‌شود.
+address = "127.0.0.1"
+headless = true
+enableXsrfProtection = true
+# در بهره‌برداری کد تغییر نمی‌کند؛ پایش فایل فقط CPU/IO مصرف می‌کند.
+fileWatcherType = "none"
+runOnSave = false
+
+[browser]
+# محیط سازمانی آفلاین: هیچ آمار استفاده‌ای به بیرون ارسال نشود.
+gatherUsageStats = false
+
+[client]
+# دکمه Deploy و منوی توسعه‌دهنده برای کاربر نهایی پنهان شود.
+toolbarMode = "viewer"
+
+[theme]
+base = "light"
+primaryColor = "#0a7c86"
+backgroundColor = "#f6f8f9"
+secondaryBackgroundColor = "#eef2f4"
+textColor = "#0b1f33"

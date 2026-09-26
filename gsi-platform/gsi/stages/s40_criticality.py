@@ -100,7 +100,12 @@ class CriticalityStage(Stage):
             flags={}; levels={}; mats={}; reasons={}
             if key not in df.columns:
                 return
-            for value, g in df.groupby(key, dropna=False, sort=False):
+            # group_info reads only these columns; grouping the full wide frame
+            # (hundreds of columns) split every column per BL/order for nothing.
+            narrow = df[[c for c in dict.fromkeys((key, "کد طبقه بحرانی", "مقاومت (روز)",
+                                                  "KEY_MATERIAL", "بحرانی (کوتاه)"))
+                         if c in df.columns]]
+            for value, g in narrow.groupby(key, dropna=False, sort=False):
                 k="" if pd.isna(value) else str(value).strip()
                 if not k:
                     continue

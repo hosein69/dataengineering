@@ -29,13 +29,15 @@ def draggable_list(items: Sequence[DragItem], *, key: str) -> Optional[List[str]
     """Return the reordered ids after an actual drop; otherwise ``None``."""
     if _component is None:
         return None
+    # Colours/font come from the single design-token source (gsi.design.tokens);
+    # hard-coded hex values here drifted from the rest of the product before.
+    from ..design import tokens as T
     theme = {
-        "ink": "#0b1f33", "inkMuted": "#5a6b79", "border": "#dbe3e7",
-        "borderStrong": "#7d919e", "surfaceRaised": "#ffffff",
-        "surfaceSunken": "#eef2f4", "teal": "#0a7c86", "tealWash": "#e7f1f2",
+        "ink": T.TEXT, "inkMuted": T.TEXT_MUTED, "border": T.BORDER,
+        "borderStrong": T.BORDER_STRONG, "surfaceRaised": T.SURFACE_RAISED,
+        "surfaceSunken": T.SURFACE_SUNKEN, "teal": T.BRAND_TEAL, "tealWash": T.TEAL_WASH,
         "radius": 10,
-        "font": ("'IRANSansWeb','IRANSansX','IRANSans','YekanBakh','Yekan Bakh',"
-                 "'Vazirmatn',Tahoma,'Segoe UI',Arial,sans-serif"),
+        "font": T.FONT_STACK,
     }
     value = _component(items=list(items), theme=theme, key=key, default=None)
     if not value or not isinstance(value, list):

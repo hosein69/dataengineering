@@ -4,6 +4,7 @@ from hashlib import sha256
 from html import escape
 import logging
 import pandas as pd
+from ..core.jalali import date_label
 from .engine import build_cashflow, EVENT_COLUMNS, MEASUREMENT_COLUMNS, text
 from .inputs import read_input, import_reference_rates
 from .dwh import bundle_from_dwh, FinancialSourceUnavailable
@@ -100,7 +101,7 @@ def render(df,extras,ref_date):
                 for key in ('events','measurements'):
                     if key in bundle:bundle[key]=bundle[key].loc[bundle[key]['case_id'].map(text).isin(keys)].copy()
         rid=text(bundle.get('warehouse_run_id'))
-        st.caption(f"منبع: {'دفتر مستقل بارگذاری‌شده' if source else 'داده منتشرشده سامانه'} · اجرای مبنا: {rid or 'منتشر نشده'} · تاریخ گزارش: {ref_date}")
+        st.caption(f"منبع: {'دفتر مستقل بارگذاری‌شده' if source else 'داده منتشرشده سامانه'} · اجرای مبنا: {rid or 'منتشر نشده'} · تاریخ گزارش: {date_label(ref_date)}")
         if not source and bundle.get('scope_status')=='EMPTY_OR_UNRESOLVED':
             st.warning('محدوده انتخاب‌شده ثبت سفارش قابل اتصال ندارد. برای رفع ابهام کل داده‌ها جایگزین این محدوده نمی‌شوند.')
         signature=sha256((repr(df.to_dict('list') if df is not None else None)+str(ref_date)+target+rid).encode()+b''.join(f.getvalue() for f in (source,rate_file,lf) if f is not None)).hexdigest()

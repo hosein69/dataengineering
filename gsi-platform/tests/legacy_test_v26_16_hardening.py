@@ -24,12 +24,17 @@ def test_html_honors_visuals_tables_without_silent_payload_cap():
 
 
 def test_scope_is_applied_before_html_embedding():
-    df=pd.DataFrame({"KEY_MATERIAL":["M1","M2"],"ORG_DEPT":["A","B"],"CANONICAL_EXPERT":["Ali","Sara"],"PHONE":["111","222"]})
+    # Tokens are deliberately unique: the report now embeds an SVG process map
+    # whose path data ("M2131.0 ...") contains "M2", which made the original
+    # 2-character check a false positive rather than a scope leak.
+    df=pd.DataFrame({"KEY_MATERIAL":["MAT_IN_SCOPE_A","MAT_OUT_OF_SCOPE_B"],"ORG_DEPT":["A","B"],
+                     "CANONICAL_EXPERT":["Ali","Sara"],"PHONE":["111","222"]})
     with tempfile.TemporaryDirectory() as td:
         spec=ReportSpec(ref_date="2026-09-15",formats=["html"],fields=list(df.columns),departments=["A"],file_stem="scope")
         r=build(df,{},spec,{},td)
         h=Path(r.files["html"]).read_text(encoding="utf-8")
-        assert 'M1' in h and 'M2' not in h
+        assert 'MAT_IN_SCOPE_A' in h and 'MAT_OUT_OF_SCOPE_B' not in h
+        assert 'Sara' not in h
         assert 'PHONE' not in h and '222' not in h
 
 

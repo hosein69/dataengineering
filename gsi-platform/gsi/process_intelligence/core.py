@@ -281,7 +281,7 @@ def build_bundle(events: pd.DataFrame, *, source: str = "input", reference: str 
     facts = profile(events, source=source, reference=reference, pattern_spec=pattern_spec)
     kit = Path(__file__).resolve().parents[2] / "process-mining-ui-kit"
     if str(kit) not in sys.path:
-        sys.path.insert(0, str(kit))
+        sys.path.append(str(kit))  # append: never shadow GSI modules (kit ships app.py)
     from pm_ui.export.standalone_html import build_standalone_html
     from pm_ui.export.html_report import build_report_html
     from pm_ui.export.excel_report import build_excel_report

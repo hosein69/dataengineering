@@ -15,10 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 SKIP_PARTS = {
     "__pycache__", ".pytest_cache", ".git", ".DS_Store", "_demo_html_out",
-    "offline_feedback", "output", "logs", "D:\\GSI_DATA",
+    "offline_feedback", "output", "logs", "D:\\GSI_DATA", ".venv", "venv",
 }
 SKIP_NAMES = {
     "PACKAGE_SHA256_FINAL_20260925.json",
+    "PACKAGE_SHA256.json",
     "generate_demo_html.py",
 }
 SKIP_SUFFIXES = {".pyc", ".pyo", ".sqlite", ".sqlite-wal", ".sqlite-shm", ".pkl", ".pickle"}
@@ -49,7 +50,14 @@ def collect(root: Path):
     )
 
 
-def build(output: Path, manifest_name: str = "PACKAGE_SHA256_FINAL_20260926.json") -> dict:
+def _version() -> str:
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from gsi.factsheet import VERSION
+    return VERSION
+
+
+def build(output: Path, manifest_name: str = "PACKAGE_SHA256.json") -> dict:
     output = output.resolve()
     with tempfile.TemporaryDirectory(prefix="gsi_release_") as td:
         stage = Path(td) / "GSI"
@@ -68,8 +76,8 @@ def build(output: Path, manifest_name: str = "PACKAGE_SHA256_FINAL_20260926.json
         }
         manifest_path.write_text(json.dumps({
             "schema": 1,
-            "release": "GSI 29.8.2 RC4-OPT2 H1",
-            "generated": "2026-09-26",
+            "release": f"GSI {_version()}",
+            "generated": __import__("datetime").date.today().isoformat(),
             "files": hashes,
         }, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -84,7 +92,7 @@ def build(output: Path, manifest_name: str = "PACKAGE_SHA256_FINAL_20260926.json
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("output", nargs="?", default=str(ROOT / "GSI_FINAL_CLEAN.zip"))
+    ap.add_argument("output", nargs="?", default=str(ROOT.parent / f"GSI_{_version().replace('.', '_')}.zip"))
     args = ap.parse_args()
     result = build(Path(args.output))
     print(json.dumps(result, ensure_ascii=False, indent=2))

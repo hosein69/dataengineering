@@ -45,7 +45,9 @@ def run():
     assert len(payload)==3000, "embedded payload must really contain all 3000 rows"
     assert "برای پایداری مرورگر، 900" not in html
     assert "PAGE_SIZE=100" in html and "COL_INDEX" in html, "pagination + compact payload required"
-    assert "نقشه جریان فرآیند" in html and "Event Log کافی نیست" in html
+    # Copy changed in the process-explorer redesign; the contract is that an
+    # empty event log renders an explicit reason, never a fabricated map.
+    assert "نقشه مسیر مشاهده‌شده" in html and "Event Log کافی برای ساخت مسیر مشاهده‌شده موجود نیست" in html
     assert "توزیع مرحله فعلی" in html
     assert len(CHART_TITLES) >= 15, "shared chart catalog must provide real choice"
     from gsi.studio_core.chart_catalog import CHART_SPECS

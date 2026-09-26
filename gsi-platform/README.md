@@ -1,70 +1,88 @@
-# GSI 29.8.2 RC4-OPT2 — Source-authority FX Equivalent hardening
+# GSI 29.9.0 — Global Sourcing Intelligence
 
-این نسخه روی 29.8.1 RC4-OPT1 ساخته شده و authority سورس یا RuleBook را عوض
-نمی‌کند. هدف آن این است که اطلاعاتی که **همین حالا در Sourceها وجود دارد** —
-نرخ ارز، معادل EUR و معادل IRR — در لایه Semantic و خروجی‌های تصمیم‌ساز به‌درستی
-مصرف شود، بدون اینکه EUR/USD/CNY به‌صورت Native با هم جمع شوند.
+سامانه آفلاین هوش زنجیره تأمین خارجی: از فایل‌های عملیاتی (NTSW، خرید ارز، اعتبارات،
+SAP، ترخیص، Oracle، فایل کارشناسان) تا انبار داده SQLite منتشرشده، و از آنجا تا
+Studio، داشبورد، فضای مالی (جریان وجوه و رفع تعهد)، Excel، HTML و ایمیل مدیریتی.
 
-قاعده authority در این نسخه روشن است: برای خرید ارز، `FX_EUR_VALUE` و
-`FX_RIAL_VALUE` همان Source مرجع مستقیم‌اند؛ برای اعتبارات، `CRD_EUR_AMOUNT` و
-`CRD_RIAL_AMOUNT` مرجع مستقیم‌اند. مانده تعهد NTSW در Release Commitment معادل
-مستقیم EUR/IRR ندارد، بنابراین Equivalent آن فقط یک **reference valuation** است و
-تنها از شاهد **همان REG + همان Currency** ساخته می‌شود. Basis هر عدد در خروجی
-ذخیره می‌شود و نرخ پرونده یا ارز دیگری هرگز قرض گرفته نمی‌شود.
+> **این نسخه چه چیزی را عوض کرد؟** بازبینی کامل بسته در پنج نقش (معماری نرم‌افزار،
+> بهینه‌سازی، داده صنعتی، UI/UX، فول‌استک). گزارش کامل و جزءبه‌جزء:
+> **`GSI_REVIEW_REPORT_V29_9_0_FA.md`**. خلاصه:
+>
+> * **صحت داده:** یک parser عددی واحد (قبلاً `1e-05 → 105`، `1٫5 → 15`، منفی انتهایی SAP
+>   مثبت خوانده می‌شد)؛ رد تاریخ شمسی نامعتبر به‌جای «سرریز» به تاریخ دیگر و اصلاح فرمول
+>   کبیسه؛ حذف نویسه‌های نامرئی از کلیدهای ادغام؛ تشخیص درست ارز («دلار کانادا»، «ریال
+>   عمان»، «روپیه پاکستان» دیگر USD/IRR/INR نمی‌شوند)؛ «نامعلوم» دیگر در لایه FX صفر نمی‌شود.
+> * **کارایی:** موتور Cash Flow در ۱۰۰۰ پرونده از ۲۴٫۵ ثانیه به ۰٫۸ ثانیه (خروجی بیت‌به‌بیت
+>   یکسان)؛ حذف حلقه‌های O(n²) خط لوله؛ همه ۳۴ خروجی خط لوله قبل و بعد یکسان.
+> * **UI/UX و فول‌استک:** رفع کرش داشبورد روی Python 3.11؛ آیکن‌ها، رنگ برند، تاریخ شمسی و
+>   جهت‌دهی درست تاریخ در متن راست‌به‌چپ؛ قطع ارسال telemetry؛ بستن فضای مالی به localhost.
+> * **تست:** ۱۲۵۳ موفق / ۷ مجموعه ناموفق (بسته ورودی) ← **۱۳۴۶ موفق / ۰ ناموفق**.
 
-برای پرونده چندارزی، `FX_PURCHASED_AMOUNT` عدد بی‌واحد تولید نمی‌کند؛ Native به
-تفکیک ارز نمایش داده می‌شود. نرخ موزون نیز فقط برای تک‌ارز عددی است و در
-پرونده چندارزی نرخ هر ارز جدا نمایش داده می‌شود. Equivalentهای مستقیم Credit با
-شماره LC dedupe می‌شوند و conflict به‌جای حدس‌زدن عدد، صریح علامت می‌خورد.
+## شروع سریع (Windows)
 
-جزئیات در `FX_EQUIVALENT_AUTHORITY_V29_8_2_FA.md` و نتیجه تست‌ها در
-`VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md` است. این بسته production certification
-نیست چون workbookهای واقعی UNC/شبکه سازمانی در محیط ممیزی در دسترس نبودند.
+1. پوشه را روی دیسک محلی Extract کنید (مثلاً `D:\GSI_APP\`) — نه مسیر شبکه.
+2. `00_RUN_GSI.cmd` را اجرا کنید. بار اول محیط Python (`.venv`) نصب می‌شود و سپس
+   کنترل‌پنل باز می‌شود.
+3. ترتیب اولین راه‌اندازی در کنترل‌پنل: **Doctor → Refresh data → Verify → Start GSI**.
+4. دفعات بعد فقط **Start GSI**. داده جدید: **Refresh → Verify → Start**.
+
+| فایل | کار |
+|---|---|
+| `00_RUN_GSI.cmd` | ورودی اصلی؛ نصب runtime در اولین اجرا + کنترل‌پنل عملیات |
+| `START_GSI.cmd` | Studio از روی Snapshot منتشرشده (بدون ETL) |
+| `REFRESH_GSI_DATA.cmd` | Refresh صریح داده‌ها + Quality Gate + انتشار اتمیک |
+| `EXPORT_GSI_EXCEL.cmd` | Excel از Snapshot منتشرشده |
+| `RUN_FINANCIAL_WORKSPACE.cmd` | فضای مالی: جریان وجوه، رفع تعهد، Process Explorer پول |
+| `RUN_OFFLINE_DIAGNOSTIC.cmd` | بسته عیب‌یابی آفلاین (بدون کپی ردیف‌های تجاری) |
+| `VERIFY_RUNTIME.cmd` | نمایش مسیر و نسخه واقعی کدی که اجرا می‌شود |
+| `OPS\GSI_ENV.cmd` | **تنها** محل تنظیم مسیرها (`GSI_DATA_ROOT`، سورس‌ها) |
+
+انبار داده پیش‌فرض: `D:\GSI_DATA\warehouse.sqlite` (روی سیستم غیر Windows:
+`~/GSI_DATA`). نصب دستی و پیش‌نیازها: `INSTALL.md`.
+
+## ساختار بسته
+
+```
+00_RUN_GSI.cmd … *.cmd      ورودی‌های اجرایی (ASCII + CRLF)
+.streamlit/config.toml      تم برند، localhost، بدون telemetry، بدون دکمه Deploy
+gsi/                        هسته: adapters → resolve → stages → warehouse → report/studio_core
+  core/                     متن، تاریخ شمسی، parser عددی واحد (numeric_parse)، تشخیص ستون
+  adapters/                 یک adapter برای هر سورس؛ کلیدها و grain بومی
+  stages/                   مراحل ۱۰ تا ۹۰ خط لوله (بحرانی، تعهد، FX، جریان پول، رویداد…)
+  warehouse/                SQLite: بایت خام، سلول فیزیکی، فریم استاندارد، Snapshot، انتشار
+  cashflow/                 دفتر رویداد مالی Decimal؛ زنجیره PI→تخصیص→تعهد→پرداخت→رفع تعهد
+  rules/ , rulebook/        کتابخانه قوانین YAML با پنجره اعتبار
+app/                        Streamlit: studio.py، dashboard.py، cashflow.py
+process-mining-ui-kit/      رندرکننده گراف فرآیند (آفلاین)
+OPS/                        کنترل‌پنل عملیات DWH، پشتیبان‌گیری، Verify
+tests/                      ۱۳۴۶ تست (python run_all_tests.py)
+tools/                      سازنده بسته تمیز، تولید نمونه‌ها، داده مصنوعی
+samples/                    نمونه HTML ساخته‌شده از مسیر واقعی با داده ساختگی
+docs/                       معماری، Runbook، و docs/history (تمام اسناد نسخه‌های قبل)
+review/ release_evidence/ audit/   شواهد ممیزی نسخه‌های قبل (بدون تغییر)
+```
+
+راهنمای معماری: `docs/ARCHITECTURE_FA.md` — Runbook عملیات DWH: `docs/RUNBOOK_DWH_FA.md`.
+
+## قراردادهای داده (غیرقابل مذاکره)
+
+* **نامعلوم ≠ صفر.** مبلغ/مانده/مهلت نامعلوم تهی می‌ماند و وارد جمع نمی‌شود.
+* **ارزها جمع نمی‌شوند.** جمع فقط در یک ارز؛ ارز مبهم («USD/EUR») خالی و قرنطینه می‌شود.
+* **دانه (grain) صریح.** مبالغ تعهد در سطح ثبت سفارش × ارز خلاصه می‌شوند، نه ردیف بارنامه×متریال.
+* **Snapshot منتشرشده مرجع UI است.** اجرای Studio/داشبورد ETL را خودکار شروع نمی‌کند.
+* **هیچ داده‌ای جعل نمی‌شود.** تاریخ نامعتبر رد می‌شود؛ رابطه مبهم حدس زده نمی‌شود.
+
+## اعتبارسنجی
+
+```
+python run_all_tests.py          # همه مجموعه‌ها (۱۳۴۶ تست در این نسخه)
+python -m gsi doctor             # کد، پیکربندی، سورس، قوانین
+python tools/build_clean_release.py   # ZIP تمیز + manifest هش
+```
+
+محدودیت‌های باز (از جمله نبود اعتبارسنجی روی workbookهای واقعی شبکه سازمان و قواعد
+موقت منقضی‌شده) در `KNOWN_LIMITATIONS.md` آمده است. این بسته certification تولید نیست.
 
 ---
-
-# نسخه مبتنی بر نقشه سورس‌ها
-
-ابتدا SOURCE_ROADMAP_FA.md و UPDATED_CODE_AND_REPO_REVIEW_FA.md را بخوانید. evidence.txt شامل نمونه واقعی است، نه تمام فایل‌های تولیدی. مسیر SAP با GSI_GS_FULL_CHAIN قابل تنظیم است. در فایل رجیستری سفارشی، native_sheets مربوط به SAP و file_names مربوط به هر دو فایل خرید ارز را نیز منتقل کنید. هیچ ریپوی یادگیری وارد وابستگی‌ها نشده است. نتایج RC2 زیر تاریخی هستند؛ لاگ جاری در review/roadmap/final_full_regression.log قرار دارد.
-
-# GSI 29.8.1 RC4-OPT1 — performance + financial accuracy hardening
-
-این بسته روی RC4 ساخته شده و بازنویسی معماری نیست. دو هدف محدود دارد: کاهش
-مصرف RAM/I/O در Warehouse و بستن جمع‌های مالی تصمیم‌ساز که در دانه ردیف
-انجام می‌شدند. منطق RuleBook، authority سورس‌ها و فرمول هسته رفع تعهد تغییر
-نکرده است.
-
-تغییرات اصلی: نوشتن frameهای SQLite به‌صورت batch و اتمیک؛ reuse آرشیو
-physical-cell برای workbook تکراری؛ عدم نگهداری هم‌زمان cell-map فایل‌های
-Legacy در RAM؛ و یک summary مالی مشترک که «مانده تعهد/جریمه» را در دانه
-ثبت سفارش یکتا و به تفکیک ارز نمایش می‌دهد. `BALANCE_IS_UNKNOWN` در
-خروجی‌های تصمیم‌ساز دیگر صفر یا «تسویه‌شده» تلقی نمی‌شود. نمودارهای Excel،
-Studio، ایمیل مدیریتی، scorecard و history از همان قرارداد استفاده می‌کنند.
-
-جزئیات ممیزی، benchmark مصنوعی و محدودیت‌های اعتبارسنجی در
-`ARCHITECTURE_OPTIMIZATION_V29_8_1_FA.md` و `VALIDATION_V29_8_1_OPT.md` است.
-این نسخه production certification نیست؛ تست روی سورس‌های واقعی شبکه سازمانی
-در این محیط ممکن نبود.
-
-# GSI 29.8.0 RC4 — output integrity delivery
-
-Start with RC4_OUTPUT_INTEGRITY_FA.md, then CONFIRMATIONS_AND_LIMITS_FA.md and
-KNOWN_LIMITATIONS.md. This is not production sign-off.
-
-What changed in RC4, all measured rather than asserted: every exported HTML now
-declares which rows and columns it contains and which column names it left out;
-the cash-flow bridge reads the real OF workbook instead of rejecting all of it,
-and no longer fans a case-grain column out across its rows; empty report
-sections state their own reason; `python -m gsi.warehouse reset --yes` wipes and
-rebuilds the warehouse; the dashboard opens on the published snapshot instead of
-rerunning the pipeline; and the process catalog gained seven Kanban/Scrum views
-and two Kanban lane modes. The current full-runner result is in VALIDATION_RC4.md.
-
-Install using INSTALL.md and requirements.txt. Run `python -m streamlit run app/cashflow.py` or RUN_FINANCIAL_WORKSPACE.cmd. The default financial source is the published DWH. No supplementary external ledger is required. Original corporate inputs and a valid published run remain necessary. Python/dependency wheels and real corporate data are not bundled.
-
-All original source modules, tests, configuration and historical documentation remain included. Prior root review documents are preserved under review/rc1_documents. Current findings inherit every unresolved RC1 finding unless explicitly updated in FINDINGS_REGISTER.md.
-
-Full-runner result for this release: VALIDATION_RC4.md. Synthetic browser checks and evidence are in review/rc2_validation. Read KNOWN_LIMITATIONS.md before deployment.
-
 
 پیکربندی جاری: 13 بسته YAML. **23 قاعده** که باید با مالک مقررات تطبیق داده شوند. داشبورد — 17 شیت.

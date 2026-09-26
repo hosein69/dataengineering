@@ -145,18 +145,20 @@ class SourceAdapter(ABC):
         preserves the same contract while avoiding fragmentation/performance loss.
         """
         cols = {}
+        missing = []
         for std_name, candidates in mapping.items():
             col = find_col(df, candidates, exclude=exclude)
             target = self.p(std_name)
             if col is not None:
                 cols[target] = df[col].copy()
             else:
+                missing.append(std_name)
                 cols[target] = pd.Series("", index=df.index, dtype=object)
                 log.warning(f"   ⚠️ [{self.key}] ستون «{std_name}» یافت نشد "
                             f"(کاندیدها: {candidates[:3]}) — با مقدار خالی پر شد.")
         result = pd.DataFrame(cols, index=df.index)
-        result.attrs['source_headers'] = [str(c) for c in df.columns]
-        result.attrs['missing_mappings'] = [name for name, aliases in mapping.items() if find_col(df, aliases, exclude=exclude) is None]
+        result.attrs['source_headers'] = SharedList(str(c) for c in df.columns)
+        result.attrs['missing_mappings'] = SharedList(missing)
         return result
 
     def add_bl_key(self, out: pd.DataFrame, src: pd.DataFrame,
@@ -214,6 +216,23 @@ class SourceAdapter(ABC):
         target = KEY_EMP if as_key else self.p("KEY_EMP")
         out[target] = src[col].map(clean_employee_code) if col else ""
         return out
+
+
+class SharedList(list):
+    """List stored in ``DataFrame.attrs`` that pandas must not deep-copy.
+
+    pandas >= 2.1 deep-copies ``attrs`` into every derived object (each
+    ``df[col]``, mask, ``.copy()``...). Adapters keep the full source-header
+    list in attrs, so a pipeline run spent ~8 % of its time copying the same
+    header lists hundreds of thousands of times. The lists are read-only
+    evidence; sharing one instance is safe and serialises exactly like a list.
+    """
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
 
 REGISTRY: Dict[str, Type[SourceAdapter]] = {}

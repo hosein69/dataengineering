@@ -242,20 +242,22 @@ def num(df: pd.DataFrame, col: str) -> pd.Series:
 st.sidebar.markdown(f"### ◈ GSI\n<span style='color:{GREY}'>مغز شناختی لجستیک</span>",
                     unsafe_allow_html=True)
 st.sidebar.success(f"Build {GSI_RUNTIME_VERSION} · Dashboard Runtime")
-ref_date = st.sidebar.text_input("تاریخ مرجع (YYYY-MM-DD)",
-                                 value=os.environ.get("GSI_TODAY") or str(date.today()))
+from gsi.core.jalali import date_label, to_iso
+from gsi.warehouse.service import published_reference_date
+# پیش‌فرض = تاریخ Snapshot منتشرشده؛ ورودی شمسی یا میلادی پذیرفته می‌شود.
+ref_date = st.sidebar.text_input("تاریخ مرجع (شمسی یا میلادی)",
+                                 value=os.environ.get("GSI_TODAY") or published_reference_date() or str(date.today()),
+                                 help="مثال: 1405/06/09 یا 2026-08-31")
 _rerun = st.sidebar.button("اجرای مجدد خط لوله", width="stretch",
                            help="خط لوله را از روی فایل‌های منبع دوباره اجرا می‌کند. "
                                 "بدون این دکمه، صفحه آخرین اجرای منتشرشده را می‌خواند.")
 if _rerun:
     st.cache_data.clear()
 
-try:
-    date.fromisoformat(ref_date.strip())
-except ValueError:
-    st.sidebar.error("تاریخ مرجع باید به شکل YYYY-MM-DD باشد.")
+ref_date = to_iso(ref_date.strip()) or ""
+if not ref_date:
+    st.sidebar.error("تاریخ مرجع معتبر نیست؛ نمونه: 1405/06/09 یا 2026-08-31")
     st.stop()
-ref_date = ref_date.strip()
 os.environ["GSI_TODAY"] = ref_date
 
 try:
@@ -275,11 +277,11 @@ all_df = data["df"] if not data["df"].empty else df
 _status = (data.get('extras') or {}).get('runtime_status')
 if _status == 'PUBLISHED_SNAPSHOT':
     _rid = str((data.get('extras') or {}).get('warehouse_run_id') or '')[:12] or 'نامشخص'
-    st.sidebar.caption(f"منبع صفحه: اجرای منتشرشده `{_rid}` · تاریخ مرجع {ref_date}"
+    st.sidebar.caption(f"منبع صفحه: اجرای منتشرشده `{_rid}` · تاریخ مرجع {date_label(ref_date)}"
                        "  \nبرای خواندن دوبارهٔ فایل‌های منبع، «اجرای مجدد خط لوله» را بزنید.")
 if _status == 'STALE_PUBLISHED_SNAPSHOT':
     _pref = (data.get('extras') or {}).get('published_reference_date') or 'نامشخص'
-    st.sidebar.warning(f"Snapshot تاریخ {ref_date} موجود نیست؛ آخرین Snapshot سالم ({_pref}) نمایش داده می‌شود. Refresh خودکار اجرا نشده است.")
+    st.sidebar.warning(f"Snapshot تاریخ {date_label(ref_date)} موجود نیست؛ آخرین Snapshot سالم ({date_label(_pref)}) نمایش داده می‌شود. Refresh خودکار اجرا نشده است.")
 elif _status == 'UPDATE_IN_PROGRESS':
     _pref = (data.get('extras') or {}).get('published_reference_date') or 'نامشخص'
     st.warning(f'به‌روزرسانی دیگری در حال اجراست؛ این صفحه آخرین Snapshot سالم را نمایش می‌دهد (تاریخ مرجع: {_pref}).')
@@ -362,7 +364,7 @@ st.markdown("---")
 
 # ═══════════ سربرگ ═══════════
 st.markdown(f"# مغز شناختی لجستیک\n"
-            f"<span style='color:{GREY}'>تاریخ مرجع {ref_date} — "
+            f"<span style='color:{GREY}'>تاریخ مرجع {date_label(ref_date)} — "
             f"{len(df):,} پرونده</span>", unsafe_allow_html=True)
 
 # ═══════════ کارت‌ها ═══════════

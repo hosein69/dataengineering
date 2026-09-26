@@ -53,6 +53,62 @@ def _optional_num(v: Any) -> Optional[float]:
         return None
 
 
+def _nan_if_unknown(v: Any) -> float:
+    x = _optional_num(v)
+    return float("nan") if x is None else x
+
+
+def _round_or_none(*values: Optional[float]) -> Optional[float]:
+    """جمع گردشده؛ اگر یکی از اجزا نامعلوم باشد کل نامعلوم است (نه صفر)."""
+    if any(v is None for v in values):
+        return None
+    return round(float(sum(values)), 2)
+
+
+#: تجمیع هر فیلد مبلغ اعتبار در سطح REG. ``max`` برای پروفرم/باقیمانده حفظ
+#: شده (رفتار قبلی)، ولی اکنون روی LCهای یکتا و فقط در یک ارز.
+_CREDIT_AGG = {"CRD_PROFORMA_VALUE": "max", "CRD_PREPAYMENT": "sum", "CRD_REMAINING": "max"}
+
+
+def _credit_amounts(c: Optional[pd.DataFrame]) -> Dict[str, Any]:
+    """مبالغ اعتبار بدون شمارش دوباره snapshotها و بدون جمع ارزهای متفاوت.
+
+    V29.9 — نسخه قبلی ``fillna(0).sum()`` روی همه ردیف‌ها بود: ردیف تکراری
+    یک LC پیش‌پرداخت را دوبار می‌شمرد، LCهای EUR و CNY با هم جمع می‌شدند و
+    «نامعلوم» صفر می‌شد. اکنون: هر LC یک بار (تعارض مقدار در یک LC = نامعلوم)؛
+    چند ارز = نامعلوم؛ بدون هیچ شاهد عددی = نامعلوم.
+    """
+    out: Dict[str, Any] = {k: (0.0 if c is None or c.empty else None) for k in _CREDIT_AGG}
+    out["currency"] = ""
+    if c is None or c.empty:
+        return out
+    z = c.copy()
+    cur = z["CRD_CURRENCY"].map(_s).str.upper() if "CRD_CURRENCY" in z.columns else pd.Series("", index=z.index)
+    currencies = sorted({x for x in cur if x})
+    out["currency"] = currencies[0] if len(currencies) == 1 else " | ".join(currencies)
+    if len(currencies) > 1:
+        return out
+    lc = z["CRD_LC_NO"].map(_s) if "CRD_LC_NO" in z.columns else pd.Series("", index=z.index)
+    for col, how in _CREDIT_AGG.items():
+        if col not in z.columns:
+            continue
+        values = pd.to_numeric(z[col], errors="coerce")
+        per_lc: List[float] = []
+        conflict = False
+        for key, g in values.groupby(lc, sort=False):
+            vals = sorted({float(x) for x in g.dropna() if math.isfinite(float(x))})
+            if not key:
+                per_lc.extend(vals)     # بدون شماره LC: هر مقدار یکتا یک شاهد
+            elif len(vals) == 1:
+                per_lc.append(vals[0])
+            elif len(vals) > 1:
+                conflict = True
+        if conflict or not per_lc:
+            continue
+        out[col] = round(max(per_lc) if how == "max" else sum(per_lc), 2)
+    return out
+
+
 def _date(v: Any):
     return CalendarEngine.parse(v)
 
@@ -222,9 +278,12 @@ class FxTraceabilityStage(Stage):
                 fx_rows=f, allocation_rows=ar,
             )
             released = max(0.0, initial - balance) if initial is not None and balance is not None else None
-            alloc_amount = _num(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else 0.0
-            open_queue_amount = _num(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else 0.0
-            requested_gross = _num(a.iloc[0].get("NTSW_REQUESTED_GROSS")) if not a.empty else 0.0
+            # V29.9: مبلغ نامعلوم تخصیص (چندارزی/نامعتبر در adapter = NaN) دیگر
+            # صفر نمی‌شود. «پرونده بدون درخواست» صفر است، «مبلغ نامعلوم» تهی.
+            alloc_amount = _optional_num(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else 0.0
+            open_queue_amount = _optional_num(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else 0.0
+            requested_gross = _optional_num(a.iloc[0].get("NTSW_REQUESTED_GROSS")) if not a.empty else 0.0
+            credit_totals = _credit_amounts(c)
             allocated = bool(a.iloc[0].get("NTSW_ALLOCATED")) if not a.empty else False
             queue_state = _first_nonempty(a, "NTSW_QUEUE_STATE")
             queue_enter = _first_nonempty(a, "NTSW_QUEUE_ENTER_DATE")
@@ -302,12 +361,12 @@ class FxTraceabilityStage(Stage):
                 "FX_NTSW_BALANCE": (round(balance, 2) if balance is not None else None),
                 **eq,
                 "FX_RELEASE_PCT": (round(100 * released / initial, 1)
-                                   if initial is not None and released is not None and initial > EPS else 0.0),
+                                   if initial is not None and released is not None and initial > EPS else None),
                 "FX_NTSW_RELEASE_STATUS": _first_nonempty(n, "NTSW_RELEASE_STATUS"),
-                "FX_ALLOC_REQUEST_AMOUNT": round(alloc_amount + open_queue_amount, 2),
-                "FX_ALLOCATED_AMOUNT": round(alloc_amount, 2),
-                "FX_OPEN_QUEUE_AMOUNT": round(open_queue_amount, 2),
-                "FX_REQUESTED_GROSS_HISTORY": round(requested_gross, 2),
+                "FX_ALLOC_REQUEST_AMOUNT": _round_or_none(alloc_amount, open_queue_amount),
+                "FX_ALLOCATED_AMOUNT": _round_or_none(alloc_amount),
+                "FX_OPEN_QUEUE_AMOUNT": _round_or_none(open_queue_amount),
+                "FX_REQUESTED_GROSS_HISTORY": _round_or_none(requested_gross),
                 "FX_ALLOCATED": allocated, "FX_ALLOC_DATE": alloc_date,
                 "FX_ALLOC_QUEUE_STATE": queue_state,
                 "FX_ALLOC_QUEUE_ENTER_DATE": queue_enter,
@@ -319,9 +378,10 @@ class FxTraceabilityStage(Stage):
                 "FX_SOURCE": _first_nonempty(a, "NTSW_FX_SOURCE"),
                 "FX_MONEY_STAGE": money_stage,
                 "FX_FUND_DATE": fund_date, "FX_SWIFT_DATE": swift_date,
-                "FX_CREDIT_PROFORMA": float(pd.to_numeric(c.get("CRD_PROFORMA_VALUE"), errors="coerce").fillna(0).max()) if not c.empty else 0.0,
-                "FX_CREDIT_PREPAYMENT": float(pd.to_numeric(c.get("CRD_PREPAYMENT"), errors="coerce").fillna(0).sum()) if not c.empty else 0.0,
-                "FX_CREDIT_REMAINING": float(pd.to_numeric(c.get("CRD_REMAINING"), errors="coerce").fillna(0).max()) if not c.empty else 0.0,
+                "FX_CREDIT_PROFORMA": credit_totals["CRD_PROFORMA_VALUE"],
+                "FX_CREDIT_PREPAYMENT": credit_totals["CRD_PREPAYMENT"],
+                "FX_CREDIT_REMAINING": credit_totals["CRD_REMAINING"],
+                "FX_CREDIT_CURRENCY": credit_totals["currency"],
                 "FX_FULL_CLEAR": full_clear, "FX_COTAGE": cotage, "FX_SATA": sata,
                 "FX_CUSTOMS_DOC_OBLIGATION": customs_ob,
                 "FX_DIFFERENTIAL_OBLIGATION": diff_ob,
@@ -344,7 +404,9 @@ class FxTraceabilityStage(Stage):
                 return
             rows.append({"_CASE_KEY": f"REG:{reg}", "KEY_REG": reg,
                          "EVENT_TYPE": typ, "ACTIVITY_FA": fa,
-                         "EVENTTIME": pd.Timestamp(d), "AMOUNT": float("nan") if amount is None else _num(amount),
+                         "EVENTTIME": pd.Timestamp(d),
+                         # مبلغ نامعلوم NaN می‌ماند؛ «۰» یعنی شاهد عددی صفر.
+                         "AMOUNT": _nan_if_unknown(amount),
                          "CURRENCY": _s(currency), "SOURCE_SYSTEM": source,
                          "EVIDENCE": _s(evidence)})
 

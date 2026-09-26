@@ -201,7 +201,11 @@ class CommitmentEngine:
             res.balance_is_unknown = True
             res.penalty = 0.0
         else:
-            parsed = num_safe(raw_balance)
+            # V29.9: parse سخت‌گیرانه. num_safe متن غیرعددی («?»، «در حال
+            # بررسی») را 0.0 می‌کرد و پرونده «مانده صفر/تسویه‌شده» می‌شد.
+            from ..core.numeric_parse import parse_decimal
+            parsed_decimal = parse_decimal(raw_balance, strict=True)
+            parsed = float(parsed_decimal) if parsed_decimal is not None else float("nan")
             try:
                 import math
                 valid = math.isfinite(float(parsed))

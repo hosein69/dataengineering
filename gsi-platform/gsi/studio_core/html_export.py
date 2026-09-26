@@ -47,6 +47,7 @@ import json
 from typing import Dict, List, Optional
 
 import pandas as pd
+from ..core.jalali import date_label as _date_label
 from ..factsheet import VERSION as GSI_RUNTIME_VERSION
 
 from ..design import charts_js as CJ
@@ -625,7 +626,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
     hp = HEADER_PRESETS.get(header_preset, HEADER_PRESETS["figma_aqua"])
     hdr_title = (header_title or hp.get("title") or title).strip()
     hdr_sub = (header_subtitle or hp.get("subtitle") or "").strip()
-    full_sub = " · ".join(x for x in [hdr_sub, template_title, f"تاریخ مرجع {ref_date}", subtitle] if x)
+    full_sub = " · ".join(x for x in [hdr_sub, template_title, f"تاریخ مرجع {_date_label(ref_date)}", subtitle] if x)
     header = C.app_bar(
         hdr_title,
         eyebrow="GSI · GLOBAL SOURCING INTELLIGENCE · DATA • PROCESS • DECISION",
@@ -871,7 +872,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
         ("ردیف در این خروجی", f"{len(data):,} از {len(df):,}"),
         ("ستون در این خروجی", f"{len(_payload_columns):,} از {len(_source_columns):,}"),
         ("نمای تأمین متریال", f"{len(material_view):,} ردیف"),
-        ("تاریخ مرجع", str(ref_date)),
+        ("تاریخ مرجع", _date_label(ref_date)),
     ]
     _cov_cells = "".join(
         f'<div class="kpi"><div class="l">{html.escape(k)}</div><b>{html.escape(v)}</b></div>'

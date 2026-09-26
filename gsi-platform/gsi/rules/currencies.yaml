@@ -3,10 +3,10 @@
 #  برای افزودن ارز جدید فقط یک بلوک به currencies اضافه کنید.
 # ═══════════════════════════════════════════════════════════════════════════
 pack: currencies
-version: "1.0"
+version: "1.1"
 standard: "ISO 4217"
 status: verified
-updated_at: "2026-08-31"
+updated_at: "2026-09-26"
 
 currencies:
   - code: USD
@@ -78,6 +78,178 @@ currencies:
     minor_units: 2
     fa: "فرانک سوئیس"
     aliases: [franc, chf, فرانک]
+
+  # ── V29.9: ارزهای رایج تجارت ایران که قبلاً با تطبیق «زیررشته» به ارز
+  # دیگری نسبت داده می‌شدند («دلار کانادا»→USD، «ریال عمان»→IRR،
+  # «روپیه پاکستان»→INR) یا به یک کد سه‌حرفی ساختگی تبدیل می‌شدند
+  # («کرون سوئد»→«کرو»). تطبیق اکنون «طولانی‌ترین نام» را برنده می‌کند.
+  - code: CAD
+    numeric: 124
+    minor_units: 2
+    fa: "دلار کانادا"
+    aliases: [cad, "canadian dollar", "دلار کانادا"]
+
+  - code: AUD
+    numeric: 36
+    minor_units: 2
+    fa: "دلار استرالیا"
+    aliases: [aud, "australian dollar", "دلار استرالیا"]
+
+  - code: HKD
+    numeric: 344
+    minor_units: 2
+    fa: "دلار هنگ کنگ"
+    aliases: [hkd, "hong kong dollar", "دلار هنگ کنگ", "دلار هنگکنگ"]
+
+  - code: SGD
+    numeric: 702
+    minor_units: 2
+    fa: "دلار سنگاپور"
+    aliases: [sgd, "singapore dollar", "دلار سنگاپور"]
+
+  - code: NZD
+    numeric: 554
+    minor_units: 2
+    fa: "دلار نیوزیلند"
+    aliases: [nzd, "new zealand dollar", "دلار نیوزیلند"]
+
+  - code: SEK
+    numeric: 752
+    minor_units: 2
+    fa: "کرون سوئد"
+    aliases: [sek, "swedish krona", "کرون سوئد"]
+
+  - code: NOK
+    numeric: 578
+    minor_units: 2
+    fa: "کرون نروژ"
+    aliases: [nok, "norwegian krone", "کرون نروژ"]
+
+  - code: DKK
+    numeric: 208
+    minor_units: 2
+    fa: "کرون دانمارک"
+    aliases: [dkk, "danish krone", "کرون دانمارک"]
+
+  - code: PKR
+    numeric: 586
+    minor_units: 2
+    fa: "روپیه پاکستان"
+    aliases: [pkr, "pakistani rupee", "روپیه پاکستان"]
+
+  - code: THB
+    numeric: 764
+    minor_units: 2
+    fa: "بات تایلند"
+    aliases: [thb, baht, "بات تایلند"]
+
+  - code: MYR
+    numeric: 458
+    minor_units: 2
+    fa: "رینگیت مالزی"
+    aliases: [myr, ringgit, رینگیت, "رینگیت مالزی"]
+
+  - code: IDR
+    numeric: 360
+    minor_units: 2
+    fa: "روپیه اندونزی"
+    aliases: [idr, rupiah, "روپیه اندونزی"]
+
+  - code: OMR
+    numeric: 512
+    minor_units: 3
+    fa: "ریال عمان"
+    aliases: [omr, "omani rial", "ریال عمان", "ریال عمانی"]
+
+  - code: QAR
+    numeric: 634
+    minor_units: 2
+    fa: "ریال قطر"
+    aliases: [qar, "qatari riyal", "ریال قطر", "ریال قطری"]
+
+  - code: SAR
+    numeric: 682
+    minor_units: 2
+    fa: "ریال سعودی"
+    aliases: [sar, "saudi riyal", "ریال سعودی", "ریال عربستان"]
+
+  - code: KWD
+    numeric: 414
+    minor_units: 3
+    fa: "دینار کویت"
+    aliases: [kwd, "kuwaiti dinar", "دینار کویت", "دینار کویتی"]
+
+  - code: BHD
+    numeric: 48
+    minor_units: 3
+    fa: "دینار بحرین"
+    aliases: [bhd, "bahraini dinar", "دینار بحرین"]
+
+  - code: IQD
+    numeric: 368
+    minor_units: 3
+    fa: "دینار عراق"
+    aliases: [iqd, "iraqi dinar", "دینار عراق", "دینار عراقی"]
+
+  - code: AFN
+    numeric: 971
+    minor_units: 2
+    fa: "افغانی افغانستان"
+    aliases: [afn, afghani]
+
+  - code: AZN
+    numeric: 944
+    minor_units: 2
+    fa: "منات آذربایجان"
+    aliases: [azn, "azerbaijani manat", "منات آذربایجان"]
+
+  - code: TMT
+    numeric: 934
+    minor_units: 2
+    fa: "منات ترکمنستان"
+    aliases: [tmt, "turkmen manat", "منات ترکمنستان"]
+
+  - code: AMD
+    numeric: 51
+    minor_units: 2
+    fa: "درام ارمنستان"
+    aliases: [amd, dram, "درام ارمنستان"]
+
+  - code: GEL
+    numeric: 981
+    minor_units: 2
+    fa: "لاری گرجستان"
+    aliases: [gel, lari, "لاری گرجستان"]
+
+  - code: KZT
+    numeric: 398
+    minor_units: 2
+    fa: "تنگه قزاقستان"
+    aliases: [kzt, tenge, "تنگه قزاقستان"]
+
+  - code: UZS
+    numeric: 860
+    minor_units: 2
+    fa: "سوم ازبکستان"
+    aliases: [uzs, "سوم ازبکستان"]
+
+  - code: BYN
+    numeric: 933
+    minor_units: 2
+    fa: "روبل بلاروس"
+    aliases: [byn, "belarusian ruble", "روبل بلاروس"]
+
+  - code: BRL
+    numeric: 986
+    minor_units: 2
+    fa: "رئال برزیل"
+    aliases: [brl, "brazilian real", "رئال برزیل"]
+
+  - code: ZAR
+    numeric: 710
+    minor_units: 2
+    fa: "رند آفریقای جنوبی"
+    aliases: [zar, rand, "رند آفریقای جنوبی"]
 
   - code: IRR
     numeric: 364

@@ -90,7 +90,8 @@ def main() -> int:
             # Keep each suite independent; multi-run scenarios share their own
             # explicit database within the suite.
             with tempfile.TemporaryDirectory(prefix="gsi-suite-") as suite_dir:
-                suite_env = dict(env, GSI_DWH_PATH=str(Path(suite_dir) / "warehouse.sqlite"))
+                suite_env = dict(env, GSI_DWH_PATH=str(Path(suite_dir) / "warehouse.sqlite"),
+                                 GSI_DATA_ROOT=str(Path(suite_dir) / "data_root"))
                 out = subprocess.run(test_command(path), cwd=ROOT, env=suite_env,
                                      capture_output=True, text=True,
                                      encoding="utf-8", errors="replace",

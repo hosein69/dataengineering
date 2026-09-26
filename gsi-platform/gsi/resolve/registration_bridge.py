@@ -31,6 +31,18 @@ def _clean_reg(v) -> str:
     return s if len(s) == 8 and s.isdigit() else ""
 
 
+def _clean_reg_file(v) -> str:
+    """Registration-file number, or "" for placeholders.
+
+    V29.9: placeholder values such as ``0``, ``000`` or ``-`` were kept as real
+    keys, so the Import-Licence ⋈ IL-Append hub joined every placeholder row
+    with every other one (cartesian). With a single licence row this silently
+    mapped *all* placeholder orders to that licence's REG.
+    """
+    s = clean_key(v)
+    return "" if is_empty_val(s) or not s.strip("0") else s
+
+
 def build_ntsw_order_reg_bridge(sources: Dict[str, Dict[str, pd.DataFrame]]) -> Tuple[pd.DataFrame, pd.DataFrame]:
     lic = (sources.get('ntsw') or {}).get('import_license')
     il = (sources.get('ilappend') or {}).get('main')
@@ -40,7 +52,6 @@ def build_ntsw_order_reg_bridge(sources: Dict[str, Dict[str, pd.DataFrame]]) -> 
         for idx, r in lic.iterrows():
             order = _clean_order(r.get(KEY_ORDER, ''))
             reg = _clean_reg(r.get('NTSW_KEY_REG', r.get(KEY_REG, '')))
-            reg_file = clean_key(r.get(KEY_REG_FILE, ''))
             if order and reg:
                 candidates.append({'KEY_ORDER': order, 'NTSW_KEY_REG': reg,
                                    'NTSW_REG_AUTHORITY_PATH': 'NTSW_IMPORT_LICENCE_DIRECT',
@@ -48,13 +59,13 @@ def build_ntsw_order_reg_bridge(sources: Dict[str, Dict[str, pd.DataFrame]]) -> 
 
         if isinstance(il, pd.DataFrame) and not il.empty and KEY_REG_FILE in il.columns:
             left = lic.copy()
-            left['_RF'] = (left[KEY_REG_FILE].map(clean_key) if KEY_REG_FILE in left.columns
+            left['_RF'] = (left[KEY_REG_FILE].map(_clean_reg_file) if KEY_REG_FILE in left.columns
                            else pd.Series('', index=left.index, dtype=object))
             left['_REG'] = left.apply(lambda r: _clean_reg(r.get('NTSW_KEY_REG', r.get(KEY_REG, ''))), axis=1)
             left = left[(left['_RF'] != '') & (left['_REG'] != '')][['_RF','_REG']].drop_duplicates()
 
             right = il.copy()
-            right['_RF'] = right.get(KEY_REG_FILE, '').map(clean_key)
+            right['_RF'] = right.get(KEY_REG_FILE, '').map(_clean_reg_file)
             right['_ORDER'] = right.get(KEY_ORDER, '').map(_clean_order)
             right = right[(right['_RF'] != '') & (right['_ORDER'] != '')][['_RF','_ORDER']].drop_duplicates()
 

@@ -160,9 +160,15 @@ class CaseActionStage(Stage):
             t = by_tl.get(reg, pd.DataFrame())
             dcase = by_df.get(reg, pd.DataFrame())
 
+            # First timeline row per stage, looked up by dict instead of one
+            # boolean-mask filter per call (≈10 calls per REG).
+            first_rows = ({} if t.empty or "STAGE_CODE" not in t.columns else
+                          {code: row for code, row in
+                           ((c, t.iloc[i]) for c, i in
+                            {c: i for i, c in reversed(list(enumerate(t["STAGE_CODE"])))}.items())})
+
             def stage(code: str):
-                z = t[t.get("STAGE_CODE", pd.Series(dtype=str)) == code] if not t.empty else pd.DataFrame()
-                return None if z.empty else z.iloc[0]
+                return first_rows.get(code)
 
             # صف تخصیص
             q = stage("ALLOCATION_QUEUE")

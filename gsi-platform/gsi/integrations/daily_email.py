@@ -517,7 +517,7 @@ def _load_snapshot_or_run(d: date, *, refresh: bool) -> tuple[pd.DataFrame, Dict
     است: پیش‌فرض ارزان و بدون فشار روی Warehouse (خواندن آخرین اجرای
     منتشرشده)، و اجرای سنگین فقط وقتی صریحاً درخواست شود. اگر ناشرِ دیگری
     همزمان در حال Publish باشد (``WarehouseBusyError``؛ طبق
-    NETWORK_OUTLOOK_RELEASE_FA.md دو Publish هم‌زمان پشتیبانی نمی‌شود)، یک
+    docs/history/NETWORK_OUTLOOK_RELEASE_FA.md دو Publish هم‌زمان پشتیبانی نمی‌شود)، یک
     اجرای دوم روی آن سوار نمی‌شود — آخرین Snapshot منتشرشده به‌جای آن
     برگردانده می‌شود.
 

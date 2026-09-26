@@ -110,6 +110,25 @@ def ingest_file(path,source):
         wh.audit('ingest_complete',{'file_id':fid,'source':source,'sheets':len(sheets)})
     return rid,fid
 
+def published_reference_date():
+    """Reference date of the currently published report (``YYYY-MM-DD``) or None.
+
+    Cheap: reads only the run context, no frames. UIs use it as their default
+    date so the latest snapshot is not labelled *stale* just because today's
+    date differs from the day the refresh ran.
+    """
+    wh=Warehouse(initialize=False)
+    if not wh.path.exists(): return None
+    try:
+        with wh.read_db() as c:
+            row=c.execute("SELECT r.context FROM wh_current v JOIN wh_run r ON r.id=v.run_id WHERE v.slot='report' AND r.status='completed'").fetchone()
+    except Exception:
+        return None
+    if not row: return None
+    value=loads(row[0]).get('reference_date')
+    return str(value) if value else None
+
+
 def last_report(ref_date=None):
     wh=Warehouse(initialize=False)
     if not wh.path.exists(): return None

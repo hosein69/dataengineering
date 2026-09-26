@@ -1,3 +1,29 @@
+# Current release: GSI 29.9.0 — 2026-09-26
+
+**Closed in this release** (details: `GSI_REVIEW_REPORT_V29_9_0_FA.md`): numeric-parsing magnitude errors,
+Jalali invalid-date rollover and leap-year formula, invisible characters in join keys, currency
+mis-identification, several Unknown→Zero paths in the FX/money-flow layers (F031 family on those
+surfaces), Python 3.11 dashboard crash, quadratic cash-flow engine, Streamlit telemetry/LAN exposure.
+
+**Still open — read before deployment**
+- **Production certification is not claimed.** Real corporate workbooks (UNC/SMB shares) were not
+  available; header mapping and final reconciliation must be run on the organisation's own snapshot
+  (`REFRESH_GSI_DATA.cmd` → `VERIFY`), and Windows/Outlook acceptance is still pending.
+- Two time-bound emergency rules expired on 2026-09-22; RuleBook stays fail-closed until an official
+  successor/non-extension decision is recorded (`python -m gsi doctor` lists them).
+- Performance numbers in this package are synthetic (scaled realistic-header workbooks). Real network,
+  Excel and SQLite timings must be measured on the target machine.
+- Streamlit apps write the chosen reference date into the process environment (`GSI_TODAY`); the apps are
+  bound to localhost for a single operator — several simultaneous users on one server are not supported.
+- Legacy numeric contract `num_safe` still maps *empty* to `0.0` for backward compatibility; decision
+  surfaces use the strict parser. F031 is therefore closed on reviewed surfaces, not declared closed
+  code-wide.
+- Currency list covers the currencies seen in Iranian trade; an unlisted currency is kept as its full
+  source text (never merged), but it must be added to `gsi/rules/currencies.yaml` to get an ISO code.
+- Inherited open findings below (F023, F028, F037, N08, RC03, RES-4/5/6, F019/N04) are unchanged.
+
+---
+
 # Current delivery: GSI 29.8.2 Final Production Rewrite — 2026-09-24
 
 این تحویل، مسیر runtime واقعی 2026-09-24 را مبنا قرار می‌دهد. خطای production مشاهده‌شدهٔ

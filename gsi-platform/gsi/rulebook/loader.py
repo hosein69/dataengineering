@@ -23,7 +23,7 @@ from __future__ import annotations
 
 #: نسخه قرارداد این ماژول — gsi/version.py آن را می‌سنجد.
 #: با هر تغییر در رابط عمومی، این عدد یکی زیاد می‌شود.
-__contract__ = 2
+__contract__ = 3
 
 
 import os
@@ -206,11 +206,34 @@ class RuleBook:
                 idx[normalize_persian_text(a).casefold()] = d["code"]
         return idx
 
+    @lru_cache(maxsize=1)
+    def _currency_matchers(self) -> Tuple[Tuple[Any, str], ...]:
+        """Alias patterns, longest first; Latin aliases match whole words only."""
+        items = sorted(((a, c) for a, c in self._currency_index().items() if a and len(a) > 2),
+                       key=lambda kv: (-len(kv[0]), kv[0]))
+        out = []
+        for alias, code in items:
+            body = re.escape(alias)
+            if alias.isascii():
+                body = r"(?<![a-z])" + body + r"(?![a-z])"
+            out.append((re.compile(body), code))
+        return tuple(out)
+
     def normalize_currency(self, value: Any) -> str:
-        # Source workbooks commonly contain Arabic/Persian glyph variants and
-        # repeated spaces (for example ``"ین  ژاپن "`` in NTSW).  Currency
-        # identity must be normalized before alias lookup; otherwise a valid
-        # JPY value falls through to the three-character fallback as ``"ین "``.
+        """Currency text → ISO code; ``""`` when absent **or ambiguous**.
+
+        Source workbooks commonly contain Arabic/Persian glyph variants and
+        repeated spaces (for example ``"ین  ژاپن "`` in NTSW).  Currency
+        identity must be normalized before alias lookup.
+
+        V29.9 — تطبیق زیررشته‌ای قبلی «اولین alias» را برنده می‌کرد: «دلار
+        کانادا/هنگ‌کنگ/استرالیا» → USD، «ریال عمان/قطر/سعودی» → IRR، «روپیه
+        پاکستان» → INR، «USDT» → USD. مقدار ناشناخته هم به سه نویسه اول بریده
+        می‌شد («کرون سوئد»/«کرون نروژ» هر دو → «کرو») و جمع ارزهای متفاوت را
+        ممکن می‌کرد. اکنون: طولانی‌ترین نام برنده است؛ alias لاتین فقط کلمه
+        کامل است؛ دو ارز متفاوت در یک مقدار («USD/EUR») یعنی مبهم → ``""``؛
+        مقدار ناشناخته کامل (نه بریده) نگه داشته می‌شود.
+        """
         s = normalize_persian_text(value).casefold()
         # مقدار تهی pandas به رشته 'nan' تبدیل می‌شود و نباید ارز شمرده شود
         if not s or s in ("nan", "none", "nat", "-", "<na>"):
@@ -218,10 +241,19 @@ class RuleBook:
         idx = self._currency_index()
         if s in idx:
             return idx[s]
-        for alias, code in idx.items():
-            if alias and len(alias) > 2 and alias in s:
-                return code
-        return s.upper()[:3]
+        spans: List[Tuple[int, int, str]] = []
+        for pattern, code in self._currency_matchers():
+            for m in pattern.finditer(s):
+                a, b = m.span()
+                if any(a >= x and b <= y for x, y, _ in spans):
+                    continue      # part of a longer, already-matched name
+                spans.append((a, b, code))
+        codes = {code for _, _, code in spans}
+        if len(codes) == 1:
+            return codes.pop()
+        if len(codes) > 1:
+            return ""
+        return s.upper()
 
     def currency_minor_units(self, code: str) -> int:
         for c in self.get("currencies.currencies", []) or []:

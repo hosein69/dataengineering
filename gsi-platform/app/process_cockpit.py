@@ -18,6 +18,7 @@ except Exception:  # منطق خالص Cockpit بدون Streamlit هم قابل 
     st = None
 
 from .theme import BANDS, STATUS, STATUS_INK, STATUS_WASH
+from gsi.core.jalali import date_label
 
 
 _STAGE_LABELS = {
@@ -241,12 +242,16 @@ def _render_kanban(extras: Dict) -> None:
                 + (f'<p>{html.escape(reason)}</p>' if reason else '')
                 + (f'<div class="gsi-evidence-gap">شکاف شاهد: {html.escape(evidence)}</div>' if evidence else '')
                 + '</article>')
-        more=max(int(a["_bucket"].eq(name).sum())-len(z),0)
+        bucket_total=int(a["_bucket"].eq(name).sum())
+        more=max(bucket_total-len(z),0)
         footer=f'<div class="gsi-board-more">+ {more:,} مورد دیگر</div>' if more else ''
+        # Python 3.11 (نسخه حداقل اعلام‌شده) backslash داخل عبارت f-string را
+        # نمی‌پذیرد؛ نسخه قبلی کل داشبورد را روی 3.11 با SyntaxError می‌انداخت.
+        stack="".join(cards) or '<div class="gsi-board-empty">موردی نیست</div>'
         columns.append(
             f'<section class="gsi-board-col" data-state="{html.escape(name)}">'
-            f'<header><h3>{html.escape(name)}</h3><span>{int(a["_bucket"].eq(name).sum()):,}</span></header>'
-            f'<div class="gsi-board-stack">{"".join(cards) or "<div class=\"gsi-board-empty\">موردی نیست</div>"}</div>{footer}</section>')
+            f'<header><h3>{html.escape(name)}</h3><span>{bucket_total:,}</span></header>'
+            f'<div class="gsi-board-stack">{stack}</div>{footer}</section>')
     st.markdown(metrics+'<div class="gsi-action-board">'+''.join(columns)+'</div>', unsafe_allow_html=True)
 
 
@@ -299,7 +304,7 @@ def render(df: pd.DataFrame, extras: Dict, ref_date: str = "") -> None:
     st.markdown(
         '<div class="gsi-cockpit-head"><div><div class="gsi-overline">DATA • PROCESS • DECISION</div>'
         '<h2>مرکز عملیات فرآیند</h2>'
-        f'<p>{html.escape(ref_date or "اجرای جاری")} · {len(df):,} ردیف پس از فیلتر</p></div>'
+        f'<p>{html.escape(date_label(ref_date) if ref_date else "اجرای جاری")} · {len(df):,} ردیف پس از فیلتر</p></div>'
         '<div class="gsi-search-ghost">⌕ جست‌وجو از نوار فیلترها</div></div>', unsafe_allow_html=True)
 
     st.markdown(

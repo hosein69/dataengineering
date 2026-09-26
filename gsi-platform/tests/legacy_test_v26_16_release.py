@@ -31,7 +31,10 @@ def main():
     df=pd.DataFrame({"_CASE_KEY":["C1","C2"],"KEY_MATERIAL":["M1","M2"],"بحرانی (کوتاه)":["بحرانی","ایمن"],"مقاومت (روز)":[4,50],"مانده تعهد":[1000,0],"روزهای تأخیر":[10,0]})
     ev=pd.DataFrame({"_CASE_KEY":["C1","C1","C2","C2"],"ACTIVITY_FA":["ثبت سفارش","تخصیص ارز","ثبت سفارش","حمل"],"EVENTTIME":pd.to_datetime(["2026-09-01","2026-09-11","2026-09-01","2026-09-03"])})
     h=build_dynamic_html(df,"2026-09-15",selected_fields=list(df.columns),process_extras={"eventlog":ev},show_process=True,lineage={"warehouse_run_id":"R-TEST"})
-    check("HTML lifecycle تکراری ندارد", h.count("addEventListener('click'") == 1)
+    # The tab lifecycle must be bound exactly once. Later releases legitimately
+    # added other click handlers (process explorer, layout customizer), so the
+    # original global count of every click listener no longer measures this.
+    check("HTML lifecycle تکراری ندارد", h.count("b.addEventListener('click',()=>activate(i))") == 1)
     check("Process از Event Log فیلترشده محاسبه می‌شود", "processStats(a)" in h and "PROC.eventlog" in h)
     check("Excel مرورگری به‌عنوان استخراج داده نام‌گذاری شده", "استخراج داده فیلترشده (Excel)" in h)
     check("lineage در HTML وجود دارد", "R-TEST" in h and "REPORT_META" in h)

@@ -1,9 +1,10 @@
 """Exact-decimal evidence ledger. No FIFO inference, implicit FX or legal deadlines."""
 from collections import defaultdict
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 import pandas as pd
 from ..core.jalali import CalendarEngine
+from ..core.numeric_parse import parse_decimal
 
 ZERO = Decimal('0')
 CASH = {'FUNDING', 'PAYMENT', 'REFUND', 'FEE', 'FX_SELL', 'FX_BUY', 'TRANSFER', 'OPENING', 'REVERSAL'}
@@ -33,12 +34,8 @@ def text(v):
 
 
 def number(v):
-    try:
-        s = text(v).translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
-        d = Decimal(s.replace(',', '').replace('٬', '').replace('٫', '.'))
-        return d if d.is_finite() else None
-    except (InvalidOperation, ValueError):
-        return None
+    # Strict: «1,5» is ambiguous (1.5 or 15) and is rejected instead of guessed.
+    return parse_decimal(v, strict=True)
 
 
 def day(v):
@@ -53,20 +50,42 @@ def records(df):
     return [] if df is None else df.to_dict('records')
 
 
+class PreparedRates:
+    """Rate register parsed once and indexed by (base, quote, purpose, regime).
+
+    ``select_rate`` used to convert the whole rate DataFrame to dicts and re-parse
+    every date/number on *each* call; it is called once per cash event, so a real
+    DWH run was O(events × rates) DataFrame conversions.  Eligibility rules are
+    unchanged; only static per-row checks are hoisted out of the per-call loop.
+    """
+    __slots__ = ('groups',)
+
+    def __init__(self, rates):
+        self.groups = defaultdict(list)
+        for r in records(rates):
+            # A blank value_date falls back to date. Before V29.9 a NaN value_date
+            # (column present, cell empty) was truthy and silently disqualified
+            # an otherwise valid rate.
+            dt = day(text(r.get('value_date')) or text(r.get('date')))
+            value, age = number(r.get('rate')), number(r.get('max_age_days'))
+            if (text(r.get('approved')).lower() != 'true' or not text(r.get('source')) or not dt
+                    or value is None or not value > 0 or age is None or not age >= 0):
+                continue
+            key = (text(r.get('base')).upper(), text(r.get('quote')).upper(),
+                   text(r.get('purpose')), text(r.get('regime')))
+            self.groups[key].append((dt, value, age, text(r.get('side')).upper(),
+                                     text(r.get('market')), text(r.get('source'))))
+
+
 def select_rate(rates, currency, target, when, purpose='accounting', regime='', side='', market=''):
     if currency == target:
         return Decimal(1), when, 'IDENTITY'
+    book = rates if isinstance(rates, PreparedRates) else PreparedRates(rates)
     candidates = []
-    for r in records(rates):
-        dt, value = day(r.get('value_date') or r.get('date')), number(r.get('rate'))
-        age = number(r.get('max_age_days'))
-        if (text(r.get('base')).upper() == currency and text(r.get('quote')).upper() == target
-            and text(r.get('purpose')) == purpose and text(r.get('regime')) == regime and text(r.get('approved')).lower() == 'true'
-            and (not side or text(r.get('side')).upper() == side.upper())
-            and (not market or text(r.get('market')) == market)
-            and text(r.get('source')) and dt and dt <= when and value is not None and value > 0
-            and age is not None and age >= 0 and (when-dt).days <= age):
-            candidates.append((dt, value, text(r.get('source'))))
+    for dt, value, age, r_side, r_market, source in book.groups.get((currency, target, purpose, regime), ()):
+        if ((not side or r_side == side.upper()) and (not market or r_market == market)
+                and dt <= when and (when-dt).days <= age):
+            candidates.append((dt, value, source))
     if not candidates:
         return None, None, 'MISSING_RATE'
     latest = max(r[0] for r in candidates)
@@ -87,6 +106,13 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
     if as_of is not None and day(as_of) is None:raise ValueError('تاریخ گزارش معتبر نیست')
     as_of = day(as_of) or date.today()
     reporting_currency=text(reporting_currency).upper()
+    rate_book=PreparedRates(rates)
+    rate_memo={}
+    def rate_for(currency,target,when,purpose='accounting',regime='',side='',market=''):
+        k=(currency,target,when,purpose,regime,side,market)
+        if k not in rate_memo:
+            rate_memo[k]=select_rate(rate_book,currency,target,when,purpose,regime,side,market)
+        return rate_memo[k]
     issues, accepted, observations = [], [], []
     def issue(code, ref, detail, severity='WARNING'):
         issues.append(dict(code=code, reference=ref, severity=severity, detail=detail))
@@ -228,12 +254,16 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
         outtot[(r['from_event'],r['target_kind'])]+=r['from_amount']
         domain='OBLIGATION' if by_id[r['from_event']]['kind']=='COMMITMENT' else 'MONEY'
         intot[(r['to_event'],domain)]+=r['to_amount']
+    used_all, used_cash = defaultdict(lambda:ZERO), defaultdict(lambda:ZERO)
+    for z in proposed:
+        used_all[z['from_event']]+=z['from_amount']
+        if by_id[z['to_event']]['kind'] in CASH: used_cash[z['from_event']]+=z['from_amount']
     for r in proposed:
         a,b=by_id[r['from_event']],by_id[r['to_event']]
         # Funding capacity covers all cash consumers; one obligation covers settlement and return together.
         if a['kind']=='PAYMENT':used=outtot[(a['event_id'],r['target_kind'])]
-        elif a['kind']=='COMMITMENT':used=sum((z['from_amount'] for z in proposed if z['from_event']==a['event_id']),ZERO)
-        else:used=sum((z['from_amount'] for z in proposed if z['from_event']==a['event_id'] and by_id[z['to_event']]['kind'] in CASH),ZERO)
+        elif a['kind']=='COMMITMENT':used=used_all[a['event_id']]
+        else:used=used_cash[a['event_id']]
         domain='OBLIGATION' if a['kind']=='COMMITMENT' else 'MONEY'
         if a['amount'] is None or b['amount'] is None or used>a['amount'] or intot[(b['event_id'],domain)]>b['amount']:
             issue('OVERALLOCATED_LINK',r['link_id'],'تخصیص بیش از ظرفیت؛ ارتباط از جمع حذف شد','ERROR')
@@ -242,7 +272,7 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
     for gid,rs in fx.items():
         if any(r['event_id'] in bad_fx for r in rs):continue
         sold=next(r for r in rs if r['kind']=='FX_SELL');bought=next(r for r in rs if r['kind']=='FX_BUY')
-        rr,rd,src=select_rate(rates,sold['currency'],bought['currency'],day(sold['date']),regime=sold['rate_regime'],side=sold['rate_side'],market=sold['rate_market'])
+        rr,rd,src=rate_for(sold['currency'],bought['currency'],day(sold['date']),regime=sold['rate_regime'],side=sold['rate_side'],market=sold['rate_market'])
         conversions.append(dict(case_id=sold['case_id'],group_id=gid,date=sold['date'],from_event=sold['event_id'],to_event=bought['event_id'],from_currency=sold['currency'],to_currency=bought['currency'],from_amount=sold['amount'],to_amount=bought['amount'],implied_rate=bought['amount']/sold['amount'],reference_rate=rr,rate_date=rd,rate_source=src,reference_difference=bought['amount']-sold['amount']*rr if rr is not None else None))
     # Account movement ledger: opening is explicit, balances are not guessed.
     accounts=defaultdict(lambda:dict(opening=[],inflow=ZERO,outflow=ZERO))
@@ -257,22 +287,25 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
                 else: issue('INVALID_OPENING',r['event_id'],'مانده ابتدا باید به حساب OWN وارد شود')
             else:a['inflow' if sign>0 else 'outflow']+=r['amount']
             movements.append(dict(case_id=r['case_id'],event_id=r['event_id'],date=r['date'],kind=r['kind'],account=account,currency=r['currency'],signed_amount=r['amount']*sign,document=r['document']))
-        rate,rd,src=select_rate(rates,r['currency'],reporting_currency,day(r['date']),regime=r['rate_regime'],side=r['rate_side'],market=r['rate_market'])
+        rate,rd,src=rate_for(r['currency'],reporting_currency,day(r['date']),regime=r['rate_regime'],side=r['rate_side'],market=r['rate_market'])
         valuations.append(dict(event_id=r['event_id'],case_id=r['case_id'],date=r['date'],kind=r['kind'],amount=r['amount'],currency=r['currency'],reporting_currency=reporting_currency,rate=rate,rate_date=rd,rate_source=src,value=r['amount']*rate if rate is not None else None))
         if rate is None:issue('VALUATION_GAP',r['event_id'],src)
     for r in accepted:
         if r['kind'] not in {'CUSTOMS','SETTLEMENT','COMMITMENT_RETURN','COMMITMENT'} or r['amount'] is None:continue
         purpose='customs' if r['kind']=='CUSTOMS' else 'settlement' if r['kind'] in {'SETTLEMENT','COMMITMENT_RETURN'} else 'accounting'
-        rate,rd,src=select_rate(rates,r['currency'],reporting_currency,day(r['date']),purpose,regime=r['rate_regime'],side=r['rate_side'],market=r['rate_market'])
+        rate,rd,src=rate_for(r['currency'],reporting_currency,day(r['date']),purpose,regime=r['rate_regime'],side=r['rate_side'],market=r['rate_market'])
         valuations.append(dict(event_id=r['event_id'],case_id=r['case_id'],date=r['date'],kind=r['kind'],amount=r['amount'],currency=r['currency'],reporting_currency=reporting_currency,rate=rate,rate_date=rd,rate_source=src,value=r['amount']*rate if rate is not None else None))
         if rate is None:issue('VALUATION_GAP',r['event_id'],purpose+' / '+src)
     balances=[]
+    movements_by_account=defaultdict(list)
+    for m in movements:
+        if m['kind']!='OPENING':movements_by_account[(m['case_id'],m['account'],m['currency'])].append(m)
     for (case,account,cur),a in accounts.items():
-        movements_for=[m for m in movements if (m['case_id'],m['account'],m['currency'])==(case,account,cur) and m['kind']!='OPENING']
+        movements_for=movements_by_account.get((case,account,cur),[])
         opening_ok=len(a['opening'])==1 and all(m['date']>=a['opening'][0][0] for m in movements_for)
         opening=a['opening'][0][1] if opening_ok else None
         closing=opening+a['inflow']-a['outflow'] if opening is not None else None
-        rate,rd,src=select_rate(rates,cur,reporting_currency,as_of)
+        rate,rd,src=rate_for(cur,reporting_currency,as_of)
         if opening is None:issue('OPENING_GAP',case+' / '+account,'مانده اول دوره یکتا و مقدم بر حرکات نیست؛ فقط خالص حرکت معلوم است')
         if closing is not None and closing<0:issue('NEGATIVE_BALANCE',case+' / '+account,'مصارف بیش از منابع ثبت‌شده','ERROR')
         balances.append(dict(case_id=case,account=account,currency=cur,opening=opening,inflow=a['inflow'],outflow=a['outflow'],net_movement=a['inflow']-a['outflow'],closing=closing,closing_rate=rate,rate_date=rd,rate_source=src,closing_value=closing*rate if closing is not None and rate is not None else None))
@@ -281,6 +314,24 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
     groups=defaultdict(list)
     for r in accepted:
         if r['currency']:groups[(r['case_id'],r['currency'])].append(r)
+    # One pass each, in the original iteration order, instead of rescanning every
+    # accepted event / valid link for every (case, currency) group.
+    reversed_by=defaultdict(lambda:ZERO)
+    for r in accepted:
+        if r['kind']=='REVERSAL':
+            reversed_by[(r['case_id'],r['currency'],by_id.get(r['reversal_of'],{}).get('kind'))]+=r['amount']
+    link_from=defaultdict(lambda:ZERO); link_to=defaultdict(lambda:ZERO)
+    link_from_commit=defaultdict(lambda:ZERO); link_to_commit=defaultdict(lambda:ZERO)
+    link_doc=defaultdict(lambda:ZERO)
+    for r in valid_links:
+        from_commit=by_id[r['from_event']]['kind']=='COMMITMENT'
+        link_from[(r['source_case'],r['from_currency'],r['target_kind'])]+=r['from_amount']
+        link_to[(r['target_case'],r['to_currency'],r['target_kind'])]+=r['to_amount']
+        if from_commit:
+            link_from_commit[(r['source_case'],r['from_currency'],r['target_kind'])]+=r['from_amount']
+            link_to_commit[(r['target_case'],r['to_currency'],r['target_kind'])]+=r['to_amount']
+        if r['target_kind']=='SHIPMENT':
+            link_doc[(r['target_case'],r['bl_id'],r['order_id'],r['to_currency'])]+=r['to_amount']
     for (case,cur),rs in groups.items():
         def total(kind):
             vals=[r['amount'] for r in rs if r['kind']==kind]
@@ -288,28 +339,25 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
         def net_total(kind):
             gross=total(kind)
             if gross is None:return None
-            reversed_amount=sum((r['amount'] for r in accepted if r['kind']=='REVERSAL' and by_id.get(r['reversal_of'],{}).get('kind')==kind
-                                 and r['case_id']==case and r['currency']==cur),ZERO)
+            reversed_amount=reversed_by.get((case,cur,kind),ZERO)
             return gross-reversed_amount
         def remaining(base,plus,minus):
             v=total(base)
             return None if v is None else v+sum((total(k) or ZERO for k in plus),ZERO)-sum((total(k) or ZERO for k in minus),ZERO)
         commitment=total('COMMITMENT')
-        linked_settled=sum((r['from_amount'] for r in valid_links if r['source_case']==case and r['from_currency']==cur
-                            and by_id[r['from_event']]['kind']=='COMMITMENT' and r['target_kind']=='SETTLEMENT'),ZERO)
-        linked_return=sum((r['from_amount'] for r in valid_links if r['source_case']==case and r['from_currency']==cur
-                           and by_id[r['from_event']]['kind']=='COMMITMENT' and r['target_kind']=='COMMITMENT_RETURN'),ZERO)
+        linked_settled=link_from_commit.get((case,cur,'SETTLEMENT'),ZERO)
+        linked_return=link_from_commit.get((case,cur,'COMMITMENT_RETURN'),ZERO)
         bal=None if commitment is None else commitment-linked_settled-linked_return
         alloc=remaining('ALLOCATION',[],['ALLOCATION_CANCEL','ALLOCATION_USE'])
         quota=remaining('QUOTA',[],['QUOTA_USE'])
         paid=net_total('PAYMENT')
-        traced=sum((r['to_amount'] for r in valid_links if r['target_case']==case and r['to_currency']==cur and r['target_kind']=='PAYMENT'),ZERO)
-        matched=sum((r['from_amount'] for r in valid_links if r['source_case']==case and r['from_currency']==cur and r['target_kind']=='SHIPMENT'),ZERO)
+        traced=link_to.get((case,cur,'PAYMENT'),ZERO)
+        matched=link_from.get((case,cur,'SHIPMENT'),ZERO)
         raw_settlement=total('SETTLEMENT')
         raw_return=total('COMMITMENT_RETURN')
         summaries.append(dict(case_id=case,currency=cur,registration_value=total('REGISTRATION'),allocation_requested=total('QUEUE'),funding=net_total('FUNDING'),purchased=net_total('FX_BUY'),paid=paid,refund=net_total('REFUND'),fees=net_total('FEE'),allocation=total('ALLOCATION'),allocation_used=total('ALLOCATION_USE'),allocation_remaining=alloc,quota=total('QUOTA'),quota_used=total('QUOTA_USE'),quota_remaining=quota,commitment=commitment,settled=linked_settled,accepted_return=linked_return,settlement_evidence=raw_settlement,return_evidence=raw_return,commitment_remaining=bal,customs_value=total('CUSTOMS'),shipment_value=total('SHIPMENT'),untraced_payment=paid-traced if paid is not None else None,unmatched_payment=paid-matched if paid is not None else None))
         if raw_settlement is not None:
-            linked_target=sum((r['to_amount'] for r in valid_links if r['target_case']==case and r['to_currency']==cur and r['target_kind']=='SETTLEMENT' and by_id[r['from_event']]['kind']=='COMMITMENT'),ZERO)
+            linked_target=link_to_commit.get((case,cur,'SETTLEMENT'),ZERO)
             if raw_settlement>linked_target:issue('UNLINKED_SETTLEMENT',case+' / '+cur,'سند رفع تعهد ثبت شده اما تمام مبلغ آن به تعهد مشخص متصل نیست')
         if paid is not None and paid-traced>0:issue('UNTRACED_PAYMENT',case+' / '+cur,'بخشی از پرداخت به منبع وجه متصل نیست')
         if paid is not None and paid-matched>0:issue('UNMATCHED_PAYMENT',case+' / '+cur,'بخشی از پرداخت به بارنامه متصل نیست')
@@ -323,13 +371,15 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
         def docsum(kind):
             vals=[r['amount'] for r in rs if r['kind']==kind]
             return sum(vals,ZERO) if vals and all(v is not None for v in vals) else None
-        matched=sum((r['to_amount'] for r in valid_links if r['target_case']==case and r['bl_id']==bl and r['order_id']==order and r['to_currency']==cur and r['target_kind']=='SHIPMENT'),ZERO)
+        matched=link_doc.get((case,bl,order,cur),ZERO)
         shipment=docsum('SHIPMENT')
         document_rows.append(dict(case_id=case,order_id=order,bl_id=bl,currency=cur,shipment_value=shipment,customs_value=docsum('CUSTOMS'),settled=docsum('SETTLEMENT'),matched_in_shipment_currency=matched if shipment is not None else None,unfunded_shipment=shipment-matched if shipment is not None else None,warehouse_evidence=' | '.join(r['document'] for r in rs if r['kind']=='WAREHOUSE')))
     timeline=[]
+    by_case_kind=defaultdict(list)
+    for r in accepted:by_case_kind[(r['case_id'],r['kind'])].append(r)
     for case in sorted({r['case_id'] for r in accepted+observations if r['case_id']}):
         for stage in STAGES:
-            rs=[r for r in accepted if r['case_id']==case and r['kind']==stage]
+            rs=by_case_kind.get((case,stage),[])
             timeline.append(dict(case_id=case,stage=stage,status='شاهد ثبت‌شده' if rs else 'شاهد معتبر موجود نیست',dates=' | '.join(sorted({r['date'] for r in rs})),documents=' | '.join(sorted({r['document'] for r in rs}))))
     periodic=defaultdict(lambda:dict(inflow=ZERO,outflow=ZERO,fx_in=ZERO,fx_out=ZERO))
     for r in accepted:
@@ -353,10 +403,12 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
                   and day(row['effective_from']) and day(row['effective_to']))
         row['verification_status']='VERIFIED' if verified else 'UNVERIFIED'
         rule_register.append(row)
+    rules_by_id=defaultdict(list)
+    for q in rule_register:rules_by_id[q['rule_id']].append(q)
     for r in accepted:
         if not r['due_date']:continue
         due=day(r['due_date'])
-        candidates=[q for q in rule_register if q['rule_id']==r['rule_id'] and q['verification_status']=='VERIFIED'
+        candidates=[q for q in rules_by_id.get(r['rule_id'],[]) if q['verification_status']=='VERIFIED'
                     and day(q['effective_from'])<=day(r['date'])<=day(q['effective_to']) and day(q['effective_to'])>=as_of and q['kind']==r['kind']]
         verified=len(candidates)==1
         deadlines.append(dict(case_id=r['case_id'],event_id=r['event_id'],due_date=due,days_remaining=(due-as_of).days if due else None,rule_id=r['rule_id'],basis='قاعده تأییدشده ورودی' if verified else 'مهلت اعلامی؛ اعتبار قانونی تأیید نشده'))
@@ -383,9 +435,11 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
     metric_map={'COMMITMENT_BALANCE':'commitment_remaining','ALLOCATION_BALANCE':'allocation_remaining',
                 'QUOTA_BALANCE':'quota_remaining','PAYMENT_TOTAL':'paid','CUSTOMS_VALUE':'customs_value'}
     reconciliation=[]
+    peers_by=defaultdict(list)
+    for z in measurement_rows:peers_by[((z['case_id'],z['metric'],z['currency'],z['source']),z['observed_at'])].append(z)
     for key,m in latest.items():
         field=metric_map.get(m['metric']);ledger=summary_lookup.get((m['case_id'],m['currency']),{}).get(field) if field else None
-        peers=[z for z in measurement_rows if (z['case_id'],z['metric'],z['currency'],z['source'])==key and z['observed_at']==m['observed_at']]
+        peers=peers_by.get((key,m['observed_at']),[])
         conflict=len({z['amount'] for z in peers})>1
         if conflict:
             issue('CONFLICTING_SNAPSHOT',m['measurement_id'],'Snapshotهای هم‌تاریخ یک منبع متناقض‌اند؛ انتخاب خودکار ممنوع','ERROR')
@@ -439,22 +493,22 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
             return format(val,'f') if not cur else cur+' '+format(val,'f')
         return ' | '.join(((cur+' ') if cur else '')+format(val,'f') for cur,val in sorted(buckets.items()))
 
+    accepted_by_case=defaultdict(list)
+    for r in accepted:accepted_by_case[r['case_id']].append(r)
+    links_by_target=defaultdict(list); links_by_source=defaultdict(list)
+    for l in valid_links:
+        links_by_target[l['target_case']].append(l); links_by_source[l['source_case']].append(l)
     for case in accepted_cases:
-        evs=[r for r in accepted if r['case_id']==case]
+        evs=accepted_by_case.get(case,[])
         stage_events={}
         for seq,stage,kinds,gap_code,desc in chain_specs:
             kset=set(kinds.split('|'))
             stage_events[seq]=[r for r in evs if r['kind'] in kset]
-        evidenced={seq for seq,rows in stage_events.items() if rows}
-        # A reduced NTSW balance is strong downstream evidence that settlement/return
-        # happened in the external system, but it is not itself a settlement event.
+        # A reduced NTSW balance is evidence that settlement/return happened in the
+        # external system, but it is not itself a settlement event; the snapshot is
+        # reported separately as stage 9 below. (A computed-but-unused
+        # ``reduced_balance`` flag was removed in V29.9.)
         case_recs=[r for r in rec_by_case.get(case,[]) if r.get('metric')=='COMMITMENT_BALANCE']
-        reduced_balance=False
-        for rr in case_recs:
-            reported=rr.get('reported_value'); ledger=rr.get('ledger_value')
-            # Compare reported balance with initial commitment where available.
-            candidates=[x.get('commitment') for x in sum_by_case.get(case,[]) if x.get('currency')==rr.get('currency') and x.get('commitment') is not None]
-            if reported is not None and candidates and reported < candidates[0]:reduced_balance=True
 
         for seq,stage,kinds,gap_code,desc in chain_specs:
             rows=stage_events[seq]
@@ -465,16 +519,16 @@ def build_cashflow(events, links=None, rates=None, *, as_of=None, reporting_curr
                     paid_by_currency=defaultdict(lambda:ZERO)
                     for r in rows:
                         if r['amount'] is not None: paid_by_currency[r['currency']]+=r['amount']
-                    link_rows=[(l['to_currency'],l['to_amount']) for l in valid_links
-                               if l['target_case']==case and l['target_kind']=='PAYMENT']
+                    link_rows=[(l['to_currency'],l['to_amount']) for l in links_by_target.get(case,[])
+                               if l['target_kind']=='PAYMENT']
                     traced_by_currency=defaultdict(lambda:ZERO)
                     for cur,amount in link_rows: traced_by_currency[cur]+=amount
                     linked=_linked_amount_text(link_rows)
                     if any(traced_by_currency[cur] < amount for cur,amount in paid_by_currency.items()):
                         status='PARTIALLY_LINKED' if any(traced_by_currency.values()) else 'UNLINKED'
                 elif stage=='SETTLEMENT_RETURN':
-                    link_rows=[(l['from_currency'],l['from_amount']) for l in valid_links
-                               if l['source_case']==case and by_id[l['from_event']]['kind']=='COMMITMENT'
+                    link_rows=[(l['from_currency'],l['from_amount']) for l in links_by_source.get(case,[])
+                               if by_id[l['from_event']]['kind']=='COMMITMENT'
                                and l['target_kind'] in {'SETTLEMENT','COMMITMENT_RETURN'}]
                     settled=sum((amount for _,amount in link_rows),ZERO)
                     linked=_linked_amount_text(link_rows)

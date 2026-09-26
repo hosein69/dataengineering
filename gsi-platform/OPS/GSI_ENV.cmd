@@ -1,6 +1,6 @@
 @echo off
 rem ================================================================
-rem GSI operational DWH environment — safe overlay, no core changes
+rem GSI operational DWH environment - safe overlay, no core changes
 rem This file is intended to be CALLED by scripts in this OPS folder.
 rem ================================================================
 set "GSI_DATA_ROOT=D:\GSI_DATA"

@@ -57,7 +57,10 @@ html, body, [class*="css"], .stApp {{
 .kpi:hover::after {{ transform:translateX(130%); }}
 .kpi .lab {{ font-size:12px; color:var(--text-2); letter-spacing:.1px; }}
 .kpi .val {{ font-size:27px; font-weight:700; color:var(--text); line-height:1.2;
-  margin-top:5px; font-variant-numeric:tabular-nums; }}
+  margin-top:5px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }}
+.kpi .val.is-long {{ font-size:17px; line-height:1.5; }}
+.kpi .val bdi {{ unicode-bidi:isolate; }}
+.kpi .val .amt {{ display:block; direction:ltr; text-align:right; }}
 .kpi .sub {{ font-size:11px; color:var(--text-3); margin-top:5px; }}
 .kpi .bar {{ height:3px; border-radius:2px; margin-top:11px; opacity:.92;
   transition:height .32s; }}
@@ -115,6 +118,13 @@ html, body, .stApp, .stApp *, [data-testid] , [data-testid] * ,
 /* استثنا: کد و عدد تک‌فاصله */
 code, pre, kbd, samp, [data-testid="stCode"] * {{
   font-family: 'Cascadia Mono','Consolas','Courier New',monospace !important;
+}}
+/* استثنا: آیکن‌های Material خود Streamlit. قاعده عام بالا فونت ligature آیکن را
+   هم IRANSans می‌کرد و به‌جای فلش، کلمهٔ «keyboard_arrow_right» روی برچسب
+   فارسی expander و دکمه جمع‌کردن سایدبار نوشته می‌شد (اندازه‌گیری‌شده در DOM). */
+[data-testid="stIconMaterial"], .material-symbols-rounded, .material-icons {{
+  font-family: 'Material Symbols Rounded','Material Icons' !important;
+  font-feature-settings: 'liga' !important;
 }}
 
 /* ── کنتراست: هیچ متنی نباید هم‌رنگ پس‌زمینه‌اش باشد ──────────────────
@@ -223,9 +233,24 @@ small, .stCaption {{ color: var(--text-2) !important; }}
 
 
 def kpi_card(label: str, value: str, sub: str, color: str, icon: str = "") -> str:
+    """کارت KPI. مقدار غیرعددی (پیام «جمع قابل اتکا نیست») عدد نیست:
+    به‌جای نوشتن جمله با اندازه عدد، «—» نمایش داده و پیام به زیرنویس می‌رود.
+    مبلغ چندارزی (``1,000.00 EUR | 20.00 USD``) با اندازه کوچک‌تر و ایزوله
+    جهت (bdi) نمایش داده می‌شود تا در متن راست‌به‌چپ جابه‌جا نشود."""
     ic = f'<span class="ico">{icon}</span>' if icon else ""
+    text = str(value)
+    cls = "val"
+    if text not in ("", "—") and not any(ch.isdigit() for ch in text):
+        sub = f"{text} · {sub}" if sub else text
+        text = "—"
+    elif len(text) > 14:
+        cls = "val is-long"
+        if " · " in text:                       # افشای پوشش ← زیرنویس، نه کنار عدد
+            text, note = text.split(" · ", 1)
+            sub = f"{note} · {sub}" if sub else note
+        text = "".join(f'<bdi class="amt">{t.strip()}</bdi>' for t in text.split("|"))
     return (f'<div class="kpi"><div class="lab">{ic}{label}</div>'
-            f'<div class="val">{value}</div><div class="sub">{sub}</div>'
+            f'<div class="{cls}">{text}</div><div class="sub">{sub}</div>'
             f'<div class="bar" style="background:{color}"></div></div>')
 
 

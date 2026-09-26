@@ -104,14 +104,24 @@ def _num(v: Any) -> Optional[float]:
 
 
 def _date_value(v: Any) -> Optional[str]:
+    """Same calendar semantics as the rest of GSI (Jalali-aware, D/M/Y).
+
+    ``pd.to_datetime`` alone read «1403/05/12» as out-of-range (lost) and read
+    «05/03/2026» as May 3rd while CalendarEngine reads it as 5 March — so the
+    performance view could disagree with the ledger on the same evidence.
+    """
     s = _text(v)
     if not s:
         return None
+    from ..core.jalali import CalendarEngine
+    d = CalendarEngine.parse(s)
+    if d is not None:
+        return datetime(d.year, d.month, d.day).isoformat()
     try:
-        d = pd.to_datetime(s, errors="coerce")
-        if pd.isna(d):
+        ts = pd.to_datetime(s, errors="coerce", format="ISO8601")
+        if pd.isna(ts):
             return None
-        return d.isoformat()
+        return ts.isoformat()
     except Exception:
         return None
 
@@ -165,18 +175,15 @@ def _flow_renderer(nodes: Sequence[dict], edges: Sequence[dict], *, mode: str = 
         # faint structural pipeline even when the selected scope has no paired
         # observations, while keeping the visible label at the real count=0.
         for e in render_edges: e["count"]=1
-    inserted = False
+    # Add the bundled kit once and leave it: Streamlit renders sessions on
+    # parallel threads, and the former insert/remove pair could drop the path
+    # while another session was importing ``pm_ui``.
     if str(kit) not in sys.path:
-        sys.path.insert(0, str(kit)); inserted = True
-    try:
-        from pm_ui.charts.process_flow import flowgraph_svg
-        width = max(1180, 190 * max(6, len(nodes)))
-        return flowgraph_svg(nodes, render_edges, width=width, height=430, node_w=170, node_h=68,
-                             mode=mode, abstraction=100)
-    finally:
-        if inserted:
-            try: sys.path.remove(str(kit))
-            except ValueError: pass
+        sys.path.append(str(kit))
+    from pm_ui.charts.process_flow import flowgraph_svg
+    width = max(1180, 190 * max(6, len(nodes)))
+    return flowgraph_svg(nodes, render_edges, width=width, height=430, node_w=170, node_h=68,
+                         mode=mode, abstraction=100)
 
 
 def _frame_records(df: Any) -> List[dict]:
@@ -357,24 +364,18 @@ def build_cashflow_process_html(*, result: Optional[Mapping[str,Any]]=None, extr
     # supplied Process Explorer ZIP.  We namespace its generic class names before
     # embedding so it cannot collide with the surrounding report CSS.
     kit = Path(__file__).resolve().parents[2] / "process-mining-ui-kit"
-    inserted = False
-    if str(kit) not in sys.path:
-        sys.path.insert(0, str(kit)); inserted = True
-    try:
-        from pm_ui.charts.system_flow import system_flow_html
-        sys_stages=[]
-        for i, stg in enumerate(payload.get("stage_stats", []), 1):
-            sys_stages.append({
-                "label": stg.get("label", stg.get("code", "")),
-                "icon": str(i),
-                "sub": f"{stg.get('phase','')} · {stg.get('cases',0)}/{stg.get('total_cases',0)} پرونده",
-                "status": _status_token(stg.get("status", "")),
-            })
-        pipeline_html = system_flow_html(sys_stages)
-    finally:
-        if inserted:
-            try: sys.path.remove(str(kit))
-            except ValueError: pass
+    if str(kit) not in sys.path:          # idempotent; see _flow_renderer
+        sys.path.append(str(kit))
+    from pm_ui.charts.system_flow import system_flow_html
+    sys_stages=[]
+    for i, stg in enumerate(payload.get("stage_stats", []), 1):
+        sys_stages.append({
+            "label": stg.get("label", stg.get("code", "")),
+            "icon": str(i),
+            "sub": f"{stg.get('phase','')} · {stg.get('cases',0)}/{stg.get('total_cases',0)} پرونده",
+            "status": _status_token(stg.get("status", "")),
+        })
+    pipeline_html = system_flow_html(sys_stages)
     # Namespace the kit's intentionally generic CSS/HTML class names.
     for a,b in [("pipeline","cfp-pipeline"),("stage","cfp-sys-stage"),("card","cfp-sys-card"),
                 ("arrow","cfp-sys-arrow"),("icon","cfp-sys-icon"),("label","cfp-sys-label"),("sub","cfp-sys-sub")]:

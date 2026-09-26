@@ -8,7 +8,7 @@ from __future__ import annotations
 
 #: نسخه قرارداد این ماژول — gsi/version.py آن را می‌سنجد.
 #: با هر تغییر در رابط عمومی، این عدد یکی زیاد می‌شود.
-__contract__ = 3
+__contract__ = 4
 
 
 import math
@@ -21,10 +21,17 @@ _DIGIT_MAP = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567
 # ── نگاشت حروف چندشکلی عربی/فارسی ──
 _CHAR_MAP = {
     "ي": "ی", "ك": "ک", "ة": "ه", "أ": "ا", "إ": "ا", "آ": "آ", "ؤ": "و",
+    "ى": "ی",        # الف مقصوره عربی (U+0649) — در صفحه‌کلید عربی جای «ی»
+    "ڪ": "ک",        # کاف سواحلی/سندی (U+06AA) — در برخی فونت‌ها/کپی وب
     "\u200c": " ",  # نیم‌فاصله
     "\xa0": " ",    # فاصله نشکن
+    "\u202f": " ",  # فاصله نشکن باریک
 }
 _DIACRITICS = re.compile(r"[\u064B-\u065F\u0670]")
+#: نویسه‌های نامرئی جهت‌دهی/عرض صفر/کشیده که از کپی وب و Excel در سلول
+#: می‌مانند؛ در متن فارسی هیچ معنایی ندارند و اگر حذف نشوند «12345» و
+#: «\u200f12345» دو کلید متفاوت می‌شوند و ادغام بی‌صدا شکست می‌خورد.
+_INVISIBLE = re.compile("[\u200b\u200d\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff\u0640]")
 _WS = re.compile(r"\s+")
 
 _EMPTY_TOKENS_BASE = {
@@ -41,7 +48,17 @@ def _is_nan(v: Any) -> bool:
         return math.isnan(v)
     # pandas.NaT و numpy.nan و pd.NA
     try:
-        return v != v  # noqa: PLR0124 — NaN != NaN
+        r = v != v  # noqa: PLR0124 — NaN != NaN
+    except Exception:
+        return False
+    if isinstance(r, bool):
+        return r
+    # pd.NA != pd.NA is itself pd.NA; ``bool(pd.NA)`` raises TypeError, so
+    # is_empty_val(pd.NA) used to crash (nullable columns hold pd.NA).
+    if type(r).__name__ == "NAType":
+        return True
+    try:
+        return bool(r)
     except Exception:
         return False
 
@@ -57,7 +74,7 @@ def normalize_persian_text(text: Any) -> str:
     """یکسان‌سازی کامل متن فارسی: ارقام، حروف، اعراب، فاصله‌ها."""
     if _is_nan(text):
         return ""
-    s = str(text).translate(_DIGIT_MAP)
+    s = _INVISIBLE.sub("", str(text).translate(_DIGIT_MAP))
     for src, dst in _CHAR_MAP.items():
         s = s.replace(src, dst)
     s = _DIACRITICS.sub("", s)
@@ -80,7 +97,7 @@ def clean_key(val: Any) -> str:
     """
     if _is_nan(val):
         return ""
-    s = to_latin_digits(str(val)).strip().upper()
+    s = _INVISIBLE.sub("", to_latin_digits(str(val))).strip().upper()
     if s.endswith(".0"):
         s = s[:-2]
     return s
@@ -131,46 +148,47 @@ def clean_employee_code(code: Any) -> str:
     return digits.zfill(8) if len(digits) <= 8 else digits
 
 
+_EMPTY_TOKENS = frozenset(_EMPTY_TOKENS_BASE)
+_EMPTY_TOKENS_ZERO = frozenset(_EMPTY_TOKENS_BASE | {"0", "0.0", "۰"})
+
+
 def is_empty_val(v: Any, treat_zero_as_empty: bool = True) -> bool:
-    """تشخیص جامع مقدار تهی (None, NaN, '', '0', 'nan', 'نامشخص', ...)."""
-    if _is_nan(v):
-        return True
-    s = str(v).strip()
+    """تشخیص جامع مقدار تهی (None, NaN, '', '0', 'nan', 'نامشخص', ...).
+
+    V29.9 (کارایی): این تابع در هر اجرا میلیون‌ها بار صدا زده می‌شود و قبلاً
+    در هر فراخوانی یک set تازه می‌ساخت. مجموعه‌ها یک‌بار ساخته می‌شوند و رشته
+    ساده مسیر سریع دارد (رشته هیچ‌وقت NaN نیست)؛ نتیجه بدون تغییر است.
+    """
+    if type(v) is str:
+        s = v.strip()
+    else:
+        if _is_nan(v):
+            return True
+        s = str(v).strip()
     if s == "":
         return True
-    tokens = set(_EMPTY_TOKENS_BASE)
-    if treat_zero_as_empty:
-        tokens |= {"0", "0.0", "۰"}
-    return s.lower() in tokens
+    return s.lower() in (_EMPTY_TOKENS_ZERO if treat_zero_as_empty else _EMPTY_TOKENS)
 
 
 def num_safe(v: Any) -> float:
-    """تبدیل امن به float.
+    """تبدیل امن به float با قرارداد قدیمی «ناشناخته = 0.0».
 
     FIX-2: نسخه قبلی روی مقادیری مثل '1.234.567' (جداکننده هزارگان نقطه‌ای)
     بی‌صدا 0.0 برمی‌گرداند. اینجا جداکننده هزارگان تشخیص داده و حذف می‌شود.
+
+    V29.9: پیاده‌سازی به ``gsi.core.numeric_parse.parse_decimal`` منتقل شد. نسخه
+    قبلی نماد علمی را «نویز» می‌دانست و حذف می‌کرد (``1e-05 → 105`` و
+    ``1.5e16 → 1.516``)، ممیز فارسی «٫» را پاک می‌کرد (``1٫5 → 15``) و منفی
+    انتهایی SAP (``1,234.56-``) را مثبت می‌خواند. این تابع هنوز برای مقدار
+    ناشناخته 0.0 برمی‌گرداند؛ مسیرهای مالی تصمیم‌ساز باید از
+    ``parse_decimal``/``warehouse.numeric.number`` استفاده کنند تا Unknown
+    با صفر یکی نشود.
     """
     if is_empty_val(v, treat_zero_as_empty=False):
         return 0.0
-    try:
-        s = to_latin_digits(v).strip()
-        neg = s.startswith("-") or s.startswith("(")
-        s = re.sub(r"[^\d.,]", "", s)
-        if "," in s and "." in s:
-            # آخرین جداکننده = اعشار
-            s = s.replace("," if s.rfind(".") > s.rfind(",") else ".", "")
-            s = s.replace(",", ".")
-        elif s.count(".") > 1:
-            s = s.replace(".", "")
-        elif s.count(",") >= 1:
-            parts = s.split(",")
-            s = "".join(parts[:-1]) + ("." + parts[-1] if len(parts[-1]) < 3 else parts[-1])
-        if s in ("", ".", "-"):
-            return 0.0
-        val = float(s)
-        return -val if neg else val
-    except Exception:
-        return 0.0
+    from .numeric_parse import parse_decimal
+    value = parse_decimal(v, strict=False)
+    return float(value) if value is not None else 0.0
 
 
 _ITEM_SUFFIX = re.compile(r"[\s\-–—]*items?\s*[\d&\s,and]*$", re.IGNORECASE)

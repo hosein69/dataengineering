@@ -11,7 +11,7 @@ import re
 
 #: نسخه قرارداد این ماژول — gsi/version.py آن را می‌سنجد.
 #: با هر تغییر در رابط عمومی، این عدد یکی زیاد می‌شود.
-__contract__ = 1
+__contract__ = 2
 
 
 from datetime import date, datetime
@@ -25,8 +25,27 @@ try:  # pragma: no cover
 except ImportError:  # pragma: no cover
     HAS_JDATETIME = False
 
+def jalali_month_length(jy: int, jm: int) -> int:
+    """طول ماه شمسی؛ اسفند سال کبیسه ۳۰ روز است."""
+    if not 1 <= jm <= 12:
+        raise ValueError(f"ماه شمسی نامعتبر: {jm}")
+    if jm <= 6:
+        return 31
+    if jm <= 11:
+        return 30
+    return 30 if is_jalali_leap(jy) else 29
+
+
 def jalali_to_gregorian(jy: int, jm: int, jd: int) -> date:
-    """تبدیل تاریخ شمسی به میلادی (الگوریتم استاندارد، بدون نیاز به jdatetime)."""
+    """تبدیل تاریخ شمسی به میلادی (الگوریتم استاندارد، بدون نیاز به jdatetime).
+
+    V29.9: تاریخ نامعتبر (ماه ۱۳، روز ۳۱ مهر، ۳۰ اسفند سال غیرکبیسه، ماه/روز
+    صفر) ``ValueError`` می‌دهد. مبدل داخلی قبلاً این مقادیر را بی‌صدا به یک
+    تاریخ واقعی دیگر «سرریز» می‌کرد (مثلاً ``1403/13/05 → 2025-03-25``)؛ یعنی
+    نتیجه به نصب بودن یا نبودن jdatetime بستگی داشت.
+    """
+    if not 1 <= jd <= jalali_month_length(jy, jm):
+        raise ValueError(f"تاریخ شمسی نامعتبر: {jy}/{jm}/{jd}")
     if HAS_JDATETIME:
         return jdatetime.date(jy, jm, jd).togregorian()
 
@@ -61,8 +80,40 @@ def jalali_to_gregorian(jy: int, jm: int, jd: int) -> date:
 
 
 def is_jalali_leap(jy: int) -> bool:
-    """سال کبیسه شمسی بر پایه چرخه ۳۳ ساله."""
-    return ((jy + 2346) % 2820) % 128 % 33 % 4 == 1
+    """سال کبیسه شمسی — سازگار با همان حساب ۳۳ ساله‌ای که مبدل استفاده می‌کند.
+
+    نسخه قبلی فرمول چرخه ۲۸۲۰ ساله را داشت که ۱۴۰۳ را عادی و ۱۴۰۴ را کبیسه
+    می‌دانست؛ در حالی که ۱۴۰۳/۱۲/۳۰ (= 2025-03-20) تاریخ واقعی است.
+    کبیسه یعنی نوروز سال بعد یک روز دیرتر از ۳۶۵ روز می‌رسد.
+    """
+    return _jalali_day_number(jy + 1, 1, 1) - _jalali_day_number(jy, 1, 1) == 366
+
+
+def _jalali_day_number(jy: int, jm: int, jd: int) -> int:
+    """شماره روز خطی همان الگوریتم مبدل (بدون اعتبارسنجی)."""
+    jy += 1595
+    days = -355668 + (365 * jy) + ((jy // 33) * 8) + (((jy % 33) + 3) // 4) + jd
+    days += (jm - 1) * 31 if jm < 7 else ((jm - 7) * 30 + 186)
+    return days
+
+
+def gregorian_to_jalali(value: date) -> tuple:
+    """تبدیل میلادی به شمسی ``(jy, jm, jd)`` — معکوس دقیق ``jalali_to_gregorian``."""
+    if HAS_JDATETIME:
+        j = jdatetime.date.fromgregorian(date=value)
+        return j.year, j.month, j.day
+    jy = value.year - 621
+    if value < jalali_to_gregorian(jy, 1, 1):
+        jy -= 1
+    start = jalali_to_gregorian(jy, 1, 1)
+    offset = (value - start).days
+    jm = 1
+    while True:
+        length = jalali_month_length(jy, jm)
+        if offset < length:
+            return jy, jm, offset + 1
+        offset -= length
+        jm += 1
 
 
 class CalendarEngine:
@@ -87,17 +138,21 @@ class CalendarEngine:
             except Exception:
                 pass
 
-        s = to_latin_digits(x).strip()
+        from .numeric_parse import strip_invisible
+        s = strip_invisible(to_latin_digits(x)).strip()
         if not s:
             return None
         s = s.split(" ")[0]  # حذف بخش ساعت
+        # ISO 8601 با ساعت: 2026-07-26T10:00:00 — بخش ساعت حذف می‌شود.
+        if len(s) > 10 and s[10:11] in ("T", "t") and s[4:5] == "-":
+            s = s[:10]
 
         sep = next((c for c in cls._SEPARATORS if c in s), None)
-        if sep is None:
+        if sep is None or (sep == "." and cls._EXCEL_SERIAL.fullmatch(s)):
             # فرمت فشرده 14040315 یا 20260726
             if s.isdigit() and len(s) == 8:
                 return cls._build(int(s[:4]), int(s[4:6]), int(s[6:]))
-            return None
+            return cls._excel_serial(s)
 
         parts = [p.strip() for p in s.split(sep) if p.strip()]
         if len(parts) < 3 or not all(p.isdigit() for p in parts[:3]):
@@ -107,6 +162,22 @@ class CalendarEngine:
         if a <= 31 and c >= 1300:
             a, b, c = c, b, a
         return cls._build(a, b, c)
+
+    #: سلول تاریخ واقعی Excel در مسیر OOXML خام (Oracle/FX/NTSW) به‌صورت
+    #: شماره سریال (مثلاً «45371» یا «45371.5») می‌رسد، نه متن تاریخ. بازه
+    #: 20000..80000 یعنی 1954-10-03 تا 2119-01-10؛ عدد خارج از آن تاریخ نیست.
+    _EXCEL_SERIAL = re.compile(r"\d{5}(?:\.\d+)?")
+    _EXCEL_EPOCH = date(1899, 12, 30)
+
+    @classmethod
+    def _excel_serial(cls, s: str) -> Optional[date]:
+        if not cls._EXCEL_SERIAL.fullmatch(s):
+            return None
+        serial = float(s)
+        if not 20000 <= serial <= 80000:
+            return None
+        from datetime import timedelta
+        return cls._EXCEL_EPOCH + timedelta(days=int(serial))
 
     @classmethod
     def _build(cls, y: int, m: int, d: int) -> Optional[date]:
@@ -175,3 +246,42 @@ def jalali_sort_key(value: Any) -> str:
         return FAIL
     d = CalendarEngine.parse(f"{y:04d}/{mo:02d}/{dd:02d}")
     return d.isoformat() if d else FAIL
+
+
+# ═══════════ نمایش تاریخ برای کاربر ═══════════
+#: جداکننده‌های ایزوله جهت (Unicode LRI/PDI). تاریخ «2026-08-31» داخل متن
+#: راست‌به‌چپ بدون ایزوله به‌شکل «31-08-2026» دیده می‌شد (bidi reordering).
+_LRI, _PDI = "⁦", "⁩"
+
+
+def to_iso(value: Any) -> Optional[str]:
+    """هر تاریخ پشتیبانی‌شده (شمسی/میلادی/سریال Excel) → ``YYYY-MM-DD`` یا None."""
+    d = CalendarEngine.parse(value)
+    return d.isoformat() if d else None
+
+
+def format_jalali(value: Any) -> str:
+    """``2026-08-31`` → ``1405/06/09``؛ مقدار نامعتبر بدون تغییر برمی‌گردد."""
+    d = CalendarEngine.parse(value)
+    if d is None:
+        return "" if _is_nan(value) else str(value)
+    jy, jm, jd = gregorian_to_jalali(d)
+    return f"{jy:04d}/{jm:02d}/{jd:02d}"
+
+
+def date_label(value: Any, *, gregorian: bool = True) -> str:
+    """برچسب تاریخ برای متن فارسی: شمسی، و میلادی داخل پرانتز؛ هر دو ایزوله.
+
+    خروجی متن ساده است (بدون HTML) تا در Streamlit، HTML، Excel و ایمیل
+    یکسان کار کند. ``date_label("2026-08-31")`` → «1405/06/09 (2026-08-31)».
+    """
+    d = CalendarEngine.parse(value)
+    if d is None:
+        return "" if _is_nan(value) else str(value)
+    text = f"{_LRI}{format_jalali(d)}{_PDI}"
+    if not gregorian:
+        return text
+    # WORD JOINER کنار خط‌تیره‌ها: در ستون باریک (سایدبار) تاریخ از وسط
+    # «2026-08-31» به دو خط شکسته نشود؛ پرانتز داخل ایزوله تا آینه نشود.
+    iso = d.isoformat().replace("-", "\u2060-\u2060")
+    return f"{text} {_LRI}({iso}){_PDI}"

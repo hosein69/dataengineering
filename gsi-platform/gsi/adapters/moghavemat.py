@@ -215,6 +215,11 @@ class MoghavematAdapter(SourceAdapter):
         """
         p = self.p
         cols = [p(x) for x in self.INVENTORY_NUMERIC_FIELDS]
+        # Only these columns are read per Order×Material group. Grouping the full
+        # standardized line frame split every mapped column for each key.
+        used = [KEY_ORDER, KEY_MATERIAL, *cols, p("INVENTORY_ASOF_DATE"), p("INVENTORY_NOTE"),
+                p("QTY_IN_ORDER"), p("QTY_IN_PART"), p("CLEARED_QTY"), p("PART_NO_PARTIAL")]
+        lines = lines[[c for c in dict.fromkeys(used) if c in lines.columns]]
         src = lines[(lines[KEY_ORDER].astype(str).str.strip() != "") &
                     (lines[KEY_MATERIAL].astype(str).str.strip() != "")].copy()
         if src.empty:
@@ -252,20 +257,28 @@ class MoghavematAdapter(SourceAdapter):
             part_col=p("PART_NO_PARTIAL")
             if qty_col not in group.columns:
                 return None
-            tmp=group[[part_col, qty_col]].copy() if part_col in group.columns else pd.DataFrame({part_col:"", qty_col:group[qty_col]})
-            tmp[qty_col]=pd.to_numeric(tmp[qty_col], errors="coerce")
-            tmp=tmp[tmp[qty_col].notna()]
-            if tmp.empty:
+            # Same arithmetic as the former per-group DataFrame pipeline
+            # (max per Part No., summed in sorted-key order with pandas; max of
+            # unnamed rows) without allocating five intermediate frames per key.
+            qty=pd.to_numeric(group[qty_col], errors="coerce").tolist()
+            parts=group[part_col].tolist() if part_col in group.columns else [""]*len(qty)
+            named={}; unnamed=None
+            for part, q in zip(parts, qty):
+                if pd.isna(q):
+                    continue
+                part="" if pd.isna(part) else str(part).strip()
+                if part:
+                    named[part]=q if part not in named else max(named[part], q)
+                else:
+                    unnamed=q if unnamed is None else max(unnamed, q)
+            if not named and unnamed is None:
                 return None
-            tmp[part_col]=tmp[part_col].fillna("").astype(str).str.strip()
-            named=tmp[tmp[part_col].ne("")]
-            unnamed=tmp[tmp[part_col].eq("")]
-            total=0.0; used=False
-            if not named.empty:
-                total += float(named.groupby(part_col)[qty_col].max().sum()); used=True
-            if not unnamed.empty:
-                total += float(unnamed[qty_col].max()); used=True
-            return total if used else None
+            total=0.0
+            if named:
+                total += float(pd.Series([named[k] for k in sorted(named)], dtype="float64").sum())
+            if unnamed is not None:
+                total += float(unnamed)
+            return total
 
         for (order, material), g in src.groupby([KEY_ORDER, KEY_MATERIAL], sort=False):
             row={KEY_ORDER: order, KEY_MATERIAL: material}

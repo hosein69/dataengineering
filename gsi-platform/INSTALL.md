@@ -1,267 +1,70 @@
-# نصب و اجرا — راهنمای دقیق
+# نصب و راه‌اندازی GSI 29.9.0
 
-## چرا اجرای قبلی خطا داد
+> راهنمای قدیمی (مهاجرت از نسخه ۲۰) در `docs/history/INSTALL_V29_8_2.md` حفظ شده است.
 
-خطای شما:
-```
-ImportError: attempted relative import with no known parent package
-  File "...\_strptime.py", line 16, in <module>
-    import calendar
-```
+## پیش‌نیازها
 
-سه علت هم‌زمان داشت:
-
-**۱. فایل‌ها تخت (flat) کپی شده بودند.** در پوشه `material` فایل‌هایی مثل
-`partition.py` مستقیم کنار هم بودند، نه داخل زیرپوشه‌های `gsi/`.
-
-**۲. `calendar.py` روی ماژول استاندارد پایتون سایه انداخت.** وقتی pandas
-داخلاً `import calendar` می‌زند، پایتون اول پوشه جاری را می‌گردد و به فایل من
-می‌رسد. آن فایل `from .text import ...` دارد که بدون پکیج والد کار نمی‌کند.
-**این اشتباه من بود** — دیگر ماژولی با نام کتابخانه استاندارد وجود ندارد:
-
-| نام قبلی | نام جدید |
-|---|---|
-| `gsi/core/calendar.py` | `gsi/core/jalali.py` |
-| `gsi/io/` | `gsi/dataio/` |
-
-**۳. `gsi.py` نسخه ۲۰.۱ هنوز در همان پوشه بود.** دستور `python -m gsi.pipeline`
-اول به آن فایل می‌رسید و اجرایش می‌کرد.
-
----
-
-## نصب صحیح
-
-### گام ۱ — پوشه کاری تمیز
-پوشه فعلی `material` هم `gsi.py` قدیمی دارد و هم فایل‌های تخت.
-یک پوشه تازه بسازید (ترجیحاً روی درایو محلی، نه مسیر UNC شبکه):
-
-```powershell
-mkdir D:\GSI
-cd D:\GSI
-```
-
-> اجرای پایتون از مسیر `\\ikco.com\...` کند و ناپایدار است. کد را محلی بگذارید؛
-> فقط **داده‌ها** از شبکه خوانده می‌شوند.
-
-### گام ۲ — کپی با حفظ ساختار درختی
-ساختار باید **دقیقاً** این باشد:
-
-```
-D:\GSI\
-├── gsi\
-│   ├── __init__.py
-│   ├── __main__.py
-│   ├── doctor.py
-│   ├── pipeline.py
-│   ├── adapters\      __init__.py  base.py  moghavemat.py  bl_sources.py  order_sources.py
-│   ├── config\        __init__.py  settings.py  sources.py  sources.yaml  business_rules.py
-│   ├── core\          __init__.py  text.py  jalali.py  columns.py
-│   ├── dataio\        __init__.py  logging_setup.py  reader.py  merge.py
-│   ├── engines\       __init__.py  commitment.py  risk.py  math_engine.py
-│   ├── narrate\       __init__.py  narrator.py
-│   ├── report\        __init__.py  dashboard.py  extracts.py  palette.py
-│   ├── resolve\       __init__.py  canonical.py  org_mapper.py  partition.py
-│   ├── rulebook\      __init__.py  loader.py  validate.py
-│   └── rules\         _manifest.yaml + ۸ فایل YAML
-├── tests\
-├── run_all_tests.py
-└── README.md
-```
-
-اگر با Explorer کپی می‌کنید، **پوشه `gsi` را یکجا** بکشید — نه محتویاتش را.
-
-### گام ۳ — کتابخانه‌ها
-```powershell
-python -m pip install --upgrade pandas numpy openpyxl pyyaml
-python -m pip install jdatetime          # اختیاری
-```
-
-`jdatetime` لازم نیست؛ مبدل شمسی داخلی نوشته‌ام و تست شده
-(`1404/01/15 → 2025-04-04`).
-
-### گام ۴ — عیب‌یابی قبل از اجرا
-```powershell
-cd D:\GSI
-python -m gsi.doctor
-```
-
-Doctor پنج چیز را بررسی می‌کند:
-۱. سایه‌اندازی روی کتابخانه استاندارد ۲. ساختار پکیج و وجود `gsi.py` قدیمی
-۳. کتابخانه‌ها ۴. سلامت قوانین و adapterها ۵. دسترسی به ۶ پوشه شبکه و قابل‌نوشتن بودن خروجی
-
-تا وقتی خروجی `0 خطا` نیست، اجرا نکنید. Doctor مسیر دقیق هر فایل مشکل‌دار را می‌گوید.
-
-### گام ۵ — اجرای اول
-```powershell
-$env:GSI_STRICT_ADAPTERS = "1"
-python -m gsi.pipeline
-```
-
-با این پرچم، اولین ناسازگاری هدر بلافاصله اجرا را متوقف می‌کند به‌جای اینکه
-بی‌صدا رد شود. پس از اطمینان از هدرها:
-
-```powershell
-Remove-Item Env:\GSI_STRICT_ADAPTERS
-python -m gsi.pipeline
-```
-
-یا کوتاه‌تر — که خودش اول doctor را می‌زند و فقط در صورت سلامت اجرا می‌کند:
-```powershell
-python -m gsi run
-```
-
----
-
----
-
-## وقتی KPIها صفر یا غیرمنطقی‌اند
-
-اگر گزارش ساخته شد ولی اعداد بی‌معنی بودند (مثلاً «۱٬۲۷۸ تعهد قرمز» ولی
-«جمع مانده تعهد = ۰»)، یعنی سورس خوانده شده اما **به جدول اصلی نچسبیده**.
-
-```powershell
-python -m gsi.diagnose --excel
-```
-
-سه جدول می‌دهد:
-
-**۱) وضعیت هر رابطه** — با تفکیک سه علتِ کاملاً متفاوت که خروجی یکسان دارند:
-
-| تشخیص | یعنی | اقدام |
+| مورد | حداقل | توضیح |
 |---|---|---|
-| فایل پیدا نشد | الگوی `pattern` غلط است | `config/sources.yaml` |
-| ستون کلید پیدا نشد | نگاشت ستون غلط است | `COLUMN_MAP` همان adapter |
-| کلید هست ولی همه تهی | نرمال‌سازی مقادیر را رد می‌کند | تابع `clean_*` |
-| هیچ اشتراکی ندارند | شکل کلید در دو سورس یکی نیست | جدول ۲ را ببینید |
+| Windows | 10 / Server 2016 | اجرا با `.cmd`؛ روی Linux/macOS هم با دستورهای Python کار می‌کند |
+| Python | **3.11** یا بالاتر | همه فایل‌های کد روی 3.11 کامپایل می‌شوند (تست `test_platform_hardening_v29_9`) |
+| دیسک محلی | ~2 GB آزاد | کد و انبار داده باید روی دیسک محلی باشند؛ SQLite روی مسیر شبکه/UNC ممنوع است |
+| دسترسی خواندن | پوشه‌های سورس | فقط خواندن فایل‌های Excel از شبکه لازم است |
 
-**۲) نمونه کلیدهای جورنشده** — دو ستون کنار هم، همان چیزی که تشخیص را قطعی می‌کند:
+وابستگی‌ها در `requirements.txt` با **سقف major تست‌شده** آمده‌اند (مثلاً `pandas<3`،
+`streamlit<2`). برای نصب کاملاً تکرارپذیر همان نسخه‌های اعتبارسنجی‌شده از
+`requirements-validated.txt` استفاده کنید.
 
-```
-کلید           جدول پایه      سورس
-KEY_MATERIAL   MAT001         M-MAT001      ← پیشوند اضافه
-KEY_BL         MSCU1234567    MSCU-1234567  ← خط تیره
-```
+## نصب خودکار (پیشنهادی)
 
-**۳) پر بودن ستون‌های حیاتی** — می‌گوید کدام KPI به کدام ستون وابسته است و
-آن ستون چند درصد پر شده. اگر `ORC_STOCK_QTY` صفر درصد باشد، «قطعات بحرانی»
-هم صفر می‌ماند و علتش همان‌جا نوشته است.
+1. کل پوشه را در مسیر محلی Extract کنید، مثلاً `D:\GSI_APP\`.
+2. در صورت نیاز مسیرها را فقط در `OPS\GSI_ENV.cmd` تنظیم کنید
+   (`GSI_DATA_ROOT` و در صورت لزوم مسیر سورس‌ها).
+3. `00_RUN_GSI.cmd` را اجرا کنید. اسکریپت `OPS\INSTALL_RUNTIME.cmd`:
+   * Python 3.11+ را پیدا می‌کند (`py -3` یا `python`)،
+   * `.venv` را کنار بسته می‌سازد و `requirements.txt` را نصب می‌کند،
+   * import همه کتابخانه‌های runtime را می‌سنجد (`RUNTIME_IMPORTS=PASS`).
+4. در کنترل‌پنل به ترتیب: **[7] Doctor → [3] Refresh → [2] Verify → [4] Start GSI**.
 
-با `--headers` فهرست ستون‌های واقعی هر فایل هم چاپ می‌شود تا نگاشت را
-دستی تطبیق دهید.
-
-## دستورات
-
-| دستور | کار |
-|---|---|
-| `python -m gsi.doctor` | عیب‌یابی محیط |
-| `python -m gsi.diagnose --excel` | **عیب‌یابی رابطه‌ها — چرا KPI صفر است** |
-| `python -m gsi.rulebook.validate` | اعتبارسنجی قوانین + فهرست ۱۹ قاعده نیازمند تطبیق |
-| `python -m gsi.pipeline` | اجرای کامل |
-| `python -m gsi run` | doctor سپس اجرا |
-| `python run_all_tests.py` | هر ۳۴۶ تست |
-
----
-
-## فهرست گیرندگان ایمیل — پیکربندی محرمانه
-
-نشانی‌های کارکنان **داده شخصی**اند و از نسخه ۲۶٫۴٫۰ داخل سورس نگه‌داری
-نمی‌شوند. فهرست را یکی از این چهار راه بدهید (به همین ترتیب اولویت):
+## نصب دستی
 
 ```powershell
-# ۱) متغیر محیطی
-$env:GSI_EMAIL_TO = "a.person@example.invalid; b.person@example.invalid"
-
-# ۲) فایل مشخص
-$env:GSI_RECIPIENTS_FILE = "D:\secure\recipients.yaml"
-
-# ۳) فایل پیش‌فرض
-#    %USERPROFILE%\.gsi\recipients.yaml
-
-# ۴) مستقیم از سورس HR  ← توصیه‌شده
-$env:GSI_EMAIL_FROM_HR = "1"
+cd D:\GSI_APP
+py -3.11 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe -m gsi doctor
+.venv\Scripts\python.exe -u -m gsi refresh
+.venv\Scripts\python.exe -m streamlit run app\studio.py
 ```
 
-### گزینه ۴: گیرنده از سورس HR (توصیه‌شده)
+Streamlit تنظیمات را از `.streamlit\config.toml` در **پوشه جاری** می‌خواند؛ همه
+launcherها ابتدا به ریشه بسته `cd` می‌کنند. این فایل:
+* سرور را فقط روی `127.0.0.1` باز می‌کند (داده مالی روی شبکه داخلی دیده نمی‌شود)،
+* ارسال آمار استفاده Streamlit به اینترنت را خاموش می‌کند،
+* دکمه Deploy را پنهان و تم را با توکن‌های طراحی GSI هم‌رنگ می‌کند.
 
-ستون `Email` همان فایل پرسنلی (`HR_Main_Updated.xlsx`) منبع گیرندگان
-می‌شود. مزیتش این است که **هیچ کپی جانبی‌ای ساخته نمی‌شود**: فهرست
-همیشه با آخرین وضعیت پرسنلی هم‌گام است و کسی که غیرفعال شده، خودکار از
-گیرندگان بیرون می‌رود — برخلاف فایل جانبی که کهنه می‌شود و کسی خبردار
-نمی‌شود.
+## متغیرهای محیطی مهم
 
-فیلترها، همه به‌صورت «شامل بودنِ متن» و با هم AND:
-
-| متغیر | پیش‌فرض | کار |
+| متغیر | پیش‌فرض | کاربرد |
 |---|---|---|
-| `GSI_EMAIL_FROM_HR=1` | خاموش | فعال‌سازی این مسیر |
-| `GSI_EMAIL_HR_POSTS` | `مدیر,رئیس,معاون` | فیلتر روی شرح پست |
-| `GSI_EMAIL_HR_MANAGEMENTS` | — | فیلتر روی مدیریت |
-| `GSI_EMAIL_HR_OFFICES` | — | فیلتر روی اداره |
-| `GSI_EMAIL_HR_MAX` | — | سقف تعداد گیرنده |
+| `GSI_DATA_ROOT` | `D:\GSI_DATA` (غیر Windows: `~/GSI_DATA`) | ریشه داده عملیاتی |
+| `GSI_DWH_PATH` | `%GSI_DATA_ROOT%\warehouse.sqlite` | انبار داده منتشرشده |
+| `GSI_TODAY` | تاریخ Snapshot منتشرشده | تاریخ مرجع؛ شمسی (`1405/06/09`) یا میلادی |
+| `GSI_RULES_DIR` | `gsi/rules` | کتابخانه قوانین بیرونی بدون نصب مجدد |
+| `GSI_FOREIGN`، `GSI_BLS`، … | مسیرهای شبکه IKCO | در `OPS\GSI_ENV.cmd` |
+
+## بررسی سلامت نصب
 
 ```powershell
-# فقط مدیران و رؤسای مدیریت مواد اولیه
-$env:GSI_EMAIL_FROM_HR      = "1"
-$env:GSI_EMAIL_HR_POSTS     = "مدیر,رئیس"
-$env:GSI_EMAIL_HR_MANAGEMENTS = "مواد اولیه"
-python -m gsi email
+VERIFY_RUNTIME.cmd                       # کدام کد و کدام نسخه واقعاً اجرا می‌شود
+.venv\Scripts\python.exe run_all_tests.py  # باید «0 ناموفق» گزارش شود
 ```
 
-نکته‌های امنیتی که در پیاده‌سازی رعایت شده:
+## به‌روزرسانی از 29.8.2
 
-* پیش‌فرض عمداً **فقط سطوح مدیریتی** است؛ گزارش روزانه سند مدیریتی است و
-  ارسال آن به کل پرسنل نه مفید است نه محتاطانه.
-* فقط پرسنل **فعال** انتخاب می‌شوند.
-* نشانی‌های بدشکل حذف می‌شوند (اعتبارسنجی الگو).
-* در لاگ فقط **تعداد** گیرنده نوشته می‌شود، هرگز خود نشانی‌ها:
-  `👥 12 گیرنده از سورس HR انتخاب شد (از 430 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).`
-* اگر `GSI_EMAIL_FROM_HR` تنظیم نشود، سورس HR اصلاً برای ایمیل خوانده
-  نمی‌شود.
-
-قالب فایل (`recipients.example.yaml` را کپی کنید):
-
-```yaml
-recipients:
-  - a.person@example.invalid
-  - b.person@example.invalid
-```
-
-اگر هیچ‌کدام تنظیم نشود، ساخت گزارش و نمودارها کار می‌کند ولی **ارسال با
-خطای صریح متوقف می‌شود** — عمداً، تا هرگز به فهرستی قدیمی ارسال نشود.
-
-> `recipients.yaml` در `.gitignore` است و نباید به مخزن اضافه شود.
-> حساب فرستنده هم با `GSI_EMAIL_SENDER` تنظیم می‌شود؛ خالی یعنی حساب
-> پیش‌فرض Outlook.
-
----
-
-## متغیرهای محیطی
-
-| متغیر | کار |
-|---|---|
-| `GSI_STRICT_ADAPTERS=1` | توقف در اولین خطای adapter |
-| `GSI_OUTPUT` | مسیر خروجی (پیش‌فرض `D:\of\blstotal\output`) |
-| `GSI_LOGS` | مسیر لاگ |
-| `GSI_RULES_DIR` | قوانین از پوشه بیرونی خوانده شود |
-| `GSI_SOURCES_YAML` | رجیستری سورس از فایل دیگر |
-| `GSI_TODAY` | تاریخ مرجع ثابت (برای بازتولید گزارش قدیمی) |
-| `GSI_EMAIL_TO` / `GSI_RECIPIENTS_FILE` / `GSI_EMAIL_SENDER` | گیرندگان و فرستنده ایمیل (محرمانه) |
-| `GSI_EMAIL_FROM_HR` / `GSI_EMAIL_HR_POSTS` / `GSI_EMAIL_HR_MANAGEMENTS` / `GSI_EMAIL_HR_OFFICES` / `GSI_EMAIL_HR_MAX` | گیرندگان مستقیم از ستون Email سورس HR |
-| `GSI_FOREIGN` / `GSI_BLS` / `GSI_CLEARANCE` / `GSI_HR` / `GSI_ESMAEILI` / `GSI_MOHAMADI` | مسیر سورس‌ها |
-
----
-
-## اگر باز خطا گرفتید
-
-خروجی کامل `python -m gsi.doctor` را بفرستید. برخلاف traceback خام،
-دقیقاً می‌گوید کدام فایل کجاست و چه باید کرد.
-
-خطاهای رایج:
-
-| پیام | علت | راه‌حل |
-|---|---|---|
-| `attempted relative import` | فایل هم‌نام ماژول استاندارد در مسیر | خروجی doctor بخش ۱ را ببینید |
-| `No module named gsi.pipeline; gsi is not a package` | `gsi.py` قدیمی در مسیر | نامش را به `gsi_legacy_v20.py.bak` تغییر دهید |
-| `RowExplosionError` | کلید یک سورس یکتا نیست | لاگ نام سورس را می‌گوید؛ `dedupe_by` را در `sources.yaml` تنظیم کنید |
-| `ستون X یافت نشد` | تغییر هدر در فایل اکسل | نگاشت مربوطه را در adapter همان سورس اصلاح کنید |
-| `کتابخانه قوانین خطای ساختاری دارد` | YAML خراب یا مجموع وزن‌ها ≠ ۱ | `python -m gsi.rulebook.validate` |
+* بسته جدید را در پوشه جدا Extract کنید؛ `.venv` قبلی را کپی نکنید (بسازید).
+* انبار داده (`D:\GSI_DATA`) سازگار است؛ مهاجرت schema لازم نیست.
+* یک بار **Refresh** اجرا کنید: اصلاحات صحت داده (عدد، تاریخ، ارز) فقط روی اجرای جدید
+  اثر دارند و Snapshotهای قبلی همان‌طور که منتشر شده‌اند می‌مانند.
+* میان‌برهای قبلی کار می‌کنند: `RUN_STUDIO_V28.cmd` اکنون همان `START_GSI.cmd` است و
+  `VERIFY_RUNTIME_V29_6_4.cmd` به `VERIFY_RUNTIME.cmd` تغییر نام داد.

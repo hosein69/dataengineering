@@ -36,7 +36,7 @@ _PKG = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_PKG)
 
 #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
-VERSION = "29.8.2"
+VERSION = "29.9.0"
 RELEASE_CHANNEL = "rc4-opt2-h1-consolidated"
 
 #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود

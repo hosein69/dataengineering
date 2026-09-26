@@ -108,7 +108,8 @@ st.sidebar.markdown("### ◆ GSI")
 st.sidebar.caption("Global Sourcing Intelligence")
 from gsi.factsheet import VERSION as GSI_RUNTIME_VERSION
 st.sidebar.success(f"Build {GSI_RUNTIME_VERSION} · Studio Runtime")
-st.sidebar.caption(f"Runtime: {Path(__file__).resolve()}")
+# مسیر مطلق فایل روی سرور (نام کاربر/پوشه) دیگر به کاربر نهایی نمایش داده
+# نمی‌شود؛ برای پشتیبانی در VERIFY_RUNTIME و doctor موجود است.
 st.sidebar.markdown("<small>▦ Data &nbsp;•&nbsp; ⛓ Process &nbsp;•&nbsp; ◉ Decision</small>", unsafe_allow_html=True)
 
 _surface = st.sidebar.radio("محیط کاری", ["اتاق کنترل و گزارش جامع", "مخاطبان، کلاسترها و منابع", "دیتاورهوس", "دستیار دانش بازرگانی"], key="gsi_surface")
@@ -127,13 +128,18 @@ if _surface == "مخاطبان، کلاسترها و منابع":
     run_control_center()
     st.stop()
 
-_default_ref = os.environ.get("GSI_TODAY") or str(date.today())
-ref_date = st.sidebar.text_input("تاریخ مرجع", value=_default_ref).strip()
-try:
-    date.fromisoformat(ref_date)
-except ValueError:
-    st.sidebar.error("تاریخ باید به شکل YYYY-MM-DD باشد.")
+from gsi.core.jalali import date_label, to_iso
+from gsi.warehouse.service import published_reference_date
+# پیش‌فرض = تاریخ مرجع Snapshot منتشرشده (نه امروز). قبلاً فردای هر Refresh،
+# همان آخرین Snapshot سالم با برچسب «کهنه» نمایش داده می‌شد.
+_default_ref = os.environ.get("GSI_TODAY") or published_reference_date() or str(date.today())
+_raw_ref = st.sidebar.text_input("تاریخ مرجع (شمسی یا میلادی)", value=_default_ref,
+                                 help="مثال: 1405/06/09 یا 2026-08-31").strip()
+ref_date = to_iso(_raw_ref) or ""
+if not ref_date:
+    st.sidebar.error("تاریخ معتبر نیست؛ نمونه: 1405/06/09 یا 2026-08-31")
     st.stop()
+st.sidebar.caption(f"تاریخ انتخاب‌شده: {date_label(ref_date)}")
 os.environ["GSI_TODAY"] = ref_date
 
 if st.sidebar.button("↻ اجرای مجدد خط لوله", width="stretch"):
@@ -185,7 +191,7 @@ try:
         _bad = {k:int(v) for k,v in _q}
         if _bad.get('DEGRADED',0) or _bad.get('WARN',0):
             _health_label = f"داده‌ها منتشر شده‌اند · {_bad.get('DEGRADED',0)} شاخه ناقص"
-        _health_note = f"آخرین انتشار: {(_run[0] if _run else '')[:16].replace('T',' ')}"
+        _health_note = f"آخرین انتشار: \u2066{(_run[0] if _run else '')[:16].replace('T',' ')}\u2069"
     _banner = f'''<div class="gsi-editorial-lead">
       <div class="gsi-editorial-kicker">GSI · روایت عملیاتی زنجیره تأمین</div>
       <div class="gsi-editorial-title">از داده تا تصمیم؛ مسیر روشن، جزئیات قابل پیگیری</div>
@@ -342,7 +348,7 @@ commit_eq = commitment_equivalent_display(fdf) if "مانده تعهد" in fdf.c
 # ── هدر زنده ──────────────────────────────────────────────────────────────
 motion.hero(
     "GSI | Global Sourcing Intelligence",
-    f"Data • Process • Decision  |  تاریخ مرجع {ref_date} · {len(fdf):,} پرونده · {len(ALL_COLUMNS):,} فیلد قابل گزارش",
+    f"Data • Process • Decision  |  تاریخ مرجع {date_label(ref_date)} · {len(fdf):,} پرونده · {len(ALL_COLUMNS):,} فیلد قابل گزارش",
     [["توقف خط", str(band_count("STOCKOUT")), STATUS["stockout"]],
      ["بحرانی", str(band_count("CRITICAL")), STATUS["critical"]],
      ["بارنامه بحرانی", str(uniq_where("BL_CRITICAL", "CANONICAL_BL")), STATUS["serious"]],
