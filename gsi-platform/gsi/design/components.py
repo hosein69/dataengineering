@@ -221,10 +221,20 @@ def legend(items: Iterable) -> str:
 
 def app_bar(title: str, *, eyebrow: str = "", subtitle: str = "",
             stats: Sequence = (), actions: str = "") -> str:
-    """سربرگ گزارش — هویت، زمینه، و سنجه‌های سرصفحه."""
-    pills = "".join(
-        f'<div class="stat-pill"><b>{esc(v)}</b><span>{esc(k)}</span></div>'
-        for k, v in stats)
+    """سربرگ گزارش — هویت، زمینه، و سنجه‌های سرصفحه.
+
+    هر سنجه سرصفحه (``stats``) برچسبش را از خانواده برچسب‌های شناخته‌شده
+    وضعیت (``T.STATUS_BY_LABEL``, مثل «بحرانی»/«توقف خط») می‌گیرد؛ اگر
+    برچسب در آن فهرست باشد، رنگ همان وضعیت — که کنتراستش سنجیده شده — روی
+    برچسب می‌نشیند. این فقط یک lookup روی جدولی است که از قبل در توکن‌ها
+    تعریف شده؛ هیچ مقداری اینجا محاسبه یا تغییر نمی‌کند.
+    """
+    pills = []
+    for k, v in stats:
+        status = T.STATUS_BY_LABEL.get(str(k))
+        tone_attr = f' data-tone="{status.key}"' if status else ""
+        pills.append(f'<div class="stat-pill"{tone_attr}><b>{esc(v)}</b><span>{esc(k)}</span></div>')
+    pills = "".join(pills)
     eb = (f'<div class="brandmark t-overline eyebrow"><i aria-hidden="true"></i>'
           f'{esc(eyebrow)}</div>') if eyebrow else ""
     sub = f'<div class="sub t-small">{esc(subtitle)}</div>' if subtitle else ""

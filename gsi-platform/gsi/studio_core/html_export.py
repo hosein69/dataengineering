@@ -868,15 +868,26 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
     # ── بخش «فهرست محتوای این خروجی» ──
     # این بخش چاپ می‌شود و پشت تب پنهان نیست: تصمیم‌گیرنده باید بدون باز کردن
     # کد منبع بداند این فایل چه چیزی دارد و چه چیزی ندارد.
+    #
+    # دو ردیف اول واقعاً یک «X از Y» هستند؛ نوار زیرشان فقط تصویر همان دو
+    # عددی است که در متن هم هست — نه سنجه‌ی تازه. بقیه ردیف‌ها نسبت نیستند
+    # و نوار نمی‌گیرند.
+    def _ratio_pct(part: int, whole: int) -> float:
+        return round(100.0 * part / whole, 1) if whole else 0.0
+
     _cov_rows = [
-        ("ردیف در این خروجی", f"{len(data):,} از {len(df):,}"),
-        ("ستون در این خروجی", f"{len(_payload_columns):,} از {len(_source_columns):,}"),
-        ("نمای تأمین متریال", f"{len(material_view):,} ردیف"),
-        ("تاریخ مرجع", _date_label(ref_date)),
+        ("ردیف در این خروجی", f"{len(data):,} از {len(df):,}", _ratio_pct(len(data), len(df))),
+        ("ستون در این خروجی", f"{len(_payload_columns):,} از {len(_source_columns):,}",
+         _ratio_pct(len(_payload_columns), len(_source_columns))),
+        ("نمای تأمین متریال", f"{len(material_view):,} ردیف", None),
+        ("تاریخ مرجع", _date_label(ref_date), None),
     ]
     _cov_cells = "".join(
-        f'<div class="kpi"><div class="l">{html.escape(k)}</div><b>{html.escape(v)}</b></div>'
-        for k, v in _cov_rows)
+        f'<div class="kpi"><div class="l">{html.escape(k)}</div><b>{html.escape(v)}</b>'
+        + (f'<div class="gsi-meter" role="img" aria-label="{pct:.1f} درصد">'
+           f'<span style="width:{max(2.0, pct):.1f}%"></span></div>' if pct is not None else '')
+        + '</div>'
+        for k, v, pct in _cov_rows)
     _trunc_html = ""
     if coverage_truncations:
         _items = "".join(
@@ -1063,6 +1074,21 @@ function exportPdf(){window.print()}
 /* اندازه صفحه از پروفایل مخاطب می‌آید: مدیر ارشد ۱۰ ردیف
    می‌بیند و کارشناس ۲۰۰ — همان جدول، دو نیاز متفاوت. */
 function pageSize(){return audCfg().table_rows||100}
+/* یک سلول هشدار («⚠ … ؛ …») به‌جای یک خط فشرده‌ی طولانی، چند برچسب کوتاه
+   و قابل‌اسکن می‌شود. ورودی از قبل توسط esc2 امن شده؛ اینجا فقط همان متن
+   امن روی «؛» — جداکننده‌ی موجودِ همین ستون‌ها، نه چیز تازه — تکه‌تکه و
+   در نشانه‌گذاری ثابت خودمان چیده می‌شود. هیچ متنی حذف یا عوض نمی‌شود.
+   فقط وقتی به برچسب تبدیل می‌شود که بندها واقعاً کوتاه‌اند (۲ تا ۴ بند،
+   هرکدام حداکثر ~۵۵ نویسه)؛ وگرنه — مثل ستون‌های تشخیصی مفصل — همان متن
+   ساده و پیچیده‌شونده می‌ماند، چون تبدیل چند جمله‌ی بلند به برچسب فقط
+   سطر را عمودی و بلند می‌کند، نه خواناتر. */
+function warnChips(safe){
+ if(!safe||safe.indexOf('؛')<0)return safe;
+ const parts=safe.split('؛').map(x=>x.trim()).filter(Boolean);
+ if(parts.length<2||parts.length>4)return safe;
+ if(parts.some(p=>p.length>55))return safe;
+ return '<span class="warn-clauses">'+parts.map(p=>'<span>'+p+'</span>').join('')+'</span>';
+}
 const q=document.getElementById('q');
 function S(r,c){
  if(Array.isArray(r)){const i=COL_INDEX[c];return String(i===undefined?'':(r[i]??''))}
@@ -1509,7 +1535,7 @@ function render(i){
  if(cnt)cnt.textContent=a.length.toLocaleString('fa-IR')+' ردیف · صفحه '
   +(PAGE[i]+1).toLocaleString('fa-IR')+' از '+pages.toLocaleString('fa-IR')+(a.length>visible.length?' · جدول فقط '+visible.length.toLocaleString('fa-IR')+' ردیف را نشان می‌دهد؛ دکمه Excel همین تب، همه '+a.length.toLocaleString('fa-IR')+' ردیف فیلترشده را با ستون‌های همین تب می‌دهد':'');
  const tb=document.getElementById('tb_'+i);
- if(tb)tb.innerHTML=view.map(r=>'<tr>'+t.fields.map(c=>'<td>'+esc2(S(r,c))+'</td>').join('')+'</tr>').join('');
+ if(tb)tb.innerHTML=view.map(r=>'<tr>'+t.fields.map(c=>'<td>'+warnChips(esc2(S(r,c)))+'</td>').join('')+'</tr>').join('');
  const mobile=document.getElementById('mc_'+i);
  if(mobile)mobile.innerHTML=view.map(r=>'<article class="material-card"><strong>'+esc2(S(r,'متریال'))+'</strong>'
   +'<p>'+esc2(S(r,'شرح متریال'))+'</p><p>موقعیت: '+esc2(S(r,'موقعیت فعلی'))+'</p><dl>'

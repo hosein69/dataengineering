@@ -1,3 +1,65 @@
+# GSI 29.14.0 — HTML report visual redesign: presentation only, zero algorithm changes — 2026-09-26
+
+Scope, stated once because it governs every line in this release: only three
+presentation files changed — `gsi/design/css.py`, `gsi/design/components.py`,
+and the template/CSS/client-side-rendering parts of
+`gsi/studio_core/html_export.py`. No file in `gsi/trust/`, `gsi/engines/`,
+`gsi/stages/`, or `gsi/report/` (the actual computation) was touched. Every
+number, verdict, warning and grade in the exported HTML is byte-identical to
+29.13.0; only how it is drawn changed. 1426 tests pass — the same count as
+before, which is itself the proof nothing computational moved.
+
+The brief: the offline HTML report read like accounting software — a dense
+navy-headed table under a plain-text hero, small multi-clause warning text
+packed onto single lines, KPI numbers with no visual weight. Designed a
+reference in Figma first (sticky-note journey cards, dashed hand-drawn
+connectors, rotated stamp badges, pill-bar meters, GSI's own audited brand
+colors) to lock the direction before touching code, then ported it as inline
+CSS/SVG — the report stays fully self-contained and offline; nothing in it
+references Figma or any network asset.
+
+**Journey breadcrumb** (`.flow-step`): the supply-chain stage chain at the top
+of every report now reads as a path pinned to a board — each step tilted a
+couple of degrees, rounded, connected by a dashed teal arrow instead of a bare
+`←`. The current stage (when supplied) gets a 📍 pin and lifts off the row.
+
+**KPI stickers** (`.stat-pill`): header counters ("۱ بحرانی", "۱ توقف خط")
+now carry the colour of their own status when the label matches a known one —
+`app_bar()` looks the label up in `T.STATUS_BY_LABEL`, the same audited
+ink/wash pair used everywhere else in the report, so a "بحرانی" counter reads
+red before anyone reads the number. Pure lookup on data already in the design
+tokens; nothing computed.
+
+**Panels**: `.process-viz` cards get a teal edge accent, matching the app
+bar's own existing treatment, so every panel reads as part of one system
+rather than a bare bordered box.
+
+**Table**: cells switch from forced single-line (`white-space:nowrap`, which
+made any long warning sentence force the whole table into horizontal scroll)
+to wrapped text with sane width — every cell's full content is now visible by
+scrolling down, the natural direction, instead of sideways. A warning cell
+whose text already uses "؛" as a clause separator (the convention
+`gsi/report/supply_views.py` already writes) renders as a handful of short
+chips instead of one dense sentence — but only when the clauses are actually
+short (≤4 clauses, ≤55 chars each); longer diagnostic text falls back to
+plain wrapped prose, because turning three long sentences into stacked pills
+made rows taller, not more readable — verified by generating the real report,
+screenshotting it, finding that regression, and narrowing the rule until it
+was gone. The chip logic runs client-side on the same escaped string the page
+already renders (`esc2(S(r,c))`); it does not touch what value is read or how
+it is escaped.
+
+**Coverage meters**: the "row in this file: 6 of 6" / "column in this file:
+35 of 595" cards on every export get a small pill-bar under the existing text
+— literally the same two numbers already on screen, restated as a width
+percentage, nothing new computed.
+
+Verified: regenerated a real HTML report from the published snapshot before
+and after, screenshotted both, fixed one real regression (see chip length
+cap above) found by looking at the actual rendered output rather than trusting
+the diff. 1426 tests pass, in the working tree and from a clean extraction of
+the shipped ZIP.
+
 # GSI 29.13.0 — interim barat basis, declared and capped — 2026-09-26
 
 Two owner decisions, both implemented, neither implemented silently.

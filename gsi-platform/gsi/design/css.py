@@ -234,10 +234,22 @@ h1,h2,h3,h4{{margin:0}} p{{margin:0}}
 .brandmark i{{width:10px;height:10px;border-radius:3px;display:inline-block;
   background:var(--gold);box-shadow:0 0 0 3px rgba(199,154,74,.22)}}
 .stat-pill{{display:flex;flex-direction:column;align-items:center;
-  background:#fff;border:1px solid var(--border);
-  border-radius:var(--r-md);padding:{T.SPACE['xs']}px {T.SPACE['md']}px;min-width:96px}}
-.stat-pill b{{font-size:20px;font-weight:800;line-height:1.25}}
+  background:#fff;border:2px solid var(--border-strong);color:var(--text);
+  border-radius:var(--r-lg);padding:{T.SPACE['xs']}px {T.SPACE['md']}px;min-width:96px;
+  box-shadow:var(--e-raised);transform:rotate(-2deg)}}
+.stat-pill:nth-of-type(2n){{transform:rotate(2deg)}}
+.stat-pill b{{font-size:22px;font-weight:800;line-height:1.25}}
 .stat-pill span{{font-size:11px;opacity:.88}}
+/* برچسبی که به یک وضعیت شناخته‌شده می‌خورد (بحرانی/توقف‌خط/ایمن…) رنگ همان
+   وضعیت را می‌گیرد — همان جفت ink/wash کنتراست‌سنجی‌شده در tokens.py، نه
+   رنگ تازه. این یک استیکر واقعی روی گزارش است: چشم قبل از خواندن، می‌فهمد. */
+.stat-pill[data-tone]{{border-color:var(--st-tone-ink,var(--border-strong));
+  background:var(--st-tone-wash,#fff);color:var(--st-tone-ink,var(--text))}}
+.stat-pill[data-tone="stockout"]{{--st-tone-ink:var(--st-stockout-ink);--st-tone-wash:var(--st-stockout-wash)}}
+.stat-pill[data-tone="critical"]{{--st-tone-ink:var(--st-critical-ink);--st-tone-wash:var(--st-critical-wash)}}
+.stat-pill[data-tone="serious"]{{--st-tone-ink:var(--st-serious-ink);--st-tone-wash:var(--st-serious-wash)}}
+.stat-pill[data-tone="warning"]{{--st-tone-ink:var(--st-warning-ink);--st-tone-wash:var(--st-warning-wash)}}
+.stat-pill[data-tone="good"]{{--st-tone-ink:var(--st-good-ink);--st-tone-wash:var(--st-good-wash)}}
 
 /* ── Surfaces ── */
 .panel{{background:var(--raised);border:1px solid var(--border);
@@ -310,16 +322,28 @@ input,select{{width:100%;margin-top:5px;padding:8px 10px;border:1px solid var(--
   padding:var(--sp-md)}}
 .story-rule{{height:1px;background:linear-gradient(90deg,transparent,var(--paper-rule) 15%,var(--paper-rule) 85%,transparent)}}
 
-/* ── Table ── */
-.tablewrap{{border:1px solid var(--border);border-radius:var(--r-md);overflow:auto;
+/* ── Table — سند مدیریتی می‌ماند، ولی دیگر یک ستون طولانی از متن فشرده
+   نیست: سطر بلندتر، فاصله بیشتر، و متن هشدار به‌جای یک خط بی‌پایان با
+   اسکرول افقی، روی چند خط خوانا می‌شکند. هیچ داده‌ای عوض نشده، فقط جا. ── */
+.tablewrap{{border:1px solid var(--border);border-radius:var(--r-lg);overflow:auto;
   max-height:640px}}
 table{{width:100%;border-collapse:collapse;font-size:12.5px}}
 th{{position:sticky;top:0;z-index:1;background:var(--navy);color:var(--on-dark);
-  padding:10px;text-align:right;white-space:nowrap;font-weight:700}}
-td{{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text-2);
-  white-space:nowrap;font-variant-numeric:tabular-nums}}
-tbody tr:nth-child(even) td{{background:#fbfcfd}}
+  padding:12px 10px;text-align:right;white-space:nowrap;font-weight:700}}
+td{{padding:11px 10px;border-bottom:1px solid var(--border);color:var(--text-2);
+  white-space:normal;overflow-wrap:break-word;max-width:340px;line-height:1.7;
+  font-variant-numeric:tabular-nums}}
+td.num,td[data-nowrap]{{white-space:nowrap;max-width:none}}
+tbody tr:nth-child(even) td{{background:var(--paper-soft)}}
 tbody tr:hover td{{background:var(--teal-wash);color:var(--text)}}
+/* هر جمله‌ای که با «؛» به چند بند تقسیم شده — قرارداد موجود ستون‌های
+   هشدار — به‌جای یک خط پیوسته، چند برچسب کوتاه و قابل اسکن می‌شود.
+   فقط نحوه‌ی نمایش عوض می‌شود؛ متن و علتش دست‌نخورده از همان ستون می‌آید. */
+.warn-clauses{{display:flex;flex-wrap:wrap;gap:4px;max-height:62px;overflow-y:auto;
+  align-content:flex-start}}
+.warn-clauses>span{{display:inline-block;background:var(--st-warning-wash);
+  color:var(--st-warning-ink);border:1px solid var(--st-warning-ink);border-radius:var(--r-pill);
+  padding:2px 9px;font-size:11px;line-height:1.6;white-space:normal}}
 .num{{text-align:left;direction:ltr}}
 
 /* Task-first material cards: Figma mobile 6:54, existing design tokens. */
@@ -427,12 +451,22 @@ svg text{{direction:ltr;unicode-bidi:plaintext}}
   padding-top:6px}}
 .finding .sow span{{color:var(--tone-ink,var(--teal-ink));font-weight:800}}
 
-/* ── Process ribbon (UX flow) ── */
-.flow{{display:flex;gap:6px;align-items:center;flex-wrap:wrap}}
-.flow-step{{background:var(--raised);border:1px solid var(--border);color:var(--teal-ink);
-  padding:5px {T.SPACE['sm']}px;border-radius:var(--r-pill);font-size:11.5px;font-weight:700}}
-.flow-step[aria-current="step"]{{background:var(--navy);color:var(--on-dark);border-color:var(--navy)}}
-.flow-arrow{{color:var(--text-3)}}
+/* ── Process ribbon (UX flow) — سفر پرونده، به‌شکل مسیر روی تخته یادداشت،
+   نه یک breadcrumb اداری. هر قدم کمی می‌چرخد (دست‌ساز)؛ قدم جاری با پین
+   مشخص می‌شود تا «الان کجای زنجیره‌ایم» یک نگاه باشد، نه خواندن. ── */
+.flow{{display:flex;gap:2px;align-items:center;flex-wrap:wrap;padding:6px 2px}}
+.flow-step{{position:relative;background:var(--raised);border:1.5px solid var(--border-strong);
+  color:var(--teal-ink);padding:7px {T.SPACE['md']}px;border-radius:var(--r-lg);
+  font-size:12px;font-weight:800;box-shadow:var(--e-raised);
+  transition:transform var(--dur-fast,.15s) ease}}
+.flow-step:nth-of-type(4n+1){{transform:rotate(-1.4deg)}}
+.flow-step:nth-of-type(4n+2){{transform:rotate(1.1deg)}}
+.flow-step:nth-of-type(4n+3){{transform:rotate(-.8deg)}}
+.flow-step:nth-of-type(4n+4){{transform:rotate(1.4deg)}}
+.flow-step[aria-current="step"]{{background:var(--navy);color:var(--on-dark);border-color:var(--navy);
+  box-shadow:var(--e-lifted);transform:rotate(0deg) scale(1.05);z-index:1}}
+.flow-step[aria-current="step"]::before{{content:"📍";position:absolute;top:-13px;right:-4px;font-size:13px}}
+.flow-arrow{{color:var(--teal);font-size:15px;font-weight:800;padding:0 1px}}
 .note{{font-size:11.5px;color:var(--text-3)}}
 .pager{{display:flex;justify-content:center;align-items:center;gap:{T.SPACE['sm']}px;
   padding:{T.SPACE['sm']}px;font-size:12px;color:var(--text-2)}}
@@ -444,8 +478,16 @@ svg text{{direction:ltr;unicode-bidi:plaintext}}
 
 /* ── Process Mining — Figma process-first vocabulary ── */
 .process-suite{{display:grid;gap:var(--sp-lg)}}
-.process-viz{{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);
-  padding:var(--sp-lg);box-shadow:var(--e-raised);overflow:hidden}}
+.process-viz{{position:relative;background:var(--raised);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:var(--sp-lg);box-shadow:var(--e-raised);overflow:hidden}}
+.process-viz::before{{content:"";position:absolute;right:0;top:0;width:5px;height:100%;
+  background:var(--teal)}}
+/* نوار ساده‌ی اندازه‌گیری برای عددی که همین‌جا «X از Y» هم نمایش داده
+   می‌شود — تصویر همان دو عدد، نه سنجه‌ی تازه. */
+.gsi-meter{{height:14px;background:var(--sunken);border-radius:var(--r-pill);overflow:hidden;
+  margin-top:6px;border:1px solid var(--border)}}
+.gsi-meter>span{{display:block;height:100%;border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--teal),#37a9af)}}
 .process-viz .pv-head{{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-md);
   margin-bottom:var(--sp-md)}}
 .process-viz h3{{font-size:16px;font-weight:800;color:var(--text)}}
