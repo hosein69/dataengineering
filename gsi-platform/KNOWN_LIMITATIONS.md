@@ -1,4 +1,19 @@
-# Current release: GSI 29.14.0 — 2026-09-26
+# Current release: GSI 29.15.0 — 2026-09-26
+
+**Added in this release:** anomaly inquiry and human-approved healing (`gsi/trust/anomaly.py`,
+`gsi/trust/inquiry.py`, stages 21 and 96). Limits worth knowing before relying on it:
+- History-based detectors (volume drop, "too good", new category) need at least three earlier runs
+  that were produced by 29.15.0 or later; before that only within-run checks (numeric outliers,
+  spelling variants) can fire. Earlier snapshots carry no `observations` and are ignored, not guessed.
+- Numeric outliers need at least 8 peers per group (currency); small groups are not judged.
+- Repairs exist only for input columns present by stage 21 (INVOICE_VALUE, DAILY_NEED, STOCK_IKCO,
+  STOCK_SAPCO and six category fields). Computed outputs such as «مانده تعهد» are asked about but
+  never repaired; the question is routed to their inputs.
+- An unexplained outlier does **not** yet change a decision's grade. Whether it should cap additive
+  decisions at «جهت‌نما» is an open business decision, not a technical one.
+- Answers are stored in the local warehouse (`wh_audit`). A warehouse reset without backup loses them.
+
+# Previous release: GSI 29.14.0 — 2026-09-26
 
 **Closed in this release** (details: `GSI_REVIEW_REPORT_V29_9_0_FA.md`): numeric-parsing magnitude errors,
 Jalali invalid-date rollover and leap-year formula, invisible characters in join keys, currency

@@ -11,14 +11,20 @@
 """
 from __future__ import annotations
 
+import html
 import io
+import json
+import os
+from datetime import date
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import streamlit as st
 
 from gsi.design import tokens as T
+from gsi.trust import inquiry as inq
 from gsi.trust import trend as trend_mod
+from gsi.trust.anomaly import STRENGTH_FA, Anomaly
 from gsi.trust.fitness import GRADE_FA, GRADE_LICENCE_FA, GRADE_TONE, NOT_USABLE
 from gsi.trust.impact import NO_ORG_UNIT
 
@@ -76,6 +82,23 @@ def _css() -> str:
 .tr-action{{background:{T.TEAL_WASH};border:1px solid {T.BORDER};border-right:3px solid {T.BRAND_TEAL};
  border-radius:10px;padding:10px 12px;font-size:12.5px;color:{T.TEXT};line-height:1.9;margin-bottom:8px}}
 .tr-note{{font-size:11.5px;color:{T.TEXT_MUTED};line-height:1.9;margin-top:4px}}
+.tr-ask{{background:{T.SURFACE_PAPER_SOFT};border:1px solid {T.PAPER_RULE};border-radius:14px;
+ padding:14px 16px;margin-bottom:12px;line-height:2;font-size:13px;color:{T.TEXT}}}
+.tr-ask b{{color:{T.TEAL_INK}}}
+.tr-odd{{font-size:14px;font-weight:700;color:{T.TEXT};line-height:1.9;margin-bottom:6px}}
+.tr-vs{{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}}
+.tr-vs span{{background:{T.SURFACE_SUNKEN};border-radius:8px;padding:3px 10px;font-size:12px;
+ color:{T.TEXT_SECONDARY}}}
+.tr-hyp{{border-right:3px solid {T.BORDER_STRONG};padding:6px 10px;margin:6px 0;
+ background:{T.SURFACE_RAISED};border-radius:6px}}
+.tr-hyp h5{{margin:0 0 2px;font-size:13px;color:{T.TEXT}}}
+.tr-hyp p{{margin:0;font-size:12px;color:{T.TEXT_SECONDARY};line-height:1.9}}
+.tr-str{{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;margin-inline-start:6px}}
+.tr-str.strong{{color:{T.TEAL_INK};background:{T.TEAL_WASH}}}
+.tr-str.medium{{color:{T.GOLD_INK};background:{T.GOLD_WASH}}}
+.tr-str.weak{{color:{T.TEXT_MUTED};background:{T.SURFACE_SUNKEN}}}
+.tr-fix{{background:{T.TEAL_WASH};border:1px dashed {T.BRAND_TEAL};border-radius:10px;
+ padding:8px 12px;font-size:12.5px;color:{T.TEXT};line-height:1.9;margin:8px 0}}
 </style>"""
 
 
@@ -114,23 +137,28 @@ def render(extras: Optional[Dict[str, Any]] = None, ref_date: str = "") -> None:
     summary = extras.get("trust_summary") or {}
     history = trend_mod.load_snapshots()
 
+    anomaly_line = extras.get("anomaly_headline", "")
     st.markdown(
         f'<div class="tr-hero"><h2>اعتماد داده — این اعداد چقدر قابل استنادند؟</h2>'
-        f'<p>{headline}<br>{trend_mod.headline_fa(history)}</p></div>',
+        f'<p>{headline}<br>{trend_mod.headline_fa(history)}'
+        + (f'<br>🕵️ {html.escape(anomaly_line)}' if anomaly_line else "")
+        + '</p></div>',
         unsafe_allow_html=True)
 
-    tabs = st.tabs(["تصمیم‌ها", "حالا چه کار کنم؟", "کارنامه مالکان",
-                    "آینه فیلدها", "روند بهبود"])
+    tabs = st.tabs(["تصمیم‌ها", "حالا چه کار کنم؟", "ناهنجاری‌ها — اول بپرس",
+                    "کارنامه مالکان", "آینه فیلدها", "روند بهبود"])
 
     with tabs[0]:
         _decisions(decisions)
     with tabs[1]:
         _next_fixes(extras.get("trust_next_fixes"))
     with tabs[2]:
-        _owners(extras, extras.get("trust_defects"))
+        _inquiries(extras)
     with tabs[3]:
-        _fields(extras.get("trust_fields"), summary)
+        _owners(extras, extras.get("trust_defects"))
     with tabs[4]:
+        _fields(extras.get("trust_fields"), summary)
+    with tabs[5]:
         _trend(history)
 
     defects = extras.get("trust_defects")
@@ -143,6 +171,8 @@ def render(extras: Optional[Dict[str, Any]] = None, ref_date: str = "") -> None:
                 "مالکان": extras.get("trust_owners", pd.DataFrame()),
                 "دفتر ایرادها": defects,
                 "آینه فیلدها": extras.get("trust_fields", pd.DataFrame()),
+                "ناهنجاری‌ها": _public(extras.get("anomaly_inquiries")),
+                "ترمیم‌های اعمال‌شده": extras.get("heal_applied", pd.DataFrame()),
             }),
             file_name=f"GSI_Data_Trust_{ref_date or 'run'}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -201,7 +231,190 @@ def _next_fixes(fixes: Optional[pd.DataFrame]) -> None:
                          column_config=_cfg(blocked))
 
 
-# ── تب ۳: کارنامه مالکان ───────────────────────────────────────────────────
+# ── تب ۳: ناهنجاری‌ها — اول بپرس، بعد ترمیم کن ───────────────────────────────
+#: Colour of each answer state, from the audited status palette.
+_STATUS_TONE = {
+    inq.OVERDUE: "critical", inq.OPEN: "warning", inq.UNKNOWN: "neutral",
+    inq.REPAIR_APPROVED: "good", inq.EXPLAINED: "good", inq.REPAIR_REJECTED: "neutral",
+}
+#: What the one sentence should say, per kind of anomaly.
+_NOTE_HINT = {
+    "VALUE_OUTLIER": "مثلاً: «سفارش یک‌باره خط جدید است، واقعی است» یا «در سورس به ریال وارد شده»",
+    "CATEGORY_VARIANT": "مثلاً: «همان گمرک است، دو نفر دو جور نوشته‌اند»",
+    "NEW_CATEGORY": "مثلاً: «از این ماه با تأمین‌کننده جدید از این مرز کار می‌کنیم»",
+    "VOLUME_DROP": "مثلاً: «فایل BLs این هفته نیمه‌کاره کپی شد» یا «تعطیلات بود»",
+    "TOO_GOOD": "مثلاً: «کارزار تکمیل داده با آقای/خانم … انجام شد»",
+}
+#: Pending anomalies shown as full cards; the rest stay in the table.
+_MAX_CARDS = 25
+
+
+def _public(frame: Optional[pd.DataFrame]) -> pd.DataFrame:
+    """The inquiry table without its machine columns."""
+    if not isinstance(frame, pd.DataFrame):
+        return pd.DataFrame()
+    return frame.drop(columns=[c for c in frame.columns if str(c).startswith("_")])
+
+
+def _default_actor() -> str:
+    return (st.session_state.get("inq_actor")
+            or os.environ.get("USERNAME") or os.environ.get("USER") or "")
+
+
+def _inquiries(extras: Dict[str, Any]) -> None:
+    st.markdown(
+        '<div class="tr-ask">داده پرت <b>خبرچین مجانی</b> است: یعنی داده جایی رفتاری کرده که '
+        'تصویر ما از کسب‌وکار پیش‌بینی نمی‌کرد. اینجا هیچ چیزی حذف یا بی‌صدا صاف نمی‌شود. '
+        'سامانه برای هر مورد می‌گوید <b>چه چیزی عجیب است</b>، توضیح‌های محتمل را <b>با شاهد از خود '
+        'داده</b> می‌سنجد و اگر اصلاحی پیشنهاد دارد، <b>فقط با تأیید شما</b> و از اجرای بعد اعمالش '
+        'می‌کند. «نمی‌دانیم» جواب قابل قبولی است، ولی فقط تا یک تاریخ مشخص.</div>',
+        unsafe_allow_html=True)
+
+    frame = extras.get("anomaly_inquiries")
+    register = inq.InquiryRegister.load()
+    today = date.today()
+    if isinstance(frame, pd.DataFrame) and not frame.empty:
+        # Answers given since the run are live: the page reads the register,
+        # not the state frozen at run time.
+        frame = frame.copy()
+        frame["_status"] = frame["شناسه"].map(lambda i: register.status(str(i), today))
+        frame["وضعیت"] = frame["_status"].map(lambda s: inq.STATUS_FA.get(s, s))
+        counts = frame["_status"].value_counts()
+        cols = st.columns(4)
+        cols[0].metric("منتظر پاسخ شما", int(counts.get(inq.OPEN, 0) + counts.get(inq.OVERDUE, 0)))
+        cols[1].metric("مهلت «نمی‌دانیم» گذشته", int(counts.get(inq.OVERDUE, 0)))
+        cols[2].metric("توضیح داده‌شده", int(counts.get(inq.EXPLAINED, 0)
+                                              + counts.get(inq.REPAIR_REJECTED, 0)))
+        cols[3].metric("ترمیم تأییدشده", int(counts.get(inq.REPAIR_APPROVED, 0)))
+
+        pending = frame[frame["_status"].isin(inq.NEEDS_ANSWER)]
+        if pending.empty:
+            st.success("همه ناهنجاری‌های این اجرا پاسخ گرفته‌اند. ممنون — این جمله‌ها دانش سازمان‌اند.")
+        for row in pending.head(_MAX_CARDS).to_dict("records"):
+            _inquiry_card(row, register)
+        if len(pending) > _MAX_CARDS:
+            st.caption(f"{len(pending) - _MAX_CARDS} مورد دیگر در جدول زیر است؛ "
+                       "پس از پاسخ به این‌ها بالا می‌آیند.")
+        with st.expander(f"همه ناهنجاری‌های این اجرا ({len(frame)})"):
+            table = _public(frame)
+            st.dataframe(table, hide_index=True, width="stretch", column_config=_cfg(table))
+    else:
+        st.info("در این اجرا ناهنجاری‌ای دیده نشد — یا این اجرا پیش از نسخه 29.15 ساخته شده است. "
+                "با هر اجرای تازه، مقایسه با اجراهای قبل دقیق‌تر می‌شود.")
+
+    _active_repairs(extras, register)
+    history = register.history_frame()
+    if not history.empty:
+        with st.expander(f"تاریخچه پاسخ‌ها ({len(history)}) — هیچ پاسخی پاک نمی‌شود"):
+            st.dataframe(history, hide_index=True, width="stretch", column_config=_cfg(history))
+
+
+def _inquiry_card(row: Dict[str, Any], register) -> None:
+    try:
+        anomaly = Anomaly.from_dict(json.loads(row.get("_payload") or "{}"))
+    except (TypeError, ValueError):
+        return
+    status = row.get("_status", inq.OPEN)
+    tone = T.STATUS[_STATUS_TONE.get(status, "unknown")]
+    esc = html.escape
+    title = f"{inq.STATUS_FA.get(status, status)} · {anomaly.kind_fa} — {anomaly.headline_fa}"
+    with st.expander(title, expanded=status == inq.OVERDUE):
+        parts = [f'<div class="tr-odd" style="border-right:4px solid {tone.ink};'
+                 f'padding-right:10px">{esc(anomaly.headline_fa)}</div><div class="tr-vs">']
+        if anomaly.observed_fa:
+            parts.append(f"<span>مقدار: {esc(anomaly.observed_fa)}</span>")
+        if anomaly.expected_fa:
+            parts.append(f"<span>معمول: {esc(anomaly.expected_fa)}</span>")
+        who = " · ".join(x for x in (anomaly.owner_name, inq.role_fa(anomaly.owner_role),
+                                     anomaly.owner_dept) if x)
+        if who:
+            parts.append(f"<span>چه کسی می‌تواند جواب دهد: {esc(who)}</span>")
+        if anomaly.locator_fa:
+            parts.append(f"<span>محل: {esc(anomaly.locator_fa)}</span>")
+        parts.append("</div><div class='tr-note'>توضیح‌های محتمل، به ترتیب قوت شاهد:</div>")
+        for h in anomaly.hypotheses:
+            parts.append(
+                f'<div class="tr-hyp"><h5>{esc(h.title_fa)}<span class="tr-str {esc(h.strength)}">'
+                f'{STRENGTH_FA.get(h.strength, h.strength)}</span></h5><p>{esc(h.evidence_fa)}</p></div>')
+        repair = anomaly.repair
+        if repair:
+            parts.append(f'<div class="tr-fix">🔧 اگر تأیید کنید: <b>{esc(inq.repair_fa(repair))}</b><br>'
+                         'از اجرای بعد اعمال می‌شود، قبل از همه محاسبات. مقدار اصلی روی همان ردیف '
+                         '(ستون «ترمیم تأییدشده») می‌ماند و هر وقت بخواهید قابل پس‌گرفتن است.</div>')
+        last = register.latest(anomaly.id)
+        if last is not None and status == inq.OVERDUE:
+            parts.append(f'<div class="tr-note">پاسخ قبلی: «{esc(last.note)}» — {esc(last.actor)}، '
+                         f'تا {esc(last.until)}. مهلت گذشته؛ حالا چه می‌دانیم؟</div>')
+        st.markdown("".join(parts), unsafe_allow_html=True)
+        _answer_form(anomaly, repair)
+
+
+def _answer_form(anomaly: Anomaly, repair: Optional[Dict[str, Any]]) -> None:
+    actions = [inq.EXPLAIN, inq.DONT_KNOW]
+    if repair:
+        actions = [inq.APPROVE, inq.REJECT] + actions
+    with st.form(f"inq_form_{anomaly.id}", clear_on_submit=False):
+        action = st.radio("پاسخ شما", actions, format_func=lambda a: inq.ACTION_FA[a],
+                          key=f"inq_act_{anomaly.id}")
+        note = st.text_area("در یک جمله: چرا؟ (الزامی)", key=f"inq_note_{anomaly.id}",
+                            placeholder=_NOTE_HINT.get(anomaly.kind, ""), height=80)
+        c1, c2 = st.columns(2)
+        days = c1.number_input("اگر «نمی‌دانم»: تا چند روز دیگر؟", min_value=1,
+                               max_value=inq.UNKNOWN_MAX_DAYS, value=inq.UNKNOWN_DEFAULT_DAYS,
+                               key=f"inq_days_{anomaly.id}")
+        actor = c2.text_input("نام شما", value=_default_actor(), key=f"inq_actor_{anomaly.id}")
+        standing = False
+        if repair and repair.get("kind") == "ALIAS":
+            standing = st.checkbox("از این به بعد هر جا همین املا آمد، خودکار یکسان شود",
+                                   key=f"inq_standing_{anomaly.id}")
+        if st.form_submit_button("ثبت پاسخ", type="primary"):
+            try:
+                decision = inq.make_decision(anomaly, action, note, actor, days=int(days),
+                                             standing=standing and action == inq.APPROVE)
+            except inq.InquiryError as ex:
+                st.error(str(ex))
+                return
+            inq.InquiryRegister().record(decision)
+            st.session_state["inq_actor"] = actor
+            done = ("ثبت شد. ترمیم در اجرای بعدی خط لوله اعمال می‌شود."
+                    if action == inq.APPROVE else "ثبت شد. ممنون — این جمله دانش سازمان است.")
+            st.toast(done, icon="✅")
+            st.rerun()
+
+
+def _active_repairs(extras: Dict[str, Any], register) -> None:
+    applied = extras.get("heal_applied")
+    stale = extras.get("heal_stale")
+    approved = register.approved()
+    if isinstance(applied, pd.DataFrame) and not applied.empty:
+        with st.expander(f"🔧 ترمیم‌های اعمال‌شده در این اجرا ({len(applied)})", expanded=False):
+            st.caption("هر ترمیم فقط تا وقتی اعمال می‌شود که سورس همان مقدار تأییدشده را دارد.")
+            st.dataframe(applied, hide_index=True, width="stretch", column_config=_cfg(applied))
+    if isinstance(stale, pd.DataFrame) and not stale.empty:
+        st.warning(f"{len(stale)} ترمیم تأییدشده دیگر با داده جور نیست و اعمال نشد "
+                   "(معمولاً یعنی سورس اصلاح شده است — خبر خوب).")
+        st.dataframe(stale, hide_index=True, width="stretch", column_config=_cfg(stale))
+    if not approved:
+        return
+    with st.expander(f"پس‌گرفتن یک ترمیم ({len(approved)} ترمیم فعال)"):
+        labels = {d.anomaly_id: f"{inq.repair_fa(d.repair)} — {d.actor}" for d in approved}
+        with st.form("inq_revoke"):
+            pick = st.selectbox("کدام ترمیم؟", list(labels), format_func=lambda i: labels[i])
+            note = st.text_area("در یک جمله: چرا پس گرفته می‌شود؟")
+            actor = st.text_input("نام شما", value=_default_actor(), key="inq_revoke_actor")
+            if st.form_submit_button("پس‌گرفتن"):
+                target = next(d for d in approved if d.anomaly_id == pick)
+                try:
+                    decision = inq.make_decision(target.anomaly, inq.REVOKE, note, actor)
+                except inq.InquiryError as ex:
+                    st.error(str(ex))
+                    return
+                inq.InquiryRegister().record(decision)
+                st.toast("پس گرفته شد؛ از اجرای بعد مقدار اصلی سورس استفاده می‌شود.", icon="↩️")
+                st.rerun()
+
+
+# ── تب ۴: کارنامه مالکان ───────────────────────────────────────────────────
 #: Slice label -> (frame key in ``extras``, its own first column). A defect is
 #: closed by a person, but the queue is planned by a manager and reported by a
 #: department, so the same backlog has to be readable at all three levels.
@@ -269,7 +482,7 @@ def _worklist(frame: pd.DataFrame, defects: pd.DataFrame, column: str) -> None:
         key="trust_worklist_dl")
 
 
-# ── تب ۴: آینه فیلدها ──────────────────────────────────────────────────────
+# ── تب ۵: آینه فیلدها ──────────────────────────────────────────────────────
 def _fields(fields: Optional[pd.DataFrame], summary: Dict[str, Any]) -> None:
     if not isinstance(fields, pd.DataFrame) or fields.empty:
         st.info("کارنامه فیلدی موجود نیست.")
@@ -284,7 +497,7 @@ def _fields(fields: Optional[pd.DataFrame], summary: Dict[str, Any]) -> None:
                    "این یک مشکل «قرارداد سورس» است، نه بی‌دقتی کارشناسان.")
 
 
-# ── تب ۵: روند ─────────────────────────────────────────────────────────────
+# ── تب ۶: روند ─────────────────────────────────────────────────────────────
 #: Below this many runs a line has no shape to read, and a flat two-point chart
 #: implies a precision the programme does not have yet.
 _MIN_POINTS_FOR_A_LINE = 4

@@ -84,6 +84,36 @@ def load_snapshots(warehouse=None, *, limit: int = 60) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def load_payloads(warehouse=None, *, limit: int = 12) -> List[Dict[str, Any]]:
+    """The raw stored summaries, oldest first — for detectors that need more
+    than the flattened trend row (per-source volumes, vocabularies, totals).
+
+    Same contract as :func:`load_snapshots`: empty, never an exception, when
+    there is no history yet.
+    """
+    from ..warehouse.store import Warehouse, loads
+
+    wh = warehouse or Warehouse(initialize=False)
+    if not wh.path.exists():
+        return []
+    try:
+        with wh.read_db() as c:
+            rows = c.execute(
+                "SELECT payload FROM wh_audit WHERE kind='trust_snapshot' "
+                "ORDER BY id DESC LIMIT ?", (int(limit),)).fetchall()
+    except Exception:
+        return []
+    out: List[Dict[str, Any]] = []
+    for (payload,) in reversed(rows):
+        try:
+            summary = loads(payload)
+        except Exception:
+            continue
+        if isinstance(summary, dict):
+            out.append(summary)
+    return out
+
+
 @dataclass
 class Delta:
     """Change in one metric between two runs."""
@@ -162,4 +192,5 @@ def trend_frame(history: pd.DataFrame) -> pd.DataFrame:
     })
 
 
-__all__ = ["TRACKED", "Delta", "load_snapshots", "compare", "headline_fa", "trend_frame"]
+__all__ = ["TRACKED", "Delta", "load_snapshots", "load_payloads", "compare",
+           "headline_fa", "trend_frame"]

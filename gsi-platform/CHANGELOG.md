@@ -1,3 +1,68 @@
+# GSI 29.15.0 — Anomalies are asked about, never silently cleaned; healing only with a human's name on it — 2026-09-26
+
+The brief, in the owner's words: before removing an outlier, find out what it is
+trying to tell you. An anomaly is the data behaving in a way our picture of the
+business does not predict; each one says "something in your model of the world
+is missing here". "We don't know" is an acceptable answer — for a short while.
+And the warehouse should help heal itself, **but ask first**.
+
+**Detection** (`gsi/trust/anomaly.py`, stage 96 — reads, never writes). Five
+kinds, all at entity grain like the profiler, so one odd invoice is one
+question, not forty:
+
+* `VALUE_OUTLIER` — robust (median/MAD) z-score on log values within the peer
+  group (same currency), ≥ 8 peers, ≥ 3× from the median. Zero is never an
+  outlier (zero stock stops the line — it is information).
+* `CATEGORY_VARIANT` — two spellings of one thing («بندر عباس»/«بندرعباس»,
+  «بدنه»/«بدنة»), exact after Persian/space/punctuation folding, or a rare value
+  ≥ 88% similar to a common one.
+* `NEW_CATEGORY` — a value never seen in earlier runs; if most of a field's
+  vocabulary is new at once, one `VOCABULARY_SHIFT` question instead of dozens.
+* `VOLUME_DROP` — a source or entity count below 80% of its 6-run median. A drop
+  that recurs, or hits only one source, leads with `CAPTURE_GAP` (the owner's
+  "recurring dip that was really a capture failure").
+* `TOO_GOOD` — a total ×1.6 or a coverage +30 points in one run. Leads with
+  `DOUBLE_COUNT` when rows-per-entity also rose, or `PLACEHOLDER_FILL` when the
+  new cells are mostly one value (the owner's "too good to be true").
+
+Every anomaly carries **hypotheses tested against the data**, ranked by evidence
+strength: a unit/decimal slip (exact 1–6 digit shift that lands the value among
+its peers — strong for 3/6 digits), a wrong currency (fits another group's
+range), a computed number (the cause is upstream), a new segment, a capture gap,
+double counting, or simply "it is real". "It is real" is always offered, and on
+equal evidence it leads — the page never puts a correction first unless the data
+favours it.
+
+**Answers** (`gsi/trust/inquiry.py`). Approve the proposed repair / reject it /
+"it is real, because…" / "we don't know yet — until <date>". Every answer needs
+a name and a sentence (≥ 8 chars; "ok"/"باشه"/"تأیید" are refused). "We don't
+know" is capped at 30 days, then returns at the top marked overdue. Answers are
+append-only rows in `wh_audit` (`kind='anomaly_decision'`); undoing is a new
+`revoke` answer. UI: new tab «ناهنجاری‌ها — اول بپرس» on the data-trust page;
+CLI: `python -m gsi.trust.inquiry list|decide|history`.
+
+**Healing** (stage 21, after derive, before every engine). Approved repairs are
+re-applied on every run: `RESCALE` (one case's value ÷10^k) and `ALIAS` (one
+spelling → the established one; optionally "standing" for future cases —
+spelling only, never numbers). Each healed row carries `HEALED_FIELDS` (old,
+new, who, when). A rescale is bound to the exact approved value: if the source
+changes, the repair lapses (reported as stale) and the new value is asked about
+afresh. Keys are never healed; computed outputs have no repair at all.
+
+**Nothing changes without an answer.** With an empty register the only
+difference in the mart is an empty `HEALED_FIELDS` column; all 1426 pre-existing
+tests stay green (1466 in total). Grades are unchanged: whether an unexplained outlier should
+cap an additive decision at «جهت‌نما» is left to the business owner.
+
+Found by looking at the real render, not the diff: the largest ordinary invoice
+typed in thousands lands at the *edge* of its peers once corrected, and the
+first band (10–90%) missed it. Widened by ×2 each side, locked with a test that
+was shown to fail on the old rule.
+
+40 new tests in `tests/test_anomaly_inquiry_v29_15.py`, including negative tests
+(an approval must not follow the same number to another case; a forged repair
+on a key column must not apply) each confirmed to fail when its guard is removed.
+
 # GSI 29.14.0 — HTML report visual redesign: presentation only, zero algorithm changes — 2026-09-26
 
 Scope, stated once because it governs every line in this release: only three

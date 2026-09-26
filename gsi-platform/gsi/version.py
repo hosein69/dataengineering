@@ -45,6 +45,8 @@ REQUIRED_CONTRACTS: Dict[str, int] = {
     "trust.verdict": 2,     # Owner.manager/vice و حافظه mapping gap
     "trust.impact": 2,      # ORG_LEVELS و سطح‌های کارنامه
     "trust.contracts": 1,
+    "trust.anomaly": 1,     # detect/observe/Anomaly — s96 و دفتر پاسخ به آن تکیه دارند
+    "trust.inquiry": 1,     # apply_repairs/InquiryRegister — s21 و صفحه اعتماد به آن تکیه دارند
 }
 
 #: توضیح فارسی هر قرارداد، برای پیام خطای قابل فهم
@@ -58,6 +60,8 @@ CONTRACT_NOTES: Dict[str, str] = {
     "rulebook.loader": "بارگذار کتابخانه قوانین YAML",
     "engines.criticality": "موتور مقاومت قطعه",
     "stages.base": "قرارداد مرحله‌های خط لوله",
+    "trust.anomaly": "تشخیص ناهنجاری، فرضیه‌ها و پیشنهاد ترمیم",
+    "trust.inquiry": "دفتر پاسخ به ناهنجاری‌ها و اعمال ترمیم‌های تأییدشده",
 }
 
 
