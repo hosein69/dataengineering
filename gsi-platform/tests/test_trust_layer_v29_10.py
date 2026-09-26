@@ -17,6 +17,7 @@ from gsi.trust.fitness import (ADDITIVE, DECISION_GRADE, DIRECTIONAL, DISTRIBUTI
                                NOT_USABLE, DecisionContract, evaluate)
 from gsi.trust.impact import rank_opportunities
 from gsi.trust.profiling import CURRENCY, DATE, KEY, NUMBER, FieldRule, profile_frame
+from gsi.trust.verdict import PLATFORM_OWNER, UNKNOWN_OWNER
 
 REF = date(2026, 8, 31)
 
@@ -209,6 +210,44 @@ def test_a_field_nothing_ever_fills_is_a_mapping_gap_not_a_data_entry_backlog():
     bl_profile = report.profiles[BL]
     field = [f for f in bl_profile.fields if f.column == "BL_DATE"][0]
     assert field.coverage_pct == 0.0
+
+
+def test_a_mapping_gap_never_reappears_in_the_worklist_as_data_entry():
+    """The other half of the safeguard, and the one that actually broke.
+
+    The ledger drops the per-case defects, but every downstream surface rebuilds
+    the worklist from the *field states*, which still say MISSING. Rebuilt
+    naively, the gap comes back as "N cells to type", addressed to nobody — the
+    precise mis-routing the removal exists to prevent, re-created one layer up.
+    """
+    df = _mart()
+    df["BL_DATE"] = None
+    report = assess(df, ref_date=REF)
+    items = [o for o in report.opportunities if o.field == "BL_DATE"]
+    assert len(items) == 1, "one mapping change, not one ticket per case"
+    gap = items[0]
+    assert gap.mapping_gap is True
+    assert gap.code == "FIELD_NEVER_POPULATED"
+    assert gap.owner == PLATFORM_OWNER, "an expert cannot fill a field nobody reads"
+    assert gap.owner != UNKNOWN_OWNER
+    assert gap.cells == 1, "one mapping fix costs one change, not one cell per case"
+    # It is still ranked as work, and still says what it would buy.
+    assert gap.entities_touched >= 3
+    assert "نگاشت" in gap.headline_fa()
+    assert "سلول" not in gap.headline_fa().split("←")[0]
+
+
+def test_field_worklist_uses_the_human_label_not_the_pipeline_column():
+    """An expert should not need to know the mart's column names to act."""
+    df = _mart()
+    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
+    report = assess(df, ref_date=REF)
+    items = [o for o in report.opportunities if o.field == "BL_DATE"]
+    assert items, "a single blank BL date is ordinary data entry and must be routed"
+    assert items[0].field_fa == "تاریخ بارنامه"
+    assert not items[0].mapping_gap
+    row = items[0].row()
+    assert row["فیلد"] == "تاریخ بارنامه" and row["ستون"] == "BL_DATE"
 
 
 # ── invariant 8: the promise made to an owner is arithmetically honest ──────

@@ -112,7 +112,7 @@ st.sidebar.success(f"Build {GSI_RUNTIME_VERSION} · Studio Runtime")
 # نمی‌شود؛ برای پشتیبانی در VERIFY_RUNTIME و doctor موجود است.
 st.sidebar.markdown("<small>▦ Data &nbsp;•&nbsp; ⛓ Process &nbsp;•&nbsp; ◉ Decision</small>", unsafe_allow_html=True)
 
-_surface = st.sidebar.radio("محیط کاری", ["اتاق کنترل و گزارش جامع", "مخاطبان، کلاسترها و منابع", "دیتاورهوس", "دستیار دانش بازرگانی"], key="gsi_surface")
+_surface = st.sidebar.radio("محیط کاری", ["اتاق کنترل و گزارش جامع", "اعتماد داده و کیفیت", "مخاطبان، کلاسترها و منابع", "دیتاورهوس", "دستیار دانش بازرگانی"], key="gsi_surface")
 if _surface == "دیتاورهوس":
     from app.warehouse_view import run as warehouse_run
     warehouse_run()
@@ -158,6 +158,13 @@ try:
 except Exception as ex:
     from app.runtime_errors import render_pipeline_exception
     render_pipeline_exception(st, ex)
+    st.stop()
+
+# صفحه اعتماد داده بعد از بارگذاری Snapshot می‌آید، چون روی فریم‌های
+# `trust_*` همان اجرای منتشرشده کار می‌کند نه روی یک محاسبه تازه.
+if _surface == "اعتماد داده و کیفیت":
+    from app.trust_view import run as trust_run
+    trust_run(extras, ref_date)
     st.stop()
 
 df = main if not main.empty else raw

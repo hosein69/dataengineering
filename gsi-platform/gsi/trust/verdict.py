@@ -40,6 +40,13 @@ _OWNER_DEPT_COLS = ("ORG_DEPT", "ORG_UNIT")
 
 UNKNOWN_OWNER = "نامشخص"
 
+#: Owner of a source-contract defect. A field the pipeline never reads cannot
+#: be fixed by any business expert, so routing it to one is worse than not
+#: routing it at all: the expert opens the source, sees the cell already
+#: filled, and stops believing the rest of the list.
+PLATFORM_OWNER = "تیم داده — نگاشت سورس"
+PLATFORM_ROLE = "مالک قرارداد سورس"
+
 
 def _text(value: Any) -> str:
     """Display text for evidence; never raises, never invents."""
@@ -191,10 +198,12 @@ class DefectLedger:
     meaningful.
     """
 
-    __slots__ = ("_items",)
+    __slots__ = ("_items", "_mapping_gaps")
 
     def __init__(self, items: Optional[Iterable[Defect]] = None) -> None:
         self._items: List[Defect] = list(items or ())
+        #: (entity type, column) pairs proven to be source-contract gaps.
+        self._mapping_gaps: set = set()
 
     def add(self, defect: Defect) -> None:
         self._items.append(defect)
@@ -228,7 +237,24 @@ class DefectLedger:
         before = len(self._items)
         self._items = [d for d in self._items
                        if not (d.entity_type == entity_type and d.field_name == column)]
+        # Remembered, because every other surface rebuilds its view from the
+        # field states rather than from this ledger. Without the memory the
+        # dropped cells reappear downstream as ordinary data entry — the exact
+        # mis-routing this removal exists to prevent.
+        self._mapping_gaps.add((entity_type, column))
         return before - len(self._items)
+
+    def note_mapping_gap(self, entity_type: str, column: str) -> None:
+        """Carry a known gap into a merged ledger without re-running detection."""
+        self._mapping_gaps.add((entity_type, column))
+
+    def mapping_gaps(self, entity_type: str = "") -> set:
+        """Fields known to be unread by the pipeline, not unfilled by people."""
+        return {c for e, c in self._mapping_gaps
+                if not entity_type or e == entity_type}
+
+    def is_mapping_gap(self, entity_type: str, column: str) -> bool:
+        return (entity_type, column) in self._mapping_gaps
 
     def keys_with_defects(self, entity_type: str = "") -> set:
         return {
@@ -265,4 +291,5 @@ class DefectLedger:
         }
 
 
-__all__ = ["Evidence", "Owner", "Defect", "DefectLedger", "LEDGER_COLUMNS", "UNKNOWN_OWNER"]
+__all__ = ["Evidence", "Owner", "Defect", "DefectLedger", "LEDGER_COLUMNS",
+           "UNKNOWN_OWNER", "PLATFORM_OWNER", "PLATFORM_ROLE"]

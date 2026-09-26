@@ -34,7 +34,8 @@ from ..core.jalali import CalendarEngine
 from ..core.numeric_parse import parse_decimal
 from ..core.text import clean_key, normalize_persian_text
 from . import codes as C
-from .verdict import Defect, DefectLedger, Evidence, Owner
+from .verdict import (Defect, DefectLedger, Evidence, Owner,
+                      PLATFORM_OWNER, PLATFORM_ROLE)
 
 # ── field kinds ─────────────────────────────────────────────────────────────
 TEXT = "TEXT"
@@ -342,7 +343,7 @@ def profile_frame(
             ledger.add(Defect(
                 code="FIELD_NEVER_POPULATED", entity_type=entity_type, entity_key="",
                 evidence=Evidence(source=source, column=rule.column),
-                owner=Owner(),
+                owner=Owner(name=PLATFORM_OWNER, role=PLATFORM_ROLE),
                 note=(f"هیچ‌کدام از {prof.entities:,} {entity_type} مقدار ندارند. "
                       "قبل از ارجاع به کارشناس، نگاشت سورس بررسی شود."),
             ))

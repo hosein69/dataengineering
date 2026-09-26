@@ -50,6 +50,8 @@ class TrustReport:
         merged = DefectLedger()
         for p in self.profiles.values():
             merged.extend(p.ledger.items)
+            for column in p.ledger.mapping_gaps():
+                merged.note_mapping_gap(p.entity_type, column)
         return merged
 
     def grade_counts(self) -> Dict[str, int]:

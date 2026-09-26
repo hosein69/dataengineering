@@ -26,7 +26,8 @@ from ..core.numeric_parse import parse_decimal
 from . import codes as C
 from .fitness import DecisionContract, _entity_first
 from .profiling import ProfileResult
-from .verdict import Defect, DefectLedger, UNKNOWN_OWNER
+from .verdict import (Defect, DefectLedger, PLATFORM_OWNER, PLATFORM_ROLE,
+                      UNKNOWN_OWNER)
 
 
 #: Stage-unit codes that ``PROCESS_CURRENT_OWNER`` carries, in Persian.
@@ -57,7 +58,14 @@ class FixOpportunity:
     dept: str
     field: str
     code: str
+    #: Human label for the field. Several GSI mart columns are already Persian
+    #: and read fine raw; the Latin ones (``BL_DATE``) do not, and an expert
+    #: should not have to know the pipeline's column names to act.
+    label: str = ""
     decisions: List[str] = dc_field(default_factory=list)
+    #: True when the field is never read by the pipeline. The work is then one
+    #: mapping change, not one cell per case, and it belongs to the platform.
+    mapping_gap: bool = False
     #: Cases touched / unlocked, as *sets of keys*. A case blocked in two
     #: decisions is still one case and one cell to type; counting per
     #: (decision, case) pair would inflate both the promise and the workload.
@@ -67,8 +75,13 @@ class FixOpportunity:
 
     @property
     def cells(self) -> int:
-        """One source cell per case — that is the real typing effort."""
-        return len(self._touched)
+        """One source cell per case — that is the real typing effort.
+
+        A mapping gap costs one change, however many cases it blocks; charging
+        it per case would bury the cheapest fix in the programme at the bottom
+        of a list sorted by effort.
+        """
+        return 1 if self.mapping_gap else len(self._touched)
 
     @property
     def entities_unlocked(self) -> int:
@@ -101,6 +114,10 @@ class FixOpportunity:
         return self.entities_unlocked / self.cells if self.cells else 0.0
 
     @property
+    def field_fa(self) -> str:
+        return self.label or self.field
+
+    @property
     def role_fa(self) -> str:
         return role_fa(self.role)
 
@@ -113,8 +130,20 @@ class FixOpportunity:
 
     def headline_fa(self) -> str:
         """The single sentence that goes to the owner."""
+        if self.mapping_gap:
+            head = (f"فیلد «{self.field_fa}» ({self.field}) در هیچ‌کدام از "
+                    f"{self.entities_touched:,} پرونده مقدار ندارد — احتمالاً نگاشت "
+                    "سورس به این ستون وجود ندارد. پیش از ارجاع به کارشناسان، "
+                    "مسیر خواندن این فیلد بررسی شود")
+            if self._unlocked:
+                # "تا" deliberately: the cases unlock only if the source really
+                # carries the value. Promising more than that is how the list
+                # loses its audience.
+                return (f"{head} ← با رفع نگاشت، تا {len(self._unlocked):,} "
+                        "پرونده قابل تصمیم می‌شود.")
+            return head + "."
         what = self.spec.action_fa
-        head = f"{self.cells:,} سلول «{self.field}» — {what}"
+        head = f"{self.cells:,} سلول «{self.field_fa}» — {what}"
         if self.entities_unlocked:
             tail = f"با این کار {self.entities_unlocked:,} پرونده قابل تصمیم می‌شود"
             value = self.value_fa
@@ -131,7 +160,8 @@ class FixOpportunity:
             "مالک": self.owner,
             "نقش": self.role_fa,
             "اداره": self.dept,
-            "فیلد": self.field,
+            "فیلد": self.field_fa,
+            "ستون": self.field,
             "ایراد": self.spec.title_fa,
             "نوع اقدام": self.spec.fix_type_fa,
             "تعداد سلول": self.cells,
@@ -169,6 +199,8 @@ def rank_opportunities(
 ) -> List[FixOpportunity]:
     """Rank fixes by what they actually unlock, cheapest first."""
     index = _defect_index(profile.ledger)
+    gaps = profile.ledger.mapping_gaps(profile.entity_type)
+    labels = {f.column: f.label for f in profile.fields}
     groups: Dict[Tuple[str, str, str], FixOpportunity] = {}
 
     for contract in contracts:
@@ -182,18 +214,29 @@ def rank_opportunities(
         for key, bad_fields in _blockers(contract, profile).items():
             alone = len(bad_fields) == 1
             for fld in bad_fields:
+                # A field the pipeline never reads has no per-case defect: the
+                # ledger replaced them with one source-contract finding. Rebuilt
+                # naively from the field states it would reappear here as
+                # ordinary data entry addressed to nobody — so ask the ledger.
+                gap = fld in gaps
                 defect = index.get((key, fld))
-                owner = defect.owner if defect else None
-                code = defect.code if defect else "VALUE_MISSING"
-                gkey = (owner.name if owner else UNKNOWN_OWNER, fld, code)
+                if gap:
+                    owner_name, role, dept = PLATFORM_OWNER, PLATFORM_ROLE, ""
+                    code = "FIELD_NEVER_POPULATED"
+                else:
+                    owner = defect.owner if defect else None
+                    owner_name = owner.name if owner else UNKNOWN_OWNER
+                    role = owner.role if owner else ""
+                    dept = owner.dept if owner else ""
+                    code = defect.code if defect else "VALUE_MISSING"
+                gkey = (owner_name, fld, code)
 
                 opp = groups.get(gkey)
                 if opp is None:
                     opp = FixOpportunity(
-                        owner=owner.name if owner else UNKNOWN_OWNER,
-                        role=owner.role if owner else "",
-                        dept=owner.dept if owner else "",
-                        field=fld, code=code,
+                        owner=owner_name, role=role, dept=dept,
+                        field=fld, code=code, mapping_gap=gap,
+                        label=labels.get(fld, ""),
                     )
                     groups[gkey] = opp
 
@@ -244,9 +287,9 @@ class OwnerScorecard:
             "اداره": self.dept,
             "ایراد": self.defects,
             "پرونده درگیر": self.cases,
-            "پرونده قابل آزادسازی": self.entities_unlocked,
-            "سلول برای تکمیل": self.data_entry_cells,
-            "مورد برای بررسی": self.investigation_cells,
+            "قابل آزادسازی": self.entities_unlocked,
+            "سلول تکمیل": self.data_entry_cells,
+            "مورد بررسی": self.investigation_cells,
             "مهم‌ترین اقدام": self.top_actions[0] if self.top_actions else "—",
         }
 
