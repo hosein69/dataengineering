@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 import pandas as pd
 
-from . import codes, contracts as contract_defs
+from . import codes, contracts as contract_defs, trend
 from .fitness import (ADDITIVE, DECISION_GRADE, DIRECTIONAL, DISTRIBUTIONAL,
                       GRADE_FA, GRADE_LICENCE_FA, GRADE_RANK, GRADE_TONE,
                       NOT_USABLE, DecisionContract, FitnessVerdict,
@@ -161,7 +161,7 @@ def assess(
 
 __all__ = [
     "assess", "TrustReport",
-    "codes", "contract_defs",
+    "codes", "contract_defs", "trend",
     "DecisionContract", "FitnessVerdict", "FieldRule", "ProfileResult",
     "Defect", "DefectLedger", "Evidence", "Owner",
     "FixOpportunity", "OwnerScorecard", "owner_worklist",

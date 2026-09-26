@@ -218,6 +218,18 @@ class DefectLedger:
             return pd.DataFrame(columns=LEDGER_COLUMNS)
         return pd.DataFrame([d.row() for d in self._items], columns=LEDGER_COLUMNS)
 
+    def drop_field(self, entity_type: str, column: str) -> int:
+        """Remove per-case defects for one field, once it is known to be a
+        mapping gap rather than thousands of individual omissions.
+
+        The only removal this ledger permits, and it replaces noise with a
+        single truthful finding rather than hiding anything.
+        """
+        before = len(self._items)
+        self._items = [d for d in self._items
+                       if not (d.entity_type == entity_type and d.field_name == column)]
+        return before - len(self._items)
+
     def keys_with_defects(self, entity_type: str = "") -> set:
         return {
             d.entity_key for d in self._items

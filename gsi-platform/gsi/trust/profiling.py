@@ -43,6 +43,10 @@ DATE = "DATE"
 CURRENCY = "CURRENCY"
 KEY = "KEY"
 
+#: Below this many cases, "nothing is filled in" is not evidence of a broken
+#: mapping — it is just a small sample.
+NEVER_POPULATED_MIN_ENTITIES = 3
+
 #: Text that occupies a cell without saying anything. Distinguished from a blank
 #: cell because it is evidence that somebody *looked* at the cell and had nothing
 #: to put in it — which is a different conversation than "nobody got to it yet".
@@ -325,6 +329,24 @@ def profile_frame(
             ))
 
         prof.top_bad_values = bad_values.most_common(5)
+
+        # A field that is empty for *every* case is almost never a thousand
+        # people forgetting the same cell — it is a field the pipeline does not
+        # read. Routing it as data entry would send experts to fill cells that
+        # are already filled at source, and the first person who checks will
+        # stop trusting every other item on the list. Report it once, against
+        # the source contract, and drop the per-case noise.
+        if (rule.required and prof.entities >= NEVER_POPULATED_MIN_ENTITIES
+                and prof.ok == 0 and prof.conflict == 0 and prof.suspect == 0):
+            ledger.drop_field(entity_type, rule.column)
+            ledger.add(Defect(
+                code="FIELD_NEVER_POPULATED", entity_type=entity_type, entity_key="",
+                evidence=Evidence(source=source, column=rule.column),
+                owner=Owner(),
+                note=(f"هیچ‌کدام از {prof.entities:,} {entity_type} مقدار ندارند. "
+                      "قبل از ارجاع به کارشناس، نگاشت سورس بررسی شود."),
+            ))
+
         profiles.append(prof)
 
     return ProfileResult(entity_type, entities, profiles, ledger, dict(states))

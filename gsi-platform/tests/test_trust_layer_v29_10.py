@@ -180,12 +180,35 @@ def test_every_defect_can_be_found_and_routed():
 def test_field_defects_route_to_the_role_that_owns_that_field():
     df = _mart()
     df.loc[df["CANONICAL_REG"] == "10000002", "مهلت قانونی رفع تعهد"] = None
-    df["BL_DATE"] = None
+    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
     report = assess(df, ref_date=REF)
     by_field = {(d.field_name, d.owner.name) for d in report.ledger}
     # settlement fields go to the settlement expert, shipment dates to logistics
     assert ("مهلت قانونی رفع تعهد", "زهرا الف") in by_field
     assert ("BL_DATE", "کاوه ب") in by_field
+
+
+def test_a_field_nothing_ever_fills_is_a_mapping_gap_not_a_data_entry_backlog():
+    """The safeguard that keeps the worklist believable.
+
+    ``BL_DATE`` in the real product is derived from ``BL_BL_DATE``, which no
+    adapter produces — so it is empty for every case. Sending one ticket per
+    case would ask experts to fill cells that are already filled at source; the
+    first person to check would stop trusting every other item on the list.
+    """
+    df = _mart()
+    df["BL_DATE"] = None
+    report = assess(df, ref_date=REF)
+    bl_defects = [d for d in report.ledger if d.field_name == "BL_DATE"]
+    assert len(bl_defects) == 1, "one finding against the mapping, not one per case"
+    only = bl_defects[0]
+    assert only.code == "FIELD_NEVER_POPULATED"
+    assert only.spec.fix_type == C.SOURCE_CONTRACT
+    assert only.entity_key == ""                      # it is not about any one case
+    # and the coverage number still tells the truth
+    bl_profile = report.profiles[BL]
+    field = [f for f in bl_profile.fields if f.column == "BL_DATE"][0]
+    assert field.coverage_pct == 0.0
 
 
 # ── invariant 8: the promise made to an owner is arithmetically honest ──────

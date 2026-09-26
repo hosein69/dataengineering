@@ -18,6 +18,7 @@ def run_pipeline(pipeline,build_report,version):
             for path in (Path(__file__).parents[1]/root).glob('*.yaml'):
                 wh.blob(path.read_bytes(),path.name,'configuration',str(path))
         result=pipeline._run_warehouse(False)
+        trust_snapshot(result)
 
         # ---- EARLY PUBLICATION GATE -------------------------------------------------
         # Source/grain/process/partition failures are knowable before Business DWH.
@@ -139,6 +140,23 @@ def persist_result(res):
             fid = wh.frame(value,'mart','extras/'+name)
             if verify:
                 wh.read_frame(fid)
+
+def trust_snapshot(res):
+    """Record the data-trust summary for this run so the trend line exists.
+
+    Written for *every* completed run, including one whose publication is later
+    blocked: a blocked run is still a real observation of the data's condition,
+    and dropping it would put a hole in the improvement curve exactly where
+    something went wrong.
+    """
+    summary = (res.extras or {}).get('trust_summary')
+    if not summary:
+        return
+    try:
+        Warehouse().audit('trust_snapshot', summary)
+    except Exception as ex:                      # never fail a run over telemetry
+        log.warning(f"⚠️ [data-trust] ثبت عکس اعتماد داده انجام نشد: {ex}")
+
 
 def report_metadata(res):
     Warehouse().audit('report_metadata',{'report':res.dashboard_path,'counts':res.counts,'extras':{k:v for k,v in res.extras.items() if not isinstance(v,pd.DataFrame)}})
