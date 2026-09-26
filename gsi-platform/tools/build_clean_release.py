@@ -68,6 +68,15 @@ def build(output: Path, manifest_name: str = "PACKAGE_SHA256.json") -> dict:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
 
+        # The package's own file fingerprints, regenerated from the staged copy.
+        # A stale MANIFEST.json is worse than none: gsi.doctor then reports
+        # dozens of "tampered" files on a clean install, and the one file that
+        # really is out of date is lost among the false alarms.
+        import sys as _sys
+        _sys.path.insert(0, str(ROOT))
+        from gsi import manifest as _manifest
+        _manifest.write(str(stage / "gsi"))
+
         manifest_path = stage / manifest_name
         hashes = {
             str(p.relative_to(stage)).replace(os.sep, "/"): sha256(p)

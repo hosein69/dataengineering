@@ -14,7 +14,9 @@ accusation the system cannot back up costs it the trust the whole layer is for.
 """
 from __future__ import annotations
 
-__contract__ = 1
+#: 2 — Owner carries the escalation path (manager/vice), the ledger remembers
+#: mapping gaps, and role_fa() lives here so the ledger itself translates.
+__contract__ = 2
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence

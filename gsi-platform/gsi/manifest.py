@@ -32,26 +32,40 @@ def _sha256(path: str) -> str:
     return h.hexdigest()[:16]
 
 
-def scan() -> Dict[str, str]:
-    """{مسیر نسبی: هش} برای همه فایل‌های پکیج."""
+def scan(pkg_dir: str = "") -> Dict[str, str]:
+    """{مسیر نسبی: هش} برای همه فایل‌های پکیج.
+
+    ``pkg_dir`` برای ساخت مانیفست یک **کپی staged** است (ساخت بسته انتشار)،
+    بدون اینکه درخت کاری دست بخورد.
+    """
+    pkg_dir = pkg_dir or PKG_DIR
     out: Dict[str, str] = {}
-    for root, dirs, files in os.walk(PKG_DIR):
+    for root, dirs, files in os.walk(pkg_dir):
         dirs[:] = [d for d in dirs if d != "__pycache__"]
         for f in sorted(files):
             if not f.endswith(TRACKED_EXT):
                 continue
             full = os.path.join(root, f)
-            rel = os.path.relpath(full, PKG_DIR).replace("\\", "/")
+            rel = os.path.relpath(full, pkg_dir).replace("\\", "/")
             out[rel] = _sha256(full)
     return out
 
 
-def write() -> str:
+def write(pkg_dir: str = "") -> str:
+    """مانیفست را می‌نویسد و مسیرش را برمی‌گرداند.
+
+    **این تابع باید در هر انتشار اجرا شود.** مانیفست کهنه بدتر از نبودنش است:
+    `gsi.doctor` روی یک نصب سالم ده‌ها فایلِ «دست‌کاری‌شده» گزارش می‌کند و
+    همان یک فایلی که واقعاً قدیمی مانده، بین هشدارهای کاذب گم می‌شود.
+    `tools/build_clean_release.py` این کار را خودکار انجام می‌دهد.
+    """
     from .version import PACKAGE_VERSION
-    data = {"package_version": PACKAGE_VERSION, "files": scan()}
-    with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+    pkg_dir = pkg_dir or PKG_DIR
+    path = os.path.join(pkg_dir, "MANIFEST.json")
+    data = {"package_version": PACKAGE_VERSION, "files": scan(pkg_dir)}
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1, sort_keys=True)
-    return MANIFEST_PATH
+    return path
 
 
 @dataclass

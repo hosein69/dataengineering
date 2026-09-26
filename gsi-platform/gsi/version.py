@@ -41,6 +41,10 @@ REQUIRED_CONTRACTS: Dict[str, int] = {
     "rulebook.loader": 1,
     "engines.criticality": 3,
     "stages.base": 1,
+    "trust": 2,             # frames() با رول‌آپ سازمانی — s95_trust به آن تکیه دارد
+    "trust.verdict": 2,     # Owner.manager/vice و حافظه mapping gap
+    "trust.impact": 2,      # ORG_LEVELS و سطح‌های کارنامه
+    "trust.contracts": 1,
 }
 
 #: توضیح فارسی هر قرارداد، برای پیام خطای قابل فهم

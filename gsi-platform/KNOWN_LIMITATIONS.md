@@ -1,4 +1,4 @@
-# Current release: GSI 29.9.0 — 2026-09-26
+# Current release: GSI 29.10.0 — 2026-09-26
 
 **Closed in this release** (details: `GSI_REVIEW_REPORT_V29_9_0_FA.md`): numeric-parsing magnitude errors,
 Jalali invalid-date rollover and leap-year formula, invisible characters in join keys, currency

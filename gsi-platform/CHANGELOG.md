@@ -1,3 +1,70 @@
+# GSI 29.10.0 — data trust layer: per-decision fitness, owner worklists, improvement trend — 2026-09-26
+
+Full detail, design rationale and evidence: `GSI_TRUST_LAYER_REPORT_V29_10_0_FA.md`.
+Strategy: `docs/DATA_STRATEGY_FA.md`.
+
+The problem this release answers: the data is not clean, it will not be clean
+soon, and neither deleting the dirty part nor showing it as if it were fine is
+acceptable. Nothing is deleted. Instead, every number that reaches a decision
+carries a grade that says what it may and may not be used for.
+
+**New: `gsi/trust/` — the trust layer**
+- Fitness is a property of the pair *(decision, record)*, not of the record. One
+  case can be decision-grade for "where is this shipment?" and not usable for
+  "how much do we owe?". This is what lets a partly dirty record stay in the
+  warehouse and still never carry a wrong total.
+- Three grades: قابل تصمیم / جهت‌نما / غیرقابل استناد, each shown with the licence
+  it grants.
+- `ADDITIVE` totals are stricter than `DISTRIBUTIONAL` rankings: a sum with one
+  unknown part is wrong, while a ranking over 94% coverage is usually the same
+  ranking. A total is never green while any case is unknown, and it always
+  reports the known part next to the count it excluded.
+- Defects are counted at entity grain, not row grain, so one missing cell fanned
+  out over forty BL×material rows is reported once.
+- `FIELD_NEVER_POPULATED`: a field empty for *every* case is raised once against
+  the source contract, not as one ticket per case. Routing it as data entry would
+  send experts to fill cells already filled at source.
+- Value states OK / MISSING / SUSPECT / CONFLICT are kept distinct; a conflict is
+  fail-closed, because a wrong number is worse than a missing one.
+- Currencies are never added together.
+- Every defect carries physical evidence (file · sheet · row · column) and an
+  owner resolved from the field's own expert (`EXPERT_*`), with the generic
+  case owner only as a fallback.
+- Ownership carries the escalation path — `ORG_DEPT`, `ORG_MANAGER` (falling back
+  to `ORG_HEAD`), `ORG_VICE` — and the backlog rolls up by person, department or
+  manager.
+- "Smallest next fix" ranks work by cases unlocked *alone*, so the page never
+  promises value a fix will not deliver on its own.
+
+**Pipeline and persistence**
+- `gsi/stages/s95_trust.py` (order 95, tolerant): grades the final mart without
+  changing any business value, and adds three filterable columns —
+  `TRUST_STATE`, `TRUST_BLOCKERS`, `TRUST_NOT_READY_FOR`.
+- `warehouse/bridge.trust_snapshot()` stores one quality snapshot per run, so the
+  measure of record is the *rate of improvement*, not the absolute level. At
+  point zero the level is poor and that is nobody's personal failing; ranking
+  people by it produces concealment rather than clean data.
+
+**UI — `app/trust_view.py`, workspace «اعتماد داده و کیفیت»**
+Five tabs: decisions with their grade and licence; "what do I do now?"; owner
+scorecards at three organizational levels with per-owner Excel worklists; the
+field mirror with each column's most common invalid value; the improvement
+trend. Colours come from the WCAG-audited STATUS palette in
+`gsi/design/tokens.py`; no hex is written in the view.
+
+**Release integrity**
+- `gsi/MANIFEST.json` was still the 29.8.2 file and was not regenerated for
+  29.9.0, so `python -m gsi.doctor` reported seventeen legitimately-changed
+  files as "tampered" on a pristine install. A stale manifest is worse than no
+  manifest: the whole value of the check is "replace exactly this one file", and
+  seventeen false alarms teach support to ignore the section entirely.
+  Regenerated; `manifest.scan()/write()` now take a package directory so the
+  manifest can be built from the staged copy; `tools/build_clean_release.py`
+  regenerates it on every build; four tests keep it honest.
+
+**Tests**: 1378 passing (32 new). Verified both in the working tree and inside a
+clean extraction of the shipped ZIP, including a full pipeline run.
+
 # GSI 29.9.0 — full-package review (architecture · optimization · industrial data · UI/UX · full-stack) — 2026-09-26
 
 Full per-finding detail, evidence and before/after measurements: `GSI_REVIEW_REPORT_V29_9_0_FA.md`.

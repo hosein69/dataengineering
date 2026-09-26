@@ -15,7 +15,8 @@ frames describing what can and cannot be trusted in it. Strategy and rationale:
 """
 from __future__ import annotations
 
-__contract__ = 1
+#: 2 — frames() adds owners_by_dept/owners_by_manager; scorecards_at().
+__contract__ = 2
 
 from dataclasses import dataclass, field as dc_field
 from datetime import date

@@ -1,4 +1,4 @@
-# GSI 29.9.0 — Global Sourcing Intelligence
+# GSI 29.10.0 — Global Sourcing Intelligence
 
 سامانه آفلاین هوش زنجیره تأمین خارجی: از فایل‌های عملیاتی (NTSW، خرید ارز، اعتبارات،
 SAP، ترخیص، Oracle، فایل کارشناسان) تا انبار داده SQLite منتشرشده، و از آنجا تا

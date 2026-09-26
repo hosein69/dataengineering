@@ -14,7 +14,8 @@ after the first sprint.
 """
 from __future__ import annotations
 
-__contract__ = 1
+#: 2 — ORG_LEVELS roll-ups, FixOpportunity.mapping_gap/label/manager.
+__contract__ = 2
 
 from collections import defaultdict
 from dataclasses import dataclass, field as dc_field
