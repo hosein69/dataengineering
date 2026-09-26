@@ -145,7 +145,7 @@ GSI از قبل می‌داند هر پرونده الان دست کیست (`CUR
 |---|---|
 | تاکسونومی ایراد | `gsi/trust/codes.py` |
 | مدل سه‌حالته مقدار | `gsi/trust/verdict.py` |
-| سنجش نقطه صفر | `gsi/trust/profile.py` |
+| سنجش نقطه صفر | `gsi/trust/profiling.py` |
 | دروازه تصمیم | `gsi/trust/fitness.py` |
 | کوچک‌ترین اقدام بعدی | `gsi/trust/impact.py` |
 | قواعد ساختاری موجود (از قبل) | `gsi/warehouse/reliability.py`، `gsi/health.py` |
