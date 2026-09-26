@@ -1,0 +1,186 @@
+# -*- coding: utf-8 -*-
+"""GSI design tokens synchronized from the live Figma Foundations file.
+
+Verified 2026-09-25 against fileKey ``T9Ps72EYpriHdov9fmNFQu``, frame ``3:2``.
+IRANSansWeb is the design typeface; this package does not redistribute licensed
+font binaries and therefore falls back to organization/system fonts at runtime.
+"""
+from __future__ import annotations
+
+__contract__ = 1
+
+from typing import Dict, NamedTuple, Tuple
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۱) رنگ پایه — سطح، متن، مرز  (نودهای «سطح» / «خط» / «متن» در فیگما)
+# ═══════════════════════════════════════════════════════════════════════════
+WHITE = "#FFFFFF"
+SURFACE_PAGE = "#F6F8F9"        # پس‌زمینهٔ صفحه
+SURFACE_RAISED = "#FFFFFF"      # کارت و پنل
+SURFACE_SUNKEN = "#EEF2F4"      # نوار ابزار و سر جدول
+SURFACE_INVERSE = "#0B1F33"     # سربرگ و حالت معکوس — متن سفید ۱۶٫۶۹
+
+INK = "#0B1F33"                 # متن اصلی — کنتراست ۱۶٫۶۹ روی سفید (= brand/navy)
+INK_SOFT = "#3D5163"            # متن ثانویه — ۸٫۲۲
+INK_MUTED = "#5A6B79"           # برچسب و واحد — ۵٫۵۱ (همچنان بالای کف ۴٫۵)
+INK_ON_BRAND = "#FFFFFF"
+INK_ON_DARK = "#FFFFFF"
+
+BORDER = "#DBE3E7"              # جداکنندهٔ آرام — مرز تزئینی ظرف
+BORDER_STRONG = "#7D919E"       # مرز ورودی — کف WCAG 1.4.11، ۳٫۲۷ روی سفید
+BORDER_FOCUS = "#0A7C86"        # حلقهٔ فوکوس ۳px — ۴٫۹۵
+
+# ── هویت: Navy / Teal / Gold (نود «برند» در فیگما) ──────────────────────
+BRAND_NAVY = "#0B1F33"          # داده و اعتماد — ۱۶٫۶۹
+BRAND_TEAL = "#0A7C86"          # فرآیند و جریان — ۴٫۹۵ (متن‌پذیر)
+TEAL_INK = "#076670"            # نسخهٔ متنی فیروزه‌ای — ۶٫۶۸
+BRAND_GOLD = "#C79A4A"          # تصمیم — فقط سطح؛ ۲٫۵۸ روی سفید، هرگز به‌عنوان متن
+GOLD_INK = "#7A5A15"            # نسخهٔ متنی طلایی — ۶٫۳۶
+TEAL_WASH = "#E7F1F2"           # زمینهٔ ملایم Teal
+GOLD_WASH = "#FAF3E4"           # زمینهٔ ملایم Gold
+
+# نام‌های AQUA_* برای سازگاری با بقیهٔ کد نگه داشته شده‌اند؛ مقدارشان دقیقاً
+# همان Teal فیگماست (Teal همان چیزی است که محاوره‌ای «آکوا» نامیده می‌شود).
+AQUA_900 = "#0B4F4A"
+AQUA_700 = BRAND_TEAL            # #0A7C86 — برند اصلی، دکمه، لینک، تاکید
+AQUA_500 = "#1FA394"             # روشن‌تر — هاور، آیکن فعال
+AQUA_300 = "#71B5BC"             # خیلی روشن‌تر — نوار پیشرفت، هایلایت ملایم
+AQUA_WASH = TEAL_WASH             # #E7F1F2
+AQUA_MIST = "#EEF6F6"             # پس‌زمینهٔ گرادیان صفحه
+
+# ── طیف خاکستری (خنثی) ───────────────────────────────────────────────────
+GREY_50, GREY_100, GREY_200 = "#F6F8F9", "#EEF2F4", "#DBE3E7"
+GREY_400, GREY_500, GREY_700 = "#7D919E", "#5A6B79", "#3D5163"
+
+#: طیف دنباله‌ای Teal برای نقشهٔ حرارتی/شدت جریان — روشن به تیره (فقط برای
+#: کمیت پیوسته، هرگز برای دسته — طبق قاعدهٔ فیگما).
+SEQUENTIAL: Tuple[str, ...] = (
+    "#D8E9EB", "#A9D2D6", "#71B5BC", "#3F97A0", "#187E88", "#0B5A63",
+)
+
+#: پالت دسته‌ای — نود «دسته‌ای — series/01…08» در فیگما، عیناً همان ۸ رنگ.
+CATEGORICAL: Tuple[str, ...] = (
+    "#0A7C86", "#B54520", "#3A5F9E", "#7A5A15", "#6A5D8F", "#2F7D4F", "#9A4A6D", "#546A70",
+)
+
+
+class Status(NamedTuple):
+    """یک طبقهٔ وضعیت با سه نقش رنگی + آیکن + برچسب فارسی — عیناً از فیگما."""
+    key: str
+    ink: str
+    fill: str
+    wash: str
+    icon: str
+    label: str
+
+
+#: مقیاس وضعیت — نود «۲) وضعیت» در فیگما، با همان ترتیب، رنگ، آیکن و برچسب.
+#: برچسب‌های خودِ فایل دامنهٔ عمومی دارند (نه فقط انبار) و روی فرآیند هم
+#: می‌نشینند: «توقف خط» = کیس کاملاً گیر کرده، «در حال بحرانی شدن» = گلوگاه
+#: در حال شکل‌گیری، «بدون مصرف» = مرحله/کیس بدون فعالیت.
+STATUS_SCALE: Tuple[Status, ...] = (
+    Status("stockout", "#8F1F1F", "#A32828", "#FBEAEA", "⏹", "توقف خط"),       # ۸٫۸۱
+    Status("critical", "#A52020", "#D03B3B", "#FDEDED", "⬤", "بحرانی"),        # ۷٫۴۳
+    Status("serious",  "#9A4718", "#E07B4F", "#FDEFE8", "◤", "در حال بحرانی شدن"),  # ۶٫۳۹
+    Status("warning",  "#7A5A15", "#E0A52E", "#FBF3E2", "◆", "تحت نظر"),       # ۶٫۳۶
+    Status("good",     "#136B13", "#1D8F4E", "#E8F6EC", "✓", "ایمن"),          # ۶٫۶۹
+    Status("neutral",  "#4F5F6B", "#8B9AA5", "#EEF1F3", "—", "بدون مصرف"),     # ۶٫۶۰
+    Status("unknown",  "#56646F", "#ADB9C2", "#F1F3F5", "?", "نامشخص"),        # ۶٫۰۹
+)
+STATUS: Dict[str, Status] = {s.key: s for s in STATUS_SCALE}
+STATUS_BY_LABEL: Dict[str, Status] = {s.label: s for s in STATUS_SCALE}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۲) فاصله — شبکهٔ ۴ پیکسلی (نود «۴) فاصله» در فیگما، ۱۲ پله)
+# ═══════════════════════════════════════════════════════════════════════════
+SPACE: Dict[str, int] = {
+    "none": 0, "3xs": 2, "2xs": 4, "xs": 8, "sm": 12, "md": 16,
+    "lg": 20, "xl": 24, "2xl": 32, "3xl": 40, "4xl": 48, "5xl": 64,
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۳) شعاع و سایه — نود «۵) گردی گوشه» در فیگما
+# ═══════════════════════════════════════════════════════════════════════════
+#: گردی معنا دارد: هرچه عنصر بزرگ‌تر/ظرف‌تر باشد، گردتر است؛ جدول تیز می‌ماند.
+RADIUS: Dict[str, int] = {
+    "none": 0,   # جدول — گوشهٔ تیز
+    "sm": 6,     # نشان و تراشه
+    "md": 10,    # دکمه و ورودی
+    "lg": 14,    # کارت و پنل
+    "xl": 20,    # سربرگ و قاب نمودار
+    "pill": 999,  # فیلتر فعال و شمارنده
+}
+
+#: چهار پلهٔ ارتفاع — نود «۷) ارتفاع» در فیگما (نام و کاربرد از همان‌جا؛
+#: مقدار دقیق سایه در فیگما یک افکت گرافیکی است، این‌جا معادل CSS آن است).
+ELEVATION: Dict[str, str] = {
+    "flat": "none",                                         # جدول و سطح صفحه
+    "raised": "0 4px 20px rgba(11, 31, 51, 0.05)",           # کارت در حالت عادی
+    "floating": "0 10px 30px rgba(11, 31, 51, 0.10)",        # پنل شناور و منوی فیلتر
+    "overlay": "0 20px 48px rgba(11, 31, 51, 0.16)",         # لایه روی محتوا
+}
+SHADOW_CARD = ELEVATION["raised"]
+SHADOW_CARD_HOVER = ELEVATION["floating"]
+SHADOW_POPOVER = ELEVATION["overlay"]
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۴) تایپوگرافی — نود «۶) تایپوگرافی» در فیگما، ۱۲ پله
+# ═══════════════════════════════════════════════════════════════════════════
+#: فونت واقعیِ استفاده‌شده در خودِ فایل فیگما «IRANSansWeb» است (وزن‌های
+#: Regular/Bold به‌صورت جدا). اولویت بعدی طبق درخواست سازمانی: Yekan Bakh،
+#: سپس Vazirmatn، سپس سیستمی. نام‌های خانواده باید دقیقاً با @font-face در
+#: theme.py هم‌خوان باشند.
+FONT_STACK = ("'IRANSansWeb','IRANSansX','IRANSans','YekanBakh','Yekan Bakh',"
+              "'Vazirmatn',Tahoma,'Segoe UI',Arial,sans-serif")
+FONT_STACK_MONO = "'Cascadia Mono','Consolas','Courier New',monospace"
+
+#: متن جاری (body-lg/body/small/caption) هرگز زیر ارتفاع خط ۱٫۵ نمی‌رود —
+#: الزام WCAG 1.4.12. عنوان و عدد سنجه مجازند فشرده‌تر باشند (تک‌خطی‌اند).
+TYPE_SCALE: Dict[str, Dict[str, object]] = {
+    "display":   {"size": 32, "weight": 700, "line": 1.35},
+    "h1":        {"size": 25, "weight": 700, "line": 1.40},
+    "h2":        {"size": 20, "weight": 700, "line": 1.45},
+    "h3":        {"size": 17, "weight": 700, "line": 1.50},
+    "h4":        {"size": 15, "weight": 700, "line": 1.55},
+    "body-lg":   {"size": 14, "weight": 400, "line": 1.75},
+    "body":      {"size": 13, "weight": 400, "line": 1.75},
+    "small":     {"size": 12, "weight": 400, "line": 1.65},
+    "caption":   {"size": 11, "weight": 400, "line": 1.55},
+    "overline":  {"size": 11, "weight": 700, "line": 1.40},
+    "metric":    {"size": 26, "weight": 700, "line": 1.20},
+    "metric-sm": {"size": 19, "weight": 700, "line": 1.25},
+}
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۵) حرکت — نود «۸) حرکت» در فیگما: جهت، نه تزئین
+# ═══════════════════════════════════════════════════════════════════════════
+#: فقط ``transform``/``opacity`` انیمیت می‌شوند (روی GPU)؛
+#: ``prefers-reduced-motion`` همه را خاموش می‌کند (در theme.py رعایت شده).
+MOTION: Dict[str, str] = {
+    "ease_entrance": "cubic-bezier(.22,1,.36,1)",
+    "ease_standard": "cubic-bezier(.4,0,.2,1)",
+    "ease_exit": "cubic-bezier(.4,0,1,1)",
+    "dur_micro": "140ms",    # بازخورد فوری: hover، فشردن
+    "dur_short": "220ms",    # تغییر تب، باز/بسته‌شدن ردیف
+    "dur_medium": "400ms",   # ورود کارت/پنل به صحنه
+    "dur_long": "600ms",     # رسم نمودار — سقف مجاز
+    "stagger": "50ms",
+}
+STAGGER_MAX = 8               # سقف تأخیر آبشاری
+REVEAL_FAILSAFE_MS = 1400     # هیچ محتوایی پشت انیمیشن گم نمی‌ماند
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ۶) نقاط شکست
+# ═══════════════════════════════════════════════════════════════════════════
+BREAKPOINT: Dict[str, int] = {"sm": 480, "md": 768, "lg": 1024, "xl": 1440}
+CONTAINER_MAX = 1520
+
+
+def status_of(value) -> Status:
+    """(رنگ، آیکن، برچسب) برای یک کد یا برچسب وضعیت؛ نامشخص را هم بی‌خطا برمی‌گرداند."""
+    s = str(value or "").strip()
+    if s in STATUS:
+        return STATUS[s]
+    if s in STATUS_BY_LABEL:
+        return STATUS_BY_LABEL[s]
+    return STATUS["unknown"]
