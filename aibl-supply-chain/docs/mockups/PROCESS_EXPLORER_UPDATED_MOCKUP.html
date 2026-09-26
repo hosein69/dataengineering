@@ -1,0 +1,533 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GSI — کاوشگر فرآیند (mockup به‌روزشده)</title>
+<style>
+:root{
+  --surface:#f6f8f9;--raised:#ffffff;--sunken:#eef2f4;--inverse:#0b1f33;
+  --border:#dbe3e7;--border-strong:#7d919e;--focus:#0a7c86;
+  --text:#0b1f33;--text-2:#3d5163;--text-3:#5a6b79;--on-dark:#ffffff;
+  --navy:#0b1f33;--teal:#0a7c86;--gold:#c79a4a;--teal-ink:#076670;--gold-ink:#7a5a15;
+  --teal-wash:#e7f1f2;--gold-wash:#faf3e4;--navy-wash:#e8ecf1;
+  --st-stockout:#a32828;--st-stockout-ink:#8f1f1f;--st-stockout-wash:#fbeaea;
+  --st-critical:#d03b3b;--st-critical-ink:#a52020;--st-critical-wash:#fdeded;
+  --st-serious:#e07b4f;--st-serious-ink:#9a4718;--st-serious-wash:#fdefe8;
+  --st-warning:#e0a52e;--st-warning-ink:#7a5a15;--st-warning-wash:#fbf3e2;
+  --st-good:#1d8f4e;--st-good-ink:#136b13;--st-good-wash:#e8f6ec;
+  --st-neutral:#8b9aa5;--st-neutral-ink:#4f5f6b;--st-neutral-wash:#eef1f3;
+  --st-unknown:#adb9c2;--st-unknown-ink:#56646f;--st-unknown-wash:#f1f3f5;
+  --sp-2xs:4px;--sp-xs:8px;--sp-sm:12px;--sp-md:16px;--sp-lg:20px;--sp-xl:24px;--sp-2xl:32px;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:20px;--r-pill:999px;
+  --e-raised:0 4px 20px rgba(11,31,51,.05);--e-overlay:0 10px 30px rgba(11,31,51,.10);
+  --dur-micro:140ms;--dur-short:220ms;--ease-standard:cubic-bezier(.4,0,.2,1);
+  --font:'IRANSansWeb','IRANSansX','IRANSans','YekanBakh','Yekan Bakh','Vazirmatn',Tahoma,'Segoe UI',Arial,sans-serif;
+  --container:1520px;
+  /* two tokens this mockup adds — proposed in Phase 3 of the UX review, not yet in tokens.py */
+  --seq-1:#d8e9eb;--seq-2:#a9d2d6;--seq-3:#71b5bc;--seq-4:#3f97a0;--seq-5:#187e88;--seq-6:#0b5a63;
+  --dim-opacity:.12;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:linear-gradient(180deg,#fff 0%,var(--surface) 100%);color:var(--text);
+  direction:rtl;font-family:var(--font);font-size:13px;line-height:1.75;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0}
+.wrap{max-width:var(--container);margin:0 auto;padding:var(--sp-xl) var(--sp-lg) 60px}
+.appbar{position:relative;background:linear-gradient(180deg,#fff 0%,var(--sunken) 100%);
+  border:1px solid var(--border);border-radius:var(--r-xl);padding:var(--sp-xl);
+  box-shadow:var(--e-raised);overflow:hidden;margin-bottom:var(--sp-lg)}
+.appbar::before{content:"";position:absolute;right:0;top:0;width:8px;height:100%;background:var(--teal)}
+.appbar .row{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--sp-lg);flex-wrap:wrap}
+.brandmark{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--navy)}
+.brandmark i{width:10px;height:10px;border-radius:3px;background:var(--gold);display:inline-block;
+  box-shadow:0 0 0 3px rgba(199,154,74,.22)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--teal-ink);text-transform:none}
+.appbar h1{font-size:22px;font-weight:800;margin-top:6px}
+.appbar .sub{color:var(--text-2);margin-top:4px;font-size:12.5px;max-width:640px}
+.tag-updated{display:inline-flex;align-items:center;gap:6px;background:var(--gold-wash);color:var(--gold-ink);
+  border:1px solid #ecd9ad;border-radius:var(--r-pill);padding:5px 12px;font-size:11px;font-weight:800}
+.audience-pills{display:flex;gap:6px}
+.audience-pill{border:1px solid var(--border);background:var(--raised);border-radius:var(--r-pill);
+  padding:6px 14px;font-size:11.5px;font-weight:700;color:var(--text-3);cursor:default}
+.audience-pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:var(--sp-sm);margin-bottom:var(--sp-lg)}
+.kpi{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;
+  box-shadow:var(--e-raised);border-top:3px solid var(--tone,var(--teal))}
+.kpi .l{font-size:11.5px;color:var(--text-2)}
+.kpi b{display:block;font-size:23px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .g{font-size:10.5px;color:var(--text-3);margin-top:4px}
+.kpi.new{position:relative}
+.kpi.new::after{content:"جدید";position:absolute;top:8px;left:10px;font-size:9px;font-weight:800;
+  color:var(--teal-ink);background:var(--teal-wash);border-radius:var(--r-pill);padding:2px 7px}
+
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr) 320px;gap:var(--sp-lg);align-items:start}
+@media (max-width:1180px){.layout{grid-template-columns:1fr}}
+
+.panel{background:var(--raised);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:var(--sp-lg);box-shadow:var(--e-raised)}
+.panel h3{font-size:14.5px;font-weight:800}
+.panel .desc{font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.6}
+.panel + .panel{margin-top:var(--sp-lg)}
+
+/* filter sidebar */
+.f-section{margin-top:var(--sp-lg);padding-top:var(--sp-lg);border-top:1px dashed var(--border)}
+.f-section:first-of-type{margin-top:var(--sp-md);padding-top:0;border-top:0}
+.f-label{font-size:11px;font-weight:800;color:var(--text-2);display:flex;justify-content:space-between}
+.f-value{font-size:11px;color:var(--text-3)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--border);background:var(--sunken);border-radius:var(--r-pill);
+  padding:5px 11px;font-size:11px;color:var(--text-2);cursor:pointer;user-select:none}
+.chip.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+.slider-wrap{margin-top:10px}
+input[type=range]{width:100%;accent-color:var(--teal)}
+.abstraction-readout{margin-top:8px;background:var(--sunken);border-radius:var(--r-sm);
+  padding:8px 10px;font-size:11px;color:var(--text-2);display:flex;justify-content:space-between;gap:8px}
+.abstraction-readout b{color:var(--navy);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;
+  border:1px solid var(--border-strong);background:var(--raised);color:var(--text);border-radius:var(--r-md);
+  padding:9px 12px;font-size:11.5px;font-weight:700;cursor:pointer;transition:background var(--dur-micro) var(--ease-standard)}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.primary:hover{background:#086d76}
+.mode-toggle{display:flex;border:1px solid var(--border);border-radius:var(--r-pill);padding:3px;background:var(--sunken)}
+.mode-toggle button{flex:1;border:0;background:transparent;padding:7px 4px;border-radius:var(--r-pill);
+  font-size:11.5px;font-weight:700;color:var(--text-3);cursor:pointer}
+.mode-toggle button.on{background:#fff;color:var(--navy);box-shadow:var(--e-raised)}
+
+/* canvas */
+.canvas-head{display:flex;justify-content:space-between;align-items:center;gap:var(--sp-md);flex-wrap:wrap}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:10.5px;color:var(--text-3)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:12px;height:4px;border-radius:2px;display:inline-block}
+.legend i.dot{width:8px;height:8px;border-radius:50%}
+.legend i.dash{background:repeating-linear-gradient(90deg,var(--st-critical) 0 5px,transparent 5px 9px)}
+svg.flow-canvas{width:100%;height:auto;display:block;margin-top:10px}
+.node rect.card{fill:var(--raised);stroke-width:1.6}
+.node .status-bar{rx:2.5}
+.node text.label{font-size:11.5px;font-weight:700;fill:var(--text)}
+.node text.count{font-size:12.5px;font-weight:800;fill:var(--teal-ink)}
+.node text.hint{font-size:9px;fill:var(--text-3)}
+.node{cursor:pointer;transition:opacity var(--dur-short) var(--ease-standard)}
+.edge path{fill:none;stroke-linecap:round;transition:opacity var(--dur-short) var(--ease-standard),stroke var(--dur-short)}
+.edge text{font-size:9.5px;fill:var(--text-3)}
+svg.mode-freq .edge path{stroke:var(--freq-color)}
+svg.mode-perf .edge path{stroke:var(--perf-color)}
+.edge.deviant path{stroke-dasharray:7 5;stroke:var(--st-critical)!important}
+.edges.filtering .edge{opacity:var(--dim-opacity)}
+.edges.filtering .edge.v-active{opacity:1}
+.nodes.filtering .node{opacity:.45}
+.nodes.filtering .node.v-active{opacity:1}
+.hidden-by-slider{display:none}
+.canvas-note{font-size:10.5px;color:var(--text-3);margin-top:6px;line-height:1.7}
+
+/* variant / conformance panel */
+.rank-row{display:grid;grid-template-columns:22px minmax(0,1fr) 46px;gap:8px;align-items:center;
+  border:1px solid var(--border);border-radius:var(--r-md);padding:9px 10px;margin-top:8px;cursor:pointer;
+  transition:border-color var(--dur-micro),background var(--dur-micro)}
+.rank-row:hover{border-color:var(--border-strong)}
+.rank-row.selected{border-color:var(--teal);background:var(--teal-wash)}
+.rank-row.pinned{border-color:var(--gold);background:var(--gold-wash)}
+.rank-num{width:22px;height:22px;border-radius:7px;background:var(--navy);color:#fff;font-weight:800;
+  font-size:11px;display:grid;place-items:center}
+.rank-row.pinned .rank-num{background:var(--gold);color:var(--gold-ink)}
+.rank-main strong{font-size:11.5px;display:block}
+.rank-route{font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.6}
+.rank-share-track{height:6px;background:var(--sunken);border-radius:var(--r-pill);overflow:hidden;margin-top:6px}
+.rank-share-track>span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#37a9af)}
+.rank-pct{text-align:left;font-weight:800;font-size:13px;color:var(--navy);font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-pill);padding:2px 8px;
+  font-size:9.5px;font-weight:800;margin-top:5px}
+.badge.ok{background:var(--st-good-wash);color:var(--st-good-ink)}
+.badge.dev{background:var(--st-critical-wash);color:var(--st-critical-ink)}
+
+.conf-tile{display:flex;align-items:center;gap:14px;background:var(--sunken);border-radius:var(--r-md);
+  padding:14px;margin-top:10px}
+.donut{flex:none}
+.conf-tile .t b{display:block;font-size:20px;font-weight:800;color:var(--navy)}
+.conf-tile .t span{font-size:11px;color:var(--text-3)}
+.root-list{margin-top:10px;display:grid;gap:8px}
+.root-row{display:grid;grid-template-columns:minmax(0,1fr) 60px;gap:8px;align-items:center;font-size:11px}
+.root-track{height:7px;background:var(--sunken);border-radius:var(--r-pill);overflow:hidden}
+.root-track>span{display:block;height:100%;border-radius:var(--r-pill)}
+.root-delta{text-align:left;font-weight:800;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="appbar">
+    <div class="row">
+      <div>
+        <div class="eyebrow brandmark"><i></i> GSI · هوش فرآیندی</div>
+        <h1>کاوشگر فرآیند — واردات و رفع تعهد ارزی</h1>
+        <div class="sub">نمونهٔ به‌روزشده بر اساس بررسی UX/Figma: بازگرداندن کاوشگر واریانت، افزودن حالت عملکرد،
+          اسلایدر ساده‌سازی به‌جای خطای سخت، و برجسته‌سازی انطباق روی خودِ نقشه. داده‌ها ساختگی‌اند.</div>
+      </div>
+      <div style="display:grid;gap:10px;justify-items:end">
+        <span class="tag-updated">✦ mockup به‌روزشده — Phase 2/3</span>
+        <div class="audience-pills">
+          <span class="audience-pill">مدیرعامل</span>
+          <span class="audience-pill">مدیر فرآیند</span>
+          <span class="audience-pill on">کارشناس/تحلیل‌گر</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="l">پروندهٔ مشاهده‌شده</div><b>۱٬۲۴۰</b><div class="g">بازهٔ مرجع جاری</div></div>
+    <div class="kpi"><div class="l">رویداد معتبر</div><b>۹٬۸۱۶</b><div class="g">۱۱ فعالیت متمایز</div></div>
+    <div class="kpi" style="--tone:var(--st-warning)"><div class="l">پروندهٔ دارای بازگشت</div><b>۱۴۶</b><div class="g">اصلاح مدارک تکراری</div></div>
+    <div class="kpi"><div class="l">میانهٔ بازهٔ مشاهده</div><b>۱۸٫۴</b><div class="g">روز، سرتاسر فرآیند</div></div>
+    <div class="kpi new" style="--tone:var(--st-good)"><div class="l">امتیاز انطباق</div><b>۸۷٪</b><div class="g">۱۰۸۰ از ۱۲۴۰ پرونده مطابق مسیر مرجع</div></div>
+    <div class="kpi new" style="--tone:var(--gold)"><div class="l">پوشش مسیر غالب</div><b>۶۲٪</b><div class="g">۴ واریانت، ۹۲٪ کل پرونده‌ها را می‌پوشانند</div></div>
+  </div>
+
+  <div class="layout">
+
+    <!-- FILTER SIDEBAR — new component, Phase 2.2 / 3.2 -->
+    <div class="panel">
+      <h3>فیلتر و دامنه</h3>
+      <div class="desc">فقط در سطح کارشناس/تحلیل‌گر نمایش داده می‌شود؛ مدیر و مدیرعامل نسخهٔ خلاصه را می‌بینند.</div>
+
+      <div class="f-section">
+        <div class="f-label">دامنه و زمان مرجع</div>
+        <div class="f-value" style="margin-top:6px">تمام شعب · ۱۴۰۴/۰۵/۰۱ تا ۱۴۰۴/۰۶/۳۱</div>
+      </div>
+
+      <div class="f-section">
+        <div class="f-label">واحد / تیم</div>
+        <div class="chip-row">
+          <span class="chip on">بازرگانی</span>
+          <span class="chip on">گمرک</span>
+          <span class="chip">خزانه</span>
+          <span class="chip">تدارکات</span>
+        </div>
+      </div>
+
+      <div class="f-section">
+        <div class="f-label">کیفیت شواهد</div>
+        <div class="chip-row">
+          <span class="chip on">مستند</span>
+          <span class="chip on">سیستمی</span>
+          <span class="chip">مشاهده نشده</span>
+        </div>
+      </div>
+
+      <div class="f-section">
+        <div class="f-label">سادگی نمایش نقشه <span class="f-value">(هرگز پیش‌فرض کمتر از ۱۰۰٪ نیست)</span></div>
+        <div class="slider-wrap">
+          <input type="range" id="abstraction" min="0" max="100" value="100">
+        </div>
+        <div class="abstraction-readout">
+          <span>فعالیت: <b id="actReadout">۱۱ از ۱۱</b></span>
+          <span>مسیر: <b id="edgeReadout">۱۱ از ۱۱</b></span>
+        </div>
+      </div>
+
+      <button class="btn" id="resetBtn">↺ بازگشت به دقت کامل</button>
+    </div>
+
+    <!-- PROCESS EXPLORER CANVAS — Phase 2.3/2.4, 3.2 -->
+    <div>
+      <div class="panel">
+        <div class="canvas-head">
+          <div>
+            <h3>مسیر فرآیند — نقشهٔ جریان</h3>
+            <div class="desc">لایه‌بندی راست‌به‌چپ؛ شروع فرآیند (درخواست خرید) سمت راست بوم.</div>
+          </div>
+          <div class="mode-toggle" id="modeToggle" style="width:200px">
+            <button class="on" data-mode="freq">فراوانی</button>
+            <button data-mode="perf">عملکرد</button>
+          </div>
+        </div>
+
+        <svg id="flowSvg" class="flow-canvas mode-freq" viewBox="0 0 1600 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#5a6b79"></path>
+            </marker>
+            <marker id="arrow-crit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#d03b3b"></path>
+            </marker>
+          </defs>
+
+          <!-- single-row layered layout, right→left, same convention as pm_ui/charts/process_flow.py:
+               layer = column (x), same-layer branches stack/arc off that column rather than wrapping rows -->
+          <g class="edges" id="edgesLayer">
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:#0a7c86;--perf-color:var(--seq-2)">
+              <path d="M1400,98 C1385,98 1385,98 1370,98" stroke-width="7.6" marker-end="url(#arrow)"/>
+              <text x="1385" y="86">۱٬۱۹۰</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:#0a7c86;--perf-color:var(--seq-2)">
+              <path d="M1230,98 C1215,98 1215,98 1200,98" stroke-width="7.4" marker-end="url(#arrow)"/>
+              <text x="1215" y="86">۱٬۱۶۵</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:#0a7c86;--perf-color:var(--seq-3)">
+              <path d="M1060,98 C1045,98 1045,98 1030,98" stroke-width="7.0" marker-end="url(#arrow)"/>
+              <text x="1045" y="86">۱٬۱۰۲</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:#0a7c86;--perf-color:var(--seq-4)">
+              <path d="M890,98 C875,98 875,98 860,98" stroke-width="6.8" marker-end="url(#arrow)"/>
+              <text x="875" y="86">۱٬۰۸۰</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:#0a7c86;--perf-color:var(--seq-3)">
+              <path d="M720,98 C705,98 705,98 690,98" stroke-width="6.6" marker-end="url(#arrow)"/>
+              <text x="705" y="86">۱٬۰۵۸</text>
+            </g>
+            <!-- DOCS ⇄ rework loop (same column, arcs below) -->
+            <g class="edge" data-variants="v3" style="--freq-color:var(--st-warning);--perf-color:var(--seq-4)">
+              <path d="M600,126 C578,155 578,168 600,188" stroke-width="3.4" marker-end="url(#arrow)"/>
+              <text x="552" y="168">۱۴۶</text>
+            </g>
+            <g class="edge" data-variants="v3" style="--freq-color:var(--st-warning);--perf-color:var(--seq-4)">
+              <path d="M640,188 C662,168 662,155 640,126" stroke-width="3.4" marker-end="url(#arrow)"/>
+            </g>
+            <!-- DOCS -> CUSTOMS (bottleneck: thick + reddened + long duration) -->
+            <g class="edge" data-variants="v1 v2 v3 v4" style="--freq-color:var(--st-critical);--perf-color:var(--seq-6)">
+              <path d="M550,98 C535,98 535,98 520,98" stroke-width="8.4" marker-end="url(#arrow-crit)"/>
+              <text x="535" y="86">۱٬۰۴۰ · میانه ۴٫۲ روز</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3" style="--freq-color:#0a7c86;--perf-color:var(--seq-3)">
+              <path d="M380,98 C365,98 365,98 350,98" stroke-width="7.0" marker-end="url(#arrow)"/>
+              <text x="365" y="86">۹۸۰</text>
+            </g>
+            <g class="edge" data-variants="v1 v2 v3" style="--freq-color:#0a7c86;--perf-color:var(--seq-2)">
+              <path d="M210,98 C195,98 195,98 180,98" stroke-width="7.0" marker-end="url(#arrow)"/>
+              <text x="195" y="86">۹۷۰</text>
+            </g>
+            <!-- deviant: CUSTOMS -> SETTLEMENT skipping RELEASE -->
+            <g class="edge deviant" data-variants="v4">
+              <path d="M450,126 C400,220 160,220 110,126" stroke-width="3.2" marker-end="url(#arrow-crit)"/>
+              <text x="280" y="240" fill="#a52020">۷۵ پرونده · پرش مرحلهٔ ترخیص</text>
+            </g>
+          </g>
+
+          <g class="nodes" id="nodesLayer">
+            <g class="node" data-id="pr" data-variants="v1 v2 v3 v4" transform="translate(1400,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">درخواست خرید</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۲۴۰</text>
+            </g>
+            <g class="node" data-id="po" data-variants="v1 v2 v3 v4" transform="translate(1230,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">سفارش خرید</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۱۹۰</text>
+            </g>
+            <g class="node" data-id="alloc" data-variants="v1 v2 v3 v4" transform="translate(1060,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">تخصیص ارز</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۱۶۵</text>
+            </g>
+            <g class="node" data-id="fx" data-variants="v1 v2 v3 v4" transform="translate(890,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">تأمین ارز</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۱۰۲</text>
+            </g>
+            <g class="node" data-id="ship" data-variants="v1 v2 v3 v4" transform="translate(720,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">حمل</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۰۸۰</text>
+            </g>
+            <g class="node" data-id="docs" data-variants="v1 v2 v3 v4" transform="translate(550,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">اسناد</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۰۵۸</text>
+            </g>
+            <g class="node" data-id="fixdoc" data-variants="v3" transform="translate(560,188)">
+              <rect class="card" width="120" height="34" rx="10" stroke="#e0a52e"/>
+              <rect class="status-bar" width="6" height="34" fill="#e0a52e"/>
+              <text class="label" x="60" y="21" text-anchor="middle" style="font-size:10px">اصلاح مدارک</text>
+            </g>
+            <g class="node" data-id="customs" data-variants="v1 v2 v3 v4" transform="translate(380,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#a52020" stroke-width="2"/>
+              <rect class="status-bar" width="6" height="56" fill="#d03b3b"/>
+              <text class="label" x="70" y="22" text-anchor="middle">گمرک</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۱٬۰۴۰</text>
+              <text class="hint" x="70" y="51" text-anchor="middle">گلوگاه — بحرانی</text>
+            </g>
+            <g class="node" data-id="release" data-variants="v1 v2 v3" transform="translate(210,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#8b9aa5"/>
+              <rect class="status-bar" width="6" height="56" fill="#8b9aa5"/>
+              <text class="label" x="70" y="22" text-anchor="middle">ترخیص</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۹۸۰</text>
+            </g>
+            <g class="node" data-id="settle" data-variants="v1 v2 v3 v4" transform="translate(40,70)">
+              <rect class="card" width="140" height="56" rx="10" stroke="#1d8f4e"/>
+              <rect class="status-bar" width="6" height="56" fill="#1d8f4e"/>
+              <text class="label" x="70" y="22" text-anchor="middle">رفع تعهد</text>
+              <text class="count" x="70" y="40" text-anchor="middle">۹۶۵</text>
+            </g>
+          </g>
+        </svg>
+
+        <div class="legend">
+          <span><i class="dot" style="background:#8b9aa5"></i> عادی</span>
+          <span><i class="dot" style="background:#e0a52e"></i> تحت نظر</span>
+          <span><i class="dot" style="background:#d03b3b"></i> بحرانی/گلوگاه</span>
+          <span><i class="dot" style="background:#1d8f4e"></i> ایمن</span>
+          <span><i style="background:var(--teal)"></i> ضخامت یال = فراوانی</span>
+          <span><i style="background:linear-gradient(90deg,var(--seq-1),var(--seq-6))"></i> رنگ یال (حالت عملکرد) = مدت زمان</span>
+          <span><i class="dash"></i> یال خط‌چین = انحراف از انطباق</span>
+        </div>
+        <div class="canvas-note" id="canvasNote">نمایش کامل — ۱۱ فعالیت، ۱۱ مسیر. هیچ داده‌ای پنهان نشده است.</div>
+      </div>
+    </div>
+
+    <!-- VARIANT EXPLORER + CONFORMANCE — Phase 2.1/2.4, 3.2 -->
+    <div>
+      <div class="panel">
+        <h3>کاوشگر واریانت</h3>
+        <div class="desc">روی هر واریانت کلیک کنید تا مسیر آن روی نقشه برجسته و بقیه کم‌رنگ شود.</div>
+
+        <div class="rank-row pinned selected" data-variant="v1" onclick="selectVariant('v1')">
+          <div class="rank-num">★</div>
+          <div class="rank-main">
+            <strong>مسیر غالب (مرجع انطباق)</strong>
+            <div class="rank-route">درخواست → سفارش → تخصیص ارز → تأمین ارز → حمل → اسناد → گمرک → ترخیص → رفع تعهد</div>
+            <div class="rank-share-track"><span style="width:62%"></span></div>
+            <span class="badge ok">منطبق</span>
+          </div>
+          <div class="rank-pct">۶۲٪</div>
+        </div>
+
+        <div class="rank-row" data-variant="v2" onclick="selectVariant('v2')">
+          <div class="rank-num">۲</div>
+          <div class="rank-main">
+            <strong>همان مسیر، با تأخیر گمرکی</strong>
+            <div class="rank-route">همان توالی؛ میانگین توقف در «گمرک» ۴٫۲ روز به‌جای ۱٫۱ روز</div>
+            <div class="rank-share-track"><span style="width:21%"></span></div>
+            <span class="badge ok">منطبق از نظر توالی</span>
+          </div>
+          <div class="rank-pct">۲۱٪</div>
+        </div>
+
+        <div class="rank-row" data-variant="v3" onclick="selectVariant('v3')">
+          <div class="rank-num">۳</div>
+          <div class="rank-main">
+            <strong>با بازگشت اصلاح مدارک</strong>
+            <div class="rank-route">…اسناد → اصلاح مدارک → اسناد → گمرک…</div>
+            <div class="rank-share-track"><span style="width:11%"></span></div>
+            <span class="badge ok">منطبق — بازگشت خطا نیست</span>
+          </div>
+          <div class="rank-pct">۱۱٪</div>
+        </div>
+
+        <div class="rank-row" data-variant="v4" onclick="selectVariant('v4')">
+          <div class="rank-num">۴</div>
+          <div class="rank-main">
+            <strong>پرش مرحلهٔ ترخیص</strong>
+            <div class="rank-route">…گمرک → رفع تعهد (بدون رویداد «ترخیص» ثبت‌شده)</div>
+            <div class="rank-share-track" style="background:var(--st-critical-wash)"><span style="width:6%;background:var(--st-critical)"></span></div>
+            <span class="badge dev">انحراف — مرحله ازقلم‌افتاده</span>
+          </div>
+          <div class="rank-pct">۶٪</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>انطباق و ریشه‌یابی</h3>
+        <div class="conf-tile">
+          <svg class="donut" width="72" height="72" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#eef2f4" stroke-width="5"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#1d8f4e" stroke-width="5"
+              stroke-dasharray="87 13" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+          </svg>
+          <div class="t"><b>۸۷٪</b><span>امتیاز انطباق کلی — ۱۶۰ پروندهٔ دارای انحراف</span></div>
+        </div>
+        <div class="root-list">
+          <div class="root-row">
+            <span>واحد گمرک — بندر جنوبی</span>
+            <div class="root-track"><span style="width:78%;background:var(--st-critical)"></span></div>
+            <div class="root-delta" style="color:var(--st-critical-ink)">‎+۱۸٪</div>
+          </div>
+          <div class="root-row">
+            <span>کانال حمل دریایی</span>
+            <div class="root-track"><span style="width:52%;background:var(--st-warning)"></span></div>
+            <div class="root-delta" style="color:var(--st-warning-ink)">‎+۹٪</div>
+          </div>
+          <div class="root-row">
+            <span>فصل تابستان</span>
+            <div class="root-track"><span style="width:20%;background:var(--st-good)"></span></div>
+            <div class="root-delta" style="color:var(--st-good-ink)">‎−۴٪</div>
+          </div>
+        </div>
+        <div class="desc" style="margin-top:10px">نرخ انحراف هر بُعد نسبت به میانگین کل — نه ادعای علّیت، فقط تفاضل مشاهده‌شده.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// mode toggle: frequency (edge thickness only) vs performance (sequential color ramp by duration)
+document.getElementById('modeToggle').addEventListener('click', function(e){
+  var btn = e.target.closest('button'); if(!btn) return;
+  this.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b===btn); });
+  var svg = document.getElementById('flowSvg');
+  svg.classList.toggle('mode-perf', btn.dataset.mode === 'perf');
+  svg.classList.toggle('mode-freq', btn.dataset.mode === 'freq');
+});
+
+// variant selection: highlight matching nodes/edges, dim the rest
+var selected = 'v1';
+function selectVariant(v){
+  selected = v;
+  document.querySelectorAll('.rank-row').forEach(function(r){
+    r.classList.toggle('selected', r.dataset.variant === v);
+  });
+  var edgesLayer = document.getElementById('edgesLayer');
+  var nodesLayer = document.getElementById('nodesLayer');
+  edgesLayer.classList.add('filtering'); nodesLayer.classList.add('filtering');
+  edgesLayer.querySelectorAll('.edge').forEach(function(el){
+    var vs = (el.dataset.variants || '').split(' ');
+    el.classList.toggle('v-active', vs.indexOf(v) !== -1);
+  });
+  nodesLayer.querySelectorAll('.node').forEach(function(el){
+    var vs = (el.dataset.variants || '').split(' ');
+    el.classList.toggle('v-active', vs.indexOf(v) !== -1);
+  });
+}
+selectVariant('v1');
+document.getElementById('resetBtn').addEventListener('click', function(){
+  document.getElementById('edgesLayer').classList.remove('filtering');
+  document.getElementById('nodesLayer').classList.remove('filtering');
+  document.querySelectorAll('.rank-row').forEach(function(r){ r.classList.remove('selected'); });
+  document.querySelector('.rank-row.pinned').classList.add('selected');
+  document.getElementById('abstraction').value = 100;
+  applyAbstraction(100);
+  document.getElementById('modeToggle').querySelectorAll('button').forEach(function(b,i){ b.classList.toggle('on', i===0); });
+  var svg = document.getElementById('flowSvg'); svg.classList.add('mode-freq'); svg.classList.remove('mode-perf');
+});
+
+// abstraction slider: 100% = full graph; below thresholds, progressively hide the rarest elements
+// (rework loop first, then the deviating skip path) — the main 10-activity spine never disappears.
+function applyAbstraction(val){
+  var reworkNode = document.querySelector('[data-id="fixdoc"]');
+  var reworkEdges = document.querySelectorAll('.edge[data-variants="v3"]');
+  var deviantEdge = document.querySelector('.edge.deviant');
+  var showRework = val >= 70;
+  var showDeviant = val >= 40;
+  reworkNode.classList.toggle('hidden-by-slider', !showRework);
+  reworkEdges.forEach(function(e){ e.classList.toggle('hidden-by-slider', !showRework); });
+  deviantEdge.classList.toggle('hidden-by-slider', !showDeviant);
+
+  var totalActs = 11, totalPaths = 11;
+  var shownActs = totalActs - (showRework?0:1);
+  var shownPaths = totalPaths - (showRework?0:2) - (showDeviant?0:1);
+  document.getElementById('actReadout').textContent = toFa(shownActs) + ' از ' + toFa(totalActs);
+  document.getElementById('edgeReadout').textContent = toFa(shownPaths) + ' از ' + toFa(totalPaths);
+  document.getElementById('canvasNote').textContent = (val==100)
+    ? 'نمایش کامل — ۱۱ فعالیت، ۱۱ مسیر. هیچ داده‌ای پنهان نشده است.'
+    : 'نمایش ساده‌شده — ' + toFa(totalActs-shownActs) + ' فعالیت و ' + toFa(totalPaths-shownPaths) + ' مسیر کم‌تکرار پنهان شد. برای دقت کامل، بازنشانی کنید.';
+}
+function toFa(n){ return String(n).replace(/[0-9]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+document.getElementById('abstraction').addEventListener('input', function(){ applyAbstraction(+this.value); });
+</script>
+</body></html>
