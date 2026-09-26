@@ -75,6 +75,32 @@ def legal_deadline(cb_date: Optional[date], segment: str,
     return min(candidates) if candidates else None
 
 
+#: مبناهای مجاز سررسید برات، به ترتیب اولویت: (ستون، برچسب، دقیق؟)
+#:
+#: ردیف سوم یک **تقریب موقت** است که مالک کسب‌وکار در ۱۴۰۵/۰۷/۰۴ صریحاً
+#: اجازه‌اش را داد («فعلاً نزدیک‌ترین تاریخ به تاریخ بارنامه، تا بررسی کنم»).
+#: شاهد حرکت محموله همیشه **بعد از** تاریخ بارنامه است، پس سررسیدی که از آن
+#: ساخته می‌شود **دیرتر از واقع** و جریمه **کمتر از واقع** است. به همین دلیل
+#: هرگز بی‌صدا استفاده نمی‌شود: مبنا در «مبنای مهلت تعهد» نوشته می‌شود و
+#: پرونده به‌صورت «تقریبی» علامت می‌خورد تا لایه اعتماد آن را حداکثر
+#: «جهت‌نما» درجه‌بندی کند، نه «قابل تصمیم».
+BARAT_BASIS_CHAIN: tuple = (
+    ("INVOICE_DATE", "تاریخ فاکتور تجاری", True),
+    ("BL_DATE", "تاریخ بارنامه", True),
+    ("SHIPPED_EVIDENCE_DATE", "شاهد حرکت محموله", False),
+)
+
+
+def barat_basis(row: Dict[str, Any]) -> Tuple[Optional[date], str, bool]:
+    """(تاریخ مبنا، برچسب، دقیق‌بودن) برای سررسید برات."""
+    for column, label, exact in BARAT_BASIS_CHAIN:
+        value = CalendarEngine.parse(row.get(column))
+        if value:
+            note = label if exact else f"{label} — تقریبی/موقت"
+            return value, note, exact
+    return None, "", True
+
+
 def default_barat_due(basis_date: Optional[date], rb: Optional[RuleBook] = None) -> Optional[date]:
     """سررسید برات = تاریخ مبنا + مدت برات.
 
@@ -144,6 +170,9 @@ class CommitmentResult:
     worst_status: str = "سبز"
     deadline_basis: str = ""
     penalty_basis: str = ""
+    #: سررسید از یک تاریخ تقریبی ساخته شده — عدد جهت‌نماست، نه قابل استناد.
+    deadline_is_approximate: bool = False
+    barat_basis_fa: str = ""
 
     def as_dict(self) -> Dict[str, Any]:
         return {
@@ -160,6 +189,8 @@ class CommitmentResult:
             "وضعیت کلی هشدار": self.worst_status,
             "شرح هشدارها": " ؛ ".join(d for _, d in self.alarms.values()),
             "مبنای مهلت تعهد": self.deadline_basis,
+            "مبنای سررسید برات": self.barat_basis_fa,
+            "DEADLINE_IS_APPROXIMATE": self.deadline_is_approximate,
             "مبنای جریمه": self.penalty_basis,
         }
 
@@ -187,12 +218,18 @@ class CommitmentEngine:
 
         P = CalendarEngine.parse
         cb_date = P(row.get("CB_DATE")) or P(row.get("BUY_DATE"))
-        # مبنای سررسید برات: تاریخ فاکتور تجاری (تصمیم مالک، ۱۴۰۵/۰۷/۰۴).
-        # عمداً هیچ fallbackی به تاریخ حمل/تخلیه/ترخیص ندارد — هر کدام از
-        # آن‌ها سررسید را عقب می‌اندازد و جریمه را کمتر از واقع نشان می‌دهد.
-        invoice_date = P(row.get("INVOICE_DATE"))
-        barat_due = P(row.get("BARAT_DUE")) or (default_barat_due(invoice_date, rb)
-                                                if res.is_barat else None)
+        # مبنای سررسید برات — زنجیره BARAT_BASIS_CHAIN. مقدار صریح سورس
+        # (BARAT_DUE) همیشه مقدم است و اصلاً تقریب نیست.
+        explicit_due = P(row.get("BARAT_DUE"))
+        barat_due = explicit_due
+        if not barat_due and res.is_barat:
+            basis_date, basis_label, exact = barat_basis(row)
+            barat_due = default_barat_due(basis_date, rb)
+            if barat_due:
+                res.barat_basis_fa = basis_label
+                res.deadline_is_approximate = not exact
+        elif explicit_due:
+            res.barat_basis_fa = "سررسید صریح سورس"
 
         res.deadline = legal_deadline(cb_date, segment, barat_due, rb)
         if res.deadline:

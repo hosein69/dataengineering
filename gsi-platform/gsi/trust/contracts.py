@@ -150,6 +150,8 @@ CONTRACTS: Tuple[DecisionContract, ...] = (
         currency_field="FX_NTSW_CURRENCY",
         decision_floor=95.0,
         directional_floor=70.0,
+        # سررسیدی که از یک تاریخ تقریبی ساخته شده، حداکثر جهت‌نماست.
+        provisional_flag="DEADLINE_IS_APPROXIMATE",
         note_fa="رتبه‌بندی ریسک با پوشش ۹۵٪ هم قابل اتکاست؛ ولی رقم جریمه رسمی نیست.",
     ),
     DecisionContract(
@@ -162,6 +164,8 @@ CONTRACTS: Tuple[DecisionContract, ...] = (
         aggregation=ADDITIVE,
         amount_field="جریمه برآوردی",
         currency_field="FX_NTSW_CURRENCY",
+        # سررسیدی که از یک تاریخ تقریبی ساخته شده، حداکثر جهت‌نماست.
+        provisional_flag="DEADLINE_IS_APPROXIMATE",
         note_fa="جریمه از مانده و مهلت مشتق می‌شود؛ نبود هرکدام، برآورد را بی‌اعتبار می‌کند.",
     ),
     DecisionContract(

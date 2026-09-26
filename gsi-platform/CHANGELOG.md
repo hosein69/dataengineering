@@ -1,3 +1,43 @@
+# GSI 29.13.0 — interim barat basis, declared and capped — 2026-09-26
+
+Two owner decisions, both implemented, neither implemented silently.
+
+**Invoice value: SATA and NTSW are authoritative.** Clearance and cotage are
+dropped from the candidate list, so they can no longer fill a blank with a
+number that is not the reference — on the published snapshot they disagreed
+with SATA by up to 57x in the same currency. They remain in the cross-source
+comparison, so the disagreement is still reported; they just cannot win. NTSW
+is already tier 1 in the authority policy and SATA tier 2, so the existing tier
+order already matched this decision. Coverage does not drop: SATA covers every
+case clearance did.
+
+**Barat due date: use the nearest available date, for now.** The previous
+release refused to compute a due date from anything but the invoice date,
+because every other candidate is later and a later basis understates overdue
+days and penalty exposure. The owner heard that and decided to proceed with an
+interim approximation pending investigation.
+
+So the basis is now a declared chain — `INVOICE_DATE`, then `BL_DATE`, then
+`SHIPPED_EVIDENCE_DATE` — where only the last is approximate. The risk did not
+go away, so it is made visible rather than accepted quietly:
+
+- `مبنای سررسید برات` records which date was used and whether it was exact.
+- `DEADLINE_IS_APPROXIMATE` flags the case.
+- `DecisionContract.provisional_flag` caps any decision built on such a case at
+  DIRECTIONAL. A provisional answer can show the right direction, but it is
+  never decision-grade — otherwise an approximation that was announced once
+  becomes a hard number three screens later.
+- The stated reason says plainly that the approximation always lands late, so
+  the penalty it implies is lower than the real one.
+
+An explicit `BARAT_DUE` from the source still wins over the whole chain and is
+never approximate. Dates outside the chain (arrival, discharge, clearance,
+delivery order, release) remain barred as a basis; a test names all five.
+
+**Tests**: 1426 passing. Two tests from 29.11.0 that asserted the old
+prohibition were rewritten rather than deleted, and say in their docstring that
+the policy changed and why.
+
 # GSI 29.12.0 — the commercial invoice becomes the commitment basis — 2026-09-26
 
 The business owner decided the commercial invoice, not the bill of lading, is

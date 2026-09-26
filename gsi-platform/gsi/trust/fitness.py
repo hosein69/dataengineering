@@ -83,6 +83,11 @@ class DecisionContract:
     #: The additive rule overrides ``decision_floor``: it demands zero unknowns.
     decision_floor: float = 100.0
     directional_floor: float = 80.0
+    #: ستونی که اگر برای یک پرونده درست باشد، جواب آن پرونده **موقت** است.
+    #: نمونه: سررسیدی که از یک تاریخ تقریبی ساخته شده. چنین جوابی می‌تواند
+    #: جهت را درست نشان دهد، ولی هرگز «قابل تصمیم» نیست — وگرنه یک تقریبِ
+    #: اعلام‌شده، چند صفحه بعد به عددِ قطعی تبدیل می‌شود.
+    provisional_flag: str = ""
     note_fa: str = ""
 
     @property
@@ -98,6 +103,8 @@ class FitnessVerdict:
     ready: int = 0
     missing_required: int = 0
     conflicted: int = 0
+    #: پرونده‌هایی که جوابشان از یک مبنای تقریبی ساخته شده.
+    provisional_cases: int = 0
     #: currency -> total over decision-ready cases only.
     known_total: Dict[str, float] = dc_field(default_factory=dict)
     #: currency -> value sitting in cases that are *not* ready.
@@ -116,6 +123,9 @@ class FitnessVerdict:
         c = self.contract
         if not self.entities:
             return NOT_USABLE
+        # یک جواب موقت، هرچقدر هم پوشش داشته باشد، قابل استناد نیست.
+        if self.provisional:
+            return DIRECTIONAL if self.coverage_pct >= c.directional_floor else NOT_USABLE
         # Fail-closed on contradiction: a conflicting value is a *wrong* number,
         # not merely an absent one, so it can never be decision-grade.
         if self.conflicted:
@@ -133,6 +143,10 @@ class FitnessVerdict:
     @property
     def grade_fa(self) -> str:
         return GRADE_FA[self.grade]
+
+    @property
+    def provisional(self) -> bool:
+        return self.provisional_cases > 0
 
     @property
     def may_act(self) -> bool:
@@ -155,6 +169,11 @@ class FitnessVerdict:
 
     def reasons_fa(self) -> List[str]:
         out: List[str] = []
+        if self.provisional_cases:
+            out.append(
+                f"{self.provisional_cases:,} پرونده روی یک مبنای **تقریبی و موقت** حساب شده "
+                "(ستون «مبنای سررسید برات» می‌گوید کدام). عدد جهت را درست نشان می‌دهد ولی "
+                "قابل استناد نیست — تقریبْ همیشه دیرتر از واقع است، پس جریمه کمتر از واقع.")
         if self.conflicted:
             out.append(f"{self.conflicted:,} پرونده مقدار متعارض دارد (دو منبع دو عدد می‌گویند).")
         if self.missing_required:
@@ -203,6 +222,14 @@ def _entity_first(df: pd.DataFrame, key_column: str, column: str) -> Dict[str, A
     return out
 
 
+def _truthy(value) -> bool:
+    """پرچم‌های بولی از مارت گاهی متن‌اند («True»/«بله») و گاهی bool."""
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().casefold()
+    return text in {"true", "1", "بله", "yes"}
+
+
 def evaluate(contract: DecisionContract, profile: ProfileResult,
              df: pd.DataFrame, key_column: str) -> FitnessVerdict:
     """Grade one decision against a profiled frame."""
@@ -213,12 +240,16 @@ def evaluate(contract: DecisionContract, profile: ProfileResult,
     amounts = _entity_first(df, key_column, contract.amount_field) if contract.amount_field else {}
     currencies = _entity_first(df, key_column, contract.currency_field) if contract.currency_field else {}
 
+    provisional = (_entity_first(df, key_column, contract.provisional_flag)
+                   if contract.provisional_flag else {})
     blocking: Dict[str, int] = defaultdict(int)
     known: Dict[str, float] = defaultdict(float)
     at_risk: Dict[str, float] = defaultdict(float)
 
     for key, field_states in profile.states.items():
         verdict.entities += 1
+        if contract.provisional_flag and _truthy(provisional.get(key)):
+            verdict.provisional_cases += 1
         states = [field_states.get(f, C.MISSING) for f in contract.required]
         worst = C.worst_state(states)
 

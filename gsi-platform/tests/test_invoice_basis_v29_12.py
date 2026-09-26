@@ -46,18 +46,131 @@ class TheUsanceDueDateCountsFromTheCommercialInvoice(unittest.TestCase):
         basis = dt.date(2026, 1, 1)
         self.assertEqual(basis + dt.timedelta(days=days), default_barat_due(basis, rb))
 
-    def test_no_shipment_date_can_stand_in_for_it(self):
-        """مرز قرمز: تخلیه/ترخیص هفته‌ها بعدترند و جریمه را کمتر از واقع نشان می‌دهند."""
-        for substitute in ("SHIPPED_EVIDENCE_DATE", "BL_DATE", "DISCHARGE_DATE",
-                           "FULL_CLEAR_DATE", "ARRIVAL_DATE"):
-            with self.subTest(substitute):
-                self.assertIsNone(
-                    self._due(self._row(**{substitute: "1405/05/01"})),
-                    f"«{substitute}» نباید سررسید برات بسازد")
+    def test_only_the_declared_chain_can_serve_as_a_basis(self):
+        """تاریخ‌های خارج از زنجیره حق ندارند سررسید بسازند.
+
+        ترخیص و ورود، چه تقریبی چه دقیق، مبنا نیستند: خیلی دیرتر از بارنامه‌اند.
+        """
+        for outsider in ("DISCHARGE_DATE", "FULL_CLEAR_DATE", "ARRIVAL_DATE",
+                         "DO_DATE", "RELEASE_DATE"):
+            with self.subTest(outsider):
+                self.assertIsNone(self._due(self._row(**{outsider: "1405/05/01"})))
 
     def test_an_explicit_barat_due_from_the_source_still_wins(self):
         """قاعده پیش‌فرض، مقدار صریح سورس را کنار نمی‌زند."""
         self.assertIsNotNone(self._due(self._row(BARAT_DUE="1405/12/01")))
+
+
+class TheInterimBasisIsAllowedButNeverSilent(unittest.TestCase):
+    """مالک (۱۴۰۵/۰۷/۰۴): «فعلاً نزدیک‌ترین تاریخ به تاریخ بارنامه، تا بررسی کنم».
+
+    اجازه داده شد، ولی تقریب هرگز بی‌صدا نیست: مبنا نوشته می‌شود و پرونده
+    علامت «تقریبی» می‌خورد. شاهد حرکت محموله همیشه **بعد از** تاریخ بارنامه
+    است، پس سررسیدِ ساخته‌شده از آن دیرتر از واقع و جریمه کمتر از واقع است.
+    """
+
+    def test_the_chain_is_ordered_invoice_then_bill_of_lading_then_evidence(self):
+        from gsi.engines.commitment import BARAT_BASIS_CHAIN
+        self.assertEqual(["INVOICE_DATE", "BL_DATE", "SHIPPED_EVIDENCE_DATE"],
+                         [c for c, _, _ in BARAT_BASIS_CHAIN])
+
+    def test_only_the_last_link_is_approximate(self):
+        from gsi.engines.commitment import BARAT_BASIS_CHAIN
+        exact = {c: e for c, _, e in BARAT_BASIS_CHAIN}
+        self.assertTrue(exact["INVOICE_DATE"])
+        self.assertTrue(exact["BL_DATE"])
+        self.assertFalse(exact["SHIPPED_EVIDENCE_DATE"])
+
+    def test_a_bill_of_lading_date_is_used_and_is_not_approximate(self):
+        from gsi.engines.commitment import barat_basis
+        _, label, exact = barat_basis({"BL_DATE": "1405/05/01",
+                                       "SHIPPED_EVIDENCE_DATE": "1405/06/20"})
+        self.assertTrue(exact)
+        self.assertNotIn("تقریبی", label)
+
+    def test_the_evidence_date_is_used_but_marked_approximate(self):
+        from gsi.engines.commitment import CommitmentEngine
+        res = CommitmentEngine().evaluate(
+            {"CANONICAL_REG": "1", "PAYMENT_METHOD": "برات", "SEGMENT": "production",
+             "BARAT_DUE": "", "SHIPPED_EVIDENCE_DATE": "1405/05/01"},
+            dt.date(2026, 8, 31))
+        self.assertIsNotNone(res.deadline, "مالک اجازه استفاده موقت داده است")
+        self.assertTrue(res.deadline_is_approximate)
+        self.assertIn("تقریبی", res.barat_basis_fa)
+
+    def test_the_basis_reaches_the_mart_so_a_reader_can_see_it(self):
+        from gsi.engines.commitment import CommitmentEngine
+        row = CommitmentEngine().evaluate(
+            {"CANONICAL_REG": "1", "PAYMENT_METHOD": "برات", "SEGMENT": "production",
+             "BARAT_DUE": "", "SHIPPED_EVIDENCE_DATE": "1405/05/01"},
+            dt.date(2026, 8, 31)).as_dict()
+        self.assertIn("تقریبی", row["مبنای سررسید برات"])
+        self.assertTrue(row["DEADLINE_IS_APPROXIMATE"])
+
+    def test_an_exact_basis_is_not_flagged(self):
+        from gsi.engines.commitment import CommitmentEngine
+        res = CommitmentEngine().evaluate(
+            {"CANONICAL_REG": "1", "PAYMENT_METHOD": "برات", "SEGMENT": "production",
+             "BARAT_DUE": "", "INVOICE_DATE": "1405/05/01"}, dt.date(2026, 8, 31))
+        self.assertFalse(res.deadline_is_approximate)
+
+
+class AProvisionalAnswerIsNeverDecisionGrade(unittest.TestCase):
+    """تقریبِ اعلام‌شده نباید چند صفحه بعد به عدد قطعی تبدیل شود."""
+
+    def _verdict(self, approximate):
+        from gsi.trust.fitness import DecisionContract, evaluate
+        from gsi.trust.profiling import FieldRule, profile_frame
+        rows = [{"CANONICAL_REG": "1", "مهلت قانونی رفع تعهد": "1405/09/01",
+                 "DEADLINE_IS_APPROXIMATE": approximate}]
+        frame = pd.DataFrame(rows)
+        profile = profile_frame(frame, (FieldRule("مهلت قانونی رفع تعهد", title_fa="مهلت"),),
+                                entity_type="REG", key_column="CANONICAL_REG")
+        contract = DecisionContract(
+            id="X", title_fa="x", question_fa="x?", entity_type="REG",
+            required=("مهلت قانونی رفع تعهد",),
+            provisional_flag="DEADLINE_IS_APPROXIMATE")
+        return evaluate(contract, profile, frame, "CANONICAL_REG")
+
+    def test_full_coverage_is_still_only_directional_when_provisional(self):
+        from gsi.trust.fitness import DECISION_GRADE, DIRECTIONAL
+        v = self._verdict(True)
+        self.assertEqual(100.0, v.coverage_pct)
+        self.assertEqual(1, v.provisional_cases)
+        self.assertEqual(DIRECTIONAL, v.grade)
+        self.assertNotEqual(DECISION_GRADE, v.grade)
+
+    def test_the_same_data_without_the_flag_is_decision_grade(self):
+        from gsi.trust.fitness import DECISION_GRADE
+        v = self._verdict(False)
+        self.assertEqual(0, v.provisional_cases)
+        self.assertEqual(DECISION_GRADE, v.grade)
+
+    def test_the_reason_says_the_number_understates_the_penalty(self):
+        reasons = " ".join(self._verdict(True).reasons_fa())
+        self.assertIn("تقریبی", reasons)
+        self.assertIn("کمتر از واقع", reasons)
+
+    def test_the_deadline_decisions_carry_the_flag(self):
+        from gsi.trust.contracts import BY_ID
+        for cid in ("FX_DEADLINE_RISK", "PENALTY_EXPOSURE"):
+            self.assertEqual("DEADLINE_IS_APPROXIMATE", BY_ID[cid].provisional_flag, cid)
+
+
+class TheInvoiceValueComesFromTheNamedSourcesOnly(unittest.TestCase):
+    """مرجع: ساتا و NTSW (تصمیم مالک). ترخیص و کوتاژ پرکننده جای خالی نیستند."""
+
+    def test_clearance_and_cotage_cannot_supply_the_value(self):
+        candidates = DERIVED["INVOICE_VALUE"][0]
+        self.assertIn("SATA_INVOICE_VALUE", candidates)
+        self.assertNotIn("CL_INVOICE_VALUE", candidates)
+        self.assertNotIn("COT_INVOICE_VALUE", candidates)
+
+    def test_but_they_are_still_compared_so_the_disagreement_stays_visible(self):
+        from gsi.trust.contracts import REG, cross_source_for
+        rule = [r for r in cross_source_for(REG) if r.column == "INVOICE_VALUE"][0]
+        self.assertIn("CL_INVOICE_VALUE", rule.sources)
+        self.assertIn("COT_INVOICE_VALUE", rule.sources)
 
 
 class TheInvoiceDateIsDeclaredEvenThoughNoSourceCarriesItYet(unittest.TestCase):

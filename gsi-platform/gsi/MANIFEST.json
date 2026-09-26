@@ -56,11 +56,11 @@
   "diagnose.py": "3bc4ec4f7241a728",
   "doctor.py": "330847b0a74f7a9b",
   "engines/__init__.py": "e3b0c44298fc1c14",
-  "engines/commitment.py": "352ddce8789c05d3",
+  "engines/commitment.py": "de585dfa27e605b9",
   "engines/criticality.py": "d1bd358dc81a6ec9",
   "engines/math_engine.py": "956021bba1eb3ac2",
   "engines/risk.py": "dfddf283ea7b6a58",
-  "factsheet.py": "8d65d0b66fbfd472",
+  "factsheet.py": "b8091b82168a047a",
   "finance/__init__.py": "b9b143c5e16c64b7",
   "finance/equivalents.py": "58c8c65ab8ef2077",
   "health.py": "8c8ec1e7cd0efc6f",
@@ -137,7 +137,7 @@
   "stages/__init__.py": "d58037dccfacb197",
   "stages/base.py": "88acc097d9e96fd6",
   "stages/s10_resolve.py": "be25dd65b9b404bb",
-  "stages/s20_derive.py": "bae44859cfd293dd",
+  "stages/s20_derive.py": "64ec59c53c2bb315",
   "stages/s30_org.py": "6dc7bb33cdb1682c",
   "stages/s35_scope.py": "9dfad164afe2cec4",
   "stages/s38_supply_position.py": "39cb7b17d467e131",
@@ -179,8 +179,8 @@
   "studio_core/templates.py": "0c4f4ba2eb38250c",
   "trust/__init__.py": "b1000755ebccd908",
   "trust/codes.py": "d5af1eb5455c1698",
-  "trust/contracts.py": "1e3344de0b27a4f2",
-  "trust/fitness.py": "40deccb6feca305c",
+  "trust/contracts.py": "d079022965ec42d8",
+  "trust/fitness.py": "1cdb5d1a10df3cea",
   "trust/impact.py": "b7fcaf06bbde4a97",
   "trust/profiling.py": "171e8f1b02d58507",
   "trust/trend.py": "a2d4926994283c6e",
@@ -208,5 +208,5 @@
   "warehouse/store.py": "9411327a1bb81b51",
   "warehouse/writer_lock.py": "154ce442a0608614"
  },
- "package_version": "29.12.0"
+ "package_version": "29.13.0"
 }

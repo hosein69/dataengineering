@@ -109,46 +109,44 @@ class TheBillOfLadingDateStaysUnknownOnPurpose(unittest.TestCase):
                              "تاریخ صدور بارنامه با هیچ تاریخ مشابهی جایگزین نمی‌شود")
 
 
-class TheUsanceDueDateRefusesASubstitute(unittest.TestCase):
-    """مرز قرمز: جایگزینی اینجا، جریمه تأخیر را کمتر از واقع نشان می‌دهد."""
+class TheUsanceDueDateUsesTheEvidenceOnlyAsAFlaggedInterim(unittest.TestCase):
+    """سیاست در ۱۴۰۵/۰۷/۰۴ با تصمیم مالک عوض شد.
 
-    def _due(self, row):
+    نسخه قبلی این کلاس، ساختن سررسید از شاهد حرکت را **ممنوع** می‌کرد، چون
+    شاهد همیشه بعد از تاریخ بارنامه است و سررسید را دیرتر از واقع می‌سازد.
+    مالک این ریسک را شنید و تصمیم گرفت: «فعلاً نزدیک‌ترین تاریخ به تاریخ
+    بارنامه، تا بررسی کنم».
+
+    پس ممنوعیت برداشته شد، ولی خودِ ریسک نه: تقریب هرگز بی‌صدا نیست. هر
+    پرونده‌ای که این‌طور حساب شده، علامت می‌خورد و تصمیم‌های وابسته حداکثر
+    «جهت‌نما» می‌شوند. جزئیات و تست کامل در ``test_invoice_basis_v29_12``.
+    """
+
+    def _result(self, **row):
         from gsi.engines.commitment import CommitmentEngine
-        return CommitmentEngine().evaluate(row, dt.date(2026, 8, 31)).deadline
+        base = {"CANONICAL_REG": "10000001", "PAYMENT_METHOD": "برات",
+                "SEGMENT": "production", "BARAT_DUE": "", "CB_DATE": "", "BUY_DATE": ""}
+        base.update(row)
+        return CommitmentEngine().evaluate(base, dt.date(2026, 8, 31))
 
-    def test_a_discharge_date_does_not_become_a_usance_due_date(self):
-        base = {
-            "CANONICAL_REG": "10000001", "PAYMENT_METHOD": "برات",
-            "SEGMENT": "production", "BL_DATE": "",
-            "SHIPPED_EVIDENCE_DATE": "1405/05/01",
-            "SHIPPED_EVIDENCE_BASIS": "تاریخ تخلیه",
-            "BARAT_DUE": "", "CB_DATE": "", "BUY_DATE": "",
-        }
-        with_evidence = self._due(dict(base))
-        without = self._due(dict(base, SHIPPED_EVIDENCE_DATE="", SHIPPED_EVIDENCE_BASIS=""))
-        self.assertEqual(
-            without, with_evidence,
-            "سررسید برات نباید از شاهد حرکت محموله ساخته شود؛ عدد خوش‌بینانه غلط، "
-            "بدتر از عدد نامعلوم است.")
+    def test_the_evidence_date_now_produces_a_due_date(self):
+        self.assertIsNotNone(self._result(SHIPPED_EVIDENCE_DATE="1405/05/01").deadline)
 
-    def test_the_bill_of_lading_date_is_no_longer_the_basis_either(self):
-        """مبنا در ۱۴۰۵/۰۷/۰۴ به **فاکتور تجاری** تغییر کرد (تصمیم مالک).
+    def test_and_that_due_date_is_always_marked_approximate(self):
+        res = self._result(SHIPPED_EVIDENCE_DATE="1405/05/01")
+        self.assertTrue(res.deadline_is_approximate,
+                        "تقریب باید دیده شود، وگرنه به عدد قطعی تبدیل می‌شود")
+        self.assertIn("تقریبی", res.barat_basis_fa)
 
-        پس حتی یک تاریخ بارنامهٔ واقعی هم دیگر سررسید نمی‌سازد. اینکه قاعده
-        هنوز زنده است و با تاریخ فاکتور کار می‌کند، در
-        ``test_invoice_basis_v29_12`` اثبات می‌شود — وگرنه این تست با
-        «کلاً خاموشش کردیم» هم سبز می‌ماند.
-        """
-        row = {
-            "CANONICAL_REG": "10000001", "PAYMENT_METHOD": "برات",
-            "SEGMENT": "production", "BL_DATE": "1405/05/01",
-            "BARAT_DUE": "", "CB_DATE": "", "BUY_DATE": "",
-        }
-        self.assertIsNone(self._due(row))
-        from gsi.engines.commitment import CommitmentEngine
-        with_invoice = CommitmentEngine().evaluate(
-            dict(row, BL_DATE="", INVOICE_DATE="1405/05/01"), dt.date(2026, 8, 31))
-        self.assertIsNotNone(with_invoice.deadline, "قاعده باید با تاریخ فاکتور کار کند")
+    def test_a_bill_of_lading_date_outranks_the_evidence_and_is_exact(self):
+        res = self._result(BL_DATE="1405/05/01", SHIPPED_EVIDENCE_DATE="1405/06/20")
+        self.assertFalse(res.deadline_is_approximate)
+
+    def test_the_invoice_date_outranks_both(self):
+        res = self._result(INVOICE_DATE="1405/04/01", BL_DATE="1405/05/01",
+                           SHIPPED_EVIDENCE_DATE="1405/06/20")
+        self.assertFalse(res.deadline_is_approximate)
+        self.assertIn("فاکتور", res.barat_basis_fa)
 
 
 class TheConsumersPointAtEvidenceThatExists(unittest.TestCase):
