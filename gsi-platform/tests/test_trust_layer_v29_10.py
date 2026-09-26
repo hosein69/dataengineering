@@ -38,7 +38,8 @@ def _mart() -> pd.DataFrame:
            "BL_DATE": "1405/05/01", "نیاز روزانه": 10, "موجودی ایران خودرو": 100,
            "موجودی ساپکو": 50, "EXPERT_SETTLEMENT": "زهرا الف",
            "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
-           "ORG_DEPT": "خرید خارجی", "_SOURCE_FILE": "ntsw.xlsx",
+           "ORG_DEPT": "خرید خارجی", "ORG_MANAGER": "مدیر الف",
+           "ORG_VICE": "معاونت خرید", "_SOURCE_FILE": "ntsw.xlsx",
            "_SOURCE_SHEET": "Release Commitment", "_SOURCE_ROW": 10 + i}
           for i in (1, 2, 3)],
         # R2 — balance missing
@@ -48,7 +49,8 @@ def _mart() -> pd.DataFrame:
          "BL_DATE": "1405/05/02", "نیاز روزانه": 5, "موجودی ایران خودرو": 20,
          "موجودی ساپکو": 10, "EXPERT_SETTLEMENT": "زهرا الف",
          "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
-         "ORG_DEPT": "خرید خارجی", "_SOURCE_FILE": "ntsw.xlsx",
+         "ORG_DEPT": "لجستیک", "ORG_MANAGER": "مدیر ب",
+         "ORG_VICE": "معاونت خرید", "_SOURCE_FILE": "ntsw.xlsx",
          "_SOURCE_SHEET": "Release Commitment", "_SOURCE_ROW": 20},
         # R3 — same registration, two currencies across its rows
         *[{"CANONICAL_REG": "10000003", "CANONICAL_BL": f"BL{5 + i}", "KEY_MATERIAL": f"M{5 + i}",
@@ -57,7 +59,8 @@ def _mart() -> pd.DataFrame:
            "BL_DATE": "1405/05/03", "نیاز روزانه": 8, "موجودی ایران خودرو": 40,
            "موجودی ساپکو": 20, "EXPERT_SETTLEMENT": "زهرا الف",
            "EXPERT_LOGISTICS": "کاوه ب", "EXPERT_COMMERCIAL": "نگار پ",
-           "ORG_DEPT": "خرید خارجی", "_SOURCE_FILE": "ntsw.xlsx",
+           "ORG_DEPT": "خرید خارجی", "ORG_MANAGER": "مدیر الف",
+           "ORG_VICE": "معاونت خرید", "_SOURCE_FILE": "ntsw.xlsx",
            "_SOURCE_SHEET": "Release Commitment", "_SOURCE_ROW": 30 + i}
           for i, cur in enumerate(("EUR", "CNY"))],
     ]
@@ -250,6 +253,82 @@ def test_field_worklist_uses_the_human_label_not_the_pipeline_column():
     assert row["فیلد"] == "تاریخ بارنامه" and row["ستون"] == "BL_DATE"
 
 
+
+# ── the ownership contract: role-specific, lossless, escalatable ───────────
+def test_every_defect_carries_its_escalation_path():
+    """A stalled item has to be escalatable without opening the HR chart."""
+    report = assess(_mart(), ref_date=REF)
+    routed = [d for d in report.ledger if d.owner.known
+              and d.owner.name != PLATFORM_OWNER]
+    assert routed
+    for defect in routed:
+        assert defect.owner.dept, "no unit means the backlog cannot be sliced"
+        assert defect.owner.manager, "no manager means nothing can be escalated"
+        assert defect.owner.vice
+
+
+def test_a_generic_owner_never_overwrites_the_field_s_own_expert():
+    """``CURRENT_OWNER`` is a fallback, not an authority."""
+    df = _mart()
+    df["CURRENT_OWNER"] = "یک نفر دیگر"
+    df.loc[df["CANONICAL_REG"] == "10000002", "مانده تعهد"] = None
+    report = assess(df, ref_date=REF)
+    balance = [d for d in report.ledger if d.field_name == "مانده تعهد"]
+    assert balance
+    assert all(d.owner.name == "زهرا الف" for d in balance)
+
+
+def test_the_same_backlog_rolls_up_by_unit_and_by_manager_without_losing_defects():
+    """Slicing must re-group the ledger, never re-count or drop part of it."""
+    from gsi.trust.impact import owner_scorecards
+
+    report = assess(_mart(), ref_date=REF)
+    total = len(report.ledger)
+    assert total
+    for level, heading in (("owner", "مالک"), ("dept", "اداره"), ("manager", "مدیر")):
+        cards = owner_scorecards(report.opportunities, report.ledger, level=level)
+        assert sum(c.defects for c in cards) == total, level
+        assert heading in cards[0].row()
+    # The manager slice is a genuinely different cut, not a relabelled one:
+    # one expert here reports into two units across their cases, so grouping by
+    # manager can even be *finer* than grouping by person. What must hold is
+    # that each level groups on its own key and that every manager appears.
+    by_manager = owner_scorecards(report.opportunities, report.ledger, level="manager")
+    assert {c.owner for c in by_manager} >= {"مدیر الف", "مدیر ب"}
+    by_dept = owner_scorecards(report.opportunities, report.ledger, level="dept")
+    assert {c.owner for c in by_dept} >= {"خرید خارجی", "لجستیک"}
+
+
+def test_a_person_with_several_roles_keeps_all_of_them():
+    """Showing the last role seen is a lie the owner spots on day one."""
+    df = _mart()
+    # one expert owns both a settlement field and a logistics field
+    df["EXPERT_LOGISTICS"] = "زهرا الف"
+    df.loc[df["CANONICAL_REG"] == "10000002", "مانده تعهد"] = None
+    df.loc[df["CANONICAL_BL"] == "BL4", "BL_DATE"] = None
+    report = assess(df, ref_date=REF)
+    card = [c for c in report.scorecards if c.owner == "زهرا الف"]
+    assert card, "the expert must appear on the scorecard"
+    assert " · " in card[0].role, f"roles collapsed to one: {card[0].role!r}"
+
+
+def test_a_stage_code_is_shown_as_a_persian_role_everywhere():
+    """``PROCESS_CURRENT_OWNER`` carries codes like ``TREASURY``; the worklist
+    an expert downloads must not."""
+    df = _mart()
+    df["EXPERT_SETTLEMENT"] = ""
+    df["PROCESS_CURRENT_OWNER"] = "FX_COMMITMENT"
+    df.loc[df["CANONICAL_REG"] == "10000002", "مانده تعهد"] = None
+    report = assess(df, ref_date=REF)
+    from gsi.trust.verdict import UNIT_FA
+
+    roles = set(report.frames()["defects"]["نقش"])
+    assert roles
+    # A field rule that names its own role wins over the stage code, which is
+    # the point; what must never survive is the raw code reaching a human.
+    assert not (roles & set(UNIT_FA)), f"raw stage code shown: {roles & set(UNIT_FA)}"
+
+
 # ── invariant 8: the promise made to an owner is arithmetically honest ──────
 def test_a_case_blocked_in_two_decisions_is_still_one_cell_and_one_case():
     df = _mart()
@@ -300,7 +379,8 @@ def test_empty_and_column_less_input_do_not_raise():
     for df in (pd.DataFrame(), pd.DataFrame({"irrelevant": [1, 2]})):
         report = assess(df, ref_date=REF)
         assert report.headline_fa()
-        assert set(report.frames()) == {"decisions", "fields", "defects", "next_fixes", "owners"}
+        assert set(report.frames()) == {"decisions", "fields", "defects", "next_fixes",
+                                        "owners", "owners_by_dept", "owners_by_manager"}
 
 
 def test_unknown_defect_code_fails_loudly():

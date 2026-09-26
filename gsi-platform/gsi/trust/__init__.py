@@ -91,7 +91,17 @@ class TrustReport:
             "defects": self.ledger.frame(),
             "next_fixes": opportunities_frame(self.opportunities),
             "owners": scorecards_frame(self.scorecards),
+            # The same backlog by unit and by manager, so a department head can
+            # plan their own queue instead of scanning a list of every person.
+            "owners_by_dept": self.scorecards_at("dept"),
+            "owners_by_manager": self.scorecards_at("manager"),
         }
+
+    def scorecards_at(self, level: str) -> pd.DataFrame:
+        """The backlog rolled up to one organizational level."""
+        return scorecards_frame(
+            owner_scorecards(self.opportunities, self.ledger, level=level),
+            level=level)
 
     def summary(self) -> Dict[str, Any]:
         """Compact, JSON-safe state — this is what the trend line stores."""

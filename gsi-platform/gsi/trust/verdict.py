@@ -37,6 +37,11 @@ _OWNER_NAME_COLS = ("CANONICAL_EXPERT", "PART_OWNER", "CURRENT_OWNER", "NEXT_ACT
 #: it describes the role a case sits with, so it belongs here, not in the name.
 _OWNER_ROLE_COLS = ("EXPERT_ROLE", "PROCESS_CURRENT_OWNER")
 _OWNER_DEPT_COLS = ("ORG_DEPT", "ORG_UNIT")
+#: The escalation path above the expert. A worklist item that stalls has to be
+#: escalatable without anyone opening the HR chart, and a manager has to be able
+#: to see their own unit's backlog rather than only their own name.
+_OWNER_MANAGER_COLS = ("ORG_MANAGER", "ORG_HEAD")
+_OWNER_VICE_COLS = ("ORG_VICE",)
 
 UNKNOWN_OWNER = "نامشخص"
 
@@ -100,12 +105,34 @@ class Evidence:
         return " · ".join(parts) or (self.source or "—")
 
 
+#: Stage-unit codes that ``PROCESS_CURRENT_OWNER`` carries, in Persian.
+#: Source of truth for the codes: ``gsi/resolve/process_evidence.STAGES``.
+UNIT_FA: Dict[str, str] = {
+    "PLANNING": "برنامه‌ریزی",
+    "COMMERCIAL": "بازرگانی",
+    "REGISTRATION": "ثبت سفارش",
+    "FX_ALLOCATION": "تخصیص ارز",
+    "FX_COMMITMENT": "تعهد ارزی",
+    "TREASURY": "خزانه‌داری",
+    "LOGISTICS": "لجستیک",
+    "CUSTOMS": "گمرک و ترخیص",
+    "CREDIT": "اعتبارات",
+}
+
+
+def role_fa(role: str) -> str:
+    """Persian label for a role, whether it arrives as a label or a stage code."""
+    return UNIT_FA.get(str(role).strip().upper(), role)
+
+
 @dataclass(frozen=True)
 class Owner:
     """Who can close the defect."""
     name: str = UNKNOWN_OWNER
     role: str = ""
     dept: str = ""
+    manager: str = ""
+    vice: str = ""
 
     @classmethod
     def from_row(cls, row: Mapping[str, Any], *, prefer: str = "",
@@ -123,6 +150,8 @@ class Owner:
             name=name or _first_present(row, _OWNER_NAME_COLS) or UNKNOWN_OWNER,
             role=role_label or _first_present(row, _OWNER_ROLE_COLS),
             dept=_first_present(row, _OWNER_DEPT_COLS),
+            manager=_first_present(row, _OWNER_MANAGER_COLS),
+            vice=_first_present(row, _OWNER_VICE_COLS),
         )
 
     @property
@@ -170,8 +199,10 @@ class Defect:
             "فیلد": self.evidence.column,
             "مقدار فعلی": self.evidence.raw_value,
             "مالک": self.owner.name,
-            "نقش": self.owner.role,
+            "نقش": role_fa(self.owner.role),
             "اداره": self.owner.dept,
+            "مدیر": self.owner.manager,
+            "معاونت": self.owner.vice,
             "شاهد": self.evidence.locator_fa,
             "توضیح": self.note,
             # machine-readable duplicates for grouping and trend
@@ -292,4 +323,5 @@ class DefectLedger:
 
 
 __all__ = ["Evidence", "Owner", "Defect", "DefectLedger", "LEDGER_COLUMNS",
-           "UNKNOWN_OWNER", "PLATFORM_OWNER", "PLATFORM_ROLE"]
+           "UNKNOWN_OWNER", "PLATFORM_OWNER", "PLATFORM_ROLE",
+           "UNIT_FA", "role_fa"]

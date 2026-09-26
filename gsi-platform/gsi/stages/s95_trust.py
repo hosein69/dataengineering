@@ -44,6 +44,8 @@ class DataTrustStage(Stage):
         ctx.extras["trust_defects"] = frames["defects"]
         ctx.extras["trust_next_fixes"] = frames["next_fixes"]
         ctx.extras["trust_owners"] = frames["owners"]
+        ctx.extras["trust_owners_by_dept"] = frames["owners_by_dept"]
+        ctx.extras["trust_owners_by_manager"] = frames["owners_by_manager"]
         ctx.extras["trust_summary"] = report.summary()
         ctx.extras["trust_headline"] = report.headline_fa()
 

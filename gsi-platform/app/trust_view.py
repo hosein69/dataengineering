@@ -20,6 +20,7 @@ import streamlit as st
 from gsi.design import tokens as T
 from gsi.trust import trend as trend_mod
 from gsi.trust.fitness import GRADE_FA, GRADE_LICENCE_FA, GRADE_TONE, NOT_USABLE
+from gsi.trust.impact import NO_ORG_UNIT
 
 # رنگ‌ها از همان پالت وضعیت سیستم طراحی می‌آیند (`gsi/design/tokens.py`)، که
 # کنتراستش با WCAG سنجیده شده. هیچ hex دستی در این فایل نیست.
@@ -31,7 +32,8 @@ from gsi.trust.fitness import GRADE_FA, GRADE_LICENCE_FA, GRADE_TONE, NOT_USABLE
 #: off the left edge where nobody scrolls to find them.
 _WIDE = ("مهم‌ترین اقدام", "اقدام پیشنهادی", "اقدام لازم", "شایع‌ترین مقدار نامعتبر",
          "توضیح")
-_MEDIUM = ("تصمیم‌های متأثر", "نمونه کلید", "شاهد", "مالک", "نقش", "اداره", "فیلد")
+_MEDIUM = ("تصمیم‌های متأثر", "نمونه کلید", "شاهد", "مالک", "نقش", "اداره",
+           "مدیر", "معاونت", "فیلد")
 _NARROW = ("ایراد", "پرونده درگیر", "قابل آزادسازی", "سلول تکمیل",
            "مورد بررسی", "پرونده قابل آزادسازی", "تعداد سلول",
            "پرونده آزادشده", "پرونده متأثر",
@@ -125,7 +127,7 @@ def render(extras: Optional[Dict[str, Any]] = None, ref_date: str = "") -> None:
     with tabs[1]:
         _next_fixes(extras.get("trust_next_fixes"))
     with tabs[2]:
-        _owners(extras.get("trust_owners"), extras.get("trust_defects"))
+        _owners(extras, extras.get("trust_defects"))
     with tabs[3]:
         _fields(extras.get("trust_fields"), summary)
     with tabs[4]:
@@ -200,33 +202,71 @@ def _next_fixes(fixes: Optional[pd.DataFrame]) -> None:
 
 
 # ── تب ۳: کارنامه مالکان ───────────────────────────────────────────────────
-def _owners(owners: Optional[pd.DataFrame], defects: Optional[pd.DataFrame]) -> None:
+#: Slice label -> (frame key in ``extras``, its own first column). A defect is
+#: closed by a person, but the queue is planned by a manager and reported by a
+#: department, so the same backlog has to be readable at all three levels.
+_ORG_VIEWS = {
+    "فرد": ("trust_owners", "مالک"),
+    "اداره": ("trust_owners_by_dept", "اداره"),
+    "مدیر": ("trust_owners_by_manager", "مدیر"),
+}
+
+
+def _owners(extras: Dict[str, Any], defects: Optional[pd.DataFrame]) -> None:
+    owners = extras.get("trust_owners")
     if not isinstance(owners, pd.DataFrame) or owners.empty:
         st.info("مالکی برای ایرادها تشخیص داده نشد.")
         return
     st.caption("ترتیب این جدول بر اساس «چقدر می‌تواند آزاد کند» است، نه «چقدر ایراد دارد». "
                "معیار ارزیابی، نرخ بهبود است؛ مقدار مطلق در نقطه صفر تقصیر کسی نیست.")
+
+    available = [name for name, (key, _) in _ORG_VIEWS.items()
+                 if isinstance(extras.get(key), pd.DataFrame)]
+    level = (st.radio("سطح نمایش", available, horizontal=True, key="trust_org_level")
+             if len(available) > 1 else "فرد")
+    frame = extras.get(_ORG_VIEWS[level][0], owners)
+
     # The action sentence is a paragraph. Left in this grid it squeezes every
     # other column to nothing; the same sentence is one click away in the
     # per-person worklist below, and it is kept in full in the Excel export.
-    grid = owners.drop(columns=["مهم‌ترین اقدام"], errors="ignore")
+    grid = frame.drop(columns=["مهم‌ترین اقدام"], errors="ignore")
     st.dataframe(grid, hide_index=True, width="stretch", column_config=_cfg(grid))
 
     if isinstance(defects, pd.DataFrame) and not defects.empty:
-        names = [n for n in owners["مالک"].tolist() if n]
-        if names:
-            chosen = st.selectbox("فهرست کار یک نفر", names, key="trust_owner_pick")
-            worklist = defects[defects["مالک"] == chosen]
-            show = [c for c in ("فیلد", "کلید", "مقدار فعلی", "شاهد",
-                                "اقدام لازم") if c in worklist.columns]
-            st.dataframe(worklist[show], hide_index=True, width="stretch",
-                         column_config=_cfg(worklist[show]))
-            st.download_button(
-                f"⬇ فهرست کار «{chosen}» (Excel)",
-                data=_excel({"فهرست کار": worklist}),
-                file_name=f"GSI_Worklist_{chosen}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                key="trust_worklist_dl")
+        _worklist(frame, defects, _ORG_VIEWS[level][1])
+
+
+def _worklist(frame: pd.DataFrame, defects: pd.DataFrame, column: str) -> None:
+    """The backlog of one person, unit or manager — whatever level is showing.
+
+    Filtered on the same column the grid is grouped by, so what the user clicked
+    and what they download are the same set of cells.
+    """
+    if column not in frame.columns or column not in defects.columns:
+        return
+    picks = [v for v in frame[column].tolist() if v]
+    if not picks:
+        return
+    chosen = st.selectbox(f"فهرست کار «{column}»", picks, key="trust_owner_pick")
+    values = defects[column].astype(str).str.strip()
+    # The rollup labels the blank group; the ledger still stores it blank. A
+    # source-contract defect has no manager by definition, and that bucket is
+    # usually the highest-value row on the page — sending it to an empty state
+    # would hide exactly the item the page most wants read.
+    worklist = defects[values == ("" if chosen == NO_ORG_UNIT else str(chosen).strip())]
+    if worklist.empty:
+        st.info("برای این انتخاب، ایراد قابل ارجاعی در دفتر ثبت نشده است.")
+        return
+    show = [c for c in ("فیلد", "کلید", "مقدار فعلی", "شاهد", "مالک", "نقش",
+                        "اداره", "مدیر", "اقدام لازم") if c in worklist.columns]
+    st.dataframe(worklist[show], hide_index=True, width="stretch",
+                 column_config=_cfg(worklist[show]))
+    st.download_button(
+        f"⬇ فهرست کار «{chosen}» (Excel)",
+        data=_excel({"فهرست کار": worklist}),
+        file_name=f"GSI_Worklist_{chosen}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="trust_worklist_dl")
 
 
 # ── تب ۴: آینه فیلدها ──────────────────────────────────────────────────────
