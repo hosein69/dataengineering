@@ -17,7 +17,7 @@ __contract__ = 1
 from typing import Dict, Tuple
 
 from .fitness import ADDITIVE, DISTRIBUTIONAL, DecisionContract
-from .profiling import CURRENCY, DATE, KEY, NUMBER, TEXT, FieldRule
+from .profiling import CrossSourceRule, CURRENCY, DATE, KEY, NUMBER, TEXT, FieldRule
 
 # ── entity types ────────────────────────────────────────────────────────────
 REG = "REG"            # کد ثبت سفارش — the financial/commitment case
@@ -55,6 +55,14 @@ REG_RULES: Tuple[FieldRule, ...] = (
               owner_column="EXPERT_SETTLEMENT", owner_role_fa="کارشناس رفع تعهد ارزی"),
     FieldRule("FX_NTSW_INITIAL", NUMBER, "تعهد اولیه", required=False,
               owner_column="EXPERT_SETTLEMENT", owner_role_fa="کارشناس رفع تعهد ارزی"),
+    # مبنای سررسید برات (تصمیم مالک، ۱۴۰۵/۰۷/۰۴). امروز هیچ فایلی این ستون را
+    # ندارد، پس `FIELD_NEVER_POPULATED` می‌گیردش و به‌صورت «قرارداد سورس»
+    # گزارش می‌شود — نه به‌صورت کار کارشناس. تا وقتی سازمان شروع به ثبتش
+    # نکند، سررسید برات و جریمه تأخیر نامعلوم می‌مانند.
+    FieldRule("INVOICE_DATE", DATE, "تاریخ فاکتور تجاری",
+              owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
+    FieldRule("INVOICE_VALUE", NUMBER, "ارزش فاکتور", required=False,
+              owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
 )
 
 MATERIAL_RULES: Tuple[FieldRule, ...] = (
@@ -91,6 +99,25 @@ BL_RULES: Tuple[FieldRule, ...] = (
     FieldRule("FULL_CLEAR_DATE", DATE, "تاریخ ترخیص کامل", required=False,
               owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
 )
+
+#: یک واقعیت که چند سورس ادعایش را دارند. ادغام، یکی را با ترتیب authority
+#: انتخاب می‌کند و بقیه را بی‌صدا دور می‌ریزد — برای شناسه درست، برای مبلغ نه.
+#: مالک کسب‌وکار (۱۴۰۵/۰۷/۰۴) تعیین کرد که فاکتور تجاری مبنای تعهد است، پس
+#: سازگاری همین عدد بین سورس‌ها باید پیش از هر تصمیمی سنجیده شود.
+CROSS_SOURCE: Dict[str, Tuple[CrossSourceRule, ...]] = {
+    REG: (
+        CrossSourceRule(
+            column="INVOICE_VALUE",
+            sources=("CL_INVOICE_VALUE", "SATA_INVOICE_VALUE", "COT_INVOICE_VALUE"),
+            title_fa="ارزش فاکتور",
+            owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
+        CrossSourceRule(
+            column="CURRENCY",
+            sources=("CL_CURRENCY", "SATA_CURRENCY", "NTSW_CURRENCY", "FX_CURRENCY"),
+            title_fa="ارز فاکتور", kind=CURRENCY,
+            owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
+    ),
+}
 
 RULES: Dict[str, Tuple[FieldRule, ...]] = {
     REG: REG_RULES,
@@ -164,6 +191,10 @@ CONTRACTS: Tuple[DecisionContract, ...] = (
 )
 
 BY_ID: Dict[str, DecisionContract] = {c.id: c for c in CONTRACTS}
+
+
+def cross_source_for(entity_type: str) -> Tuple[CrossSourceRule, ...]:
+    return CROSS_SOURCE.get(entity_type, ())
 
 
 def contracts_for(entity_type: str) -> Tuple[DecisionContract, ...]:

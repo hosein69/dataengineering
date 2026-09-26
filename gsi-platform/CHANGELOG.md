@@ -1,3 +1,44 @@
+# GSI 29.12.0 — the commercial invoice becomes the commitment basis — 2026-09-26
+
+The business owner decided the commercial invoice, not the bill of lading, is
+the reference document for the usance (barat) due date. Two things follow.
+
+**The basis moved.** `default_barat_due()` now counts the tenor from
+`INVOICE_DATE`. `BL_DATE` is no longer the basis for anything. The rule has no
+fallback to any shipment, discharge or clearance date: each of those is weeks
+later than the invoice, so substituting one pushes the due date out and
+*understates* overdue days and penalty exposure. A test asserts that none of
+the five candidate dates can stand in.
+
+`INVOICE_DATE` is declared with its candidate headers already in the adapters,
+so the moment a source starts carrying it the whole chain lights up with no
+code change. Today no source file has it — checked across every sheet of every
+workbook — so it is declared unmeasured and the trust layer raises it once
+against the source contract. Until the organisation starts recording it, barat
+due dates and penalty estimates stay unknown, which is the honest answer.
+
+**What the invoice value turned out to be.** `INVOICE_VALUE` already existed,
+merged from three sources by authority order — and on the published snapshot
+those three disagree, in the same currency, by up to 57×:
+
+    CL 488,376 CNY | SATA 641,100 CNY | COT 11,096
+    CL 413,056.67 EUR | SATA 16,284,521.76 EUR
+
+One case also carries two different currencies for the same amount (CL says
+CNY, SATA says EUR), which the merge resolved to blank. The merge was picking a
+winner and discarding the disagreement silently. For an identifier that is
+fine; for the number a commitment is about to be measured against, it is not.
+
+New `CrossSourceRule` in the trust layer: one fact, several sources, compared
+per entity. Numeric rules use a relative tolerance so rounding noise does not
+cry wolf; currency rules normalise first, because "یوان" and "CNY" are the same
+currency and a raw comparison would invent conflicts. Two new defect codes,
+`SOURCE_DISAGREEMENT` and `CURRENCY_DISAGREEMENT`, both fail-closed and both
+carrying every source's number in the note so the expert can see the shape of
+the problem without opening four files.
+
+**Tests**: 1412 passing (18 new).
+
 # GSI 29.11.0 — shipment evidence: the BL_DATE dead end, resolved honestly — 2026-09-26
 
 `BL_DATE` (bill of lading **issue** date) was derived from `BL_BL_DATE`, which

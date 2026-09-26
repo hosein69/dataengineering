@@ -131,16 +131,24 @@ class TheUsanceDueDateRefusesASubstitute(unittest.TestCase):
             "سررسید برات نباید از شاهد حرکت محموله ساخته شود؛ عدد خوش‌بینانه غلط، "
             "بدتر از عدد نامعلوم است.")
 
-    def test_a_real_bill_of_lading_date_does_drive_it(self):
-        """قاعده باید هنوز کار کند — این تست «کلاً خاموشش کردیم» را رد می‌کند."""
+    def test_the_bill_of_lading_date_is_no_longer_the_basis_either(self):
+        """مبنا در ۱۴۰۵/۰۷/۰۴ به **فاکتور تجاری** تغییر کرد (تصمیم مالک).
+
+        پس حتی یک تاریخ بارنامهٔ واقعی هم دیگر سررسید نمی‌سازد. اینکه قاعده
+        هنوز زنده است و با تاریخ فاکتور کار می‌کند، در
+        ``test_invoice_basis_v29_12`` اثبات می‌شود — وگرنه این تست با
+        «کلاً خاموشش کردیم» هم سبز می‌ماند.
+        """
         row = {
             "CANONICAL_REG": "10000001", "PAYMENT_METHOD": "برات",
             "SEGMENT": "production", "BL_DATE": "1405/05/01",
             "BARAT_DUE": "", "CB_DATE": "", "BUY_DATE": "",
         }
-        blank = dict(row, BL_DATE="")
-        self.assertNotEqual(self._due(blank), self._due(row),
-                            "تاریخ واقعی بارنامه باید سررسید بسازد")
+        self.assertIsNone(self._due(row))
+        from gsi.engines.commitment import CommitmentEngine
+        with_invoice = CommitmentEngine().evaluate(
+            dict(row, BL_DATE="", INVOICE_DATE="1405/05/01"), dt.date(2026, 8, 31))
+        self.assertIsNotNone(with_invoice.deadline, "قاعده باید با تاریخ فاکتور کار کند")
 
 
 class TheConsumersPointAtEvidenceThatExists(unittest.TestCase):

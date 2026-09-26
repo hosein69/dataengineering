@@ -75,10 +75,18 @@ def legal_deadline(cb_date: Optional[date], segment: str,
     return min(candidates) if candidates else None
 
 
-def default_barat_due(bl_date: Optional[date], rb: Optional[RuleBook] = None) -> Optional[date]:
+def default_barat_due(basis_date: Optional[date], rb: Optional[RuleBook] = None) -> Optional[date]:
+    """سررسید برات = تاریخ مبنا + مدت برات.
+
+    مبنا **تاریخ فاکتور تجاری** است، نه تاریخ بارنامه — تصمیم مالک کسب‌وکار در
+    ۱۴۰۵/۰۷/۰۴. هیچ تاریخ دیگری جای آن نمی‌نشیند: تاریخ تخلیه یا ترخیص هفته‌ها
+    بعدتر است و سررسید را عقب می‌اندازد، یعنی جریمه تأخیر را کمتر از واقع
+    نشان می‌دهد. تا وقتی سورسی تاریخ فاکتور را ندهد، این مقدار نامعلوم می‌ماند
+    و نامعلوم ماندن، از یک عدد خوش‌بینانه غلط بهتر است.
+    """
     rb = rb or get_rulebook()
     days = int(rb.deadline_days("default_barat_tenor") or 180)
-    return bl_date + timedelta(days=days) if bl_date else None
+    return basis_date + timedelta(days=days) if basis_date else None
 
 
 def delay_penalty(outstanding: float, overdue_days: int,
@@ -179,13 +187,11 @@ class CommitmentEngine:
 
         P = CalendarEngine.parse
         cb_date = P(row.get("CB_DATE")) or P(row.get("BUY_DATE"))
-        # عمداً BL_DATE و نه SHIPPED_EVIDENCE_DATE: سررسید یوزانس از تاریخ
-        # *صدور* بارنامه شمرده می‌شود. شاهدهای دیگرِ حرکت محموله (تخلیه،
-        # ترخیصیه، قبض انبار) هفته‌ها بعدتر و در مقصدند؛ استفاده از آن‌ها
-        # سررسید را عقب می‌اندازد و جریمه تأخیر را کمتر از واقع نشان می‌دهد.
-        # تا وقتی مالک کسب‌وکار ستون مرجع را تعیین نکند، این نامعلوم می‌ماند.
-        bl_date = P(row.get("BL_DATE"))
-        barat_due = P(row.get("BARAT_DUE")) or (default_barat_due(bl_date, rb)
+        # مبنای سررسید برات: تاریخ فاکتور تجاری (تصمیم مالک، ۱۴۰۵/۰۷/۰۴).
+        # عمداً هیچ fallbackی به تاریخ حمل/تخلیه/ترخیص ندارد — هر کدام از
+        # آن‌ها سررسید را عقب می‌اندازد و جریمه را کمتر از واقع نشان می‌دهد.
+        invoice_date = P(row.get("INVOICE_DATE"))
+        barat_due = P(row.get("BARAT_DUE")) or (default_barat_due(invoice_date, rb)
                                                 if res.is_barat else None)
 
         res.deadline = legal_deadline(cb_date, segment, barat_due, rb)
@@ -237,7 +243,7 @@ class CommitmentEngine:
             "days_since_buy": d(row.get("BUY_DATE"), today),
             "days_since_sata": d(row.get("SATA_DATE"), today),
             "days_since_doc": d(row.get("DOC_SUBMIT_DATE"), today),
-            "bl_age": d(row.get("BL_DATE"), today),
+            "bl_age": d(row.get("SHIPPED_EVIDENCE_DATE"), today),
             "payment_age": d(row.get("CB_DATE"), today),
         }
         ranks = {rb.status_label(c): rb.status_rank(c) for c in ("green", "yellow", "red")}

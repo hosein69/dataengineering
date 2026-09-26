@@ -26,7 +26,7 @@ __contract__ = 1
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field as dc_field
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
 
@@ -80,6 +80,25 @@ class FieldRule:
     @property
     def label(self) -> str:
         return self.title_fa or self.column
+
+
+@dataclass(frozen=True)
+class CrossSourceRule:
+    """یک واقعیت، چند سورس — و بررسی اینکه با هم می‌خوانند یا نه.
+
+    ادغام، مقدار را با ترتیب authority انتخاب می‌کند و اختلاف را بی‌صدا دور
+    می‌ریزد. برای یک شناسه این درست است؛ برای یک **مبلغ** نیست: وقتی ترخیص
+    ۴۱۳٬۰۵۶ یورو می‌گوید و ساتا ۱۶٬۲۸۴٬۵۲۱ یورو، انتخاب خودکار یکی از آن‌ها
+    یعنی قبول‌کردن ریسکِ ۳۹ برابر غلط‌بودن — بدون اینکه کسی خبردار شود.
+    """
+    column: str
+    sources: Tuple[str, ...]
+    title_fa: str
+    kind: str = NUMBER
+    #: اختلاف نسبی مجاز. صفرهای گردکردن و تفاوت واحد خرد نباید هشدار بسازند.
+    tolerance_pct: float = 1.0
+    owner_column: str = ""
+    owner_role_fa: str = ""
 
 
 @dataclass
@@ -149,6 +168,49 @@ class ProfileResult:
             "weakest_fields": [(f.label, f.coverage_pct) for f in worst[:5]],
             **self.ledger.summary(),
         }
+
+
+def _source_values(row: Mapping[str, Any], rule: CrossSourceRule) -> Dict[str, Any]:
+    """{ستون سورس: مقدار خام} فقط برای سورس‌هایی که واقعاً چیزی گفته‌اند."""
+    return {c: row[c] for c in rule.sources
+            if c in row and not _blank(row[c])}
+
+
+def _disagree(values: Dict[str, Any], rule: CrossSourceRule,
+              currencies: frozenset) -> Tuple[str, str]:
+    """(کد ایراد، توضیح) — یا ("", "") وقتی سورس‌ها با هم می‌خوانند."""
+    if len(values) < 2:
+        return "", ""
+
+    if rule.kind == CURRENCY:
+        from ..rulebook import get_rulebook
+        rb = get_rulebook()
+        # «یوان» و «CNY» یک ارزند؛ مقایسه خام، هشدار کاذب می‌سازد.
+        seen = {rb.normalize_currency(v) or str(v).strip().upper()
+                for v in values.values()}
+        if len(seen) > 1:
+            return "CURRENCY_DISAGREEMENT", " | ".join(
+                f"{c}={rb.normalize_currency(v) or v}" for c, v in sorted(values.items()))
+        return "", ""
+
+    numbers: Dict[str, float] = {}
+    for column, raw in values.items():
+        parsed = parse_decimal(raw, strict=True)
+        if parsed is not None:
+            numbers[column] = float(parsed)
+    if len(numbers) < 2:
+        return "", ""
+    low, high = min(numbers.values()), max(numbers.values())
+    if high == low:
+        return "", ""
+    # نسبت به بزرگ‌ترین قدرمطلق سنجیده می‌شود تا نزدیکی به صفر، درصد را منفجر نکند.
+    scale = max(abs(low), abs(high))
+    if scale and (high - low) / scale * 100.0 <= rule.tolerance_pct:
+        return "", ""
+    spread = f"{high / low:,.1f}×" if low > 0 else "—"
+    return "SOURCE_DISAGREEMENT", (
+        " | ".join(f"{c}={v:,.2f}" for c, v in sorted(numbers.items()))
+        + (f" — اختلاف {spread}" if low > 0 else ""))
 
 
 def _is_placeholder(raw: str) -> bool:
@@ -231,6 +293,39 @@ def _classify(raw: str, rule: FieldRule, *, ref_date: Optional[date],
     return C.OK, ""
 
 
+def _check_cross_source(df: pd.DataFrame, rules: Sequence[CrossSourceRule],
+                        ledger: DefectLedger, *, entity_type: str,
+                        key_column: str, source: str) -> None:
+    """ایرادهای «یک واقعیت، چند سورسِ ناسازگار» را ثبت می‌کند.
+
+    در دانه موجودیت، مثل بقیه لایه: یک پرونده که روی چهل ردیف پخش شده، یک
+    ایراد می‌دهد نه چهل تا.
+    """
+    if not rules:
+        return
+    currencies = _known_currencies()
+    for rule in rules:
+        available = [c for c in rule.sources if c in df.columns]
+        if len(available) < 2:
+            continue
+        seen: set = set()
+        for row in df.to_dict("records"):
+            key = clean_key(row.get(key_column))
+            if not key or key in seen:
+                continue
+            code, detail = _disagree(_source_values(row, rule), rule, currencies)
+            if not code:
+                continue
+            seen.add(key)
+            ledger.add(Defect(
+                code=code, entity_type=entity_type, entity_key=key,
+                evidence=Evidence.from_row(row, column=rule.column, source=source),
+                owner=Owner.from_row(row, prefer=rule.owner_column,
+                                     role_label=rule.owner_role_fa),
+                note=f"{rule.title_fa} — {detail}",
+            ))
+
+
 def profile_frame(
     df: pd.DataFrame,
     rules: Sequence[FieldRule],
@@ -239,6 +334,7 @@ def profile_frame(
     key_column: str,
     ref_date: Optional[date] = None,
     source: str = "",
+    cross_source: Sequence["CrossSourceRule"] = (),
 ) -> ProfileResult:
     """Profile ``df`` at the grain of ``key_column``.
 
@@ -254,6 +350,9 @@ def profile_frame(
         return ProfileResult(entity_type, 0, [
             FieldProfile(r.column, r.label, r.kind) for r in present
         ], ledger, {})
+
+    _check_cross_source(df, cross_source, ledger, entity_type=entity_type,
+                        key_column=key_column, source=source)
 
     currencies = _known_currencies()
     keys = df[key_column].map(lambda v: "" if _blank(v) else clean_key(v))
@@ -355,5 +454,5 @@ def profile_frame(
 
 __all__ = [
     "TEXT", "NUMBER", "DATE", "CURRENCY", "KEY",
-    "FieldRule", "FieldProfile", "ProfileResult", "profile_frame",
+    "FieldRule", "CrossSourceRule", "FieldProfile", "ProfileResult", "profile_frame",
 ]

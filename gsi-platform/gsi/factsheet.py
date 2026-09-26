@@ -36,8 +36,8 @@ _PKG = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_PKG)
 
 #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
-VERSION = "29.11.0"
-RELEASE_CHANNEL = "shipment-evidence-20260926"
+VERSION = "29.12.0"
+RELEASE_CHANNEL = "commercial-invoice-basis-20260926"
 
 #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
 DASHBOARD_SHEETS = 17

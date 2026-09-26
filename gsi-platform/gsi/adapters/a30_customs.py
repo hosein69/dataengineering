@@ -48,6 +48,8 @@ class ClearanceAdapter(SourceAdapter):
         "LICENSE_DATE":   ["تاریخ صدور پروانه"],
         "CURRENCY":       ["نوع ارز"],
         "INVOICE_VALUE":  ["ارزش فاکتور"],
+        "INVOICE_DATE":   ["تاریخ فاکتور", "تاریخ اینویس", "Invoice Date",
+                           "تاریخ صورتحساب", "تاریخ صورت حساب"],
         "EUR_VALUE":      ["ارزش یورویی"],
         "RIAL_VALUE":     ["ارزش ریالی"],
         "HS_CODE":        ["تعرفه"],
@@ -155,6 +157,8 @@ class CotageAdapter(SourceAdapter):
     COLUMN_MAP = {
         "STATUS":          ["وضعیت"],
         "INVOICE_VALUE":   ["ارزش فاکتور"],
+        "INVOICE_DATE":    ["تاریخ فاکتور", "تاریخ اینویس", "Invoice Date",
+                            "تاریخ صورتحساب", "تاریخ صورت حساب"],
         "EUR_VALUE":       ["معادل یورویی"],
         "PACK_COUNT":      ["تعداد بسته بندی"],
         "PACK_TYPE":       ["نوع بسته بندی"],

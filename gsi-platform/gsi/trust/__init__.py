@@ -154,6 +154,7 @@ def assess(
         profile = profile_frame(
             df, list(entity_rules), entity_type=entity,
             key_column=key_column, ref_date=ref_date, source=entity,
+            cross_source=contract_defs.cross_source_for(entity),
         )
         report.profiles[entity] = profile
 
