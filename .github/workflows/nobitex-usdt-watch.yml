@@ -1,0 +1,31 @@
+name: Nobitex USDT direct watch
+on:
+  push:
+    branches: [nobitex-copy-live]
+    paths:
+      - 'nobitex-copy/src/cli/usdt-watch.mjs'
+      - 'nobitex-copy/src/providers/nobitex.mjs'
+      - 'nobitex-copy/src/config.mjs'
+      - '.github/workflows/nobitex-usdt-watch.yml'
+  workflow_dispatch: {}
+permissions: {contents: read}
+jobs:
+  usdt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    defaults: {run: {working-directory: nobitex-copy}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - name: Direct USDT watchlist
+        run: |
+          set -o pipefail
+          npm run usdt-watch | tee usdt-watch-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nobitex-usdt-watch
+          path: nobitex-copy/usdt-watch-report.json
+          retention-days: 1

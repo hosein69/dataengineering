@@ -1,0 +1,87 @@
+name: Nobitex COPY validation
+on:
+  push:
+    branches: [nobitex-copy-live]
+    paths: ['nobitex-copy/**','.github/workflows/nobitex-copy-live.yml']
+  workflow_dispatch: {}
+permissions: {contents: read}
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: nobitex-copy}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - run: npm test
+  live-diagnostic:
+    runs-on: ubuntu-latest
+    needs: unit
+    continue-on-error: true
+    timeout-minutes: 7
+    defaults: {run: {working-directory: nobitex-copy}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - id: rest
+        name: REST live snapshot
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run live | tee live-report.json
+      - id: watch
+        name: Multi-timeframe watchlist
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run watch | tee watchlist-report.json
+      - id: scan
+        name: Full-market scanner
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run scan | tee scanner-report.json
+      - id: stable
+        name: Temporal stability scanner
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run stable | tee stable-report.json
+      - id: usdt
+        name: Direct USDT watchlist
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run usdt-watch | tee usdt-watch-report.json
+      - id: ws
+        name: WebSocket live update
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run ws | tee ws-report.json
+      - name: Connectivity summary
+        if: always()
+        run: |
+          echo "REST outcome: ${{ steps.rest.outcome }}"
+          echo "Watchlist outcome: ${{ steps.watch.outcome }}"
+          echo "Scanner outcome: ${{ steps.scan.outcome }}"
+          echo "Stable scanner outcome: ${{ steps.stable.outcome }}"
+          echo "USDT watch outcome: ${{ steps.usdt.outcome }}"
+          echo "WebSocket outcome: ${{ steps.ws.outcome }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nobitex-live-reports
+          path: |
+            nobitex-copy/live-report.json
+            nobitex-copy/watchlist-report.json
+            nobitex-copy/scanner-report.json
+            nobitex-copy/stable-report.json
+            nobitex-copy/usdt-watch-report.json
+            nobitex-copy/ws-report.json
+          retention-days: 1
