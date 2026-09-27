@@ -32,7 +32,7 @@ def _load_make_synthetic():
         raise FileNotFoundError(
             f"فایل make_synthetic.py کنار تست‌ها نیست: {path}\n"
             f"پوشه tests/ را کامل کپی کنید.")
-    spec = importlib.util.spec_from_file_location("aibl_make_synthetic", path)
+    spec = importlib.util.spec_from_file_location("gsi_make_synthetic", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -42,15 +42,15 @@ _ms = _load_make_synthetic()
 
 build = _ms.build
 
-_TMP = tempfile.mkdtemp(prefix="aibl_rules_")
+_TMP = tempfile.mkdtemp(prefix="gsi_rules_")
 DIRS = build(_TMP)
 os.environ.update({
-    "AIBL_FOREIGN": DIRS["foreign"], "AIBL_BLS": DIRS["bls"],
-    "AIBL_CLEARANCE": DIRS["clearance"], "AIBL_HR": DIRS["hr"],
-    "AIBL_ESMAEILI": DIRS["esmaeili"],
-    "AIBL_GS_COMBINE": DIRS["gs_combine"], "AIBL_MOHAMADI": DIRS["mohamadi"],
-    "AIBL_OUTPUT": DIRS["output"], "AIBL_LOGS": DIRS["logs"],
-    "AIBL_TODAY": "2026-08-31",
+    "GSI_FOREIGN": DIRS["foreign"], "GSI_BLS": DIRS["bls"],
+    "GSI_CLEARANCE": DIRS["clearance"], "GSI_HR": DIRS["hr"],
+    "GSI_ESMAEILI": DIRS["esmaeili"],
+    "GSI_GS_COMBINE": DIRS["gs_combine"], "GSI_MOHAMADI": DIRS["mohamadi"],
+    "GSI_OUTPUT": DIRS["output"], "GSI_LOGS": DIRS["logs"],
+    "GSI_TODAY": "2026-08-31",
 })
 
 import logging  # noqa: E402
@@ -59,10 +59,10 @@ from datetime import date  # noqa: E402
 
 import yaml  # noqa: E402
 
-from aibl.adapters import discover  # noqa: E402
-from aibl.config.sources import MERGE_ORDER, SOURCES, get_source  # noqa: E402
-from aibl.core.text import clean_order_ref, order_ref_base  # noqa: E402
-from aibl.rulebook import RuleBook, get_rulebook  # noqa: E402
+from gsi.adapters import discover  # noqa: E402
+from gsi.config.sources import MERGE_ORDER, SOURCES, get_source  # noqa: E402
+from gsi.core.text import clean_order_ref, order_ref_base  # noqa: E402
+from gsi.rulebook import RuleBook, get_rulebook  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -77,7 +77,9 @@ def test_rulebook() -> None:
     print("\n── ۱) کتابخانه قوانین (YAML) ──")
     rb = get_rulebook(reload=True)
 
-    check("هر ۹ بسته قانونی بارگذاری شد", len(rb.packs) == 9, ", ".join(rb.packs))
+    expected_packs = [p["id"] for p in rb.manifest.get("packs", []) if p.get("enabled", True)]
+    check("بسته‌های قانونی مطابق manifest بارگذاری شدند",
+          list(rb.packs) == expected_packs, ", ".join(rb.packs))
     errors = [i for i in rb.validate() if i.level == "error"]
     check("اعتبارسنجی ساختاری بدون خطا", not errors,
           "؛ ".join(f"{e.path}: {e.message}" for e in errors) or "۰ خطا")
@@ -193,7 +195,7 @@ def test_order_ref() -> None:
 def test_moghavemat():
     print("\n── ۵) سورس مقاومت (۳۵ ستون، سطح قلم) ──")
     logging.disable(logging.INFO)
-    from aibl.pipeline import Pipeline
+    from gsi.pipeline import Pipeline
 
     p = Pipeline()
     res = p.run(build_report=True)
@@ -253,7 +255,7 @@ def test_modularity() -> None:
 
     # حذف یک سورس فقط با ویرایش YAML
     tmp_yaml = os.path.join(_TMP, "sources_test.yaml")
-    src_yaml = os.path.join(ROOT, "aibl", "config", "sources.yaml")
+    src_yaml = os.path.join(ROOT, "gsi", "config", "sources.yaml")
     with open(src_yaml, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     data["sources"]["credit"]["enabled"] = False
@@ -261,19 +263,19 @@ def test_modularity() -> None:
     with open(tmp_yaml, "w", encoding="utf-8") as f:
         yaml.safe_dump(data, f, allow_unicode=True)
 
-    os.environ["AIBL_SOURCES_YAML"] = tmp_yaml
-    import aibl.config.sources as cfg
+    os.environ["GSI_SOURCES_YAML"] = tmp_yaml
+    import gsi.config.sources as cfg
     cfg.reload_sources()
     check("غیرفعال کردن یک سورس فقط با ویرایش YAML ممکن است",
           "credit" not in cfg.SOURCES and "credit" not in cfg.MERGE_ORDER,
           f"{len(cfg.SOURCES)} سورس فعال ماند")
-    os.environ["AIBL_SOURCES_YAML"] = src_yaml
+    os.environ["GSI_SOURCES_YAML"] = src_yaml
     cfg.reload_sources()
     check("بازگردانی رجیستری بدون تغییر کد", "credit" in cfg.SOURCES)
 
     # تغییر یک قاعده فقط با ویرایش YAML
     ext = os.path.join(_TMP, "rules_ext")
-    shutil.copytree(os.path.join(ROOT, "aibl", "rules"), ext, dirs_exist_ok=True)
+    shutil.copytree(os.path.join(ROOT, "gsi", "rules"), ext, dirs_exist_ok=True)
     path = os.path.join(ext, "fx_governance.yaml")
     with open(path, encoding="utf-8") as f:
         rules = yaml.safe_load(f)
@@ -322,7 +324,7 @@ def test_excel(res) -> None:
 def test_key_registry() -> None:
     print("\n── ۷) رجیستری کلیدها (config/keys.yaml) ──")
     import pandas as _pd
-    from aibl.config.keys import KeyRegistry, get_keys
+    from gsi.config.keys import KeyRegistry, get_keys
 
     kr = get_keys(reload=True)
     check("رجیستری بدون خطای ساختاری بارگذاری شد",
@@ -362,7 +364,7 @@ def test_key_registry() -> None:
           df2["KEY_BL_ORDER"].iloc[2] == "")
 
     # ادغام روی کلید مرکب، بدون تکثیر سطر
-    from aibl.dataio.merge import safe_merge
+    from gsi.dataio.merge import safe_merge
     left = _pd.DataFrame({"KEY_BL": ["B1", "B1"], "KEY_ORDER": ["O1", "O2"],
                           "X": [1, 2]})
     right = _pd.DataFrame({"KEY_BL": ["B1", "B1"], "KEY_ORDER": ["O1", "O2"],
@@ -378,7 +380,7 @@ def test_key_registry() -> None:
     import yaml as _yaml
     ext = _os.path.join(_TMP, "keys_ext")
     _os.makedirs(ext, exist_ok=True)
-    src = _os.path.join(ROOT, "aibl", "config", "keys.yaml")
+    src = _os.path.join(ROOT, "gsi", "config", "keys.yaml")
     dst = _os.path.join(ext, "keys.yaml")
     _sh.copy(src, dst)
     with open(dst, encoding="utf-8") as f:
@@ -397,7 +399,7 @@ def test_key_registry() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL V22 — تست کتابخانه قوانین، سورس مقاومت جدید و ماژولاریتی")
+    print("GSI V22 — تست کتابخانه قوانین، سورس مقاومت جدید و ماژولاریتی")
     print("=" * 78)
     test_rulebook()
     test_bl_validation()

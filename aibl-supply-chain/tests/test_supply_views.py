@@ -22,14 +22,14 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from openpyxl import Workbook  # noqa: E402
 
-from aibl.report.supply_views import (SHEETS, build_bl_view,  # noqa: E402
+from gsi.report.supply_views import (SHEETS, build_bl_view,  # noqa: E402
                                       build_dept_view, build_material_view,
                                       write_supply_sheets)
-from aibl.resolve import part_status as ps  # noqa: E402
-from aibl.resolve.commercial_coverage import (FLAG, MEASURED,  # noqa: E402
+from gsi.resolve import part_status as ps  # noqa: E402
+from gsi.resolve.commercial_coverage import (FLAG, MEASURED,  # noqa: E402
                                               STATE, UNAVAILABLE, annotate,
                                               measured)
-from aibl.resolve.expert_scope import (OWNER_GAP, OWNER_NAME,  # noqa: E402
+from gsi.resolve.expert_scope import (OWNER_GAP, OWNER_NAME,  # noqa: E402
                                        OWNER_SOURCE, SCOPES, coverage,
                                        resolve_owner, resolve_scopes)
 
@@ -168,7 +168,7 @@ def test_status() -> None:
 
 def _timeline_matches() -> bool:
     """TIMELINE و ACTIVITIES نباید از هم جدا بیفتند."""
-    from aibl.stages.s80_eventlog import ACTIVITIES
+    from gsi.stages.s80_eventlog import ACTIVITIES
     mine = [(c, o, st) for c, _fa, o, st in ps.TIMELINE]
     theirs = [(c, o, st) for c, _en, _fa, o, st in ACTIVITIES]
     return mine == theirs
@@ -269,7 +269,7 @@ def test_suite_registration() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — حوزه مسئولیت، مالکیت قطعه و نماهای تأمین")
+    print("GSI — حوزه مسئولیت، مالکیت قطعه و نماهای تأمین")
     print("=" * 78)
     test_scopes()
     test_status()

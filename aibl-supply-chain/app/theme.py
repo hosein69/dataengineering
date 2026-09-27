@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AIBL — توکن‌های طراحی، پالت وضعیت و قالب Plotly.
+"""GSI — توکن‌های طراحی، پالت وضعیت و قالب Plotly.
 
 ## چرا پالت عوض شد
 
@@ -16,37 +16,58 @@
 تم‌پذیر نمی‌شود، و همیشه با **آیکن + برچسب** می‌آید تا معنا هرگز فقط روی
 رنگ سوار نباشد. «توقف خط» یک پله تیره‌تر از همان خانواده قرمزِ «بحرانی»
 است (ترتیبی درون خانواده) و با آیکن متفاوت تفکیک می‌شود.
+
+## منبع رنگ
+
+این ماژول دیگر مقدار خودش را نمی‌سازد. هر رنگ از :mod:`gsi.design.tokens`
+می‌آید — همان جایی که HTML، Excel و ایمیل هم از آن می‌خوانند. تا پیش از
+این، اپ Streamlit یک پالت هشتم بود: «تحت نظر» اینجا ``#fab219`` بود و در
+Excel ``F1C40F`` و در ایمیل ``F39C12``. سه زرد برای یک معنا.
+
+نام‌ها دست‌نخورده مانده‌اند تا ``app/ui_kit.py`` و ``app/dashboard.py`` بدون
+تغییر کار کنند؛ فقط مقداری که می‌گیرند، مقدار سنجیده‌شده است.
 """
 from __future__ import annotations
 
+import os
+import sys
 from typing import Dict
 
-# ── سطوح و متن ────────────────────────────────────────────────────────────
-SURFACE = "#fcfcfb"
-SURFACE_RAISED = "#ffffff"
-SURFACE_SUNKEN = "#f4f4f1"
-BORDER = "#e3e3dd"
-BORDER_STRONG = "#cfcfc6"
-TEXT = "#0b0b0b"
-TEXT_SECONDARY = "#52514e"
-TEXT_MUTED = "#6e6e66"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# ── هویت AIBL ─────────────────────────────────────────────────────────────
-BRAND = "#0f6e6e"
-BRAND_DEEP = "#0a4f4f"
-BRAND_SOFT = "#e6f2f1"
-ACCENT = "#2a78d6"
+from gsi.design import tokens as _T   # noqa: E402
+
+# ── سطوح و متن ────────────────────────────────────────────────────────────
+SURFACE = _T.SURFACE_PAGE
+SURFACE_RAISED = _T.SURFACE_RAISED
+SURFACE_SUNKEN = _T.SURFACE_SUNKEN
+BORDER = _T.BORDER
+BORDER_STRONG = _T.BORDER_STRONG
+TEXT = _T.TEXT
+TEXT_SECONDARY = _T.TEXT_SECONDARY
+TEXT_MUTED = _T.TEXT_MUTED
+
+# ── هویت GSI | Global Sourcing Intelligence ─────────────────────────────
+# Data • Process • Decision: Navy=اعتماد/داده، Teal=جریان/فرآیند، Gold=تصمیم.
+BRAND_NAVY = _T.BRAND_NAVY
+BRAND_TEAL = _T.BRAND_TEAL
+BRAND_GOLD = _T.BRAND_GOLD
+BRAND = BRAND_TEAL
+BRAND_DEEP = BRAND_NAVY
+BRAND_SOFT = _T.TEAL_WASH
+TEAL_WASH_ = _T.TEAL_WASH   # نام صریح برای مصرف‌کننده‌های ui_kit
+ACCENT = BRAND_GOLD
 
 # ── پالت وضعیت (ثابت — هرگز به‌عنوان رنگ سری استفاده نشود) ────────────────
-STATUS: Dict[str, str] = {
-    "stockout": "#a32828",   # پله تیره‌تر خانواده critical
-    "critical": "#d03b3b",
-    "serious":  "#ec835a",
-    "warning":  "#fab219",
-    "good":     "#0ca30c",
-    "neutral":  "#8a8a85",
-    "unknown":  "#b5b5ae",
-}
+#: رنگ *نشانه* هر وضعیت (``fill``). برای متن، :data:`STATUS_INK` را بردارید؛
+#: ``fill`` روشن است و زیر متن نمی‌نشیند.
+STATUS: Dict[str, str] = {s.key: s.fill for s in _T.STATUS_SCALE}
+
+#: رنگ *متن* هر وضعیت — کنتراست هر کدام روی سفید بین ۶٫۰۹ و ۸٫۸۱ است.
+STATUS_INK: Dict[str, str] = {s.key: s.ink for s in _T.STATUS_SCALE}
+
+#: زمینه ملایم هر وضعیت؛ متن ``STATUS_INK`` روی آن می‌نشیند.
+STATUS_WASH: Dict[str, str] = {s.key: s.wash for s in _T.STATUS_SCALE}
 
 #: کد طبقه → (رنگ، آیکن، برچسب فارسی). آیکن و برچسب اجباری‌اند:
 #: رنگ وضعیت هرگز به‌تنهایی حامل معنا نیست.
@@ -69,14 +90,12 @@ BAND_ORDER_FA = [BANDS[k][2] for k in BAND_ORDER]
 
 # ── پالت دسته‌ای (ترتیب ثابت، هرگز چرخشی) ─────────────────────────────────
 # ترتیب مرجع اعتبارسنجی‌شده؛ سه اسلات اول برای نمودارهای all-pairs امن‌اند.
-SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100",
-          "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
+SERIES = list(_T.CATEGORICAL)
 
 #: تک‌هیو ترتیبی برای بزرگی پیوسته (روشن → تیره)
-SEQUENTIAL = ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5",
-              "#256abf", "#184f95", "#0d366b"]
+SEQUENTIAL = list(_T.SEQUENTIAL)
 
-FONT_STACK = "'IRANSans Light','IRANSans','Vazirmatn',Tahoma,Arial,sans-serif"
+FONT_STACK = _T.FONT_STACK
 
 
 def band_of(value) -> tuple:

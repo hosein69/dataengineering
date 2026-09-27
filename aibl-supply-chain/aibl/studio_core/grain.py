@@ -25,9 +25,8 @@
 """
 from __future__ import annotations
 
-__contract__ = 1
+__contract__ = 2
 
-import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
@@ -72,42 +71,27 @@ DERIVED_GRAIN: Dict[str, str] = {
     "روزهای رسوب": "BL",
 }
 
-# ── تشخیص «سنجه» از «شناسه» و «نسبت» ──────────────────────────────────────
-# جمع زدن شماره سفارش بی‌معناست، و جمع «مقاومت (روز)» هم بی‌معناست چون نرخ
-# است نه مقدار انباشتنی. هر دو در نسخه اول همین ماژول به‌اشتباه جمع می‌شدند.
-_IDENT_PAT = re.compile(
-    r"^(KEY_|CANONICAL_)|(_NO|_CODE|_ID|_KEY)$|شماره|کد |^کد$|کلید|کوتاژ|تعرفه"
-    r"|بارنامه|پرونده|رهگیری|No\.$|Number$", re.IGNORECASE)
-_RATIO_PAT = re.compile(
-    r"درصد|نرخ|٪|%|مقاومت|امتیاز|ratio|pct|rate|score|share|سهم|میانگین"
-    r"|throughput|روز\)|days?$", re.IGNORECASE)
+# ── تشخیص «سنجه» از رجیستری معنایی ─────────────────────────────────────────
+from .semantic_metrics import get_metric, infer_kind_from_name, registered_grain
 
 #: نوع سنجه → آیا جمع کردن معنا دارد
-KIND_ADDITIVE = "additive"     # جمع معنا دارد (مبلغ، تعداد، وزن)
-KIND_RATIO = "ratio"           # فقط میانگین/کمینه/بیشینه
-KIND_IDENTIFIER = "identifier"  # هرگز تجمیع نشود
+KIND_ADDITIVE = "additive"
+KIND_RATIO = "ratio"
+KIND_IDENTIFIER = "identifier"
 KIND_FA = {KIND_ADDITIVE: "انباشتنی", KIND_RATIO: "نسبتی",
            KIND_IDENTIFIER: "شناسه"}
 
 
 def measure_kind(column: str, series: Optional["pd.Series"] = None) -> str:
-    """نوع یک ستون عددی: انباشتنی / نسبتی / شناسه."""
-    col = str(column)
-    if _IDENT_PAT.search(col):
-        return KIND_IDENTIFIER
-    if _RATIO_PAT.search(col):
-        return KIND_RATIO
-    if series is not None:
-        try:
-            s = pd.to_numeric(series, errors="coerce").dropna()
-            # اگر تقریباً همه مقادیر یکتا و صحیح‌اند، به شناسه شبیه‌تر است
-            if len(s) >= 5 and s.nunique() / len(s) > 0.95 and (s % 1 == 0).all() \
-                    and s.min() > 1000:
-                return KIND_IDENTIFIER
-        except Exception:
-            pass
-    return KIND_ADDITIVE
+    """نوع ستون از رجیستری صریح یا نام ستون؛ بدون heuristic توزیع عدد.
 
+    ``series`` برای سازگاری API نگه داشته شده، اما عمداً در تشخیص نوع استفاده
+    نمی‌شود؛ یکتا/صحیح/بزرگ بودن عدد دلیل شناسه بودن آن نیست.
+    """
+    spec = get_metric(str(column))
+    if spec:
+        return spec.kind
+    return infer_kind_from_name(str(column))
 
 def summable(df: "pd.DataFrame", columns: List[str]) -> List[str]:
     """فقط ستون‌هایی که جمع زدنشان معنا دارد."""
@@ -154,6 +138,9 @@ def prefix_grain_map() -> Dict[str, str]:
 def column_grain(column: str, prefix_map: Optional[Dict[str, str]] = None) -> str:
     """دانه‌ی یک ستون: نام دانه سورس، یا ``ROW`` برای ستون محاسباتی."""
     col = str(column)
+    explicit = registered_grain(col)
+    if explicit:
+        return explicit
     if col in DERIVED_GRAIN:
         return DERIVED_GRAIN[col]
     pm = prefix_map if prefix_map is not None else prefix_grain_map()

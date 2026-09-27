@@ -156,10 +156,10 @@ def cursor_glow() -> None:
 (function(){
   try{
     var d = window.parent && window.parent.document;
-    if(!d || d.getElementById('aibl-glow')) return;
+    if(!d || d.getElementById('gsi-glow')) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     var g = d.createElement('div');
-    g.id = 'aibl-glow';
+    g.id = 'gsi-glow';
     g.style.cssText = 'position:fixed;left:0;top:0;width:520px;height:520px;'+
       'margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;z-index:0;'+
       'background:radial-gradient(circle,rgba(15,110,110,.10) 0%,rgba(15,110,110,.05) 38%,transparent 66%);'+

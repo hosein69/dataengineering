@@ -1,0 +1,87 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# GSI Case Actions — SLA و پیشنهادهای عملیاتی داخلی
+# این فایل «قانون» نیست. فقط برای اولویت‌بندی اقدام، مالک و Draft Email است.
+# هر Deadline قانونی باید در pack رسمی مربوطه و با source/effective date ثبت شود.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: case_actions
+version: "1.1"
+updated_at: "2026-09-17"
+status: internal
+legal_claim: false
+
+allocation_queue:
+  watch_days: 7
+  high_days: 15
+  critical_days: 30
+  owner_role: "کارشناس اعتبارات/تخصیص ارز"
+  action_fa: "پیگیری وضعیت درخواست باز تخصیص و علت توقف/رتبه صف"
+
+allocation_to_purchase:
+  watch_days: 5
+  high_days: 10
+  critical_days: 20
+  owner_role: "خزانه/اعتبارات"
+  action_fa: "پس از تخصیص، وضعیت خرید/تأمین ارز و اعتبار تخصیص بررسی شود"
+
+purchase_to_funding:
+  watch_days: 3
+  high_days: 7
+  critical_days: 15
+  owner_role: "مالی/خزانه"
+  action_fa: "شاهد تأمین وجه و دستور پرداخت بانکی تکمیل شود"
+
+funding_to_swift:
+  watch_days: 3
+  high_days: 7
+  critical_days: 15
+  owner_role: "اعتبارات/بانک عامل"
+  action_fa: "وضعیت SWIFT/تأیید ذی‌نفع یا تبدیل ارز تکمیل شود"
+
+customs_to_clearance:
+  watch_days: 7
+  high_days: 20
+  critical_days: 45
+  owner_role: "ترخیص/گمرک"
+  action_fa: "علت رسوب و مدارک/مجوزهای باز ترخیص بررسی شود"
+
+clearance_to_bank_docs:
+  watch_days: 3
+  high_days: 7
+  critical_days: 15
+  owner_role: "رفع تعهد/بانک عامل"
+  action_fa: "سند ترخیص مطابق به بانک ارائه/تطبیق و شاهد آن ثبت شود"
+
+bank_docs_to_settlement:
+  watch_days: 7
+  high_days: 20
+  critical_days: 45
+  owner_role: "رفع تعهد/بانک عامل"
+  action_fa: "پس از ارائه سند ترخیص، مانده تعهد، مابه‌التفاوت و وضعیت وثیقه پیگیری شود"
+
+clearance_to_settlement:
+  watch_days: 7
+  high_days: 20
+  critical_days: 45
+  owner_role: "رفع تعهد/بانک عامل"
+  action_fa: "Fallback تاریخی؛ در V26.20 مسیر ترجیحی CLEARANCE → BANK_DOCS → SETTLEMENT است"
+  deprecated_for_new_cases: true
+
+supply_position_missing:
+  owner_role: "کارشناس خرید خارجی"
+  action_fa: "سه سبد موجودی نزد سازنده/در راه/گمرک تکمیل و با Oracle تطبیق شود"
+
+unexplained_reallocation:
+  owner_role: "مالی + حقوقی + بازرسی"
+  action_fa: "مجوز، علت و زنجیره شواهد جابه‌جایی بین پرونده‌ها بررسی شود"
+  classification: "Investigation Signal — not fraud finding"
+
+cross_currency_evidence_gap:
+  owner_role: "مالی/خزانه"
+  action_fa: "Cross Rate، مبلغ مقصد، نرخ ریالی مقصد و کارمزد بانکی تکمیل شود"
+
+email:
+  default_mode: draft
+  require_human_review: true
+  include_rule_basis: true
+  include_evidence_gaps: true
+  direct_send_default: false

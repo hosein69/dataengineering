@@ -1,4 +1,4 @@
-# داشبورد زنده AIBL
+# داشبورد زنده GSI | Global Sourcing Intelligence
 
 ```bash
 pip install streamlit plotly
@@ -26,14 +26,14 @@ Streamlit در زمان import کد سطح-ماژول را اجرا می‌کن�
 ## Executive Email Pack
 
 ```bash
-python -m aibl email --no-display
-python -m aibl email
-python -m aibl email --send
+python -m gsi email --no-display
+python -m gsi email
+python -m gsi email --send
 ```
 
-فایل رسمی Excel با نام `YYYY-MM-DD_Systemmatic Material.xlsx` داخل پوشه همان تاریخ ذخیره می‌شود. گیرندگان با `AIBL_EMAIL_TO` قابل override هستند.
+فایل رسمی Excel با نام `YYYY-MM-DD_Systemmatic Material.xlsx` داخل پوشه همان تاریخ ذخیره می‌شود. گیرندگان با `GSI_EMAIL_TO` قابل override هستند.
 
-## AIBL Studio — Modular Platform
+## GSI Studio — Modular Platform
 
 Run:
 
@@ -41,4 +41,4 @@ Run:
 python app/run_platform.py
 ```
 
-Install `streamlit-sortables==0.3.1` for the drag-and-drop Layout Studio. The platform keeps the existing AIBL Pipeline and Executive Email integration as the source of truth, while adding modular visual composition, live filtering, dynamic HTML/CSS/JS export, custom Excel export, and layout JSON export.
+Install `streamlit-sortables==0.3.1` for the drag-and-drop Layout Studio. The platform keeps the existing GSI Pipeline and Executive Email integration as the source of truth, while adding modular visual composition, live filtering, dynamic HTML/CSS/JS export, custom Excel export, and layout JSON export.

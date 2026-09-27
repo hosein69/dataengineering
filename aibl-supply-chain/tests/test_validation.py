@@ -32,7 +32,7 @@ def _load_make_synthetic():
         raise FileNotFoundError(
             f"فایل make_synthetic.py کنار تست‌ها نیست: {path}\n"
             f"پوشه tests/ را کامل کپی کنید.")
-    spec = importlib.util.spec_from_file_location("aibl_make_synthetic", path)
+    spec = importlib.util.spec_from_file_location("gsi_make_synthetic", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -43,33 +43,33 @@ _ms = _load_make_synthetic()
 BLS, build = _ms.BLS, _ms.build
 
 # ── محیط باید قبل از import پکیج ست شود ──
-_TMP = tempfile.mkdtemp(prefix="aibl_test_")
+_TMP = tempfile.mkdtemp(prefix="gsi_test_")
 DIRS = build(_TMP)
 os.environ.update({
-    "AIBL_FOREIGN": DIRS["foreign"],
-    "AIBL_BLS": DIRS["bls"],
-    "AIBL_CLEARANCE": DIRS["clearance"],
-    "AIBL_HR": DIRS["hr"],
-    "AIBL_ESMAEILI": DIRS["esmaeili"],
-    "AIBL_GS_COMBINE": DIRS["gs_combine"],
-    "AIBL_MOHAMADI": DIRS["mohamadi"],
-    "AIBL_OUTPUT": DIRS["output"],
-    "AIBL_LOGS": DIRS["logs"],
-    "AIBL_TODAY": "2026-08-31",
+    "GSI_FOREIGN": DIRS["foreign"],
+    "GSI_BLS": DIRS["bls"],
+    "GSI_CLEARANCE": DIRS["clearance"],
+    "GSI_HR": DIRS["hr"],
+    "GSI_ESMAEILI": DIRS["esmaeili"],
+    "GSI_GS_COMBINE": DIRS["gs_combine"],
+    "GSI_MOHAMADI": DIRS["mohamadi"],
+    "GSI_OUTPUT": DIRS["output"],
+    "GSI_LOGS": DIRS["logs"],
+    "GSI_TODAY": "2026-08-31",
 })
 
 import pandas as pd  # noqa: E402
 from openpyxl import load_workbook  # noqa: E402
 
-from aibl.core.jalali import CalendarEngine  # noqa: E402
-from aibl.core.text import (clean_bl, clean_employee_code, clean_key,  # noqa: E402
+from gsi.core.jalali import CalendarEngine  # noqa: E402
+from gsi.core.text import (clean_bl, clean_employee_code, clean_key,  # noqa: E402
                             is_empty_val, num_safe)
-from aibl.engines.commitment import (delay_penalty, detect_payment_method,  # noqa: E402
+from gsi.engines.commitment import (delay_penalty, detect_payment_method,  # noqa: E402
                                      is_barat)
-from aibl.engines.math_engine import DoctoralMathEngine  # noqa: E402
-from aibl.engines.risk import RiskScoreEngine  # noqa: E402
-from aibl.narrate.narrator import DynamicGranularNarrator  # noqa: E402
-from aibl.pipeline import Pipeline  # noqa: E402
+from gsi.engines.math_engine import DoctoralMathEngine  # noqa: E402
+from gsi.engines.risk import RiskScoreEngine  # noqa: E402
+from gsi.narrate.narrator import DynamicGranularNarrator  # noqa: E402
+from gsi.pipeline import Pipeline  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -274,14 +274,14 @@ def test_excel(res) -> None:
     check("فایل مجزای هر کارشناس ساخته شد", len(res.extract_paths) >= 2,
           f"{len(res.extract_paths)} فایل در expert_extracts")
     check("گزارش ممیزی تعارضات ساخته شد",
-          os.path.exists(os.path.join(DIRS["output"], "AIBL_Data_Conflicts_Audit.xlsx")))
+          os.path.exists(os.path.join(DIRS["output"], "GSI_Data_Conflicts_Audit.xlsx")))
 
 
 # ═══════════ ۱۰) اصلاحات نسخه ۲۵ — باگ‌های فساد خاموش داده ═══════════
 def test_v25_fixes(df) -> None:
     print("\n── ۱۰) اصلاحات نسخه ۲۵ ──")
-    from aibl.core.jalali import jalali_sort_key as jk
-    from aibl.core.text import clean_employee_code as cec
+    from gsi.core.jalali import jalali_sort_key as jk
+    from gsi.core.text import clean_employee_code as cec
 
     # C: تاریخ شمسی دو رقمی نباید تاریخ جدید را بخورد
     check("تاریخ ۲ رقمی «98/12/27» زیر «1403/01/01» مرتب می‌شود",
@@ -314,7 +314,7 @@ def test_v25_fixes(df) -> None:
                    & df["CL_CLEAR_DATE"].astype(str).str.startswith("*")).any())
 
     # نرمال‌سازی نام ستون با زیرخط
-    from aibl.core.columns import find_col
+    from gsi.core.columns import find_col
     import pandas as _pd
     probe = _pd.DataFrame({"_ تاریخ بارگیری نهایی_": ["1405/01/01"]})
     check("نام ستون با زیرخط و فاصله اضافی تطبیق می‌خورد",
@@ -324,7 +324,7 @@ def test_v25_fixes(df) -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL V21 — مجموعه تست‌های صحت")
+    print("GSI V21 — مجموعه تست‌های صحت")
     print("=" * 78)
     test_units()
     test_engines()

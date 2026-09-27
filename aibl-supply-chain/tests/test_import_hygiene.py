@@ -24,7 +24,7 @@ import sysconfig
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PKG = os.path.join(ROOT, "aibl")
+PKG = os.path.join(ROOT, "gsi")
 sys.path.insert(0, ROOT)
 
 PASS, FAIL = [], []
@@ -36,7 +36,7 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 
 
 def _module_names() -> list[str]:
-    """نام تمام ماژول‌ها و زیرپکیج‌های AIBL (بدون مسیر)."""
+    """نام تمام ماژول‌ها و زیرپکیج‌های GSI (بدون مسیر)."""
     names = []
     for root, dirs, files in os.walk(PKG):
         dirs[:] = [d for d in dirs if d != "__pycache__"]
@@ -55,7 +55,7 @@ def test_no_stdlib_collision() -> None:
     ours = _module_names()
     collisions = sorted(set(ours) & stdlib)
 
-    check("هیچ ماژول AIBL هم‌نام ماژول استاندارد پایتون نیست",
+    check("هیچ ماژول GSI هم‌نام ماژول استاندارد پایتون نیست",
           not collisions,
           f"تصادم: {collisions}" if collisions else
           f"{len(ours)} ماژول بررسی شد، ۰ تصادم")
@@ -71,7 +71,7 @@ def test_no_stdlib_collision() -> None:
 # ═══════════ ۲) بازتولید و رفع خطای واقعی ═══════════
 def test_reproduce_and_fix() -> None:
     print("\n── ۲) بازتولید خطای واقعی شبکه IKCO ──")
-    tmp = tempfile.mkdtemp(prefix="aibl_flat_")
+    tmp = tempfile.mkdtemp(prefix="gsi_flat_")
 
     # حالت خراب: فایل تقویم تخت، هم‌نام calendar
     # Reproduce deterministically: cwd alone does not necessarily shadow stdlib
@@ -88,7 +88,7 @@ def test_reproduce_and_fix() -> None:
 
     # Doctor باید همین را بگیرد
     env = dict(os.environ, PYTHONPATH=ROOT)
-    d = subprocess.run([sys.executable, "-m", "aibl.doctor"],
+    d = subprocess.run([sys.executable, "-m", "gsi.doctor"],
                        cwd=tmp, capture_output=True, text=True, env=env)
     check("Doctor این حالت را تشخیص می‌دهد و کد خروجی ۱ می‌دهد",
           d.returncode == 1 and "سایه انداخته" in d.stdout)
@@ -107,11 +107,11 @@ def test_runs_from_any_cwd() -> None:
     print("\n── ۳) اجرا از پوشه‌های مختلف ──")
     env = dict(os.environ, PYTHONPATH=ROOT)
     for label, cwd in (("ریشه پروژه", ROOT),
-                       ("پوشه موقت", tempfile.mkdtemp(prefix="aibl_cwd_")),
+                       ("پوشه موقت", tempfile.mkdtemp(prefix="gsi_cwd_")),
                        ("داخل خود پکیج", PKG)):
         r = subprocess.run(
             [sys.executable, "-c",
-             "import aibl.pipeline as p; print('IMPORT_OK', p.Pipeline is not None)"],
+             "import gsi.pipeline as p; print('IMPORT_OK', p.Pipeline is not None)"],
             cwd=cwd, capture_output=True, text=True, env=env)
         check(f"import پکیج از «{label}» موفق است", "IMPORT_OK" in r.stdout,
               r.stderr.strip().splitlines()[-1][:80] if r.stderr else "")
@@ -121,9 +121,9 @@ def test_runs_from_any_cwd() -> None:
 def test_entry_points() -> None:
     print("\n── ۴) نقاط ورود ──")
     env = dict(os.environ, PYTHONPATH=ROOT)
-    for label, args in (("python -m aibl.doctor", ["-m", "aibl.doctor"]),
-                        ("python -m aibl.rulebook.validate", ["-m", "aibl.rulebook.validate"]),
-                        ("python -m aibl rules", ["-m", "aibl", "rules"])):
+    for label, args in (("python -m gsi.doctor", ["-m", "gsi.doctor"]),
+                        ("python -m gsi.rulebook.validate", ["-m", "gsi.rulebook.validate"]),
+                        ("python -m gsi rules", ["-m", "gsi", "rules"])):
         r = subprocess.run([sys.executable] + args, cwd=ROOT,
                            capture_output=True, text=True, env=env)
         check(f"«{label}» بدون استثنا اجرا می‌شود",
@@ -142,18 +142,26 @@ def test_structure() -> None:
 
     rules = os.path.join(PKG, "rules")
     yamls = sorted(f for f in os.listdir(rules) if f.endswith(".yaml"))
-    check("هر ۱۰ فایل قانون در پکیج هستند", len(yamls) == 10, ", ".join(yamls))
+    import yaml
+    with open(os.path.join(rules, "_manifest.yaml"), encoding="utf-8") as fh:
+        rule_manifest = yaml.safe_load(fh) or {}
+    expected_yamls = {"_manifest.yaml"} | {
+        str(p.get("file")) for p in rule_manifest.get("packs", []) if p.get("file")
+    }
+    check("فایل‌های RuleBook دقیقاً با manifest سازگارند",
+          set(yamls) == expected_yamls,
+          f"actual={yamls}; expected={sorted(expected_yamls)}")
 
-    check("__main__.py برای «python -m aibl» موجود است",
+    check("__main__.py برای «python -m gsi» موجود است",
           os.path.exists(os.path.join(PKG, "__main__.py")))
     check("doctor.py موجود است", os.path.exists(os.path.join(PKG, "doctor.py")))
 
-    import aibl
-    import aibl.version as V
-    from aibl.factsheet import VERSION
+    import gsi
+    import gsi.version as V
+    from gsi.factsheet import VERSION
     check("نسخه در همه‌جا یکی است (تنها منبع: factsheet)",
-          aibl.__version__ == VERSION and V.PACKAGE_VERSION == VERSION,
-          f"{aibl.__version__} / {V.PACKAGE_VERSION} / {VERSION}")
+          gsi.__version__ == VERSION and V.PACKAGE_VERSION == VERSION,
+          f"{gsi.__version__} / {V.PACKAGE_VERSION} / {VERSION}")
 
 
 # ═══════════ ۶) استقلال از jdatetime ═══════════
@@ -163,7 +171,7 @@ def test_no_hard_dependency() -> None:
         "import sys\n"
         "sys.modules['jdatetime'] = None\n"
         "import importlib\n"
-        "m = importlib.import_module('aibl.core.jalali')\n"
+        "m = importlib.import_module('gsi.core.jalali')\n"
         "print('JD', m.HAS_JDATETIME, m.CalendarEngine.parse('1404/01/15'))\n"
     )
     r = subprocess.run([sys.executable, "-c", code], cwd=ROOT,
@@ -181,7 +189,7 @@ def test_no_hard_dependency() -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL V22 — تست سلامت import و استقرار")
+    print("GSI V22 — تست سلامت import و استقرار")
     print("=" * 78)
     test_no_stdlib_collision()
     test_reproduce_and_fix()

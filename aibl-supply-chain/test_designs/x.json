@@ -1,0 +1,28 @@
+{
+  "name": "x",
+  "template": "executive",
+  "fields": [
+    "A"
+  ],
+  "tabs": [
+    {
+      "title": "T",
+      "fields": [
+        "A"
+      ]
+    }
+  ],
+  "formats": [
+    "excel",
+    "html",
+    "pdf"
+  ],
+  "visuals": true,
+  "tables": true,
+  "max_rows": 5000,
+  "file_stem": "AIBL Report",
+  "email_charts": [
+    "criticality"
+  ],
+  "title": "AIBL"
+}

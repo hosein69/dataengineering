@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""AIBL Studio — پلتفرم تحلیل و گزارش‌سازی زنجیره تأمین.
+"""GSI Studio — پلتفرم تحلیل و گزارش‌سازی زنجیره تأمین.
 
 بازنویسی کامل رابط. سه تغییر بنیادی نسبت به نسخه قبل:
 
@@ -29,26 +29,26 @@ if ROOT not in sys.path:
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="AIBL Studio", page_icon="◈",
+st.set_page_config(page_title="GSI | Global Sourcing Intelligence", page_icon="◆",
                    layout="wide", initial_sidebar_state="expanded")
 
 from app import analytics, motion, process_view
 from app.styles import band_chip, css, kpi_card
-from app.theme import (BAND_ORDER, BANDS, SEQUENTIAL, SERIES, STATUS, TEXT_SECONDARY,
+from app.theme import (SURFACE, BAND_ORDER, BANDS, SEQUENTIAL, SERIES, STATUS, TEXT_SECONDARY,
                        band_of, plotly_template)
-from aibl.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOverwrite,
+from gsi.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOverwrite,
                                             build_custom_excel)
-from aibl.studio_core.field_catalog import build_catalog, catalog_groups, unique_labels
-from aibl.studio_core.filters import FilterState, apply_filters, filter_options
-from aibl.studio_core.html_export import build_dynamic_html
-from aibl.report.supply_views import build_material_view, build_bl_view, build_dept_view
+from gsi.studio_core.field_catalog import build_catalog, catalog_groups, unique_labels
+from gsi.studio_core.filters import FilterState, apply_filters, filter_options
+from gsi.studio_core.html_export import build_dynamic_html
+from gsi.report.supply_views import build_material_view, build_bl_view, build_dept_view
 
 try:
     import plotly.express as px
     import plotly.graph_objects as go
     import plotly.io as pio
-    pio.templates["aibl"] = plotly_template()
-    pio.templates.default = "aibl"
+    pio.templates["gsi"] = plotly_template()
+    pio.templates.default = "gsi"
     HAS_PLOTLY = True
 except Exception:
     HAS_PLOTLY = False
@@ -65,8 +65,11 @@ RES_COL = "مقاومت (روز)"
 # ══════════════════════════════════════════════════════════════════════════
 @st.cache_data(show_spinner="در حال اجرای خط لوله…")
 def load_data(ref_date: str):
-    # AIBL_TODAY بیرون از این تابع ست می‌شود — در cache hit بدنه اجرا نمی‌شود.
-    from aibl.pipeline import Pipeline
+    # GSI_TODAY بیرون از این تابع ست می‌شود — در cache hit بدنه اجرا نمی‌شود.
+    from gsi.warehouse.service import last_report
+    stored = last_report(ref_date)
+    if stored is not None: return stored
+    from gsi.pipeline import Pipeline
     r = Pipeline().run(build_report=True)
     return r.df, r.main, dict(r.extras), r.dashboard_path
 
@@ -88,19 +91,33 @@ def fnum(x, nd: int = 0) -> str:
 
 
 # ── نوار کناری ────────────────────────────────────────────────────────────
-st.sidebar.markdown("### ◈ AIBL Studio")
-st.sidebar.caption("تحلیل و گزارش‌سازی زنجیره تأمین")
+st.sidebar.markdown("### ◆ GSI")
+st.sidebar.caption("Global Sourcing Intelligence")
+st.sidebar.markdown("<small>▦ Data &nbsp;•&nbsp; ⛓ Process &nbsp;•&nbsp; ◉ Decision</small>", unsafe_allow_html=True)
 
-_default_ref = os.environ.get("AIBL_TODAY") or str(date.today())
+_surface = st.sidebar.radio("محیط کاری", ["اتاق کنترل و گزارش جامع", "مخاطبان، کلاسترها و منابع", "دیتاورهوس"], key="gsi_surface")
+if _surface == "دیتاورهوس":
+    from app.warehouse_view import run as warehouse_run
+    warehouse_run()
+    st.stop()
+
+if _surface == "مخاطبان، کلاسترها و منابع":
+    from app.control_center import run as run_control_center
+    run_control_center()
+    st.stop()
+
+_default_ref = os.environ.get("GSI_TODAY") or str(date.today())
 ref_date = st.sidebar.text_input("تاریخ مرجع", value=_default_ref).strip()
 try:
     date.fromisoformat(ref_date)
 except ValueError:
     st.sidebar.error("تاریخ باید به شکل YYYY-MM-DD باشد.")
     st.stop()
-os.environ["AIBL_TODAY"] = ref_date
+os.environ["GSI_TODAY"] = ref_date
 
 if st.sidebar.button("↻ اجرای مجدد خط لوله", use_container_width=True):
+    from gsi.pipeline import Pipeline
+    Pipeline().run(build_report=True)
     st.cache_data.clear()
     st.rerun()
 
@@ -108,7 +125,7 @@ try:
     raw, main, extras, official_excel = load_data(ref_date)
 except Exception as ex:
     st.error(f"خط لوله اجرا نشد: {ex}")
-    st.info("اول `python -m aibl.doctor` را بزنید تا مسیر سورس‌ها بررسی شود.")
+    st.info("اول `python -m gsi.doctor` را بزنید تا مسیر سورس‌ها بررسی شود.")
     st.stop()
 
 df = main if not main.empty else raw
@@ -173,8 +190,8 @@ commit = fnum(pd.to_numeric(fdf.get("مانده تعهد"), errors="coerce").sum
 
 # ── هدر زنده ──────────────────────────────────────────────────────────────
 motion.hero(
-    "AIBL Studio",
-    f"تاریخ مرجع {ref_date} · {len(fdf):,} پرونده · {len(ALL_COLUMNS):,} فیلد قابل گزارش",
+    "GSI | Global Sourcing Intelligence",
+    f"Data • Process • Decision  |  تاریخ مرجع {ref_date} · {len(fdf):,} پرونده · {len(ALL_COLUMNS):,} فیلد قابل گزارش",
     [["توقف خط", str(band_count("STOCKOUT")), STATUS["stockout"]],
      ["بحرانی", str(band_count("CRITICAL")), STATUS["critical"]],
      ["بارنامه بحرانی", str(uniq_where("BL_CRITICAL", "CANONICAL_BL")), STATUS["serious"]],
@@ -226,7 +243,7 @@ with tab_over:
                 labels = [f"{BANDS[c][1]} {BANDS[c][2]}" for c in codes]
                 fig = go.Figure(go.Bar(
                     x=labels, y=vals, marker_color=colors,
-                    marker_line=dict(color="#fcfcfb", width=2),
+                    marker_line=dict(color=SURFACE, width=2),
                     text=[f"{v:,}" for v in vals], textposition="outside",
                     hovertemplate="%{x}<br>%{y:,} پرونده<extra></extra>"))
                 fig.update_layout(height=340, showlegend=False,
@@ -242,7 +259,7 @@ with tab_over:
         if {"KEY_MATERIAL", RES_COL} <= set(fdf.columns) and HAS_PLOTLY:
             x = fdf[["KEY_MATERIAL", RES_COL]].copy()
             x[RES_COL] = pd.to_numeric(x[RES_COL], errors="coerce")
-            x = x.dropna().nsmallest(15, RES_COL)
+            x = x.replace([float("inf"), -float("inf")], float("nan")).dropna().nsmallest(15, RES_COL)
             if not x.empty:
                 fig = go.Figure(go.Bar(
                     x=x[RES_COL], y=x["KEY_MATERIAL"], orientation="h",
@@ -250,7 +267,7 @@ with tab_over:
                         "STOCKOUT" if v <= 0 else "CRITICAL" if v < 10
                         else "BECOMING_CRITICAL" if v < 20
                         else "WATCH" if v < 45 else "SAFE")[0] for v in x[RES_COL]],
-                    marker_line=dict(color="#fcfcfb", width=2),
+                    marker_line=dict(color=SURFACE, width=2),
                     text=[f"{v:,.1f}" for v in x[RES_COL]], textposition="outside",
                     hovertemplate="%{y}<br>مقاومت %{x:.1f} روز<extra></extra>"))
                 fig.update_layout(height=340, showlegend=False,
@@ -258,7 +275,13 @@ with tab_over:
                                   yaxis=dict(autorange="reversed"))
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.info("مقاومت عددی برای این فیلتر محاسبه نشده است.")
+                from gsi.studio_core.runtime_data import resistance_diagnostic
+                st.info(resistance_diagnostic(fdf))
+        elif not HAS_PLOTLY:
+            st.info("کتابخانه Plotly برای نمایش نمودار نصب نیست.")
+        else:
+            from gsi.studio_core.runtime_data import resistance_diagnostic
+            st.info(resistance_diagnostic(fdf))
 
     c3, c4 = st.columns([1, 1])
     with c3, st.container(border=True):
@@ -268,7 +291,7 @@ with tab_over:
                  .reset_index(name="Cases").sort_values("Cases", ascending=False).head(12))
             fig = go.Figure(go.Bar(
                 x=g["Cases"], y=g["ORG_DEPT"].astype(str), orientation="h",
-                marker_color=SERIES[0], marker_line=dict(color="#fcfcfb", width=2),
+                marker_color=SERIES[0], marker_line=dict(color=SURFACE, width=2),
                 text=[f"{v:,}" for v in g["Cases"]], textposition="outside",
                 hovertemplate="%{y}<br>%{x:,} پرونده<extra></extra>"))
             fig.update_layout(height=320, showlegend=False, xaxis_title="پرونده",
@@ -314,9 +337,9 @@ with tab_supply:
     st.caption("مالک و مسئول قطعه در هر سه نما «کارشناس خرید» است — "
                "حتی وقتی توپ در زمین حوزه دیگری باشد.")
     sv1, sv2, sv3 = st.tabs(["متریال محور", "بارنامه محور", "اداره محور"])
-    for tab, kind, fname in [(sv1, "material", "AIBL_Material_View.xlsx"),
-                             (sv2, "bl", "AIBL_BL_View.xlsx"),
-                             (sv3, "dept", "AIBL_Department_View.xlsx")]:
+    for tab, kind, fname in [(sv1, "material", "GSI_Material_View.xlsx"),
+                             (sv2, "bl", "GSI_BL_View.xlsx"),
+                             (sv3, "dept", "GSI_Department_View.xlsx")]:
         with tab:
             view = _supply_view(kind, fdf)
             if view.empty:
@@ -344,7 +367,7 @@ with tab_fields:
         f'Excel و HTML می‌روند.</p></div>', unsafe_allow_html=True)
 
     DEFAULTS = [c for c in ["KEY_MATERIAL", "CANONICAL_ORDER", "CANONICAL_BL", "KEY_REG",
-                            "CANONICAL_EXPERT", "ORG_DEPT", "روش حمل", BAND_COL, RES_COL]
+                            "CANONICAL_EXPERT", "ORG_DEPT", "TRANSPORT_MODE", BAND_COL, RES_COL]
                 if c in SPEC_BY_COL]
     if "sel_fields" not in st.session_state:
         st.session_state.sel_fields = list(DEFAULTS)
@@ -426,7 +449,7 @@ with tab_data:
         st.dataframe(view, use_container_width=True, height=560, hide_index=True)
         st.download_button(
             "⬇ دانلود CSV این نما", view.to_csv(index=False).encode("utf-8-sig"),
-            file_name=f"AIBL_{ref_date}.csv", mime="text/csv")
+            file_name=f"GSI_{ref_date}.csv", mime="text/csv")
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -478,11 +501,56 @@ with tab_quality:
 #  ۷) خروجی — سازنده گزارش با قالب، فرمت و کنترل صحت
 # ══════════════════════════════════════════════════════════════════════════
 with tab_export:
-    from aibl.studio_core import templates as tpl
-    from aibl.studio_core.grain import GRAIN_FA, column_grain, measure_kind, KIND_FA
-    from aibl.studio_core.report_builder import ReportSpec, build as build_report
+    with st.expander('گزارش مخاطبان و کلاسترها — قالب‌های اختصاصی',expanded=True):
+        from gsi.control_center.core import CenterStore
+        from app.cluster_delivery import render as render_cluster_delivery
+        try: render_cluster_delivery(CenterStore().load(),'studio_delivery')
+        except Exception as ex: st.error(str(ex))
+    from gsi.studio_core import templates as tpl
+    from gsi.studio_core.grain import GRAIN_FA, column_grain, measure_kind, KIND_FA
+    from gsi.studio_core.report_builder import ReportSpec, build as build_report
+    from gsi.studio_core.designs import (ReportDesign, save_design, load_design,
+                                          list_designs, EMAIL_CHARTS)
+    from gsi.integrations.daily_email import make_email_charts, build_email_html
 
     sel_cols = [c for c in st.session_state.sel_fields if c in fdf.columns]
+    if "report_tabs" not in st.session_state:
+        st.session_state.report_tabs = [{"title": "نمای اصلی", "fields": list(sel_cols)}]
+    if "email_chart_keys" not in st.session_state:
+        st.session_state.email_chart_keys = ["criticality", "low_resistance", "stock_vs_total"]
+
+    with st.container(border=True):
+        panel_open("۰ · طرح‌های ذخیره‌شده",
+                   "طرح فقط تنظیمات گزارش را ذخیره می‌کند؛ داده و اطلاعات گیرندگان ایمیل ذخیره نمی‌شود.")
+        d1, d2, d3 = st.columns([2, 1, 1])
+        design_name = d1.text_input("نام طرح", value="گزارش عملیاتی من", key="design_name")
+        saved = list_designs()
+        chosen = d2.selectbox("بازیابی طرح", ["—"] + saved, key="chosen_design")
+        if d3.button("↥ ذخیره طرح", use_container_width=True):
+            design = ReportDesign(
+                name=design_name.strip() or "گزارش",
+                template=st.session_state.get("report_template_pick", "executive"),
+                fields=list(sel_cols),
+                tabs=st.session_state.report_tabs,
+                formats=["excel","html","pdf"],
+                visuals=True, tables=True,
+                max_rows=5000,
+                file_stem=design_name.strip() or "GSI Report",
+                email_charts=list(st.session_state.email_chart_keys),
+                title="GSI",
+            )
+            save_design(design)
+            st.success("طرح ذخیره شد.")
+        if chosen != "—" and st.button("↧ بارگذاری طرح", use_container_width=True):
+            try:
+                d = load_design(chosen)
+                st.session_state.sel_fields = [c for c in d.fields if c in df.columns]
+                st.session_state.report_tabs = [x for x in d.tabs if x.get("fields")]
+                st.session_state.email_chart_keys = [x for x in d.email_charts if x in EMAIL_CHARTS]
+                st.session_state.report_template_pick = d.template
+                st.rerun()
+            except Exception as ex:
+                st.error(f"بارگذاری طرح ناموفق بود: {ex}")
 
     with st.container(border=True):
         panel_open("۱ · قالب گزارش",
@@ -490,7 +558,8 @@ with tab_export:
         keys = list(tpl.TEMPLATES)
         pick = st.radio(
             "قالب", keys, horizontal=True, label_visibility="collapsed",
-            format_func=lambda k: f"{tpl.TEMPLATES[k].icon} {tpl.TEMPLATES[k].title}")
+            format_func=lambda k: f"{tpl.TEMPLATES[k].icon} {tpl.TEMPLATES[k].title}",
+            key="report_template_pick")
         T = tpl.get(pick)
         st.caption(T.description)
         c1, c2 = st.columns([1, 1])
@@ -498,6 +567,26 @@ with tab_export:
             st.session_state.sel_fields = [c for c in T.default_fields if c in df.columns]
             st.rerun()
         c2.caption(f"بخش‌ها: " + " · ".join(tpl.SECTIONS.get(x, x) for x in T.sections))
+
+    with st.container(border=True):
+        panel_open("۱٫۵ · تب‌های خروجی",
+                   "هر تب HTML یک شیت با همان نام در Excel می‌سازد. فیلترهای هر تب مستقل‌اند.")
+        for i, tab in enumerate(st.session_state.report_tabs):
+            c1, c2, c3 = st.columns([1, 3, .7])
+            title_i = c1.text_input("عنوان تب", value=tab.get("title","تب"), key=f"tab_title_{i}")
+            fields_i = c2.multiselect(
+                "فیلدهای تب", ALL_COLUMNS,
+                default=[c for c in tab.get("fields", sel_cols) if c in ALL_COLUMNS],
+                format_func=lab, key=f"tab_fields_{i}")
+            remove = c3.button("حذف", key=f"tab_rm_{i}", disabled=len(st.session_state.report_tabs) <= 1)
+            st.session_state.report_tabs[i] = {"title": title_i, "fields": fields_i}
+            if remove:
+                st.session_state.report_tabs.pop(i)
+                st.rerun()
+        if st.button("＋ افزودن تب", use_container_width=True):
+            st.session_state.report_tabs.append({"title": f"تب {len(st.session_state.report_tabs)+1}",
+                                                 "fields": list(sel_cols)})
+            st.rerun()
 
     with st.container(border=True):
         panel_open("۲ · محتوا و فرمت")
@@ -515,15 +604,25 @@ with tab_export:
             st.markdown("**دامنه**")
             rows_cap = st.number_input("حداکثر ردیف", 100, 100000,
                                        int(T.max_rows), 100)
-            stem = st.text_input("نام فایل", f"AIBL {T.title}")
+            stem = st.text_input("نام فایل", f"GSI {T.title}")
         st.caption(f"فیلدهای انتخابی: **{len(sel_cols):,}** — از تب «سازنده گزارش» "
                    f"تغییرشان دهید.")
+
+    with st.container(border=True):
+        panel_open("۲٫۵ · نمودارهای ایمیل",
+                   "این فهرست با نمودارهای شیت Charts گزارش رسمی هم‌تراز است؛ فقط نمودارهای انتخاب‌شده در ایمیل می‌آیند.")
+        picked = st.multiselect(
+            "نمودارها", list(EMAIL_CHARTS.keys()),
+            default=[x for x in st.session_state.email_chart_keys if x in EMAIL_CHARTS],
+            format_func=lambda k: EMAIL_CHARTS[k],
+            key="email_chart_picker")
+        st.session_state.email_chart_keys = picked
 
     # ── کنترل صحت، پیش از ساخت ──
     with st.container(border=True):
         panel_open("۳ · کنترل صحت محاسبات",
                    "هر ستون عددی با دانه‌ی خودش تجمیع می‌شود تا دوباره‌شماری رخ ندهد.")
-        from aibl.studio_core.grain import fanout as _fanout, integrity_report as _integ
+        from gsi.studio_core.grain import fanout as _fanout, integrity_report as _integ
         fo = _fanout(fdf)
         if not fo.empty:
             risky = fo[fo["ضریب تکرار"] > 1.0]
@@ -547,13 +646,15 @@ with tab_export:
         + (["pdf"] if f_pdf else [])
     if st.button("🛠 ساخت گزارش", type="primary", use_container_width=True,
                  disabled=not formats):
-        out_dir = (Path(os.getenv("AIBL_DAILY_REPORT_ROOT",
+        out_dir = (Path(os.getenv("GSI_DAILY_REPORT_ROOT",
                                   str(Path(official_excel).parent)))
                    / ref_date / "reports")
         spec = ReportSpec(template=pick, fields=sel_cols, ref_date=ref_date,
-                          title=f"AIBL — {T.title}", formats=formats,
+                          title=f"GSI — {T.title}", formats=formats,
                           visuals=want_vis, tables=want_tab,
-                          max_rows=int(rows_cap), file_stem=stem.strip() or f"AIBL {T.title}")
+                          max_rows=int(rows_cap), file_stem=stem.strip() or f"GSI {T.title}",
+                          tabs=st.session_state.report_tabs,
+                          email_charts=list(st.session_state.email_chart_keys))
         with st.spinner("در حال ساخت گزارش…"):
             try:
                 res = build_report(fdf, extras, spec, DISPLAY, out_dir)
@@ -588,6 +689,37 @@ with tab_export:
                                       key=f"dl_{kind}")
 
     with st.container(border=True):
+        panel_open("۵ · پیش‌نمایش ایمیل با نمودارهای انتخابی",
+                   "همان داده فیلترشده و همان نمودارهای انتخاب‌شده؛ برای ارسال واقعی، دستور ایمیل روزانه نیز GSI_EMAIL_CHARTS را می‌خواند.")
+        if st.button("✉️ ساخت HTML ایمیل", use_container_width=True, disabled=not st.session_state.email_chart_keys):
+            email_dir = Path(os.getenv("GSI_DAILY_REPORT_ROOT", str(Path(official_excel).parent))) / ref_date / "reports"
+            email_dir.mkdir(parents=True, exist_ok=True)
+            assets = email_dir / "email_assets"
+            charts = make_email_charts(fdf, assets, selected=st.session_state.email_chart_keys, extras=extras)
+            email_excel = Path((files.get("excel") or official_excel))
+            body = build_email_html(date.fromisoformat(ref_date), fdf, charts, email_excel)
+            email_path = email_dir / f"{ref_date}_GSI_Selected_Email.html"
+            email_path.write_text(body, encoding="utf-8")
+            st.download_button("⬇ دانلود HTML ایمیل", email_path.read_bytes(),
+                               file_name=email_path.name, mime="text/html",
+                               key="dl_selected_email")
+
+        st.markdown("---")
+        e1,e2=st.columns([2,1])
+        studio_subject=e1.text_input("موضوع ایمیل",value=f"GSI Studio — گزارش فیلترشده — {ref_date}",key="studio_subject")
+        display_only=e2.checkbox("فقط نمایش در Outlook",value=True,key="studio_display")
+        if st.button("📨 ارسال/نمایش همین گزارش فیلترشده در Outlook",use_container_width=True):
+            try:
+                from gsi.integrations.daily_email import create_studio_email
+                outdir=Path(os.getenv("GSI_DAILY_REPORT_ROOT",str(Path(official_excel).parent)))/ref_date/"studio";outdir.mkdir(parents=True,exist_ok=True)
+                xlsx=outdir/f"{ref_date}_GSI_Studio_Filtered.xlsx"
+                build_custom_excel(fdf,xlsx,["kpi","table","process"],ref_date,max_rows=int(rows_cap),selected_fields=sel_cols,field_labels=DISPLAY,process_tables={k:extras.get(k) for k in ("eventlog","case_table","bottlenecks","variants","conformance_cases","conformance_root_causes")})
+                r=create_studio_email(day=date.fromisoformat(ref_date),df=fdf,excel=xlsx,selected_charts=st.session_state.email_chart_keys,send=not display_only,display=display_only,subject=studio_subject)
+                st.success(f"Outlook آماده شد · {r['recipients']} گیرنده · {r['charts']} نمودار")
+            except Exception as ex:st.error(f"Outlook: {ex}")
+            st.caption(f"{len(charts)} نمودار در ایمیل قرار گرفت.")
+
+    with st.container(border=True):
         panel_open("گزارش رسمی خط لوله",
                    "۱۷ شیت کامل، ساخته‌شده توسط خط لوله — فیلترنشده.")
         if official_excel and Path(official_excel).exists():
@@ -596,5 +728,5 @@ with tab_export:
                                mime=("application/vnd.openxmlformats-officedocument"
                                      ".spreadsheetml.sheet"))
 
-st.caption("AIBL Studio — لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
-           "منطق کسب‌وکار در موتور AIBL باقی می‌ماند.")
+st.caption("GSI | Global Sourcing Intelligence — Data • Process • Decision؛ لایه نمایش و خروجی روی همان Pipeline/Rulebook موجود؛ "
+           "منطق کسب‌وکار در موتور GSI باقی می‌ماند.")

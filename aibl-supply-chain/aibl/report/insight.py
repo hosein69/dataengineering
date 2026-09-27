@@ -44,7 +44,7 @@ from .palette import LuxuryPalette as P
 
 def _font(color: str, size: int = 11, bold: bool = False) -> Font:
     """فونت گزارش با رنگ و اندازه دلخواه (openpyxl 3.x متد copy ندارد)."""
-    return Font(name="IRANSans Light", size=size, bold=bold, color=color)
+    return Font(name="IRANSans", size=size, bold=bold, color=color)
 
 SHEET_INSIGHT = "۱۲. بینش چندلایه"
 SHEET_MATERIAL = "۱۳. تحلیل چرخه عمر متریال"

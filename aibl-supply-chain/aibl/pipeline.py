@@ -10,8 +10,7 @@
     aibl/config/sources.yaml   کدام سورس، از کجا، با کدام کلید
     aibl/stages/*.py      هر گام فرآیند، با ورودی/خروجی/ستون‌های اعلام‌شده
 
-اگر مجبور شدید برای افزودن یک قابلیت این فایل را عوض کنید، یعنی طراحی
-جایی اشتباه است — نه اینکه فایل ناقص است.
+افزودن قابلیت بیزنسی نباید نیازمند تغییر این ارکستراتور باشد.
 """
 from __future__ import annotations
 
@@ -26,8 +25,7 @@ import numpy as np
 import pandas as pd
 
 from .adapters import discover as discover_adapters
-from .adapters.base import (KEY_BL, KEY_EMP, KEY_MATERIAL, KEY_ORDER,
-                            KEY_PR, KEY_REG)
+from .adapters.base import KEY_BL, KEY_EMP, KEY_MATERIAL, KEY_ORDER, KEY_PR, KEY_REG
 from .config.settings import SETTINGS
 from .config.sources import MERGE_ORDER, get_source
 from .core.text import clean_key, clean_order_ref, clean_part_no, is_empty_val
@@ -41,8 +39,7 @@ from . import health
 from .resolve.commercial_coverage import apply as apply_commercial_coverage
 from .resolve.commercial_coverage import kpi as commercial_kpi
 from .rulebook import get_rulebook
-from .stages import (PipelineContext, collect_columns, describe, discover as
-                     discover_stages, log_plan, validate_graph)
+from .stages import PipelineContext, collect_columns, describe, discover as discover_stages, log_plan, validate_graph
 from .version import PACKAGE_VERSION, check_contracts
 
 def _key_column(join_on: str):
@@ -96,6 +93,7 @@ class PipelineResult:
     mogh_lines: pd.DataFrame = field(default_factory=pd.DataFrame)
     dashboard_path: str = ""
     extract_paths: List[str] = field(default_factory=list)
+    warehouse_run_id: str = ""
 
 
 class Pipeline:
@@ -263,33 +261,29 @@ class Pipeline:
 
     # ═══════ اجرا ═══════
     def run(self, build_report: bool = True) -> PipelineResult:
-        bar = "=" * 90
-        log.info(f"{bar}\n🚀 AIBL {PACKAGE_VERSION} — تاریخ مرجع: {self.today}\n{bar}")
-        health.reset()
-        self.preflight()
-        self.load_sources()
-        df = self.build_base()
-        df = self.run_stages(df)
-        lines = self._sheet("moghavemat", "lines")
-        # پوشش Commercial Expert Data باید روی **کل جریان اصلی** سنجیده شود،
-        # نه فقط part.main؛ چون سفارشِ فاقد مقاومت/سند نیز ممکن است در M3
-        # و «تعیین تکلیف» قرار بگیرد و نباید از شمارش جا بیفتد.
-        # این پرچم فقط پوشش سورس را گزارش می‌کند؛ هیچ کارشناس خریدی از روی
-        # فقدان رکورد ساخته نمی‌شود و موتور بحرانی از آن استفاده نمی‌کند.
-        df = apply_commercial_coverage(df, lines, self.ctx)
-        part = partition(df, self.moghavemat_available)
-
-        res = PipelineResult(part.df, part.main, part.to_resolve, part.excluded,
-                             part.counts, self.resolver.audit_df(),
-                             extras=self.ctx.extras,
-                             mogh_lines=lines if lines is not None else pd.DataFrame())
-        if build_report:
-            res.dashboard_path = self.build_report(res)
-            res.extract_paths = write_expert_extracts(res.main, SETTINGS.expert_extracts_dir)
-            write_audit_report(res.audit, os.path.join(
-                SETTINGS.OUTPUT_DIR, "AIBL_Data_Conflicts_Audit.xlsx"))
-        log.info("🏁 خط لوله با موفقیت پایان یافت.")
-        return res
+        from .warehouse.runtime import warehouse_run
+        with warehouse_run(self.today, PACKAGE_VERSION) as whrun:
+            bar = "=" * 90
+            log.info(f"{bar}\n🚀 AIBL {PACKAGE_VERSION} — تاریخ مرجع: {self.today}\n{bar}")
+            health.reset()
+            self.preflight()
+            self.load_sources()
+            df = self.build_base()
+            df = self.run_stages(df)
+            lines = self._sheet("moghavemat", "lines")
+            df = apply_commercial_coverage(df, lines, self.ctx)
+            part = partition(df, self.moghavemat_available)
+            res = PipelineResult(part.df, part.main, part.to_resolve, part.excluded,
+                                 part.counts, self.resolver.audit_df(), extras=self.ctx.extras,
+                                 mogh_lines=lines if lines is not None else pd.DataFrame())
+            whrun.persist(res, self.sources)
+            if build_report:
+                res.dashboard_path = self.build_report(res)
+                res.extract_paths = write_expert_extracts(res.main, SETTINGS.expert_extracts_dir)
+                write_audit_report(res.audit, os.path.join(
+                    SETTINGS.OUTPUT_DIR, "AIBL_Data_Conflicts_Audit.xlsx"))
+            log.info("🏁 خط لوله با موفقیت پایان یافت.")
+            return res
 
     # ═══════ گزارش ═══════
     def build_report(self, res: PipelineResult) -> str:

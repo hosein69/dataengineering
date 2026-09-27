@@ -40,19 +40,19 @@ if _TESTS not in sys.path:
 def _load_ms():
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "aibl_make_synthetic", os.path.join(_TESTS, "make_synthetic.py"))
+        "gsi_make_synthetic", os.path.join(_TESTS, "make_synthetic.py"))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
 
 
-DIRS = _load_ms().build(tempfile.mkdtemp(prefix="aibl_contract_"))
+DIRS = _load_ms().build(tempfile.mkdtemp(prefix="gsi_contract_"))
 os.environ.update({
-    "AIBL_FOREIGN": DIRS["foreign"], "AIBL_BLS": DIRS["bls"],
-    "AIBL_CLEARANCE": DIRS["clearance"], "AIBL_HR": DIRS["hr"],
-    "AIBL_ESMAEILI": DIRS["esmaeili"], "AIBL_GS_COMBINE": DIRS["gs_combine"],
-    "AIBL_MOHAMADI": DIRS["mohamadi"], "AIBL_OUTPUT": DIRS["output"],
-    "AIBL_LOGS": DIRS["logs"], "AIBL_TODAY": "2026-08-31",
+    "GSI_FOREIGN": DIRS["foreign"], "GSI_BLS": DIRS["bls"],
+    "GSI_CLEARANCE": DIRS["clearance"], "GSI_HR": DIRS["hr"],
+    "GSI_ESMAEILI": DIRS["esmaeili"], "GSI_GS_COMBINE": DIRS["gs_combine"],
+    "GSI_MOHAMADI": DIRS["mohamadi"], "GSI_OUTPUT": DIRS["output"],
+    "GSI_LOGS": DIRS["logs"], "GSI_TODAY": "2026-08-31",
 })
 
 import logging  # noqa: E402
@@ -71,10 +71,10 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 # ═══════════ ۱) بازتولید دقیق باگ کاربر ═══════════
 def test_reproduce_user_bug() -> None:
     print("\n── ۱) بازتولید «مقاومت ۴ روز با موجودی صفر» ──")
-    from aibl.engines.criticality import CriticalityEngine
+    from gsi.engines.criticality import CriticalityEngine
 
     r = CriticalityEngine().evaluate({
-        "STOCK_IKCO": 0, "STOCK_SAPCO": 440,
+        "STOCK_IKCO": 0, "STOCK_SAPCO": 440, "SUPPLIER_QTY": 0,
         "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 110})
     d = r.as_dict()
 
@@ -94,15 +94,15 @@ def test_reproduce_user_bug() -> None:
 def test_report_keys_exist() -> None:
     print("\n── ۲) قرارداد کلیدهای گزارش ──")
     logging.disable(logging.WARNING)
-    from aibl.pipeline import Pipeline
+    from gsi.pipeline import Pipeline
 
     res = Pipeline().run(build_report=True)
     produced = set(res.df.columns)
 
     # کلیدهایی که شیت‌ها از ردیف می‌خوانند، از خود سورس استخراج می‌شوند
-    src = open(os.path.join(ROOT, "aibl", "report", "dashboard.py"),
+    src = open(os.path.join(ROOT, "gsi", "report", "dashboard.py"),
                encoding="utf-8").read()
-    src += open(os.path.join(ROOT, "aibl", "report", "charts.py"),
+    src += open(os.path.join(ROOT, "gsi", "report", "charts.py"),
                 encoding="utf-8").read()
 
     read_keys = set()
@@ -127,10 +127,10 @@ def test_report_keys_exist() -> None:
 
     # ستون‌های حیاتی مقاومت واقعاً در خروجی هستند
     need = ["مقاومت (روز)", "مقاومت انبار (روز)", "موجودی ایران خودرو",
-            "موجودی ساپکو", "موجودی در راه", "موجودی در گمرک",
+            "موجودی ساپکو", "موجودی نزد سازنده", "موجودی در راه", "موجودی در گمرک",
             "موجودی کل قابل احتساب", "نیاز روزانه"]
     absent = [c for c in need if c not in produced]
-    check("هر هشت ستون اجزای مقاومت در خروجی موجودند", not absent, str(absent))
+    check("همه ستون‌های اجزای مقاومت در خروجی موجودند", not absent, str(absent))
     return res
 
 
@@ -156,13 +156,13 @@ def test_arithmetic_visible(res) -> None:
     ok2, bad2 = True, []
     for _, r in df.iterrows():
         parts = sum(pd.to_numeric(r.get(c), errors="coerce") or 0 for c in
-                    ("موجودی ایران خودرو", "موجودی ساپکو",
+                    ("موجودی ایران خودرو", "موجودی ساپکو", "موجودی نزد سازنده",
                      "موجودی در راه", "موجودی در گمرک"))
         total = pd.to_numeric(r.get("موجودی کل قابل احتساب"), errors="coerce") or 0
         if abs(parts - total) > 0.01:
             ok2 = False
             bad2.append(f"{r.get('KEY_MATERIAL')}: {parts} ≠ {total}")
-    check("جمع چهار جزء با «موجودی کل» برابر است", ok2,
+    check("جمع پنج جزء با «موجودی کل» برابر است", ok2,
           "؛ ".join(bad2) or "همه ردیف‌ها سازگار")
 
 
@@ -207,7 +207,7 @@ def test_sheet_not_blank(res) -> None:
 
 if __name__ == "__main__":
     print("=" * 78)
-    print("AIBL — تست قرارداد گزارش (باگ «مقاومت ۴ روز با موجودی صفر»)")
+    print("GSI — تست قرارداد گزارش (باگ «مقاومت ۴ روز با موجودی صفر»)")
     print("=" * 78)
     test_reproduce_user_bug()
     result = test_report_keys_exist()

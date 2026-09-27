@@ -17,16 +17,25 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-# ── پالت: آکوا، طیف سبز، سفید، خاکستری ──
-AQUA_DEEP, AQUA, AQUA_SOFT = "#0F6E6E", "#1E9E9E", "#7FC9C2"
-GREEN_SOFT, GREY, GREY_BG, WHITE = "#D9EDE7", "#5A6B6B", "#F2F5F5", "#FFFFFF"
-RED, AMBER, GREEN = "#C0392B", "#F39C12", "#27AE60"
+# ── پالت: از app/theme.py، که خودش از gsi.design.tokens می‌خواند ──────────
+#
+# قبلاً اینجا پالت نهم بسته بود و سه مقدارش زیر کف خوانایی می‌ماندند:
+#     #F1C40F («تحت نظر»)  ۱٫۷      #F39C12 («در حال…»)  ۱٫۹
+#     #27AE60 («ایمن»)     ۲٫۸
+# بدتر آنکه «در حال بحرانی شدن» و «تحت نظر» — دو طبقه‌ای که اپراتور باید
+# بینشان تصمیم بگیرد — ΔE برابر ۹٫۸ داشتند، یعنی حتی با دید رنگی کامل هم
+# به‌سختی تفکیک می‌شدند.
+from .theme import (BRAND_NAVY, BRAND_TEAL, FONT_STACK, SURFACE_SUNKEN,  # noqa: F401
+                    TEAL_WASH_, TEXT, TEXT_MUTED, TEXT_SECONDARY, STATUS,
+                    STATUS_INK, BANDS_FA, SURFACE_RAISED)
 
-BAND_COLORS: Dict[str, str] = {
-    "توقف خط": RED, "بحرانی": "#C0392B", "در حال بحرانی شدن": AMBER,
-    "تحت نظر": "#F1C40F", "ایمن": GREEN, "بدون مصرف": "#95A5A6",
-    "نامشخص": "#95A5A6",
-}
+AQUA_DEEP, AQUA, AQUA_SOFT = BRAND_NAVY, BRAND_TEAL, TEAL_WASH_
+GREEN_SOFT, GREY, GREY_BG, WHITE = TEAL_WASH_, TEXT_SECONDARY, SURFACE_SUNKEN, SURFACE_RAISED
+RED, AMBER, GREEN = STATUS_INK["critical"], STATUS_INK["warning"], STATUS_INK["good"]
+
+#: برچسب فارسی → رنگ نشانه وضعیت. رنگ هرگز تنها حامل معنا نیست؛ هر برچسب
+#: آیکن خودش را هم از :data:`theme.BANDS_FA` می‌گیرد.
+BAND_COLORS: Dict[str, str] = {fa: color for fa, (color, _icon, _fa) in BANDS_FA.items()}
 
 #: ستون‌هایی که در جدول جزئیات نشان داده می‌شوند (به همین ترتیب)
 DETAIL_COLUMNS: List[str] = [
@@ -142,11 +151,11 @@ def export_html(df: pd.DataFrame, ref_date: str,
 
     return f"""<!DOCTYPE html><html lang="fa" dir="rtl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>گزارش AIBL — {_html.escape(ref_date)}</title>
+<title>گزارش GSI — {_html.escape(ref_date)}</title>
 <style>
 
 *{{box-sizing:border-box}}
-body{{font-family:"IRANSans Light",IRANSans,Tahoma,Arial,sans-serif;color:#20302f;margin:0;padding:28px;
+body{{font-family:{FONT_STACK};color:{TEXT};margin:0;padding:28px;
      background:linear-gradient(135deg,{WHITE} 0%,{GREY_BG} 100%);min-height:100vh}}
 h1{{color:{AQUA_DEEP};margin:0 0 4px;font-weight:800}}
 .sub{{color:{GREY};font-size:.85rem;margin-bottom:22px}}

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-FONT_BODY = "IRANSans Light"
-FONT_TITLE = "IRANSans Light"
+FONT_BODY = "IRANSans"
+FONT_TITLE = "IRANSans"
 
 
 class LuxuryPalette:

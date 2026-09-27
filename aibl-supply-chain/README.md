@@ -1,25 +1,74 @@
-# AIBL V26.11.0 — Studio — مغز شناختی لجستیک (ماژولار + کتابخانه قوانین)
+# نسخه 28.0.0 — شروع از START_HERE_V28_FA.md
 
-بازنویسی کامل `aibl.py` نسخه ۲۰.۱ به یک پکیج ماژولار، قانون‌محور و تست‌شده.
-**464 تست صحت در سیزده مجموعه — همه سبز، روی داده با هدرهای واقعی تولید.**
+معماری و رفتار جدید SQLite در ARCHITECTURE_V28_FA.md و نتایج در RELEASE_VALIDATION_V28_FA.md آمده است. متن زیر مستندات تاریخی بسته پایه است؛ در موارد تغییر ذخیره‌سازی و گزارش مخاطبان، راهنمای V28 ملاک است.
 
-> **اول این را بزنید:** `python -m aibl.doctor`
+# اصلاحیه ۲۷٫۲٫۱
+راهنمای رفع خطای cryptography و گلوگاه: RUNTIME_FIX_V27_2_1_FA.md
+
+# نسخه ۲۷٫۲ — مرکز مخاطبان و منابع
+
+راهنمای تغییرات و نصب: [RELEASE_NOTES_V27_2_FA.md](RELEASE_NOTES_V27_2_FA.md). محیط جدید از نوار کناری Studio قابل دسترس است. امکانات قدیمی پایین این سند مربوط به هسته قبلی و حفظ‌شده‌اند.
+
+# اصلاحیه شبکه و Outlook — V27.1.1
+
+راهنمای استقرار و محدودیت‌های آزمون: [NETWORK_OUTLOOK_RELEASE_FA.md](NETWORK_OUTLOOK_RELEASE_FA.md). Python 3.11+ لازم است.
+
+# GSI | Global Sourcing Intelligence
+## V27.1 — فضای شخصی پایدار، رمزگذاری‌شده و بدون API/IP داده
+
+GSI اکنون یک لایه Personal Shared Store دارد. سیستم مرکزی داده را با `KEY_EMP` scope می‌کند و برای هر کد پرسنلی در Shared Folder دو فایل رمزگذاری‌شده نگه می‌دارد: `state/profile.gsi` برای Preferenceهای پایدار و `snapshot/current.gsi` برای آخرین داده عملیاتی همان فرد. فایل‌ها AES-256-GCM هستند و SQLite plaintext روی Share نوشته نمی‌شود. Client می‌تواند فقط User Key خودش را داشته باشد؛ Master Key روی سیستم مرکزی می‌ماند.
+
+دسترسی شخصی: `python -m gsi personal` · انتشار مرکزی: `python -m gsi publish-personal` · Live View بدون HTTP Data API: `python -m gsi personal-open` یا پروتکل محلی `gsi://personal`. جزئیات استقرار و ACL در `docs/PERSONAL_SHARED_STORE_V27_1_FA.md` است.
+
+
+## V27.0 — Audience-aware Product Design + Case Action + End-to-End Traceability
+
+**Data • Process • Decision**
+
+V27 روی یک اصل بنا شده است: یک زنجیره داده واحد، اما عمق نمایش متفاوت برای نقش‌های مختلف. کارشناس «اقدام بعدی»، مدیر میانی «صف و گلوگاه»، مدیر ارشد «تصمیم و Exposure» و تحلیل‌گر «Evidence و Data Lineage» را می‌بیند. منطق عملیاتی V26.20 حفظ شده و Design System/UX V27 روی همان Truth Model سوار شده است.
+
+### زنجیره قابل رهگیری
+`درخواست → ثبت سفارش → صف تخصیص → تخصیص → خرید ارز → تأمین وجه → SWIFT/تبدیل → حمل → ورود/EPL → ترخیص فیزیکی → سند بانکی → رفع تعهد`
+
+سه سبد موجودی **«نزد سازنده / در راه / گمرک» از سورس کارشناسان** مرجع عملیاتی‌اند. Oracle موجودی IKCO/SAPCO و نیاز روزانه را برای کنترل و Reconciliation اضافه می‌کند. نبود داده هرگز صفر فرض نمی‌شود: **`UNKNOWN ≠ ZERO`**.
+
+### Product Design V27
+مرجع visual/interaction واقعی در Figma:
+
+- `https://www.figma.com/design/0splRPuGQgIo33XFkwa0rz`
+- ۱۱ صفحه نام‌گذاری‌شده GSI
+- ۱۴ Component Set + ۵ Component مستقل
+- ۸۰ Variant
+- ۱۴۰ Variable قابل انتشار در ۸ Collection
+- Prototype کلیک‌پذیر با مسیر Success/Error
+- Accessibility/Responsive/UX Audit و Developer Handoff داخل خود فایل
+
+نمونه HTML تعاملی و مستقل از Backend: `examples/GSI_V27_UI_SAMPLE.html`. داده‌های این فایل **Demo** هستند و نباید به‌عنوان داده عملیاتی یا Rule جاری تلقی شوند.
+
+### منبع حقیقت طراحی و اجرا
+توکن‌های runtime و خروجی‌های تولیدی از `gsi/design/` می‌آیند؛ Figma مرجع visual/interaction specification است. اختلاف این دو نباید بی‌صدا با overwrite حل شود و باید در Release reconciliation شود.
+
+# GSI V27.1.1 — Personal Shared Store + Audience-aware Intelligence
+در اجرای یکپارچه این اصلاحیه: ۷۹۸ آزمون موفق و یک آزمون معماری ناموفق؛ اجرای جداگانه همان مجموعه معماری ۴۲ موفق داشت. گزارش دقیق در RUNTIME_FIX_V27_2_1_FA.md است.
+
+> **اول این را بزنید:** `python -m gsi.doctor`
 > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.
 
 ```bash
-python -m aibl.doctor                         # عیب‌یابی محیط
-python -m aibl.diagnose --excel               # عیب‌یابی رابطه‌ها (چرا KPI صفر است)
-python -m aibl.rulebook.validate              # اعتبارسنجی کتابخانه قوانین
-python -m aibl.pipeline                       # اجرای کامل
-python -m aibl run                            # doctor + اجرا
-python -m aibl email --no-display             # ساخت Excel + نمودارهای ایمیل
-python -m aibl email                          # ساخت و باز کردن Outlook
-python -m aibl email --send                   # ارسال واقعی
+python -m gsi.doctor                         # عیب‌یابی محیط
+python -m gsi.diagnose --excel               # عیب‌یابی رابطه‌ها (چرا KPI صفر است)
+python -m gsi.rulebook.validate              # اعتبارسنجی کتابخانه قوانین
+python -m gsi.pipeline                       # اجرای کامل
+python -m gsi run                            # doctor + اجرا
+python -m gsi.design.handoff                 # قرارداد Design System / Figma
+python -m gsi.design.handoff --json          # توکن ماشین‌خوان
+python -m gsi email --no-display             # ساخت Excel + نمودارهای ایمیل
+python -m gsi email                          # ساخت و باز کردن Outlook
 python run_all_tests.py                       # همه تست‌ها
 ```
 
 ### ⚠️ نام ماژول‌ها در نسخه ۲۲ تغییر کرد
-`aibl/core/calendar.py` → **`aibl/core/jalali.py`** و `aibl/io/` → **`aibl/dataio/`**
+`gsi/core/calendar.py` → **`gsi/core/jalali.py`** و `gsi/io/` → **`gsi/dataio/`**
 تا حتی اگر فایل‌ها تخت کپی شوند، روی کتابخانه استاندارد پایتون سایه نیندازند.
 این علت خطای اجرای اول روی شبکه بود.
 
@@ -103,9 +152,9 @@ join در هر ردیف **تکرار** می‌شود:
 
 | کاری که می‌خواهید بکنید | تنها جایی که باید دست بزنید |
 |---|---|
-| افزودن / حذف / غیرفعال کردن یک سورس | `aibl/config/sources.yaml` |
-| تغییر یک مهلت قانونی، آستانه، وزن ریسک، ارز، ترم حمل، کد تعرفه | `aibl/rules/*.yaml` |
-| افزودن سورسی با منطق خواندن جدید | یک فایل جدید در `aibl/adapters/` |
+| افزودن / حذف / غیرفعال کردن یک سورس | `gsi/config/sources.yaml` |
+| تغییر یک مهلت قانونی، آستانه، وزن ریسک، ارز، ترم حمل، کد تعرفه | `gsi/rules/*.yaml` |
+| افزودن سورسی با منطق خواندن جدید | یک فایل جدید در `gsi/adapters/` |
 
 adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل جدید بگذارید → سورس فعال می‌شود.
 فایل را پاک کنید → حذف می‌شود. هیچ فایل دیگری ویرایش نمی‌شود.
@@ -116,14 +165,14 @@ adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل ج�
 
 ---
 
-## ۲. کتابخانه قوانین (`aibl/rules/`)
+## ۲. کتابخانه قوانین (`gsi/rules/`)
 
-هیچ عدد قانونی داخل کد پایتون نیست. ۹ بسته YAML:
+هیچ عدد قانونی داخل کد پایتون نیست. ۱۳ بسته YAML:
 
 | فایل | محتوا | وضعیت |
 |---|---|---|
 | `criticality.yaml` | **مقاومت قطعه**: مقاومت = موجودی ÷ مصرف روزانه، طبقه‌بندی (زیر ۱۰ روز بحرانی، ۱۰ تا ۲۰ در حال بحرانی شدن)، مرتب‌سازی، هشدارهای ترکیبی | internal |
-| `fx_governance.yaml` | چرخه ۱۰ مرحله‌ای PR→PO→ثبت سفارش→تخصیص→تأمین ارز→حمل→اسناد→گمرک→رفع تعهد، مهلت‌ها، جریمه پلکانی، کانال‌های تأمین ارز، روش‌های پرداخت و رفع تعهد | internal + needs_verification |
+| `fx_governance.yaml` | چرخه ۱۲ مرحله‌ای PR→PO→ثبت سفارش→صف تخصیص→تخصیص→تأمین ارز→حمل→اسناد بانکی→EPL→ترخیص→رفع تعهد، مهلت‌ها، جریمه پلکانی، کانال‌های تأمین ارز، روش‌های پرداخت و رفع تعهد | internal + needs_verification |
 | `incoterms.yaml` | Incoterms® 2020 — هر ۱۱ ترم با نقطه انتقال ریسک، تعهد بیمه، مسئول ترخیص | verified (ICC) |
 | `hs_codes.yaml` | ساختار HS، فصول مرتبط با ابزار و قطعه، استنتاج تعرفه از شرح کالا | verified (WCO) |
 | `currencies.yaml` | ISO 4217 با نام‌های فارسی و تعداد اعشار | verified |
@@ -131,13 +180,60 @@ adapterها با `pkgutil` **خودکار کشف** می‌شوند. فایل ج�
 | `customs.yaml` | انواع ترخیص، کوتاژ، ساتا، رسوب و تشدید، پارامترهای ویبول و بیزین | internal |
 | `alarms.yaml` | ۸ آستانه × ۲ سگمنت، وزن‌های موتور ریسک، طبقه‌بندی | internal |
 | `status_lexicon.yaml` | واژگان وضعیت فارسی → مرحله چرخه عمر | internal |
+| `warehouse.yaml` | **سامانه جامع انبارها**: قبض انبار الکترونیکی، شناسه کالا/رهگیری، مهلت اظهار ورود و خروج، آستانه شکاف شاهد پس از ترخیص | internal + needs_verification |
+| `legacy_knowledge.yaml` | دانش تاریخی versioned: A/B/C، mapping، root cause، evidence و anti-pattern؛ **non-binding** | legacy_reference |
 
 ### وضعیت اعتبار هر قاعده
 - `verified` — از منبع رسمی (ICC / WCO / ISO)
 - `internal` — رویه جاری IKCO (of.txt / of2.txt)
-- `needs_verification` — **۲۰ قاعده** که باید با آخرین بخشنامه بانک مرکزی تطبیق داده شود
+- `needs_verification` — **۲۳ قاعده** که باید با آخرین بخشنامه بانک مرکزی تطبیق داده شود
 
-`python -m aibl.rulebook.validate` این ۲۰ مورد را فهرست می‌کند و شیت ۸ داشبورد
+## گزارش برای چه کسی؟ — پروفایل مخاطب
+
+یک خروجی و سه خواننده یعنی هیچ‌کدام آن را مال خودش نمی‌داند. `gsi/audience.py`
+چهار پروفایل دارد و هرکدام تعیین می‌کند **چه چیزی دیده شود، به چه عمقی، و چه
+چیزی دیده نشود**:
+
+| | کارشناس | مدیر میانی | مدیر ارشد | تحلیل‌گر |
+|---|---|---|---|---|
+| یافته / ردیف / نمودار | ۵ / ۲۰۰ / ۲ | ۴ / ۸۰ / ۴ | ۳ / ۱۰ / ۱ | ۸ / ۱۰۰۰ / ۶ |
+| کیفیت داده | ✗ | ✗ | ✗ | ✓ |
+
+```bash
+GSI_AUDIENCE=manager python -m gsi.pipeline     # یا از داشبورد انتخاب کنید
+```
+
+هر سه نمای عملیاتی در **یک فایل**‌اند و خواننده با یک کلیک جابه‌جا می‌شود.
+
+**سنجه‌های کیفیت داده عمداً در هیچ نمای عملیاتی نمی‌آیند.** مدیری که «پوشش
+داده ۷۲٪» می‌بیند به کل گزارش بی‌اعتماد می‌شود بدون آنکه بتواند کاری بکند.
+جایشان داشبورد Streamlit و شیت «۱۷. سلامت سیستم» است — جایی که کسی نشسته که
+می‌تواند دربارهٔ آنها اقدام کند.
+
+## لحن — `gsi/voice.py`
+
+شش قاعده که در کد اجرا می‌شوند: عدد بدون مخرج منتشر نمی‌شود · بزرگ‌نمایی
+خنثی می‌شود · «مانع» به‌جای «مقصر» · چهار حالتِ ندانستن از هم جدا می‌مانند ·
+همبستگی علت نامیده نمی‌شود · هر یافته با مالک و مهلت تمام می‌شود.
+
+### پنجره اعتبار — `effective_from` و `expires_on`
+
+هر قاعده می‌تواند تاریخ شروع و تاریخ انقضا داشته باشد. قاعده‌ای که تاریخ
+مرجع بیرون از پنجره‌اش باشد **اعمال نمی‌شود**:
+
+```python
+rb.active("customs.emergency_sata_waiver_1405")   # None اگر منقضی شده باشد
+rb.get(...)                                        # برای نمایش و ممیزی، همیشه می‌دهد
+rb.is_expired(path) · rb.days_to_expiry(path)
+rb.expired()        # سطح error — قاعده‌ای که از مدار خارج شده
+rb.expiring_soon()  # سطح warning — تا ۳۰ روز دیگر منقضی می‌شود
+```
+
+تا V26.20 این دو فیلد نوشته می‌شدند ولی **هیچ‌جا خوانده نمی‌شدند**؛ یعنی یک
+بخشنامه منقضی تا ابد «آخرین نسخه معتبر» می‌ماند. حالا `python -m gsi.doctor`
+و شیت «۱۷. سلامت سیستم» هر دو پنجره اعتبار را گزارش می‌کنند.
+
+`python -m gsi.rulebook.validate` این موارد را فهرست می‌کند و شیت ۸ داشبورد
 همان فهرست را برای ممیزی مدیریتی چاپ می‌کند.
 
 ### به‌روزرسانی یک قانون
@@ -157,7 +253,7 @@ release_production:
 RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخاب می‌کند.
 
 قوانین را می‌توان بیرون از پکیج هم نگه داشت:
-`AIBL_RULES_DIR=D:\of\rules python -m aibl.pipeline`
+`GSI_RULES_DIR=D:\of\rules python -m gsi.pipeline`
 
 ### مهم‌ترین موارد نیازمند تطبیق
 `docs_after_opening` (۱۸۰ روز)، `allocation_validity`، `registration_validity`،
@@ -220,7 +316,7 @@ RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخ
 
 ### تغییر نام هدرها
 اگر هدرها عوض شوند فقط `MoghavematAdapter.COLUMN_MAP` را ویرایش کنید
-(`aibl/adapters/moghavemat.py`) — یک دیکشنری ۳۵ سطری، بدون دست زدن به منطق.
+(`gsi/adapters/moghavemat.py`) — یک دیکشنری ۳۵ سطری، بدون دست زدن به منطق.
 
 ---
 
@@ -232,7 +328,7 @@ RuleBook خودکار نسخه معتبر در تاریخ اجرا را انتخ
 
 | مرحله | پاسخ به سؤال | خروجی |
 |---|---|---|
-| `s80_eventlog` | فرآیند **چگونه** اجرا شده؟ | جدول فعالیت استاندارد Celonis (`_CASE_KEY`, `ACTIVITY_EN`, `EVENTTIME`, `_SORTING`)، جدول پرونده، گلوگاه‌ها، واریانت‌ها، فایل `AIBL_EventLog.csv` آماده بارگذاری |
+| `s80_eventlog` | فرآیند **چگونه** اجرا شده؟ | جدول فعالیت استاندارد Celonis (`_CASE_KEY`, `ACTIVITY_EN`, `EVENTTIME`, `_SORTING`)، جدول پرونده، گلوگاه‌ها، واریانت‌ها، فایل `GSI_EventLog.csv` آماده بارگذاری |
 | `s85_conformance` | **کجا** منحرف شده و **چرا**؟ | فعالیت جاافتاده، نقض ترتیب، امتیاز انطباق، و ریشه‌یابی با «اثر تفاضلی» |
 
 مسیر مرجع (happy path) از `rules/fx_governance.yaml` خوانده می‌شود — یعنی
@@ -409,7 +505,7 @@ python app/run_dashboard.py --port 8600
 
 ## ضدِ دریفت مستندات
 
-`python -m aibl.factsheet` اعداد زنده سیستم را چاپ می‌کند و
+`python -m gsi.factsheet` اعداد زنده سیستم را چاپ می‌کند و
 `tests/test_doc_claims.py` هر عدد فارسی داخل README را با آن می‌سنجد.
 اگر README بگوید «۹ شیت» و کد ۱۷ شیت بسازد، تست قرمز می‌شود.
 
@@ -420,7 +516,7 @@ python app/run_dashboard.py --port 8600
 ## ۵. ساختار
 
 ```
-aibl/
+gsi/
 ├── rules/          ۸ فایل YAML — کل دانش قانونی سیستم
 ├── rulebook/       loader.py (دسترسی، نسخه‌بندی، ممیزی) + validate.py
 ├── config/         settings.py · sources.yaml · sources.py · business_rules.py (shim)
@@ -432,7 +528,7 @@ aibl/
 ├── narrate/        narrator (۵ شاخه + گارد ضد باگ B1)
 ├── report/         palette · dashboard (۸ شیت) · extracts
 ├── doctor.py       بازرس نصب و محیط
-├── __main__.py     نقطه ورود «python -m aibl»
+├── __main__.py     نقطه ورود «python -m gsi»
 └── pipeline.py     ارکستراتور
 ```
 
@@ -462,7 +558,7 @@ Formula Injection (SUBTOTAL/COUNTIF زنده)، گروه‌بندی سه‌لا�
 
 - سورس غایب → هشدار و ادامه (مگر `required: true`)
 - **خطای adapter → لاگ CRITICAL صریح** که خروجی ناقص است.
-  با `AIBL_STRICT_ADAPTERS=1` اجرا متوقف می‌شود.
+  با `GSI_STRICT_ADAPTERS=1` اجرا متوقف می‌شود.
 - فایل مقاومت غایب → هشدار بحرانی، نه گزارش خالی بی‌صدا
 - ادغامی که تعداد سطر را عوض کند → `RowExplosionError`
 - قانون نامعتبر (مثلاً مجموع وزن‌ها ≠ ۱) → توقف قبل از خواندن هر داده‌ای
@@ -471,22 +567,37 @@ Formula Injection (SUBTOTAL/COUNTIF زنده)، گروه‌بندی سه‌لا�
 
 ## ۷. پوشش تست‌ها
 
-| مجموعه | تعداد | چه چیزی را اثبات می‌کند |
-|---|---|---|
-| `test_validation.py` | ۴۸ | نرمال‌سازی، تقویم شمسی، ویبول، بیزین، جریمه پلکانی، ریسک، عدم انفجار سطر، اتصال HR، KPI بر بارنامه یکتا، ۸ شیت اکسل |
-| `test_rules_and_moghavemat.py` | ۵۵ | بارگذاری و اعتبارسنجی ۸ بسته قانون، نسخه‌بندی زمانی، Incoterms، HS، اعتبارسنجی بارنامه، واژگان وضعیت، تجمیع سطح سفارش، سه قرارداد ماژولاریتی |
-| `test_criticality.py` | ۳۲ | فرمول مقاومت، مرزهای ۱۰/۲۰ روز، حالت‌های مرزی (مصرف صفر، داده غایب، کالای در راه)، اتصال Oracle→متریال، مرتب‌سازی، هشدار ترکیبی، شیت ۹، پیکربندی‌پذیری آستانه‌ها |
-| `test_import_hygiene.py` | ۱۹ | تصادم نام با stdlib، **بازتولید و رفع خطای واقعی شبکه**، اجرا از هر پوشه، نقاط ورود، استقلال از jdatetime |
+| مجموعه | تعداد موفق | پوشش اصلی |
+|---|---:|---|
+| `test_validation.py` | 61 | نرمال‌سازی، تقویم، ریسک، ادغام و اجرای خط لوله |
+| `test_rules_and_moghavemat.py` | 63 | RuleBook، نسخه زمانی، Incoterms/HS/حمل، قواعد مقاومت |
+| `test_criticality.py` | 34 | بحرانی بودن، مقاومت و سناریوهای مرزی |
+| `test_architecture.py` | 36 | قرارداد Stage، افزونه‌پذیری، Event Log و معماری |
+| `test_contracts_report.py` | 14 | قرارداد گزارش و رگرسیون موجودی/مقاومت |
+| `test_dashboard.py` | 77 | KPI، Excel/HTML، Analytics، نقش‌ها و ایمیل |
+| `test_import_hygiene.py` | 19 | نصب، import، stdlib collision و نقاط ورود |
+| `test_doc_claims.py` | 8 | تطبیق ادعاهای README با کد |
+| `test_email_report.py` | 11 | بسته ایمیل مدیریتی |
+| `test_studio.py` | 5 | Studio ماژولار |
+| `test_report_builder.py` | 32 | گزارش‌ساز و صحت دانه‌ای |
+| `test_supply_views.py` | 55 | مالکیت، وضعیت قطعه، نماهای تأمین و پوشش Runner |
+| `test_system_health.py` | 49 | نقاط کور، ناهنجاری زمانی و سلامت سیستم |
+| `test_oracle_multisheet_v26_14.py` | 1 | ادغام Oracle چندشیتی |
+| `test_studio_v26_12.py` | 2 | فیلتر حمل، Tab و Designهای Studio |
+| `test_html_export_v26_15.py` | 1 | HTML پویا و Process Explorer |
+| `test_fx_traceability_v26_16.py` | 5 | FX ledger، تعهدها، conformance و snapshot قواعد |
+| `test_money_flow_v26_18.py` | 13 | Rate bridge، Reallocation، Deadline، Stage و Field Intelligence |
+| **جمع** | **486** | **۱۸ مجموعه ثبت‌شده در `run_all_tests.py`** |
 
 ## ۸. گام بعدی
 
-1. `python -m aibl.doctor` تا محیط ۰ خطا شود.
+1. `python -m gsi.doctor` تا محیط ۰ خطا شود.
 2. هدرهای واقعی مقاومت را با `COLUMN_MAP` تطبیق دهید (احتمالاً بدون تغییر کار می‌کند).
-3. ۱۹ قاعده `needs_verification` را با آخرین بخشنامه‌ها به‌روزرسانی کنید.
-4. اولین اجرای واقعی با `AIBL_STRICT_ADAPTERS=1`.
+3. ۲۳ قاعده `needs_verification` را با آخرین بخشنامه‌ها به‌روزرسانی کنید.
+4. اولین اجرای واقعی با `GSI_STRICT_ADAPTERS=1`.
 
 
-## AIBL Studio — Modular Streamlit Platform
+## GSI Studio — Modular Streamlit Platform
 
 ```bash
 python app/run_platform.py

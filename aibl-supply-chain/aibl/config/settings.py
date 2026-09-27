@@ -55,6 +55,16 @@ class Settings:
     DAILY_REPORT_ROOT: str = field(default_factory=lambda: _env("AIBL_DAILY_REPORT_ROOT", ""))
     SYSTEMMATIC_MATERIAL_BASENAME: str = "Systemmatic Material.xlsx"
 
+    # ── SQLite analytical warehouse ──
+    # مسیر ثابت داده تحلیلی؛ Excel/HTML فقط artifact ارائه هستند.
+    WAREHOUSE_PATH: str = field(default_factory=lambda: _env(
+        "AIBL_WAREHOUSE_PATH",
+        os.path.join(_env("AIBL_OUTPUT", _local_default(r"D:\of\blstotal\output", "output")),
+                     "AIBL_warehouse.sqlite3")))
+    WAREHOUSE_ENABLED: bool = field(default_factory=lambda: _env("AIBL_WAREHOUSE_ENABLED", "1").strip().lower()
+                                    not in ("0", "false", "no", "off"))
+    STUDIO_SOURCE: str = field(default_factory=lambda: _env("AIBL_STUDIO_SOURCE", "warehouse").strip().lower())
+
     # ── پارامترهای اجرا ──
     # FIX-4: تاریخ هاردکد "2026-07-26" حذف شد.
     # اگر AIBL_TODAY ست شود (برای تست بازتولیدپذیر) همان استفاده می‌شود.

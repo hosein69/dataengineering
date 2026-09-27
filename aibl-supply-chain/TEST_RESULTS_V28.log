@@ -1,0 +1,1921 @@
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۹) دیتاورهوس و مخاطبان V28
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 17 موفق | 0 ناموفق
+
+test_backup (__main__.Tests.test_backup) ... ok
+test_blob_idempotent (__main__.Tests.test_blob_idempotent) ... ok
+test_capture_rerun (__main__.Tests.test_capture_rerun) ... ok
+test_config_revision_audit_transaction (__main__.Tests.test_config_revision_audit_transaction) ... ok
+test_contact_invalid_atomic (__main__.Tests.test_contact_invalid_atomic) ... ok
+test_contacts_and_membership (__main__.Tests.test_contacts_and_membership) ... ok
+test_decimal (__main__.Tests.test_decimal) ... ok
+test_empty_frame (__main__.Tests.test_empty_frame) ... ok
+test_explicit_scope (__main__.Tests.test_explicit_scope) ... ok
+test_failed_run_not_published (__main__.Tests.test_failed_run_not_published) ... ok
+test_frame_roundtrip (__main__.Tests.test_frame_roundtrip) ... ok
+test_hidden_formula_preserved (__main__.Tests.test_hidden_formula_preserved) ... ok
+test_html_custom_fields_role_widgets (__main__.Tests.test_html_custom_fields_role_widgets) ... ok
+test_no_network_db (__main__.Tests.test_no_network_db) ... ok
+test_nonfinite_roundtrip (__main__.Tests.test_nonfinite_roundtrip) ... ok
+test_scope_does_not_expand_for_manager (__main__.Tests.test_scope_does_not_expand_for_manager) ... ok
+test_wrong_database (__main__.Tests.test_wrong_database) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.089s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۸) رفع خطای زمان اجرا
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 7 موفق | 0 شکست
+
+test_config_without_crypto (__main__.RuntimeFixTests.test_config_without_crypto) ... ok
+test_empty_filter (__main__.RuntimeFixTests.test_empty_filter) ... ok
+test_invalid_not_zero (__main__.RuntimeFixTests.test_invalid_not_zero) ... ok
+test_legacy_mean (__main__.RuntimeFixTests.test_legacy_mean) ... ok
+test_missing_metric (__main__.RuntimeFixTests.test_missing_metric) ... ok
+test_new_median (__main__.RuntimeFixTests.test_new_median) ... ok
+test_resistance_reasons (__main__.RuntimeFixTests.test_resistance_reasons) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.529s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۷) مرکز مخاطبان و منابع
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 17 موفق | 0 شکست
+
+test_cluster_import_keeps_template (__main__.CenterTests.test_cluster_import_keeps_template) ... ok
+test_defaults_revision_conflict (__main__.CenterTests.test_defaults_revision_conflict) ... ok
+test_draft_never_sends (__main__.CenterTests.test_draft_never_sends) ... ok
+test_drift_preserves_config (__main__.CenterTests.test_drift_preserves_config) ... ok
+test_duplicate_header (__main__.CenterTests.test_duplicate_header) ... ok
+test_duplicate_identity (__main__.CenterTests.test_duplicate_identity) ... ok
+test_inactive_member (__main__.CenterTests.test_inactive_member) ... ok
+test_membership_integrity (__main__.CenterTests.test_membership_integrity) ... ok
+test_missing_rows_preserved (__main__.CenterTests.test_missing_rows_preserved) ... ok
+test_partial_invalid_file (__main__.CenterTests.test_partial_invalid_file) ... ok
+test_personal_store_unchanged_on_export (__main__.CenterTests.test_personal_store_unchanged_on_export) ... ok
+test_raw_archive_and_idempotency (__main__.CenterTests.test_raw_archive_and_idempotency) ... ok
+test_restore_revision (__main__.CenterTests.test_restore_revision) ... ok
+test_snapshot_required (__main__.CenterTests.test_snapshot_required) ... ok
+test_template_rejects_attribute_access (__main__.CenterTests.test_template_rejects_attribute_access) ... ok
+test_unknown_columns_not_in_config (__main__.CenterTests.test_unknown_columns_not_in_config) ... ok
+test_xlsx_codes (__main__.CenterTests.test_xlsx_codes) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.187s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۶) خطاهای شبکه و ذخیره‌سازی
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 18 موفق | 0 ناموفق
+
+test_action_fields_preserved (__main__.NetworkTests.test_action_fields_preserved) ... ok
+test_bad_preferences_rejected (__main__.NetworkTests.test_bad_preferences_rejected) ... ok
+test_base64_junk_rejected (__main__.NetworkTests.test_base64_junk_rejected) ... ok
+test_client_cannot_publish (__main__.NetworkTests.test_client_cannot_publish) ... ok
+test_explicit_empty_scope_clears_previous (__main__.NetworkTests.test_explicit_empty_scope_clears_previous) ... ok
+test_failed_replace_preserves_previous (__main__.NetworkTests.test_failed_replace_preserves_previous) ... ok
+test_future_schema_rejected (__main__.NetworkTests.test_future_schema_rejected) ... ok
+test_invalid_kind_rejected (__main__.NetworkTests.test_invalid_kind_rejected) ... ok
+test_invalid_limit_rejected (__main__.NetworkTests.test_invalid_limit_rejected) ... ok
+test_lock_owner_change_is_preserved (__main__.NetworkTests.test_lock_owner_change_is_preserved) ... ok
+test_network_disappearance_is_not_empty (__main__.NetworkTests.test_network_disappearance_is_not_empty) ... ok
+test_nonfinite_json_cleaned (__main__.NetworkTests.test_nonfinite_json_cleaned) ... ok
+test_old_lock_is_not_stolen (__main__.NetworkTests.test_old_lock_is_not_stolen) ... ok
+test_preferences_do_not_share_mutable_defaults (__main__.NetworkTests.test_preferences_do_not_share_mutable_defaults) ... ok
+test_snapshot_context_consistent (__main__.NetworkTests.test_snapshot_context_consistent) ... ok
+test_transient_sharing_violation_retries (__main__.NetworkTests.test_transient_sharing_violation_retries) ... ok
+test_unknown_columns_never_leak (__main__.NetworkTests.test_unknown_columns_never_leak) ... ok
+test_utf16_key_file (__main__.NetworkTests.test_utf16_key_file) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.404s
+
+OK
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱) الگوریتمی و بیزینسی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V21 — مجموعه تست‌های صحت
+==============================================================================
+
+── ۱) نرمال‌سازی و کلیدها ──
+✅ clean_key فقط پسوند '.0' را حذف می‌کند (FIX-1)  → '1.05' → '1.05' (نسخه قبلی: '15')
+✅ clean_bl کلید کوتاه را رد می‌کند
+✅ clean_employee_code بخش عددی را zero-pad می‌کند (FIX-12)
+✅ is_empty_val مقدار '0' و 'نامشخص' را تهی می‌شمارد (FIX-9)
+✅ num_safe جداکننده هزارگان و ارقام فارسی (FIX-2)  → '1.234.567' → 1234567.0
+✅ CalendarEngine تاریخ شمسی را بدون jdatetime تبدیل می‌کند  → 2025-04-04
+✅ CalendarEngine تاریخ میلادی را می‌خواند
+
+── ۲) موتورهای بیزینسی و ریاضی ──
+✅ تشخیص برات/یوزانس
+✅ تشخیص روش پرداخت از واژگان YAML  → اعتبار اسنادی → LC
+✅ جریمه پلکانی ۱٪ تا ۶ ماه سپس ۲٪  → 183,333 ریال برای ۳۶۵ روز تأخیر
+✅ ویبول: رسوب صفر ⇒ بقای ۱۰۰٪
+✅ ویبول: t=η ⇒ بقا ≈ ۳۶.۸٪  → 36.8٪
+✅ ویبول: ترخیص درصدی بقا را بالا می‌برد
+✅ بیزین: شواهد کامل > شواهد صفر  → 93.8٪ در برابر 10.0٪
+✅ امتیاز ریسک بدترین حالت ⇒ بحرانی  → 100.0 → 🔴 بحرانی
+✅ امتیاز ریسک بهترین حالت ⇒ پایین  → 0.4 → 🟢 پایین
+
+── ۳) گارد ضد باگ B1 (راوی کور) ──
+✅ راوی بدون ستون‌های شاهد خطای صریح می‌دهد (B1)  → "راوی زودتر از ساخت ستون\u200cهای مشتق فراخوانی شده است. ستون\u200cهای
+
+── ۴) اجرای کامل خط لوله روی داده مصنوعی ──
+2026-09-19 14:43:40,363 | INFO    | ==========================================================================================
+🚀 GSI 28.0.0 — تاریخ مرجع: 2026-08-31
+==========================================================================================
+2026-09-19 14:43:40,365 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-19 14:43:40,366 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-19 14:43:40,367 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-19 14:43:40,368 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-19 14:43:40,369 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-19 14:43:40,370 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-19 14:43:40,371 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-19 14:43:40,371 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (Oracle + موجودی کارشناسی ÷ مصرف روزانه)
+2026-09-19 14:43:40,372 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-19 14:43:40,373 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-19 14:43:40,374 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-19 14:43:40,375 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-19 14:43:40,376 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-19 14:43:40,377 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-19 14:43:40,377 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-19 14:43:40,378 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-19 14:43:40,379 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-19 14:43:40,380 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-19 14:43:40,382 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-19 14:43:40,386 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW Export.xlsx
+2026-09-19 14:43:40,421 | INFO    |    ✅ [ntsw] Release Commitment: 4 ردیف تعهد → 3 کد ثبت سفارش
+2026-09-19 14:43:40,439 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 2 کد ثبت سفارش
+2026-09-19 14:43:40,459 | INFO    | 🔌 اتصال موفق به سورس 'abbasi' → BLs Tracking.xlsx
+2026-09-19 14:43:40,535 | INFO    | 📥 [abbasi] شیت «BLs Tracking» خوانده شد — 6 ردیف × 23 ستون
+2026-09-19 14:43:40,552 | INFO    | 🔌 اتصال موفق به سورس 'sata' → SATA Tracking.xlsx
+2026-09-19 14:43:40,565 | INFO    | 📥 [sata] شیت «Sata Tracking» خوانده شد — 5 ردیف × 23 ستون
+2026-09-19 14:43:40,576 | INFO    |    🔑 [sata] کلید ثبت سفارش از ستون «ثبت سفارش» ساخته شد — 5 از 5 ردیف (5 کد یکتا)
+2026-09-19 14:43:40,584 | INFO    | 🔌 اتصال موفق به سورس 'clearance' → 2 فایل
+2026-09-19 14:43:40,606 | INFO    | 📥 [clearance] شیت «Air Clearance» خوانده شد — 1 ردیف × 28 ستون
+2026-09-19 14:43:40,622 | INFO    | 📥 [clearance] شیت «Sea Clearance» خوانده شد — 4 ردیف × 28 ستون
+2026-09-19 14:43:40,624 | INFO    |    📚 [clearance] 2 شیت داده از 2 فایل ادغام شد — مجموع 5 ردیف
+2026-09-19 14:43:40,638 | INFO    |    🛃 [clearance] 5 ردیف — 1 ترخیص کامل، 1 ترخیص درصدی، 5 کد تعرفه
+2026-09-19 14:43:40,647 | INFO    | 🔌 اتصال موفق به سورس 'cotage' → Cottage Tracking.xlsx
+2026-09-19 14:43:40,658 | INFO    | 📥 [cotage] شیت «Cottage Tracking» خوانده شد — 2 ردیف × 22 ستون
+2026-09-19 14:43:40,662 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,674 | INFO    | 🔌 اتصال موفق به سورس 'oracle' → Oracle.xlsx
+2026-09-19 14:43:40,699 | INFO    | 🔌 اتصال موفق به سورس 'fx_transaction' → Foreign Exchange Transaction.xlsx
+2026-09-19 14:43:40,739 | INFO    |    💱 [fx] 0 ارز، 3 ردیف با کد ثبت سفارش
+2026-09-19 14:43:40,760 | INFO    | 🔌 اتصال موفق به سورس 'credit' → Credit Dept.xlsx
+2026-09-19 14:43:40,774 | INFO    | 📥 [credit] شیت «PURCREDIT» خوانده شد — 2 ردیف × 23 ستون
+2026-09-19 14:43:40,778 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,793 | INFO    | 🔌 اتصال موفق به سورس 'ilappend' → IL Append.xlsx
+2026-09-19 14:43:40,803 | INFO    | 📥 [ilappend] شیت «Append» خوانده شد — 3 ردیف × 7 ستون
+2026-09-19 14:43:40,806 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,808 | INFO    |    🔑 [il] کلید ثبت سفارش از ستون «شماره ثبت سفارش» (3 ردیف)
+2026-09-19 14:43:40,815 | INFO    | 🔌 اتصال موفق به سورس 'sap' → Comparison (SAP).xlsx
+2026-09-19 14:43:40,827 | INFO    | 📥 [sap] شیت «Data» خوانده شد — 3 ردیف × 13 ستون
+2026-09-19 14:43:40,832 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,833 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,835 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,840 | INFO    |    ⚙️ [sap] 3 درخواست خرید یکتا (آخرین وضعیت گردش کار)
+2026-09-19 14:43:40,846 | INFO    | 🔌 اتصال موفق به سورس 'doccheck' → Document Checking.xlsx
+2026-09-19 14:43:40,855 | INFO    | 📥 [doccheck] شیت «Checking» خوانده شد — 2 ردیف × 6 ستون
+2026-09-19 14:43:40,858 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,860 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,862 | INFO    |    📑 [doccheck] 2 سند — بارنامه 0 ردیف، سفارش 2 ردیف (کلید ادغام: سفارش)
+2026-09-19 14:43:40,870 | INFO    | 🔌 اتصال موفق به سورس 'hr' → HR_Main_Updated.xlsx
+2026-09-19 14:43:40,883 | INFO    | 📥 [hr] شیت «Sheet1» خوانده شد — 4 ردیف × 29 ستون
+2026-09-19 14:43:40,894 | INFO    |    👥 [hr] 4 پرسنل — 3 فعال
+2026-09-19 14:43:40,901 | INFO    | 🔌 اتصال موفق به سورس 'moghavemat' → Commercial Expert Data.xlsx
+2026-09-19 14:43:40,916 | INFO    | 📥 [moghavemat] شیت «Expert Data» خوانده شد — 6 ردیف × 38 ستون
+2026-09-19 14:43:40,935 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,939 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 14:43:40,949 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 14:43:40,952 | INFO    |    🧩 [moghavemat] فایل چندنوعی است — Data type: ['Pre Purchase Approval Data', 'Purchase Approval Data']
+2026-09-19 14:43:40,966 | INFO    |    📊 [moghavemat] 6 قلم در 6 سفارش تجمیع شد؛ 6 موقعیت موجودی Order×Material ساخته شد.
+2026-09-19 14:43:40,993 | INFO    | 📦 13 از 13 سورس بارگذاری شد: ['ntsw', 'abbasi', 'sata', 'clearance', 'cotage', 'oracle', 'fx_transaction', 'credit', 'ilappend', 'sap', 'doccheck', 'hr', 'moghavemat']
+2026-09-19 14:43:40,995 | INFO    | 🧱 جدول پایه: 6 ردیف، 5 بارنامه معتبر.
+2026-09-19 14:43:41,011 | INFO    | 🔗 [moghavemat] ادغام روی KEY_ORDER انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:43:41,015 | INFO    |    🔑 [MATERIAL] کد متریال / شماره فنی: 5 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_MATERIAL
+2026-09-19 14:43:41,018 | INFO    |    🔗 [moghavemat/inventory] ادغام با کلید مرکب KEY_ORDER + KEY_MATERIAL
+2026-09-19 14:43:41,022 | INFO    | 🔗 [moghavemat/inventory] ادغام روی __CK_moghavemat/inventory__ انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:43:41,026 | INFO    |    🔑 [PR] شماره درخواست خرید: 5 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_KEY_PR
+2026-09-19 14:43:41,031 | INFO    | 🔗 [sap] ادغام روی KEY_PR انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:43:41,036 | INFO    | 🔗 [oracle] ادغام روی KEY_MATERIAL انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:43:41,040 | INFO    | 🔗 [sata] ادغام روی KEY_BL انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:43:41,044 | INFO    |    🧹 [clearance] 0 ردیف بدون کلید و 1 ردیف تکراری حذف شد (5 → 4)
+2026-09-19 14:43:41,047 | INFO    | 🔗 [clearance] ادغام روی KEY_BL انجام شد — 4 ردیف منطبق از 6
+2026-09-19 14:43:41,051 | INFO    | 🔗 [cotage] ادغام روی KEY_BL انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:43:41,056 | INFO    | 🔗 [doccheck] ادغام روی KEY_ORDER انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:43:41,059 | INFO    |    🔑 [REG] کد ثبت سفارش (۸ رقمی): 5 از 6 ردیف (6 مقدار یکتا) — منابع: sata.SATA_KEY_REG
+2026-09-19 14:43:41,063 | INFO    | 🔗 [ilappend] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:43:41,068 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-19 14:43:41,071 | INFO    | 🔗 [fx_transaction] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:43:41,076 | INFO    | 🔗 [credit] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:43:41,081 | INFO    | 🔗 [ntsw_commitment] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:43:41,086 | INFO    | 🔗 [ntsw_allocation] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:43:41,089 | INFO    | 🧭 [resolver] «شماره بارنامه» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:43:41,091 | INFO    | 🧭 [resolver] «شماره سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:43:41,094 | INFO    | 🧭 [resolver] «شماره فنی» از 3 سورس حل شد — 4 تعارض ثبت گردید.
+2026-09-19 14:43:41,098 | INFO    | 🧭 [resolver] «شرح کالا» از 5 سورس حل شد — 5 تعارض ثبت گردید.
+2026-09-19 14:43:41,100 | INFO    | 🧭 [resolver] «ثبت سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:43:41,122 | INFO    | 👤 نقش‌های کارشناسی: کارشناس اعتبارات 83٪ (3 نفر) | کارشناس ترخیص 67٪ (1 نفر) | کارشناس کنترل اسناد 33٪ (1 نفر)
+2026-09-19 14:43:41,124 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-19 14:43:41,207 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-19 14:43:41,211 | INFO    | 🏢 تطبیق سازمانی: 5 از 6 ردیف به HR وصل شد.
+2026-09-19 14:43:41,213 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-19 14:43:41,251 | INFO    | 🎯 حوزه‌های مسئولیت: کارشناس خرید 83% (4 نفر) | کارشناس بازرگانی 83% (3 نفر) | کارشناس حمل و لجستیک 67% (1 نفر)
+2026-09-19 14:43:41,253 | INFO    | 👤 مالک قطعه برای 5 از 6 ردیف شناسایی شد (83%).
+2026-09-19 14:43:41,255 | INFO    | 🧩 6 ردیف شکاف داده مالک دارد — ردیف‌ها حذف نشدند؛ علت در ستون «PART_OWNER_DATA_GAP» ثبت شد.
+2026-09-19 14:43:41,256 | INFO    | ⏳ بیشترین انتظار روی «کارشناس خرید» است — 1 ردیف.
+2026-09-19 14:43:41,269 | INFO    | 📦 [supply-position] کامل 5 | ناقص 0 | فاقد داده 1 | تعارض 0; Missing هرگز Zero نشده است.
+2026-09-19 14:43:41,283 | INFO    | 🏭 [warehouse] اظهارشده 1 | با تأخیر 1 | شکاف شاهد 2 | تناقض تاریخ 1 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+2026-09-19 14:43:41,300 | INFO    | 🔧 مقاومت قطعی برای 5 از 6 ردیف — UNKNOWN=1, پوشش ناقص=1, طبقات={'بحرانی': 1, 'در حال بحرانی شدن': 1, 'توقف خط': 1, 'تحت نظر': 1, 'ایمن': 1, 'نامشخص': 1}
+2026-09-19 14:43:41,504 | INFO    | 💱 [fx-trace] 5 پرونده ثبت سفارش | 12 رویداد | 2 مغایرت/شکاف
+2026-09-19 14:43:41,588 | INFO    | 💸 [money-control] 5 پرونده | 55 مرحله | 3 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-19 14:43:41,618 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 5 پرونده | 0 signal | enforce خودکار=0
+2026-09-19 14:43:41,660 | INFO    | 🎯 [case-actions] 7 پیشنهاد برای 5 پرونده | Draft Email، نیازمند تأیید کاربر
+2026-09-19 14:43:41,712 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+2026-09-19 14:43:41,783 | INFO    | 🔄 لاگ رویداد: 16 رویداد یکتا در 5 پرونده (0 ردیف تکراری منبع ادغام شد) · 4 مسیر متمایز · میانه چرخه پرونده‌های بسته 0 روز.
+2026-09-19 14:43:41,801 | INFO    | 🔍 [conformance] 5 از 5 پرونده قابل‌ارزیابی انحراف دارند · 1 پرونده شاهد کافی ندارند · میانگین انطباق 52.9٪ (فقط قابل‌ارزیابی‌ها)
+2026-09-19 14:43:41,803 | INFO    | ↕️ مرتب‌سازی بر اساس بحرانی بودن: CRITICALITY_SORT → امتیاز ریسک
+2026-09-19 14:43:41,805 | INFO    | ⏱️ کندترین مرحله‌ها: criticality 0.11s | fx_traceability 0.10s | money_flow_control 0.08s
+2026-09-19 14:43:41,808 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 6 ردیف دارای سفارش.
+2026-09-19 14:43:41,815 | INFO    | 📊 افراز دو محوری:
+2026-09-19 14:43:41,817 | INFO    |    • کل ردیف: 6
+2026-09-19 14:43:41,818 | INFO    |    • بارنامه یکتا: 5
+2026-09-19 14:43:41,819 | INFO    |    • P1 — فاقد بارنامه و سفارش: 1
+2026-09-19 14:43:41,820 | INFO    |    • P2 — فقط بارنامه: 0
+2026-09-19 14:43:41,821 | INFO    |    • P3 — بارنامه و سفارش: 5
+2026-09-19 14:43:41,822 | INFO    |    • M1 — موجود در مقاومت: 5
+2026-09-19 14:43:41,823 | INFO    |    • M2 — فاقد مقاومت، دارای ساتا/کوتاژ: 0
+2026-09-19 14:43:41,824 | INFO    |    • M3 — تعیین تکلیف: 1
+2026-09-19 14:43:42,605 | INFO    | 📄 شیت «۲. کالبدشکافی ۳ لایه‌ای ماتریسی» ساخته شد — 5 ردیف × 132 ستون.
+2026-09-19 14:43:42,642 | INFO    | 📄 شیت «۳. تعیین تکلیف» ساخته شد — 5 ردیف، سفارش خارج از Commercial Expert Data: 1.
+2026-09-19 14:43:42,659 | INFO    | 📄 شیت «۴. رفع تعهد ارزی» ساخته شد — 5 ردیف.
+2026-09-19 14:43:42,688 | INFO    | 📄 شیت «۵. کارنامه سازمانی» ساخته شد — 5 ردیف.
+2026-09-19 14:43:42,704 | INFO    | 📄 شیت «۶. پشتیبان ریاضی» ساخته شد.
+2026-09-19 14:43:42,737 | INFO    | 📄 شیت «۷. اقلام سفارش (سطح PR و PI)» ساخته شد — 6 قلم.
+2026-09-19 14:43:42,793 | INFO    | 📄 شیت «۸. کتابخانه قوانین» ساخته شد — 40 قاعده.
+2026-09-19 14:43:42,866 | INFO    | 📄 شیت «۹. قطعات بحرانی» ساخته شد — 3 قطعه نیازمند اقدام.
+2026-09-19 14:43:42,912 | INFO    | 📄 شیت «۱۰. نقشه فرآیند و گلوگاه» ساخته شد.
+2026-09-19 14:43:42,923 | INFO    | 📊 شیت «۱۱. نمودارهای تحلیلی» ساخته شد — 5 نمودار بومی اکسل.
+2026-09-19 14:43:43,055 | INFO    | 📄 شیت «۱۲. بینش چندلایه» ساخته شد — 37 ردیف در چهار لایه.
+2026-09-19 14:43:43,113 | INFO    | 📄 شیت «۱۳. تحلیل چرخه عمر متریال» ساخته شد — 5 متریال، ۲ نمودار پراکنش.
+2026-09-19 14:43:43,438 | INFO    | 📄 شیت‌های «۱۴. متریال محور» و «۱۵. بارنامه محور» و «۱۶. اداره محور» ساخته شد.
+2026-09-19 14:43:43,478 | INFO    | 📄 شیت «۱۷. سلامت سیستم» ساخته شد.
+2026-09-19 14:43:43,572 | INFO    | 🏆 داشبورد ذخیره شد: /workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi_test__osuqt8e/output/2026-08-31/2026-08-31_Systemmatic Material.xlsx
+2026-09-19 14:43:44,327 | INFO    | 📁 4 فایل اختصاصی کارشناس در /workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi_test__osuqt8e/output/expert_extracts ساخته شد.
+2026-09-19 14:43:44,360 | INFO    | 📋 گزارش ممیزی تعارضات ذخیره شد: /workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi_test__osuqt8e/output/GSI_Data_Conflicts_Audit.xlsx (9 مورد)
+2026-09-19 14:43:44,364 | INFO    | 🏁 خط لوله با موفقیت پایان یافت.
+✅ خط لوله بدون خطا اجرا شد  → 6 ردیف نهایی
+✅ عدم تکثیر سطر پس از ادغام ۱۱ سورس (B3 + FIX-6)  → ۶ ردیف مبدأ → 6 ردیف نهایی (clearance دو ردیف تکراری برای همان بارنامه داشت)
+✅ مرجع سفارش با پسوند حرفی سالم ماند (812211A)  → ['500999', '501317', '501807', '502805', '812210', '812211A']
+✅ مرجع سفارش عددی درست ساخته شد
+✅ بارنامه نامعتبر 'AB' حذف شد و کلید خالی گرفت (B3)  → 1 ردیف بدون بارنامه معتبر
+✅ هر دو شیت NTSW خوانده شد (FIX-3)  → Release Commitment + Allocation
+✅ مانده تعهد از شیت Release Commitment وارد شد  → جمع = 4,378,750
+✅ چند ردیف تعهد یک ثبت سفارش با هم جمع شدند (T5)  → 3,378,750 = 2,795,310 + 583,440
+✅ آخرین وضعیت تخصیص گرفته شد، نه اولین (T6)  → وضعیت = تخصیص یافته (درخواست اول: پذیرفته نشده)
+✅ کلید ثبت سفارش از ساتا ساخته شد، نه شماره پرونده IL  → ['', '79668513', '83680876', '89212481', '97687754', '98404279']
+✅ اتصال HR از طریق کد پرسنلی برقرار شد (FIX-10/11/12/13)  → 5 از 6 ردیف؛ روش‌ها: ['پیش\u200cفرض', 'کد پرسنلی']
+✅ نام کارشناس از سورس‌های چندگانه حل شد  → ['حمید یحیائی', 'عقیل بقاپور دریائی', 'م.محمدی', 'نامشخص']
+✅ زنجیره سقوط مدیر عمل کرد (مریم احمدی: مدیر خالی → رئیس/مسئول)  → ['حمیدرضا عطریان سرشت', 'رضا نوری', 'مهسا الهی', 'نامشخص', 'پویا نوروزانی']
+✅ درصد قطعیت دیگر روی یک مقدار ثابت قفل نیست (B1)  → مقادیر مشاهده‌شده: [25, 50, 75]
+✅ شواهد کوتاژ و ساتا واقعاً دیده می‌شوند (B1 + FIX-9)  → کوتاژ=34138249 ساتا=14050041201978 قطعیت=75٪
+✅ کد رهگیری '0' به‌درستی تهی شمرده شد (FIX-9)  → قطعیت = 50٪
+✅ محموله بدون تاریخ تخلیه «در راه» علامت خورد  → بارنامه KYLCBAN1808299 تخلیه نشده است
+✅ شمارش KPI بر اساس بارنامه یکتا است (FIX-7)  → 5 بارنامه یکتا از 6 ردیف
+✅ محور A (کلید) هر سه پارتیشن را تولید کرد  → {'کل ردیف': 6, 'بارنامه یکتا': 5, 'P1 — فاقد بارنامه و سفارش': 1, 'P2 — فقط بارنامه': 0, 'P3 — بارنامه و سفارش': 5, 'M1 — موجود در مقاومت': 5, 'M2 — فاقد مقاومت، دارای ساتا/کوتاژ': 0, 'M3 — تعیین تکلیف': 1}
+✅ محور B: بارنامه بدون مقاومت/ساتا/کوتاژ به تعیین تکلیف رفت (T10)  → 1 ردیف
+✅ مهلت قانونی و جریمه محاسبه شد  → جمع جریمه = 238,765
+✅ هشدار سه‌رنگ تولید شد  → ['سبز', 'قرمز']
+✅ ممیزی تعارض اجرا شد  → 9 تعارض ثبت شد
+
+── ۵) صحت خروجی اکسل ──
+✅ فایل داشبورد ساخته شد  → 2026-08-31_Systemmatic Material.xlsx
+✅ هر ۷ شیت کلیدی بدون خطا ساخته شد  → ['۱. خلاصه اجرایی', '۲. کالبدشکافی ۳ لایه\u200cای ماتریسی', '۳. تعیین تکلیف', '۴. رفع تعهد ارزی', '۵. کارنامه سازمانی', '۶. پشتیبان ریاضی', '۷. اقلام سفارش (سطح PR و PI)', '۸. کتابخانه قوانین', '۹. قطعات بحرانی', '۱۰. نقشه فرآیند و گلوگاه', '۱۱. نمودارهای تحلیلی', '۱۲. بینش چندلایه', '۱۳. تحلیل چرخه عمر متریال', '۱۴. متریال محور', '۱۵. بارنامه محور', '۱۶. اداره محور', '۱۷. سلامت سیستم']
+✅ Freeze Panes فعال است  → A2
+✅ AutoFilter فعال است  → A1:EB1
+✅ Conditional Formatting اعمال شد  → 21 قانون
+✅ Data Validation (لیست کشویی) اضافه شد
+✅ گروه‌بندی ستون‌ها (outline) فعال است
+✅ جهت راست‌به‌چپ تنظیم شد
+✅ Formula Injection (SUBTOTAL) در شیت تعهد
+✅ فایل مجزای هر کارشناس ساخته شد  → 4 فایل در expert_extracts
+✅ گزارش ممیزی تعارضات ساخته شد
+
+── ۱۰) اصلاحات نسخه ۲۵ ──
+✅ تاریخ ۲ رقمی «98/12/27» زیر «1403/01/01» مرتب می‌شود  → 2020-03-17 < 2024-03-20
+✅ «1403/1/5» و «1403/01/05» یک کلید می‌گیرند  → 2024-03-24
+✅ مقدار خراب همیشه بازنده است (نه برنده)
+✅ سال ۸۸ هم درست بسط می‌یابد (نه فقط ۹x)  → 2009-08-03
+✅ کد پرسنلی '10201069_GS' درست تمیز می‌شود
+✅ کد پرسنلی عددی‌خوانده‌شده '10201069.0' رقم اضافه نمی‌گیرد  → 10201069
+✅ صفر پیشوند در هر دو طرف یکدست می‌شود
+✅ doccheck روی شماره سفارش متصل شد (نه بارنامه)  → 6 ردیف سند متصل
+✅ «ترخیص کامل بدون تاریخ» تاریخ جعلی نمی‌سازد
+✅ نام ستون با زیرخط و فاصله اضافی تطبیق می‌خورد
+
+==============================================================================
+نتیجه: 61 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲) کتابخانه قوانین و سورس مقاومت
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V22 — تست کتابخانه قوانین، سورس مقاومت جدید و ماژولاریتی
+==============================================================================
+
+── ۱) کتابخانه قوانین (YAML) ──
+✅ بسته‌های قانونی مطابق manifest بارگذاری شدند  → currencies, incoterms, transport, hs_codes, fx_governance, customs, warehouse, alarms, criticality, status_lexicon, legacy_knowledge, intelligence_sources, case_actions
+✅ اعتبارسنجی ساختاری بدون خطا  → ۰ خطا
+✅ مجموع وزن‌های ریسک دقیقاً ۱٫۰ است  → 1.0
+✅ قواعد نیازمند تطبیق علامت‌گذاری شده‌اند  → 23 قاعده
+✅ مهلت رفع تعهد تولیدی/بازرگانی از YAML
+✅ نرمال‌سازی ارز از currencies.yaml
+✅ ین ژاپن بدون اعشار تعریف شده
+✅ Incoterms 2020: CIP بیمه ICC(A) و CIF بیمه ICC(C)  → CIP → Institute Cargo Clauses (A) — 
+✅ نام قدیمی DAT به DPU نگاشت می‌شود
+✅ EXW ترخیص صادراتی بر عهده خریدار است
+✅ ویرایش جاری HS و ویرایش بعدی ثبت شده  → HS 2022 → HS 2028
+✅ استنتاج تعرفه از شرح کالا  → «تیغچه الماسه» → 8209
+✅ استنتاج تعرفه برای مته  → 8207
+✅ سال مالی از YAML خوانده می‌شود  → 2026-03-21
+✅ آستانه رسوب شدید از YAML
+✅ تشخیص سگمنت از کلیدواژه
+
+── ۲) اعتبارسنجی بارنامه (قرنطینه مقادیر جعلی) ──
+✅ تفکیک بارنامه واقعی از شماره فنی/پروفرما  → همه ۸ حالت درست
+
+── ۳) واژگان وضعیت فارسی ──
+✅ تفکیک دو بخش «//»
+✅ «در انتظار خرید ارز» ⇒ پرونده بلوکه
+✅ «ترخیص درصدی» ⇒ راهنمای نوع ترخیص  → PARTIAL
+✅ هشدار متنی تولید شد  → ریسک عبور از مهلت رفع تعهد در صورت تأخیر خرید ارز.
+✅ «ابطال شد» ⇒ خارج از KPI
+✅ «تمام» ⇒ مرحله پایانی با پیشرفت ۱۰۰  → progress=100
+✅ «مذاکره بازرگانی» ⇒ مرحله NEGOTIATION  → NEGOTIATION / 20٪
+✅ تضاد وضعیت شناسایی می‌شود (آماده حمل ولی بدون ثبت سفارش)  → progress=70 blocking=True
+
+── ۴) نرمال‌سازی مرجع سفارش ──
+✅ پسوند قلم حذف می‌شود  → 603128A
+✅ «Items 2 & 3» حذف می‌شود
+✅ ریشه عددی سفارش استخراج می‌شود
+✅ پسوند '.0' اکسل حذف می‌شود
+
+── ۵) سورس مقاومت (۳۵ ستون، سطح قلم) ──
+2026-09-19 14:43:45,881 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 14:43:45,989 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,016 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,036 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,039 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,041 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,063 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,065 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,127 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,130 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 14:43:46,140 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 14:43:46,241 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-19 14:43:46,292 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-19 14:43:46,824 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+✅ ۳۵ ستون خوانده و استاندارد شد  → 6 قلم
+✅ قلم‌ها در سطح سفارش تجمیع شدند (بدون تکثیر سطر)  → 6 قلم → 6 ردیف نهایی
+✅ مقادیر جعلی ستون BL No. قرنطینه شدند  → 2036866948، 541339، 603111/1، 2044901912
+✅ فقط بارنامه‌های معتبر وارد کلید شدند  → HDM1590WNHS9526
+✅ مرجع سفارش چندخطی نرمال شد  → ['501317', '501807', '502805', '603128A', '812210', '812211A']
+✅ درصد پیشرفت سفارش از واژگان وضعیت ساخته شد  → بیشینه 100٪
+✅ پرونده‌های بلوکه شناسایی شدند  → 2 ردیف
+✅ ستون ارز خالی به «NAN» تبدیل نشد  → ['']
+✅ تعرفه پیشنهادی برای اقلام تولید شد  → ['', '7318', '8207']
+✅ کد پرسنلی از فرمت '..._GS' استخراج شد  → ['00201071', '00940187', '10201069', '10201070']
+
+── ۶) ماژولاریتی: حذف و افزودن سورس بدون تغییر کد ──
+✅ adapterها خودکار کشف می‌شوند  → 13 adapter
+✅ هر سورس فعال YAML یک adapter دارد  → بدون adapter: set()
+✅ سورس بدون فایل (missmohammadi) با یک enabled:false غیرفعال شد  → تأییدشده در HEADERS_MAP: هیچ فایلی با آن الگو وجود ندارد
+✅ کلید اتصال مقاومت به «سفارش» تغییر کرد
+✅ ترتیب ادغام از YAML خوانده می‌شود  → moghavemat → sap → oracle → sata ...
+✅ غیرفعال کردن یک سورس فقط با ویرایش YAML ممکن است  → 12 سورس فعال ماند
+✅ بازگردانی رجیستری بدون تغییر کد
+✅ تغییر مهلت قانونی فقط با ویرایش YAML اعمال می‌شود  → ۵۴۰ → 480 روز
+✅ نسخه‌بندی زمانی قواعد کار می‌کند  → ۱۴۰۴ → ۳۶۰ روز | ۱۴۰۵ → ۳۰۰ روز
+
+── ۷) شیت‌های جدید اکسل ──
+✅ شیت «اقلام سفارش» ساخته شد
+✅ شیت «کتابخانه قوانین» ساخته شد
+✅ مهلت ۵۴۰ روز در شیت قوانین مستند شد
+✅ ویرایش Incoterms در شیت قوانین آمده
+✅ ستون قرنطینه BL در شیت اقلام وجود دارد
+
+── ۷) رجیستری کلیدها (config/keys.yaml) ──
+✅ رجیستری بدون خطای ساختاری بارگذاری شد  → کلید مرکب «REG_CURRENCY»: جزء «CURRENCY_CODE» تعریف نشده (اگر ستون خام است، اشکالی ندارد).
+✅ شش کلید ساده و سه کلید مرکب تعریف شده‌اند  → ساده ['BL', 'ORDER', 'REG', 'MATERIAL', 'PR', 'EMP'] | مرکب ['BL_ORDER', 'ORDER_MATERIAL', 'REG_CURRENCY']
+✅ کد ثبت سفارش ۸ رقمی معتبر و ۹ رقمی نامعتبر است  → همان تله‌ای که کل لایه رفع تعهد را قطع کرده بود
+✅ ستون «شماره پرونده» در فهرست ممنوعه است
+✅ کلید از چند سورس به ترتیب اولویت پر می‌شود  → ['97687754', '83680876', '89212481']
+✅ کلید مرکب «بارنامه + سفارش» ساخته شد  → HDM1511WXRQ9407|502805
+✅ یک بارنامه با دو سفارش، دو کلید مرکب متمایز می‌گیرد
+✅ ردیف تهی، کلید مرکب تهی می‌گیرد
+✅ ادغام با کلید مرکب سطر تکثیر نمی‌کند و درست می‌چسبد  → 2 ردیف | Y=['a', 'b']
+✅ تغییر منبع کلید فقط با ویرایش YAML اعمال می‌شود  → رجیستری اصلی دست‌نخورده ماند
+
+==============================================================================
+نتیجه: 63 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۳) مقاومت قطعه و بحرانی بودن
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V23 — تست مقاومت قطعه و بحرانی بودن
+==============================================================================
+
+── ۱) فرمول مقاومت و طبقه‌بندی ──
+✅ مرزهای ۱۰ و ۲۰ روز دقیقاً طبق تعریف کاربر  → 10 حالت درست
+✅ نیاز روزانه صفر ⇒ «بدون مصرف» نه «بحرانی»  → بدون مصرف
+✅ داده غایب ⇒ «نامشخص» نه «توقف خط»  → نامشخص
+✅ مقاومت انبار جدا از مقاومت کل گزارش می‌شود  → انبار 0.0 | کل 40.0
+✅ ترتیب مرتب‌سازی طبقات درست است  → توقف خط → بحرانی → در حال بحرانی → تحت نظر → ایمن
+
+── ۲) هشدار ترکیبی «قطعه بحرانی × پرونده مشکل‌دار» ──
+✅ قطعه بحرانی + پرونده بلوکه ⇒ هشدار CRITICAL  → قطعه بحرانی با پرونده بلوکه — ریسک قطعی توقف خط
+✅ قطعه بحرانی + رسوب گمرکی ⇒ هشدار  → قطعه بحرانی که محموله‌اش در گمرک رسوب کرده
+✅ قطعه بحرانی بدون سفارش باز ⇒ هشدار PR اضطراری  → قطعه بحرانی بدون هیچ سفارش باز
+✅ قطعه ایمن هشدار ترکیبی نمی‌گیرد
+
+── ۳) اتصال سورس Oracle → مقاومت در خط لوله ──
+2026-09-19 14:43:51,098 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,212 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,238 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,263 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,265 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,267 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,290 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,291 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,358 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,365 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 14:43:51,381 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 14:43:51,483 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-19 14:43:51,538 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-19 14:43:52,128 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+✅ موجودی ایران‌خودرو و ساپکو هر دو از Oracle آمدند  → IKCO=8,550 ساپکو=1,870
+✅ نیاز روزانه از Oracle خوانده شد
+✅ کلید متریال از زنجیره بارنامه ← سفارش ← مقاومت ← Oracle ساخته شد  → 5 از 6 ردیف (ردیف بدون سفارش در مقاومت، متریال ندارد)
+✅ هر شش طبقه در داده آزمون تولید شد  → ['ایمن', 'بحرانی', 'تحت نظر', 'توقف خط', 'در حال بحرانی شدن', 'نامشخص']
+✅ گزارش بر اساس بحرانی بودن مرتب شده است  → [0, 1, 2, 3, 4, 6]
+✅ بحرانی‌ترین قطعه در ردیف اول است  → توقف خط — متریال K914564758A
+✅ (۴۰۰ ایران‌خودرو + ۱۰۰ ساپکو) ÷ ۱۰۰ = ۵ روز ⇒ بحرانی  → 5.0 روز → بحرانی
+✅ (۱۲۰۰ + ۳۰۰) ÷ ۱۰۰ = ۱۵ روز ⇒ در حال بحرانی شدن
+✅ قطعه با موجودی صفر ⇒ توقف خط
+✅ قطعه بحرانی امتیاز ریسک را بالا می‌برد  → بحرانی 46.2 در برابر ایمن 12.0
+✅ گروه‌بندی قطعه از Oracle وارد گزارش شد  → ['nan', 'آب\u200cبندی', 'جک های گازی']
+✅ هشدارهای ترکیبی در خط لوله تولید شدند  → 1 ردیف
+
+── ۴) شیت «قطعات بحرانی» ──
+✅ شیت ۹ ساخته شد  → ['۱. خلاصه اجرایی', '۲. کالبدشکافی ۳ لایه\u200cای ماتریسی', '۳. تعیین تکلیف', '۴. رفع تعهد ارزی', '۵. کارنامه سازمانی', '۶. پشتیبان ریاضی', '۷. اقلام سفارش (سطح PR و PI)', '۸. کتابخانه قوانین', '۹. قطعات بحرانی', '۱۰. نقشه فرآیند و گلوگاه', '۱۱. نمودارهای تحلیلی', '۱۲. بینش چندلایه', '۱۳. تحلیل چرخه عمر متریال', '۱۴. متریال محور', '۱۵. بارنامه محور', '۱۶. اداره محور', '۱۷. سلامت سیستم']
+✅ خلاصه هر هفت طبقه در بالای شیت آمده  → ['🔴 توقف خط (موجودی صفر)', '🔴 بحرانی (زیر ۱۰ روز)', '🟠 در حال بحرانی شدن (۱۰ تا ۲۰ روز)']
+✅ جدول تفصیلی قطعات نیازمند اقدام دارد
+✅ ستون «طبقه بحرانی» اولین ستون شیت ماتریس است  → ['طبقه بحرانی', 'مقاومت قطعی (روز)', 'موجودی ایران\u200cخودرو (Oracle)', 'موجودی ساپکو (Oracle)', 'موجودی نزد سازنده']
+✅ ستون مقاومت بلافاصله بعد از آن است
+✅ KPI قطعات بحرانی در خلاصه اجرایی آمده  → ['🔴 قطعات بحرانی (مقاومت زیر ۱۰ روز)', '🟠 در حال بحرانی شدن (۱۰ تا ۲۰ روز)']
+
+── ۵) تغییر آستانه‌ها فقط با YAML ──
+✅ با تغییر آستانه به ۱۵ روز، ۱۲ روز «بحرانی» می‌شود  → 12.0 روز → CRITICAL
+✅ ۲۵ روز با آستانه جدید «در حال بحرانی شدن» است  → 25.0 روز → BECOMING_CRITICAL
+✅ قوانین اصلی دست‌نخورده ماند (۱۲ روز = در حال بحرانی شدن)  → در حال بحرانی شدن
+
+── ۶) سرایت بحرانی بودن از متریال به بارنامه/سفارش ──
+✅ یک متریال بحرانی کل بارنامه را بحرانی می‌کند
+✅ یک متریال بحرانی کل سفارش را بحرانی می‌کند
+✅ علت بحرانی بودن تا سطح متریال ثبت شده
+✅ بارنامه بدون متریال بحرانی بحرانی نمی‌شود
+
+==============================================================================
+نتیجه: 34 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۴) معماری، اختلاف نسخه و لاگ رویداد
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V23 — تست معماری، اختلاف نسخه و لاگ رویداد
+==============================================================================
+
+── ۱) قرارداد مرحله‌ها ──
+✅ مرحله‌ها خودکار کشف می‌شوند  → 17 مرحله: resolve → derive → org → scope → supply_position → warehouse_declaration → criticality → commitment → fx_traceability → money_flow_control → legacy_knowledge_transfer → case_actions → narrate → risk → eventlog → conformance → sort
+✅ ثابت‌های ترتیبی زنجیره علّی رعایت شده  → resolve→derive→criticality→risk و eventlog→sort
+✅ ترتیب اجرا صعودی و بدون تکرار است  → [10, 20, 30, 35, 38, 39, 40, 50, 55, 56, 57, 58, 60, 70, 80, 85, 90]
+✅ هر مرحله عنوان فارسی دارد
+✅ هر مرحله ورودی/خروجی خود را اعلام کرده
+✅ زنجیره علّی کامل است (هر ورودی توسط مرحله قبلی تولید می‌شود)  → بدون هشدار
+✅ ستون‌های گزارش را مرحله‌ها اعلام می‌کنند، نه dashboard  → 132 ستون از 17 مرحله
+✅ ستون‌های بحرانی در ابتدای ترتیب نمایش‌اند  → ['طبقه بحرانی', 'مقاومت قطعی (روز)', 'موجودی ایران\u200cخودرو (Oracle)', 'موجودی ساپکو (Oracle)']
+
+── ۲) گارد ترتیب علّی ──
+✅ مرحله با ترتیب اشتباه پیش از خواندن داده رد می‌شود
+✅ پیام خطا مرحله تولیدکننده را نام می‌برد  → مرحله «bad_test_stage» (ترتیب 5) به ستون‌های ['COTAGE_NO'] نیاز دارد که تا این نقطه تولید نشده‌اند. این ستون‌ه
+✅ راوی نمی‌تواند پیش از ساخت ستون‌های شاهد اجرا شود (باگ B1)
+
+── ۳) افزودن و حذف قابلیت با یک فایل ──
+✅ قابلیت جدید فقط با افزودن یک فایل فعال شد  → 43:57,849 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+COL_OK True
+SHEET_OK True
+KPI_OK True
+✅ ستونش خودکار در شیت ماتریس آمد (بدون لمس dashboard.py)
+✅ KPI اش خودکار در خلاصه اجرایی آمد (بدون لمس pipeline.py)
+✅ حذف فایل، قابلیت را بدون هیچ خطایی برداشت  → STAGES 17 (مبنا 17)
+
+── ۴) تشخیص اختلاف نسخه (علت خطای frame_map) ──
+✅ قراردادها در نسخه سالم بدون مشکل‌اند  → 0 مشکل
+✅ Doctor فایل قدیمی را تشخیص می‌دهد
+✅ پیام دقیقاً نام همان یک فایل را می‌گوید  → ❌ فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس‌های چندفریمی 
+✅ پیام می‌گوید نیازی به کپی مجدد کل پکیج نیست
+✅ خط لوله با پیام صریح متوقف می‌شود، نه AttributeError مبهم  → ['2026-09-19 14:44:03,144 | ERROR   | ❌ اختلاف نسخه فایل: فایل «gsi/config/sources.py» نسخه 2 است ولی نسخه 3 لازم است — متد frame_map() روی SourceSpec — برای سورس\u200cهای چندفریمی مثل Oracle']
+✅ مانیفست فایل تغییرکرده را نام می‌برد
+
+── ۵) لاگ رویداد (استاندارد Celonis) ──
+2026-09-19 14:44:03,750 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,856 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,883 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,902 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,904 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,906 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,932 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 14:44:03,936 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 14:44:04,004 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 14:44:04,008 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 14:44:04,020 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 14:44:04,124 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-19 14:44:04,169 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-19 14:44:04,698 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+✅ جدول فعالیت ساخته شد  → 16 رویداد
+✅ هر چهار ستون استاندارد Celonis موجود است  → ['_CASE_KEY', 'ACTIVITY_EN', 'EVENTTIME', '_SORTING']
+✅ ستون _SORTING پر است (رویدادهای هم‌تاریخ ترتیب قطعی دارند)  → 7 مقدار ترتیب متمایز
+✅ رویدادهای هر پرونده بر اساس (زمان، ترتیب) مرتب‌اند
+✅ جدول پرونده با throughput ساخته شد  → میانگین 86 روز
+✅ زمان چرخه فقط برای پرونده بسته و برابر فاصله نخستین تا آخرین است  → 3 پرونده بسته
+✅ پرونده باز زمان چرخه نمی‌گیرد، سن و انتظار جاری می‌گیرد  → 2 پرونده باز
+✅ رویدادها در سطح (پرونده، فعالیت، تاریخ) یکتا شده‌اند
+✅ شمار ردیف منبع نگه داشته شده و از رویداد یکتا کمتر نیست
+✅ نقاط کنترل طی‌شده هرگز از ۱۰۰٪ رد نمی‌کند  → بیشینه 46.7٪
+✅ گلوگاه‌ها با میانه محاسبه و نزولی مرتب شدند  → خرید ارز → ثبت رسید مالی: میانه 296 روز
+✅ گذار «به خودش» در جدول گلوگاه نیست
+✅ صف جاری هر مرحله محاسبه شد  → 2 مرحله دارای صف
+✅ مسیرهای فرآیند (variants) با سهم درصدی تولید شد  → 4 مسیر متمایز
+✅ لاگ رویداد فقط در دیتاورهوس ثبت شد
+✅ ستون‌های استاندارد Celonis در دیتاورهوس حفظ شد
+✅ شیت «نقشه فرآیند و گلوگاه» ساخته شد  → ['۱۶. اداره محور', '۱۷. سلامت سیستم']
+✅ داشبورد 17 شیتی کامل است  → 17 شیت
+
+── ۶) ارکستراتور باید لاغر بماند ──
+✅ pipeline.py زیر ۳۰۰ خط مؤثر است  → 291 خط
+✅ هیچ عدد یا قاعده کسب‌وکاری در ارکستراتور نیست  → پاک
+✅ dashboard.py ستون‌های ماتریس را هاردکد نمی‌کند
+
+==============================================================================
+نتیجه: 42 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۵) قرارداد گزارش (باگ موجودی/مقاومت)
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست قرارداد گزارش (باگ «مقاومت ۴ روز با موجودی صفر»)
+==============================================================================
+
+── ۱) بازتولید «مقاومت ۴ روز با موجودی صفر» ──
+✅ محاسبه درست است: ۴۴۰ ساپکو ÷ ۱۱۰ = ۴ روز  → 4.0 روز → بحرانی
+✅ موجودی ایران‌خودرو واقعاً صفر است (تناقض ظاهری بود نه محاسباتی)
+✅ کلید قدیمی «موجودی» دیگر وجود ندارد — منشأ باگ  → شیت باید «موجودی ایران خودرو» و «موجودی ساپکو» را بخواند
+✅ موجودی کل قابل احتساب گزارش می‌شود تا حساب قابل بازبینی باشد
+
+── ۲) قرارداد کلیدهای گزارش ──
+✅ هیچ شیتی کلید ناموجود نمی‌خواند  → 107 کلید بررسی شد
+✅ همه ستون‌های اجزای مقاومت در خروجی موجودند  → []
+
+── ۳) حساب مقاومت روی کاغذ قابل بازبینی است ──
+✅ در هر ردیف، موجودی کل ÷ نیاز روزانه با مقاومت گزارش‌شده می‌خواند  → همه ردیف‌ها سازگار
+✅ جمع پنج جزء با «موجودی کل» برابر است  → همه ردیف‌ها سازگار
+
+── ۴) شیت «قطعات بحرانی» عدد خالی چاپ نمی‌کند ──
+✅ سطر هدر جدول تفصیلی پیدا شد  → 13
+✅ ستون «موجودی ایران خودرو» در شیت هست
+✅ ستون «موجودی ساپکو» در شیت هست
+✅ ستون «نیاز روزانه» در شیت هست
+✅ ستون «موجودی کل» در شیت هست
+✅ هیچ ردیفی «مقاومت مثبت با موجودی/نیاز خالی» ندارد  → بدون تناقض
+
+==============================================================================
+نتیجه: 14 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۶) منطق داشبورد و خروجی‌ها
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست منطق داشبورد
+==============================================================================
+
+── ۱) محاسبه شاخص‌ها ──
+✅ شمارش طبقه بحرانی بر اساس متریال یکتاست، نه ردیف  → دو ردیف IK004 → یک متریال
+✅ توقف خط و بحرانی درست شمرده می‌شوند
+✅ طبقه ناموجود صفر برمی‌گرداند
+✅ num روی ستون غایب خطا نمی‌دهد
+✅ کارت‌های مدیریتی کامل تولید می‌شوند  → 11
+✅ کارت «توقف خط» بحرانی علامت می‌خورد
+✅ کمترین مقاومت درست است  → 0.0 روز
+✅ جمع مانده تعهد درست است  → 4,378,750
+✅ تعهد معوق شمرده شد و بحرانی علامت خورد
+✅ روی داده خالی خطا نمی‌دهد و «—» می‌گذارد
+
+── ۲) کارت‌ها ──
+✅ کلاس بحرانی اعمال می‌شود
+✅ عدد با جداکننده هزارگان قالب می‌گیرد  → <div class="kpi"><div class="lbl">x</div><div class="val">1,
+✅ مقدار متنی هم پذیرفته می‌شود
+✅ ورودی متنی escape می‌شود (بدون تزریق HTML)
+
+── ۳) خروجی HTML ──
+✅ سند کامل HTML است
+✅ راست‌به‌چپ و فارسی تنظیم شده
+✅ CSS درون‌خط است (بدون فایل بیرونی)
+✅ JS درون‌خط است
+✅ دکمه ذخیره PDF دارد
+✅ در چاپ، دکمه پنهان می‌شود
+✅ هر رنگ خروجی از سیستم طراحی می‌آید  → پاک
+✅ پالت خانه واقعاً استفاده شده
+✅ جدول داده در خروجی هست
+✅ همه ردیف‌ها منتقل شده‌اند
+✅ تاریخ مرجع در سند آمده
+✅ خروجی برای داده بزرگ به ۵۰۰ ردیف محدود می‌شود  → 500 سطر
+✅ روی داده خالی هم سند معتبر می‌سازد
+
+── ۴) ستون‌های جدول ──
+✅ فقط ستون‌های موجود انتخاب می‌شوند  → 12
+✅ ستون‌های اجزای مقاومت در جدول هستند  → تا تناقض «مقاومت با موجودی صفر» دوباره رخ ندهد
+✅ روی دیتافریم بی‌ربط خالی برمی‌گرداند
+
+── ۵) سلامت فایل داشبورد (بدون اجرای Streamlit) ──
+✅ dashboard.py از نظر نحوی سالم است
+✅ منطق از ui_kit وارد می‌شود (بدون کد تکراری)
+✅ پس‌زمینه متحرک تعریف شده
+✅ نبض فقط روی کارت بحرانی است
+✅ هر سه خروجی وجود دارد (اکسل کامل، داده فیلترشده، HTML)
+✅ st.set_page_config پیش از هر فراخوانی دیگر st است
+✅ راه‌انداز پورت آزاد پیدا می‌کند
+    ⚠️ Streamlit در این محیط نصب نیست — فقط تحلیل ایستا انجام شد. برای اجرا:  pip install streamlit plotly
+
+── ۶) کارنامه سازمانی و رنگ وضعیت ──
+2026-09-19 14:44:12,761 | INFO    | 📄 شیت «۵. کارنامه سازمانی» ساخته شد — 2 ردیف.
+2026-09-19 14:44:12,770 | INFO    | 🏆 داشبورد ذخیره شد: /workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/tmp9u8cwpkf/scorecard.xlsx
+✅ کارنامه بارنامه بحرانی را از کل BL حساب می‌کند، نه اولین ردیف  → (1, 1)
+✅ فونت کارنامه IRANSans Light است  → IRANSans Light
+✅ عدد بحرانی با قرمز وضعیت بحرانی نمایش داده می‌شود  → 00A52020 vs A52020
+✅ همان قرمز کف خوانایی WCAG را دارد  → 7.43
+
+── ۷) رگرسیون‌های تثبیت‌شده ──
+✅ CSS داشبورد position را روی .stApp بازنویسی نمی‌کند  → پاک
+✅ نام پیش‌فرض Excel سفارشی با گزارش رسمی یکی نیست  → GSI Studio
+✅ writer نوشتن روی گزارش رسمی روزانه را رد می‌کند
+✅ وابستگی‌های واقعی در requirements.txt اعلام شده‌اند  → matplotlib/PyYAML/numpy
+✅ کاتالوگ هیچ ستونی را جا نمی‌اندازد  → 7/7 — جامانده: set()
+✅ ستون ناشناخته هم قابل گزارش می‌ماند (حذف نمی‌شود)
+✅ برچسب از هدر واقعی سورس مشتق می‌شود
+✅ نام‌های نمایشی یکتا هستند (جدول با ستون تکراری نمی‌ترکد)  → 7/7
+✅ rename با نگاشت کاتالوگ روی دیتافریم واقعی کار می‌کند
+✅ هیچ نشانی ایمیل واقعی در سورس نیست  → پاک
+✅ بدون پیکربندی، فهرست گیرندگان خالی است (نه یک فهرست جاسازی‌شده)
+✅ فهرست گیرندگان از متغیر محیطی خوانده می‌شود  → ['x@a.invalid', 'y@b.invalid']
+✅ جدول متقاطع در هر ترکیب بُعد/سنجه کار می‌کند  → 5 ترکیب
+✅ شمارش با بُعد ستون درست جمع می‌زند
+✅ جمع سنجه با بُعد ستون درست است
+✅ هر نقش کارشناسی ستون مستقل دارد  → 7 نقش
+✅ کارشناس ترخیص هرگز در ستون کارشناس خرید نمی‌نشیند  → ['اباذر بالی', '', '']
+✅ ستون ترخیص فقط کارشناس ترخیص را دارد
+✅ ستون اعتبارات با ترخیص آلوده نمی‌شود
+✅ مالک مرحله فعلی همراه با نام نقشش گزارش می‌شود  → نیما صابری / کارشناس کنترل اسناد
+✅ نقش مالک با ستونی که نامش از آن آمده هم‌خوان است  → عقیل بقاپور / کارشناس ترخیص
+✅ پوشش هر نقش جداگانه گزارش می‌شود
+✅ نقش بدون داده صریحاً صفر گزارش می‌شود (نه پر از نقش دیگر)  → ['کارشناس ثبت سفارش', 'کارشناس رفع تعهد ارزی', 'کارشناس بازرگانی']
+✅ هر ماژول پکیج روی همین نسخه پایتون کامپایل می‌شود  → python 3.12
+
+── ۸) گیرنده ایمیل از سورس HR ──
+2026-09-19 14:44:13,613 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ پیش‌فرض فقط سطوح مدیریتیِ فعال است  → ['a.manager@x.invalid', 'b.head@x.invalid']
+✅ پرسنل غیرفعال حذف می‌شود
+✅ نشانی نامعتبر حذف می‌شود
+✅ ردیف بدون نشانی حذف می‌شود
+2026-09-19 14:44:13,617 | INFO    | 👥 1 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ فیلتر شرح پست کار می‌کند  → ['d.expert@x.invalid']
+2026-09-19 14:44:13,620 | INFO    | 👥 0 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ فیلترها با هم AND می‌شوند
+2026-09-19 14:44:13,623 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ سقف تعداد رعایت می‌شود
+✅ جدول خالی ⇒ فهرست خالی
+2026-09-19 14:44:13,626 | WARNING | ⚠️ ستون Email در سورس HR نیست؛ گیرنده‌ای استخراج نشد.
+✅ سورس بدون ستون Email ⇒ فهرست خالی
+✅ بدون GSI_EMAIL_FROM_HR، سورس HR خوانده نمی‌شود
+✅ با فعال‌سازی، زنجیره به سورس HR می‌رسد
+✅ متغیر محیطی صریح بر سورس HR اولویت دارد
+2026-09-19 14:44:13,631 | INFO    | 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ هیچ نشانی‌ای لاگ نمی‌شود  → 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+✅ تعداد گیرنده لاگ می‌شود  → 👥 2 گیرنده از سورس HR انتخاب شد (از 6 پرسنل؛ نشانی‌ها لاگ نمی‌شوند).
+
+==============================================================================
+نتیجه: 79 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۷) سیستمی و استقرار
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V22 — تست سلامت import و استقرار
+==============================================================================
+
+── ۱) تصادم نام با کتابخانه استاندارد ──
+✅ هیچ ماژول GSI هم‌نام ماژول استاندارد پایتون نیست  → 118 ماژول بررسی شد، ۰ تصادم
+✅ ماژول تقویم به jalali تغییر نام یافته (نه calendar)
+✅ پکیج ورودی/خروجی dataio است (نه io)
+
+── ۲) بازتولید خطای واقعی شبکه IKCO ──
+✅ خطای اصلی با فایل تخت calendar.py بازتولید شد  → ImportError: attempted relative import with no known parent package
+✅ Doctor این حالت را تشخیص می‌دهد و کد خروجی ۱ می‌دهد
+✅ پس از حذف فایل متصادم، pandas سالم import می‌شود
+
+── ۳) اجرا از پوشه‌های مختلف ──
+✅ import پکیج از «ریشه پروژه» موفق است
+✅ import پکیج از «پوشه موقت» موفق است
+✅ import پکیج از «داخل خود پکیج» موفق است
+
+── ۴) نقاط ورود ──
+✅ «python -m gsi.doctor» بدون استثنا اجرا می‌شود  → exit=1
+✅ «python -m gsi.rulebook.validate» بدون استثنا اجرا می‌شود  → exit=0
+✅ «python -m gsi rules» بدون استثنا اجرا می‌شود  → exit=0
+
+── ۵) کامل بودن ساختار پکیج ──
+✅ تمام زیرپکیج‌ها __init__.py دارند  → غایب: []
+✅ فایل‌های RuleBook دقیقاً با manifest سازگارند  → actual=['_manifest.yaml', 'alarms.yaml', 'case_actions.yaml', 'criticality.yaml', 'currencies.yaml', 'customs.yaml', 'fx_governance.yaml', 'hs_codes.yaml', 'incoterms.yaml', 'intelligence_sources.yaml', 'legacy_knowledge.yaml', 'status_lexicon.yaml', 'transport.yaml', 'warehouse.yaml']; expected=['_manifest.yaml', 'alarms.yaml', 'case_actions.yaml', 'criticality.yaml', 'currencies.yaml', 'customs.yaml', 'fx_governance.yaml', 'hs_codes.yaml', 'incoterms.yaml', 'intelligence_sources.yaml', 'legacy_knowledge.yaml', 'status_lexicon.yaml', 'transport.yaml', 'warehouse.yaml']
+✅ __main__.py برای «python -m gsi» موجود است
+✅ doctor.py موجود است
+✅ نسخه در همه‌جا یکی است (تنها منبع: factsheet)  → 28.0.0 / 28.0.0 / 28.0.0
+
+── ۶) وابستگی‌های اختیاری ──
+✅ بدون jdatetime هم تاریخ شمسی درست تبدیل می‌شود  → JD False 2025-04-04
+✅ ماژول استاندارد calendar از stdlib بارگذاری می‌شود  → /opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/calendar.py
+
+==============================================================================
+نتیجه: 19 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۸) ادعاهای مستندات
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست ادعاهای مستندات
+==============================================================================
+
+── ۱) اعداد README در برابر کد ──
+✅ «بسته قانونی»: README می‌گوید ۱۳، کد می‌گوید ۱۳
+✅ «قاعده نیازمند تطبیق»: README می‌گوید ۲۳، کد می‌گوید ۲۳
+✅ «شیت داشبورد»: README می‌گوید ۱۷، کد می‌گوید ۱۷
+
+── ۲) نسخه تنها یک منبع دارد ──
+✅ gsi.__version__ با شناسنامه یکی است  → 28.0.0 / 28.0.0
+✅ version.PACKAGE_VERSION با شناسنامه یکی است  → 28.0.0 / 28.0.0
+✅ هیچ نسخه هاردکدی در پکیج نمانده  → پاک
+
+── ۳) شناسنامه اجرا می‌شود ──
+✅ python -m gsi.factsheet بدون خطا اجرا می‌شود
+✅ همه کلیدهای شناسنامه چاپ می‌شوند
+
+==============================================================================
+نتیجه: 8 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۹) بسته ایمیل مدیریتی
+██████████████████████████████████████████████████████████████████████████████
+✅ پوشه تاریخ‌دار
+✅ نام ثابت تاریخ‌دار
+✅ KPI بارنامه یکتا
+✅ KPI متریال
+✅ نام Excel در ایمیل
+✅ علت متریال در ایمیل
+✅ دعوت به Excel
+✅ فونت ایمیل IRANSans Light است
+✅ بدون CSS خارجی
+✅ نمودارهای ایمیل ساخته می‌شوند
+✅ عنوان‌های نمودار از کاتالوگ فارسی می‌آیند
+نتیجه: 11 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۰) GSI Studio ماژولار
+██████████████████████████████████████████████████████████████████████████████
+✅ فیلتر برخط 
+✅ فیلتر کارشناس 
+✅ HTML شامل CSS و JavaScript پویا است 
+✅ Excel سفارشی ساخته می‌شود 
+✅ لانچر Studio به فایل صحیح اشاره می‌کند 
+نتیجه: 5 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۱) سازنده گزارش و صحت دانه‌ای
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — تست سازنده گزارش و صحت دانه‌ای
+==============================================================================
+
+── ۱) دوباره‌شماری در جمع ──
+✅ دانه «مانده تعهد» از سورس مبدأ به ارث می‌رسد (REG، نه ردیف)  → REG
+✅ جمع ساده روی ردیف‌ها دوباره‌شماری می‌کند  → 3,500
+✅ جمع دانه‌ای مقدار درست را می‌دهد  → 1,500
+✅ اختلاف دقیقاً همان مقدار تکرارشده است
+✅ ستون با دانه ریز دست‌نخورده می‌ماند  → 50
+✅ ضریب تکرار دانه ثبت سفارش گزارش می‌شود  → 2.0
+
+── ۲) شناسه در برابر سنجه ──
+✅ شماره سفارش شناسه است، نه سنجه
+✅ شناسه هرگز جمع نمی‌شود (تجمیع پیش‌فرض: شمار یکتا)
+✅ «مقاومت (روز)» نسبتی است، نه انباشتنی
+✅ تجمیع پیش‌فرض ستون نسبتی میانگین است
+✅ «مانده تعهد» انباشتنی است
+✅ شناسه‌ها از فهرست قابل جمع کنار می‌روند  → ['مانده تعهد', 'ORC_STOCK_IKCO']
+
+── ۳) ردپای محاسباتی ──
+✅ گزارش صحت برای هر ستون یک ردیف دارد  → 3
+✅ دوباره‌شماری در گزارش صحت علامت می‌خورد  → ⚠ دوباره‌شماری
+✅ شناسه در گزارش صحت جمع نمی‌شود  → — شناسه، جمع نمی‌شود
+
+── ۴) خروجی HTML ──
+✅ سند راست‌به‌چپ و فارسی است
+✅ کلید دانه برای یکتاسازی سمت مرورگر تعبیه شده
+✅ تابع تجمیع دانه‌ای در JS هست
+✅ ستون نسبتی میانگین می‌گیرد نه جمع
+✅ دکمه چاپ/PDF دارد
+✅ پالت وضعیت از سیستم طراحی می‌آید
+✅ رنگ متن هر وضعیت کف WCAG AA را دارد
+✅ مرز هر سطح رنگی کف ۳:۱ را دارد
+✅ پالت رد شده قبلی دیگر نیست
+
+── ۵) ساخت گزارش در هر قالب ──
+✅ چهار قالب تعریف شده است  → ['executive', 'operational', 'process', 'audit']
+✅ خاموش کردن ویژوال، بخش‌های نموداری را حذف می‌کند
+✅ خاموش کردن جدول‌ها، بخش‌های جدولی را حذف می‌کند
+✅ قالب «اجرایی» هر دو فرمت را می‌سازد  → HTML: 2026-08-31_t_executive.html | Excel: 2026-08-31_t_executive.xlsx
+✅ قالب «عملیاتی» هر دو فرمت را می‌سازد  → HTML: 2026-08-31_t_operational.html | Excel: 2026-08-31_t_operational.xlsx
+✅ قالب «فرآیندی» هر دو فرمت را می‌سازد  → HTML: 2026-08-31_t_process.html | Excel: 2026-08-31_t_process.xlsx
+✅ قالب «ممیزی داده» هر دو فرمت را می‌سازد  → HTML: 2026-08-31_t_audit.html | Excel: 2026-08-31_t_audit.xlsx
+
+── ۶) یکسانی عدد بین فرمت‌ها ──
+✅ عدد گزارش صحت با محاسبه مستقل یکی است  → 1,500
+✅ کلید دانه «مانده تعهد» در payload مرورگر هست  → KEY_REG
+✅ تجمیع مرورگر پیش از جمع، بر همان کلید یکتا می‌کند
+✅ برگه «صحت محاسبات» در Excel هست  → ['Executive', 'Criticality', 'Live Data', 'جدول تفصیلی', 'صحت محاسبات', 'دانه\u200cبندی', 'خلاصه عددی']
+
+==============================================================================
+نتیجه: 35 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — حوزه مسئولیت، مالکیت قطعه و نماهای تأمین
+==============================================================================
+
+── ۱) سه حوزه مسئولیت و مالک قطعه ──
+✅ سه ستون حوزه ساخته می‌شود  → ['EXPERT_PURCHASING', 'EXPERT_COMMERCIAL', 'EXPERT_LOGISTICS']
+✅ کارشناس ترخیص هرگز در ستون کارشناس خرید نمی‌نشیند  → ['الف', 'الف', 'دلاور']
+✅ حوزه لجستیک فقط کارشناس ترخیص را دارد
+✅ حوزه بازرگانی از نقش اعتبارات پر می‌شود
+✅ وقتی نام مستقیم نیست، کد پرسنلی از HR به نام تبدیل می‌شود  → دلاور
+✅ مالک قطعه همان کارشناس خرید است  → ['الف', 'الف', 'دلاور']
+✅ منبع شناسایی مالک ثبت می‌شود  → Commercial Expert Data (کد پرسنلی)
+✅ ردیف با داده ناقصِ مالک حذف نمی‌شود  → 3
+✅ شکاف داده مالک برای ردیف ناقص ثبت می‌شود  → شماره درخواست خرید، تاریخ ابلاغ سفارش، کد تأمین‌کننده، ارزش PI، شماره بارنامه در سورس خرید، مقدار ترخیص‌شده
+✅ ردیف کامل شکاف ندارد
+✅ گزارش پوشش، مالک بودن حوزه خرید را اعلام می‌کند
+✅ فقط یک حوزه مالک است
+
+── ۲) وضعیت قطعه: کجا / کِی / چه کسی ──
+✅ موقعیت از رویداد تاریخ‌دار می‌آید، نه از حدس موجودی  → ['حمل', 'حمل', 'گمرک و ترخیص']
+✅ آخرین فعالیت نام‌گذاری می‌شود  → ثبت کوتاژ گمرکی
+✅ تاریخ شمسی درست تبدیل می‌شود (سن وضعیت منطقی است، نه ۲۲۷٬۰۰۰ روز)  → [162, 162, 121]
+✅ تاریخ به میلادی نرمال می‌شود  → 2026-03-30 00:00:00
+✅ مسئول وضعیت، کارشناس همان حوزه است  → ['کارشناس حمل و لجستیک', 'کارشناس حمل و لجستیک', 'کارشناس حمل و لجستیک']
+✅ نام مسئول از ستون همان حوزه برداشته می‌شود  → ['ج', 'ج', 'ج']
+✅ فعالیت بعدی مورد انتظار تعیین می‌شود  → ثبت کوتاژ گمرکی
+✅ چرخه تمام‌شده «کامل است» گزارش می‌شود  → چرخه کامل است
+✅ «معطل چه حوزه‌ای» پاسخ دارد  → کارشناس حمل و لجستیک
+✅ تاریخ‌های ثبت‌نشده فهرست می‌شوند
+✅ ردیف بدون رویداد «نامشخص» می‌شود، نه یک حدس  → نامشخص
+✅ مبنای نامشخص بودن صریح ثبت می‌شود  → هیچ فعالیت تاریخ‌داری برای این ردیف ثبت نشده است
+✅ تاریخ آینده به‌عنوان وضعیت فعلی پذیرفته نمی‌شود  → نامشخص
+✅ جدول زمانی با جدول فعالیت لاگ رویداد یکی است
+
+── ۳) پوشش Commercial Expert Data ──
+2026-09-19 14:44:25,633 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 3 ردیف دارای سفارش.
+✅ سفارش خارج از سورس شمرده می‌شود  → 1
+✅ سفارش موجود در سورس پرچم نمی‌گیرد
+✅ سفارش غایب پرچم می‌گیرد
+✅ وضعیت سنجش «measured» است
+✅ measured() درست گزارش می‌دهد
+2026-09-19 14:44:25,638 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ سورس در دسترس نباشد ⇒ هیچ سفارشی به‌غلط پرچم نمی‌گیرد (NoneType)  → n=0
+2026-09-19 14:44:25,640 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ سورس در دسترس نباشد ⇒ هیچ سفارشی به‌غلط پرچم نمی‌گیرد (DataFrame)  → n=0
+2026-09-19 14:44:25,646 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ حالت «سنجیده نشد» از «صفر» تفکیک می‌شود
+✅ علت سنجیده‌نشدن برای کاربر توضیح داده می‌شود
+
+── ۴) نماهای متریال / بارنامه / اداره ──
+✅ نمای متریال هر ردیف را نگه می‌دارد
+✅ نمای بارنامه هر ردیف را نگه می‌دارد
+✅ نمای اداره یک ردیف به ازای هر اداره دارد  → 2
+✅ ستون «موقعیت فعلی» در نما هست
+✅ ستون «تاریخ آخرین رویداد» در نما هست
+✅ ستون «سن وضعیت (روز)» در نما هست
+✅ ستون «کارشناس مسئول وضعیت» در نما هست
+✅ ستون «معطل حوزه» در نما هست
+✅ ستون «مالک قطعه (کارشناس خرید)» در نما هست
+✅ ستون «شکاف داده مالک» در نما هست
+✅ ستون حوزه «کارشناس خرید» در نما هست
+✅ ستون حوزه «کارشناس بازرگانی» در نما هست
+✅ ستون حوزه «کارشناس حمل و لجستیک» در نما هست
+✅ نمای اداره چرایی بار کاری دارد
+✅ نمای اداره شکاف مالک را می‌شمارد
+✅ سه شیت با نام درست ساخته می‌شود  → ['۱۴. متریال محور', '۱۵. بارنامه محور', '۱۶. اداره محور']
+✅ دیتافریم خالی خطا نمی‌دهد
+✅ ستون گروه‌بندی نباشد ⇒ نمای خالی، نه استثنا
+
+── ۵) کارایی (رگرسیون نسخه ۲۶٫۹) ──
+✅ سه نما روی 5,000 ردیف زیر ۱۰ ثانیه ساخته می‌شود  → 0.36s
+
+── ۶) هیچ فایل تستی از قلم نیفتد ──
+✅ همه فایل‌های تست در run_all_tests ثبت شده‌اند  → 29 فایل
+
+==============================================================================
+نتیجه: 55 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۳) نقاط کور سیستمی و فرآیندی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI — نقاط کور سیستمی و فرآیندی
+==============================================================================
+
+── ۱) شیتِ نبوده هرگز با شیت دیگر جایگزین نمی‌شود ──
+2026-09-19 14:44:27,037 | INFO    | 📥 [t] شیت «Other» خوانده شد — 1 ردیف × 1 ستون
+✅ شیت موجود خوانده می‌شود
+2026-09-19 14:44:27,044 | INFO    | 📥 [t] شیت «Other» خوانده شد — 1 ردیف × 1 ستون
+✅ تطبیق بدون حساسیت به حروف/فاصله کار می‌کند
+2026-09-19 14:44:27,050 | ERROR   | ❌ [t] شیت «Expert Data» در sample.xlsx نیست (شیت‌های موجود: ['Sheet1', 'Other']) — این فریم نامعتبر اعلام شد و به شیت دیگری fallback نمی‌شود.
+✅ شیت ناموجود ⇒ None، نه fallback به شیت اول  → None
+✅ شکاف اسکیما در سلامت سیستم ثبت می‌شود  → ["شیت «Expert Data» در sample.xlsx نیست (شیت\u200cهای موجود: ['Sheet1', 'Other'])"]
+✅ وضعیت سورس «ناقص» می‌شود، نه سالم  → ناقص
+2026-09-19 14:44:27,057 | INFO    | 📥 [t] شیت «Sheet1» خوانده شد — 2 ردیف × 1 ستون
+✅ sheet=None همچنان شیت اول را می‌خواند (رفتار عمدی)
+
+── ۲) دفتر سلامت سیستم ──
+✅ اجرای با سورس اختیاریِ ردشده «ناقص» است، نه خراب  → ناقص
+✅ سورس اختیاری مسدودکننده نیست  → []
+✅ سورس الزامیِ خراب، مسدودکننده است  → ['c']
+✅ وضعیت کلی «خراب» می‌شود  → خراب
+✅ همه سالم ⇒ وضعیت سالم  → سالم
+✅ استثنای مرحله بلعیده نمی‌شود
+✅ مرحله شکست‌خورده ثبت می‌شود
+✅ خطای مرحله وضعیت کلی را خراب می‌کند
+✅ جدول سورس ساخته می‌شود
+✅ جدول مرحله ساخته می‌شود
+✅ جدول ادغام ساخته می‌شود
+✅ جدول یافته ساخته می‌شود
+
+── ۳) شیت «۱۷. سلامت سیستم» ──
+✅ شیت ساخته می‌شود  → ['۱۷. سلامت سیستم']
+✅ بخش «وضعیت کلی این اجرا» در شیت هست
+✅ بخش «سلامت سورس» در شیت هست
+✅ بخش «سلامت مرحله» در شیت هست
+✅ بخش «سلامت ادغام» در شیت هست
+✅ بخش «یافته» در شیت هست
+✅ بخش «Expert Data» در شیت هست
+✅ خلاصه کوتاه برای ایمیل ساخته می‌شود
+✅ اجرای سالم هم شیت می‌سازد (بدون استثنا)
+
+── ۴) ترتیب زمانی معکوس و تاریخ برنامه‌ای ──
+✅ ترتیب معکوس شناسایی می‌شود  → «ترخیص کامل» پیش از «ثبت کوتاژ گمرکی» ثبت شده
+✅ ردیف سالم علامت نمی‌خورد
+✅ تاریخ آینده به‌عنوان «برنامه‌ای» ثبت می‌شود  → صدور بارنامه (حمل)
+✅ تاریخ آینده وضعیت فعلی را تعیین نمی‌کند  → 2026-03-21 00:00:00
+✅ ناسازگاری زمانی وارد سلامت سیستم می‌شود  → ['2 ردیف ترتیب زمانی معکوس دارد', '1 ردیف تاریخ آینده (برنامه\u200cای) دارد']
+✅ تاریخ برنامه‌ای هم گزارش می‌شود  → ['2 ردیف ترتیب زمانی معکوس دارد', '1 ردیف تاریخ آینده (برنامه\u200cای) دارد']
+✅ ستون‌های تازه در فهرست خروجی اعلام شده‌اند
+
+── ۵) سفارش چندمتریاله پنهان نمی‌ماند ──
+✅ تابع یکتاسازی مقادیر خالی را دور می‌ریزد  → ['a', 'b']
+✅ خروجی مرتب است (نسب پایدار، نه وابسته به ترتیب ردیف)
+
+── ۶) سه حالت پوشش سورس خرید ──
+2026-09-19 14:44:27,261 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 2 ردیف دارای سفارش.
+✅ سنجیده‌شده: حالت measured
+✅ سنجیده‌شده: شمارش درست  → 1
+2026-09-19 14:44:27,269 | WARNING | ⚠️ سورس «Commercial Expert Data» در دسترس نبود؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ فایل نبود ⇒ source_unavailable  → source_unavailable
+✅ فایل نبود ⇒ هیچ سفارشی پرچم نمی‌گیرد
+✅ KPI «سنجیده نشد» می‌دهد
+2026-09-19 14:44:27,277 | WARNING | ⚠️ سورس «Commercial Expert Data» ساختار مورد انتظار را نداشت؛ پوشش سفارش سنجیده نشد. هیچ سفارشی به‌غلط «بدون مالک» علامت نخورد.
+✅ ساختار عوض شد ⇒ source_schema_gap  → source_schema_gap
+✅ پیام KPI بین «فایل نبود» و «ساختار عوض شد» فرق می‌گذارد  → فایل Commercial Expert Data ساختار مورد انتظار را نداشت
+✅ هیچ‌کدام از دو حالتِ نسنجیده، measured نیست
+
+── ۷) بهداشت اجرا ──
+✅ هیچ escape نامعتبری در سورس نیست  → []
+✅ «python -m gsi.factsheet» بدون RuntimeWarning اجرا می‌شود
+✅ هر مجموعه تست سقف زمانی دارد
+✅ خروجی TIMEOUT صریح گزارش می‌شود
+✅ نسخه پکیج تنبل خوانده می‌شود
+
+==============================================================================
+نتیجه: 49 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۴) Oracle چندشیتی V26.14
+██████████████████████████████████████████████████████████████████████████████
+✅ test_oracle_merges_two_sheets_preferring_full_data
+نتیجه: 1 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۵) Studio V26.12
+██████████████████████████████████████████████████████████████████████████████
+✅ test_transport
+✅ test_tabs_and_design
+نتیجه: 2 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۶) HTML Process V26.15
+██████████████████████████████████████████████████████████████████████████████
+✅ test_dynamic_html_has_story_process_and_excel
+نتیجه: 1 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۷) FX Traceability V26.16
+██████████████████████████████████████████████████████████████████████████████
+2026-09-19 14:44:30,896 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 13 رویداد | 0 مغایرت/شکاف
+✅ test_fx_ledger_is_reg_grain_and_no_fanout
+2026-09-19 14:44:31,049 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 7 رویداد | 0 مغایرت/شکاف
+✅ test_obligations_are_separate_not_one_boolean
+✅ test_conformance_names_match_eventlog_and_order_uses_position
+✅ test_current_rule_snapshot_present
+✅ test_html_process_explorer_embeds_fx_traceability
+نتیجه: 5 موفق | 0 ناموفق
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۸) برج کنترل جریان پول V26.18
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.18 — Money Flow Control Tower
+==============================================================================
+
+── پل نرخ و تبدیل ──
+2026-09-19 14:44:32,053 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-19 14:44:32,109 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ تبدیل EUR→CNY اندازه‌گیری شده → CROSS_CURRENCY_MEASURED
+✅ اثر ریالی تبدیل ۲۱۰۰ است → 2100.0
+✅ اثر تبدیل به پرونده تجمیع شده
+
+── جابه‌جایی پرونده ──
+2026-09-19 14:44:32,258 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-19 14:44:32,305 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ مغایرت REG مالی با مالک O2 کشف شد
+✅ بدون شاهد مجوز UNEXPLAINED است
+2026-09-19 14:44:32,454 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-19 14:44:32,511 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ با شماره مجوز AUTHORIZED است
+
+── مراحل و Deadline ──
+2026-09-19 14:44:32,666 | INFO    | 💱 [fx-trace] 2 پرونده ثبت سفارش | 9 رویداد | 1 مغایرت/شکاف
+2026-09-19 14:44:32,714 | INFO    | 💸 [money-control] 2 پرونده | 22 مرحله | 1 پل نرخ/تبدیل | 1 سیگنال جابه‌جایی
+✅ یازده مرحله پرونده ساخته شده → 11
+✅ مرحله رفع تعهد OVERDUE است
+✅ روز باقی‌مانده NTSW منفی ۷ است
+✅ مبنای مهلت NTSW شفاف است → مهلت ثبت‌شده در NTSW [source_record]
+✅ ریسک به دلیل جابه‌جایی+Deadline بالا است → 85.0
+
+── منابع Field Intelligence ──
+✅ پنج منبع تلگرامی ثبت شده → 5
+✅ Field Signal اجازه enforce خودکار ندارد
+
+==============================================================================
+نتیجه: 13 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۱۹) انتقال دانش نسل قدیم V26.19
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.19 — Legacy Knowledge Transfer
+==============================================================================
+
+── کاتالوگ و گارد حاکمیتی ──
+✅ بسته legacy_knowledge بارگذاری شده
+✅ کاتالوگ حداقل 15 دانش دارد → 22
+✅ مدل A/B/C تاریخی است نه binding
+✅ Legacy حتی با دانش تاریخی auto enforce نمی‌شود
+✅ Payment without BL به Unallocated Balance ترجمه شده
+
+── Signal پرونده و Evidence ──
+2026-09-19 14:44:33,677 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 3 رویداد | 1 مغایرت/شکاف
+2026-09-19 14:44:33,721 | INFO    | 💸 [money-control] 1 پرونده | 11 مرحله | 1 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-19 14:44:33,735 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 1 پرونده | 3 signal | enforce خودکار=0
+✅ Payment بدون BL سیگنال می‌شود → UNALLOCATED_PAYMENT_CANDIDATE
+✅ کسر تخلیه به عنوان Root-cause candidate ظاهر می‌شود → کسر تخلیه ؛ مغایرت اظهارنامه
+✅ شواهد کسر تخلیه پیشنهاد می‌شود → مانیفست/BL ؛ قبض انبار ؛ گزارش توزین/تخلیه ؛ اظهارنامه و پروانه ؛ ثبت سفارش ؛ فاکتور ؛ اظهارنامه ؛ پروانه/کوتاژ ؛ ارز و مبلغ هر سند ؛ شناسه تراکنش/خرید ارز ؛ مبلغ اولیه ؛ Allocation Edgeهای مصرف‌شده ؛ مانده تخصیص‌نیافته
+✅ شکاف نرخ Cross-Currency جعل P&L نمی‌کند → تبدیل بین دو ارز ثبت شده ولی مبلغ/نرخ مقصد، Cross Rate یا نرخ خرید مبدأ کامل نیست
+✅ گارد legacy روی پرونده فعال است
+✅ Signal table provenance دارد
+✅ هیچ Signal legacy قابل enforce خودکار نیست
+
+── معماری و semantics نرخ ──
+✅ Stage انتقال دانش کشف می‌شود
+✅ Stage بعد از Money Flow و قبل از Narrate است → ['resolve', 'derive', 'org', 'scope', 'supply_position', 'warehouse_declaration', 'criticality', 'commitment', 'fx_traceability', 'money_flow_control', 'legacy_knowledge_transfer', 'case_actions', 'narrate', 'risk', 'eventlog', 'conformance', 'sort']
+2026-09-19 14:44:33,917 | INFO    | 💱 [fx-trace] 1 پرونده ثبت سفارش | 4 رویداد | 0 مغایرت/شکاف
+2026-09-19 14:44:33,955 | INFO    | 💸 [money-control] 1 پرونده | 11 مرحله | 1 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-19 14:44:33,971 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 1 پرونده | 0 signal | enforce خودکار=0
+✅ نرخ خرید، نرخ پرداخت و Cross Rate مستقل‌اند
+✅ نرخ ثابت قدیمی برای P&L ممنوع است
+
+==============================================================================
+نتیجه: 16 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۰) صف تخصیص، اقدام پرونده و موجودی V26.20
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+GSI V26.20 — Case Action / Allocation Queue / Supply Position
+==============================================================================
+✅ Unknown ≠ Zero: فقدان موجودی سازنده مقاومت قطعی نمی‌سازد  → band=UNKNOWN, supplier=None, days=None
+✅ با داده ناقص حداقل قابل اثبات حفظ می‌شود  → lower=180.0, coverage=80.0
+✅ فرمول پنج‌جزئی: Oracle + سه سبد کارشناسی  → total=480.0, days=48.0
+2026-09-19 14:44:34,673 | WARNING |    ⚠️ [ntsw] شیت «Release Commitment» یافت نشد.
+2026-09-19 14:44:34,691 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 1 کد ثبت سفارش
+✅ تاریخچه status یک درخواست دوباره‌شماری نمی‌شود  → request ledger rows=2
+✅ مبلغ تخصیص و مبلغ باز صف جدا هستند  → alloc=100.0 open=50.0
+✅ پرونده هم‌زمان تخصیص جزئی و صف باز را حفظ می‌کند  → PARTIAL_ALLOCATED rank=4
+2026-09-19 14:44:34,965 | INFO    | ==========================================================================================
+🚀 GSI 28.0.0 — تاریخ مرجع: 2026-08-31
+==========================================================================================
+2026-09-19 14:44:34,968 | INFO    | 🗺️ نقشه اجرای فرآیند:
+2026-09-19 14:44:34,969 | INFO    |     10 │ resolve          │ حل تعارض و ساخت کلیدهای کانونی
+2026-09-19 14:44:34,970 | INFO    |     20 │ derive           │ ترجمه ستون‌های سورس به ستون‌های دامنه‌ای
+2026-09-19 14:44:34,971 | INFO    |     30 │ org              │ اتصال کارشناس به سلسله‌مراتب سازمانی
+2026-09-19 14:44:34,973 | INFO    |     35 │ scope            │ حوزه مسئولیت، مالک قطعه و وضعیت کجا/کی/چه کسی
+2026-09-19 14:44:34,974 | INFO    |     38 │ supply_position  │ یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero
+2026-09-19 14:44:34,975 | INFO    |     39 │ warehouse_declaration │ اظهار انبار — قبض انبار الکترونیکی و شکاف شاهد پس از ترخیص
+2026-09-19 14:44:34,976 | INFO    |     40 │ criticality      │ محاسبه مقاومت قطعه (Oracle + موجودی کارشناسی ÷ مصرف روزانه)
+2026-09-19 14:44:34,978 | INFO    |     50 │ commitment       │ مهلت کنترلی، سناریوی جریمه و هشدارهای رفع تعهد ارزی
+2026-09-19 14:44:34,979 | INFO    |     55 │ fx_traceability  │ رهگیری ورود/خروج پول، تخصیص، خرید ارز و رفع تعهد
+2026-09-19 14:44:34,980 | INFO    |     56 │ money_flow_control │ برج کنترل جریان پول، نرخ، جابه‌جایی و مهلت‌ها
+2026-09-19 14:44:34,982 | INFO    |     57 │ legacy_knowledge_transfer │ انتقال دانش تاریخی به Root Cause / Evidence / Provenance
+2026-09-19 14:44:34,983 | INFO    |     58 │ case_actions     │ صف اقدام پرونده، پیشنهاد سیستم و Draft Email
+2026-09-19 14:44:34,983 | INFO    |     60 │ narrate          │ تولید روایت و پیشنهاد عملیاتی
+2026-09-19 14:44:34,985 | INFO    |     70 │ risk             │ امتیاز ریسک ۰–۱۰۰ و هشدار ترکیبی بحرانی
+2026-09-19 14:44:34,987 | INFO    |     80 │ eventlog         │ لاگ رویداد فرآیند (استاندارد Celonis)
+2026-09-19 14:44:34,988 | INFO    |     85 │ conformance      │ بررسی انطباق فرآیند و ریشه‌یابی انحراف
+2026-09-19 14:44:34,990 | INFO    |     90 │ sort             │ مرتب‌سازی: بحرانی‌ترین در بالا
+2026-09-19 14:44:34,993 | INFO    | 📚 قوانین: 13 بسته | 23 قاعده نیازمند تطبیق
+2026-09-19 14:44:35,000 | INFO    | 🔌 اتصال موفق به سورس 'ntsw' → NTSW Export.xlsx
+2026-09-19 14:44:35,028 | INFO    |    ✅ [ntsw] Release Commitment: 4 ردیف تعهد → 3 کد ثبت سفارش
+2026-09-19 14:44:35,044 | INFO    |    ✅ [ntsw] Allocation: 3 درخواست → 2 کد ثبت سفارش
+2026-09-19 14:44:35,061 | INFO    | 🔌 اتصال موفق به سورس 'abbasi' → BLs Tracking.xlsx
+2026-09-19 14:44:35,138 | INFO    | 📥 [abbasi] شیت «BLs Tracking» خوانده شد — 6 ردیف × 23 ستون
+2026-09-19 14:44:35,155 | INFO    | 🔌 اتصال موفق به سورس 'sata' → SATA Tracking.xlsx
+2026-09-19 14:44:35,168 | INFO    | 📥 [sata] شیت «Sata Tracking» خوانده شد — 5 ردیف × 23 ستون
+2026-09-19 14:44:35,177 | INFO    |    🔑 [sata] کلید ثبت سفارش از ستون «ثبت سفارش» ساخته شد — 5 از 5 ردیف (5 کد یکتا)
+2026-09-19 14:44:35,184 | INFO    | 🔌 اتصال موفق به سورس 'clearance' → 2 فایل
+2026-09-19 14:44:35,209 | INFO    | 📥 [clearance] شیت «Air Clearance» خوانده شد — 1 ردیف × 28 ستون
+2026-09-19 14:44:35,228 | INFO    | 📥 [clearance] شیت «Sea Clearance» خوانده شد — 4 ردیف × 28 ستون
+2026-09-19 14:44:35,231 | INFO    |    📚 [clearance] 2 شیت داده از 2 فایل ادغام شد — مجموع 5 ردیف
+2026-09-19 14:44:35,245 | INFO    |    🛃 [clearance] 5 ردیف — 1 ترخیص کامل، 1 ترخیص درصدی، 5 کد تعرفه
+2026-09-19 14:44:35,255 | INFO    | 🔌 اتصال موفق به سورس 'cotage' → Cottage Tracking.xlsx
+2026-09-19 14:44:35,265 | INFO    | 📥 [cotage] شیت «Cottage Tracking» خوانده شد — 2 ردیف × 22 ستون
+2026-09-19 14:44:35,269 | WARNING |    ⚠️ [cotage] ستون «EXPERT» یافت نشد (کاندیدها: ['کارشناس ترخیص', 'کارشناس']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,281 | INFO    | 🔌 اتصال موفق به سورس 'oracle' → Oracle.xlsx
+2026-09-19 14:44:35,305 | INFO    | 🔌 اتصال موفق به سورس 'fx_transaction' → Foreign Exchange Transaction.xlsx
+2026-09-19 14:44:35,338 | INFO    |    💱 [fx] 0 ارز، 3 ردیف با کد ثبت سفارش
+2026-09-19 14:44:35,357 | INFO    | 🔌 اتصال موفق به سورس 'credit' → Credit Dept.xlsx
+2026-09-19 14:44:35,368 | INFO    | 📥 [credit] شیت «PURCREDIT» خوانده شد — 2 ردیف × 23 ستون
+2026-09-19 14:44:35,372 | WARNING |    ⚠️ [credit] ستون «BUYER» یافت نشد (کاندیدها: ['کارشناس خرید خارجی', 'کارشناس خريد خارجي']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,386 | INFO    | 🔌 اتصال موفق به سورس 'ilappend' → IL Append.xlsx
+2026-09-19 14:44:35,396 | INFO    | 📥 [ilappend] شیت «Append» خوانده شد — 3 ردیف × 7 ستون
+2026-09-19 14:44:35,399 | WARNING |    ⚠️ [ilappend] ستون «EXPERT» یافت نشد (کاندیدها: ['نام کارشناس', 'کارشناس ثبت سفارش']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,402 | INFO    |    🔑 [il] کلید ثبت سفارش از ستون «شماره ثبت سفارش» (3 ردیف)
+2026-09-19 14:44:35,408 | INFO    | 🔌 اتصال موفق به سورس 'sap' → Comparison (SAP).xlsx
+2026-09-19 14:44:35,423 | INFO    | 📥 [sap] شیت «Data» خوانده شد — 3 ردیف × 13 ستون
+2026-09-19 14:44:35,427 | WARNING |    ⚠️ [sap] ستون «COMMISSION_NO» یافت نشد (کاندیدها: ['Commision No', 'Commission No']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,429 | WARNING |    ⚠️ [sap] ستون «COMMISSION_DATE» یافت نشد (کاندیدها: ['Commision Date', 'Commission Date']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,431 | WARNING |    ⚠️ [sap] ستون «ACTION» یافت نشد (کاندیدها: ['Action']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,435 | INFO    |    ⚙️ [sap] 3 درخواست خرید یکتا (آخرین وضعیت گردش کار)
+2026-09-19 14:44:35,442 | INFO    | 🔌 اتصال موفق به سورس 'doccheck' → Document Checking.xlsx
+2026-09-19 14:44:35,451 | INFO    | 📥 [doccheck] شیت «Checking» خوانده شد — 2 ردیف × 6 ستون
+2026-09-19 14:44:35,454 | WARNING |    ⚠️ [doccheck] ستون «DOC_TYPE» یافت نشد (کاندیدها: ['Document Type', 'نوع سند']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,456 | WARNING |    ⚠️ [doccheck] ستون «REMARK» یافت نشد (کاندیدها: ['Remark', 'ملاحظات', 'توضیحات']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,459 | INFO    |    📑 [doccheck] 2 سند — بارنامه 0 ردیف، سفارش 2 ردیف (کلید ادغام: سفارش)
+2026-09-19 14:44:35,466 | INFO    | 🔌 اتصال موفق به سورس 'hr' → HR_Main_Updated.xlsx
+2026-09-19 14:44:35,482 | INFO    | 📥 [hr] شیت «Sheet1» خوانده شد — 4 ردیف × 29 ستون
+2026-09-19 14:44:35,490 | INFO    |    👥 [hr] 4 پرسنل — 3 فعال
+2026-09-19 14:44:35,501 | INFO    | 🔌 اتصال موفق به سورس 'moghavemat' → Commercial Expert Data.xlsx
+2026-09-19 14:44:35,520 | INFO    | 📥 [moghavemat] شیت «Expert Data» خوانده شد — 6 ردیف × 38 ستون
+2026-09-19 14:44:35,545 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_ASOF_DATE» یافت نشد (کاندیدها: ['Inventory As Of Date', 'Inventory Update Date', 'As Of Date']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,550 | WARNING |    ⚠️ [moghavemat] ستون «INVENTORY_NOTE» یافت نشد (کاندیدها: ['Inventory Note', 'Supply Position Note', 'Inventory Comment']) — با مقدار خالی پر شد.
+2026-09-19 14:44:35,560 | WARNING |    🚧 [moghavemat] 4 مقدار ستون «BL No.» شماره بارنامه معتبر نبود (احتمالاً شماره فنی/پروفرما) و به ستون قرنطینه MOGH_BL_SUSPECT منتقل شد.
+2026-09-19 14:44:35,563 | INFO    |    🧩 [moghavemat] فایل چندنوعی است — Data type: ['Pre Purchase Approval Data', 'Purchase Approval Data']
+2026-09-19 14:44:35,578 | INFO    |    📊 [moghavemat] 6 قلم در 6 سفارش تجمیع شد؛ 6 موقعیت موجودی Order×Material ساخته شد.
+2026-09-19 14:44:35,605 | INFO    | 📦 13 از 13 سورس بارگذاری شد: ['ntsw', 'abbasi', 'sata', 'clearance', 'cotage', 'oracle', 'fx_transaction', 'credit', 'ilappend', 'sap', 'doccheck', 'hr', 'moghavemat']
+2026-09-19 14:44:35,608 | INFO    | 🧱 جدول پایه: 6 ردیف، 5 بارنامه معتبر.
+2026-09-19 14:44:35,624 | INFO    | 🔗 [moghavemat] ادغام روی KEY_ORDER انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:44:35,627 | INFO    |    🔑 [MATERIAL] کد متریال / شماره فنی: 5 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_MATERIAL
+2026-09-19 14:44:35,630 | INFO    |    🔗 [moghavemat/inventory] ادغام با کلید مرکب KEY_ORDER + KEY_MATERIAL
+2026-09-19 14:44:35,634 | INFO    | 🔗 [moghavemat/inventory] ادغام روی __CK_moghavemat/inventory__ انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:44:35,637 | INFO    |    🔑 [PR] شماره درخواست خرید: 5 از 6 ردیف (6 مقدار یکتا) — منابع: moghavemat.MOGH_KEY_PR
+2026-09-19 14:44:35,643 | INFO    | 🔗 [sap] ادغام روی KEY_PR انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:44:35,651 | INFO    | 🔗 [oracle] ادغام روی KEY_MATERIAL انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:44:35,655 | INFO    | 🔗 [sata] ادغام روی KEY_BL انجام شد — 5 ردیف منطبق از 6
+2026-09-19 14:44:35,659 | INFO    |    🧹 [clearance] 0 ردیف بدون کلید و 1 ردیف تکراری حذف شد (5 → 4)
+2026-09-19 14:44:35,662 | INFO    | 🔗 [clearance] ادغام روی KEY_BL انجام شد — 4 ردیف منطبق از 6
+2026-09-19 14:44:35,667 | INFO    | 🔗 [cotage] ادغام روی KEY_BL انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:44:35,673 | INFO    | 🔗 [doccheck] ادغام روی KEY_ORDER انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:44:35,676 | INFO    |    🔑 [REG] کد ثبت سفارش (۸ رقمی): 5 از 6 ردیف (6 مقدار یکتا) — منابع: sata.SATA_KEY_REG
+2026-09-19 14:44:35,681 | INFO    | 🔗 [ilappend] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:44:35,685 | WARNING | ⚠️ [fx_transaction] ستون‌های هم‌نام کنار گذاشته شدند: ['_SOURCE_ROW', '_SOURCE_FILE_ID']
+2026-09-19 14:44:35,688 | INFO    | 🔗 [fx_transaction] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:44:35,693 | INFO    | 🔗 [credit] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:44:35,699 | INFO    | 🔗 [ntsw_commitment] ادغام روی KEY_REG انجام شد — 3 ردیف منطبق از 6
+2026-09-19 14:44:35,706 | INFO    | 🔗 [ntsw_allocation] ادغام روی KEY_REG انجام شد — 2 ردیف منطبق از 6
+2026-09-19 14:44:35,708 | INFO    | 🧭 [resolver] «شماره بارنامه» از 2 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:44:35,711 | INFO    | 🧭 [resolver] «شماره سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:44:35,714 | INFO    | 🧭 [resolver] «شماره فنی» از 3 سورس حل شد — 4 تعارض ثبت گردید.
+2026-09-19 14:44:35,719 | INFO    | 🧭 [resolver] «شرح کالا» از 5 سورس حل شد — 5 تعارض ثبت گردید.
+2026-09-19 14:44:35,722 | INFO    | 🧭 [resolver] «ثبت سفارش» از 1 سورس حل شد — 0 تعارض ثبت گردید.
+2026-09-19 14:44:35,748 | INFO    | 👤 نقش‌های کارشناسی: کارشناس اعتبارات 83٪ (3 نفر) | کارشناس ترخیص 67٪ (1 نفر) | کارشناس کنترل اسناد 33٪ (1 نفر)
+2026-09-19 14:44:35,750 | WARNING | ⚠️ این نقش‌ها در این اجرا هیچ داده‌ای ندارند: کارشناس خرید خارجی، کارشناس ثبت سفارش، کارشناس رفع تعهد ارزی، کارشناس بازرگانی — امتیاز و بینششان ساخته نمی‌شود.
+2026-09-19 14:44:35,839 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-19 14:44:35,843 | INFO    | 🏢 تطبیق سازمانی: 5 از 6 ردیف به HR وصل شد.
+2026-09-19 14:44:35,845 | INFO    | 👥 پایگاه HR ساخته شد: 4 کد پرسنلی، 4 نام.
+2026-09-19 14:44:35,884 | INFO    | 🎯 حوزه‌های مسئولیت: کارشناس خرید 83% (4 نفر) | کارشناس بازرگانی 83% (3 نفر) | کارشناس حمل و لجستیک 67% (1 نفر)
+2026-09-19 14:44:35,886 | INFO    | 👤 مالک قطعه برای 5 از 6 ردیف شناسایی شد (83%).
+2026-09-19 14:44:35,887 | INFO    | 🧩 6 ردیف شکاف داده مالک دارد — ردیف‌ها حذف نشدند؛ علت در ستون «PART_OWNER_DATA_GAP» ثبت شد.
+2026-09-19 14:44:35,889 | INFO    | ⏳ بیشترین انتظار روی «کارشناس خرید» است — 1 ردیف.
+2026-09-19 14:44:35,903 | INFO    | 📦 [supply-position] کامل 5 | ناقص 0 | فاقد داده 1 | تعارض 0; Missing هرگز Zero نشده است.
+2026-09-19 14:44:35,919 | INFO    | 🏭 [warehouse] اظهارشده 1 | با تأخیر 1 | شکاف شاهد 2 | تناقض تاریخ 1 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+2026-09-19 14:44:35,982 | INFO    | 🔧 مقاومت قطعی برای 5 از 6 ردیف — UNKNOWN=1, پوشش ناقص=1, طبقات={'بحرانی': 1, 'در حال بحرانی شدن': 1, 'توقف خط': 1, 'تحت نظر': 1, 'ایمن': 1, 'نامشخص': 1}
+2026-09-19 14:44:36,089 | INFO    | 💱 [fx-trace] 5 پرونده ثبت سفارش | 12 رویداد | 2 مغایرت/شکاف
+2026-09-19 14:44:36,173 | INFO    | 💸 [money-control] 5 پرونده | 55 مرحله | 3 پل نرخ/تبدیل | 0 سیگنال جابه‌جایی
+2026-09-19 14:44:36,202 | INFO    | 🧠 [legacy-knowledge] 22 دانش versioned | 5 پرونده | 0 signal | enforce خودکار=0
+2026-09-19 14:44:36,255 | INFO    | 🎯 [case-actions] 7 پیشنهاد برای 5 پرونده | Draft Email، نیازمند تأیید کاربر
+2026-09-19 14:44:36,302 | WARNING | 🚨 1 ردیف هشدار ترکیبی «قطعه بحرانی + پرونده مشکل‌دار» دارند.
+2026-09-19 14:44:36,374 | INFO    | 🔄 لاگ رویداد: 16 رویداد یکتا در 5 پرونده (0 ردیف تکراری منبع ادغام شد) · 4 مسیر متمایز · میانه چرخه پرونده‌های بسته 0 روز.
+2026-09-19 14:44:36,389 | INFO    | 🔍 [conformance] 5 از 5 پرونده قابل‌ارزیابی انحراف دارند · 1 پرونده شاهد کافی ندارند · میانگین انطباق 52.9٪ (فقط قابل‌ارزیابی‌ها)
+2026-09-19 14:44:36,391 | INFO    | ↕️ مرتب‌سازی بر اساس بحرانی بودن: CRITICALITY_SORT → امتیاز ریسک
+2026-09-19 14:44:36,393 | INFO    | ⏱️ کندترین مرحله‌ها: criticality 0.09s | derive 0.09s | money_flow_control 0.08s
+2026-09-19 14:44:36,396 | INFO    | 🧾 پوشش Commercial Expert Data سنجیده شد — 1 سفارش یکتا خارج از سورس، از 6 ردیف دارای سفارش.
+2026-09-19 14:44:36,402 | INFO    | 📊 افراز دو محوری:
+2026-09-19 14:44:36,403 | INFO    |    • کل ردیف: 6
+2026-09-19 14:44:36,404 | INFO    |    • بارنامه یکتا: 5
+2026-09-19 14:44:36,406 | INFO    |    • P1 — فاقد بارنامه و سفارش: 1
+2026-09-19 14:44:36,407 | INFO    |    • P2 — فقط بارنامه: 0
+2026-09-19 14:44:36,408 | INFO    |    • P3 — بارنامه و سفارش: 5
+2026-09-19 14:44:36,409 | INFO    |    • M1 — موجود در مقاومت: 5
+2026-09-19 14:44:36,410 | INFO    |    • M2 — فاقد مقاومت، دارای ساتا/کوتاژ: 0
+2026-09-19 14:44:36,412 | INFO    |    • M3 — تعیین تکلیف: 1
+2026-09-19 14:44:37,134 | INFO    | 🏁 خط لوله با موفقیت پایان یافت.
+✅ Supply Position Ledger در Grain سفارش×متریال ساخته می‌شود  → rows=6
+✅ سه سبد کارشناسی و دو موجودی Oracle در lineage مستقل‌اند  → five inventory components
+✅ Case Action Queue واقعی تولید می‌شود  → actions=7
+✅ Timeline صف تخصیص را مرحله مستقل دارد
+✅ ترخیص و ارائه سند بانکی دو Stage مستقل‌اند
+✅ Draft Email با هویت GSI و هشدار بازبینی انسانی ساخته می‌شود  → HTML draft
+✅ هویت فنی پکیج GSI و نسخه از 26.20 عقب نرفته  → 28.0.0
+✅ نام پکیج قدیمی aibl در import فعال وجود ندارد
+✅ قراردادهای ماژولی V26.20+ سازگارند
+
+==============================================================================
+نتیجه: 15 موفق | 0 ناموفق
+==============================================================================
+
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:203: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = series.map(num_safe) if numeric else series
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:206: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df[target] = (df[src].astype("object").where(df[src].notna(), False).astype(bool)
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:184: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s20_derive.py:185: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
+/workspace/scratch/46e9c4ad1cdf/GSI_V28_SQLITE_DWH/gsi/stages/s80_eventlog.py:156: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+  "ORDER_CERTAIN": merged["ORDER_CERTAIN"].fillna(True).values,
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۱) runtime مرورگر، دانه موجودی و COM اوت‌لوک
+██████████████████████████████████████████████████████████████████████████████
+✅ جاوااسکریپت خروجی در scope مشترک معتبر است
+✅ هیچ شناسه‌ای دوبار در سطح سراسری اعلام نشده
+✅ هیچ تابع داخلی فراخوانی‌شده‌ای تعریف‌نشده نیست
+✅ ستون‌های موجودی در رجیستری دانه ثبت شده‌اند
+✅ دانه ستون‌های موجودی متریال است
+✅ جمع موجودی روی fan-out بارنامه دوباره‌شماری نمی‌کند → confirmed=100.0
+✅ رتبه اولویت نزولی و بدون گره است
+✅ خروجی صف اقدام بر PRIORITY رشته‌ای مرتب نمی‌شود
+✅ COM روی نخ جاری مقداردهی می‌شود
+✅ COM در مسیر خطا هم آزاد می‌شود
+✅ هیچ فراخوانی Outlook خارج از مدیر زمینه نمانده → 4 dispatch / 4 session
+
+==============================================================================
+نتیجه: 11 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۲) سیستم طراحی — توکن، کامپوننت، دسترس‌پذیری
+██████████████████████████████████████████████████████████████████████████████
+
+── ۱) UI Basics ──
+✅ پالت هیچ تخلف کنتراستی ندارد
+✅ هر وضعیت سه نقش رنگی جدا دارد
+✅ رنگ تنها حامل معنا نیست: هر وضعیت آیکن و برچسب دارد
+✅ همه فاصله‌ها روی شبکه ۴ پیکسلی‌اند → [0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
+✅ هویت Navy/Teal/Gold حفظ شده
+✅ مقیاس تایپ نزولی و بدون گره است
+✅ متن جاری کف ارتفاع خط ۱٫۵ را دارد → {'body-lg': 1.75, 'body': 1.75, 'small': 1.65, 'caption': 1.55}
+✅ تیتر و عدد درشت فشرده‌اند ولی زیر ۱٫۲ نمی‌روند
+
+── ۲) Auto Layout ──
+✅ اولیه «.stack» تعریف شده
+✅ اولیه «.cluster» تعریف شده
+✅ اولیه «.split» تعریف شده
+✅ اولیه «.grow» تعریف شده
+✅ اولیه «.hug» تعریف شده
+✅ اولیه «.grid-auto» تعریف شده
+✅ هر توکن فاصله کلاس gap دارد
+✅ چیدمان‌ها در خروجی واقعی استفاده می‌شوند
+
+── ۳) Components & Variants ──
+✅ فهرست کامپوننت‌ها ≥ ۱۰ مورد است → 11
+✅ هر کامپوننت حالت‌هایش اعلام شده
+✅ واریانت دکمه «primary» در شیوه‌نامه هست
+✅ واریانت دکمه «decision» در شیوه‌نامه هست
+✅ واریانت دکمه «secondary» در شیوه‌نامه هست
+✅ واریانت دکمه «ghost» در شیوه‌نامه هست
+✅ دکمه‌ی تصمیم از طلایی استفاده می‌کند
+✅ هر وضعیت متغیر رنگی خودش را دارد
+✅ نشان وضعیت رنگ + آیکن + متن می‌دهد
+✅ کامپوننت‌ها ورودی را escape می‌کنند
+✅ حالت خالی همیشه دلیل می‌گوید
+
+── ۴) Responsive ──
+✅ نقطه شکست «sm» تعریف شده
+✅ نقطه شکست «md» تعریف شده
+✅ نقطه شکست «lg» تعریف شده
+✅ نقطه شکست «xl» تعریف شده
+✅ media queryهای چیدمان در شیوه‌نامه هستند
+✅ شبکه بدون media query هم می‌شکند
+✅ viewport meta برای موبایل هست
+✅ چاپ یک نقطه شکست واقعی است
+
+── ۵) Design System ──
+✅ Excel از همان توکن‌ها می‌خواند
+✅ ایمیل از همان توکن‌ها می‌خواند
+✅ HTML از همان توکن‌ها می‌خواند
+✅ پالت‌های رد‌شده قدیمی دیگر در هیچ خروجی نیستند
+✅ سلول رنگی Excel مرز هم‌خانواده می‌گیرد
+
+── ۶) Prototype ──
+✅ تب‌ها قابل فعال‌سازی‌اند
+✅ فیلتر زنده روی همه لایه‌ها اثر می‌گذارد
+✅ صفحه‌بندی جدول کار می‌کند
+✅ استخراج Excel مرورگری هست
+✅ چاپ/PDF از همان DOM
+✅ حالت hover و active تعریف شده
+
+── ۷) UX Flow ──
+✅ نوار مسیر زنجیره تأمین هست
+✅ روایت پیش از جدول می‌آید
+✅ ساختار وضعیت/گره/اقدام هست
+✅ هر نمودار سؤالش را می‌گوید
+✅ Process Explorer بعد از روایت و قبل از جدول است
+✅ مسیرها و عوامل همراه در دسترس‌اند
+✅ صف جاری هم نمایش داده می‌شود، نه فقط گذارهای کامل‌شده
+
+── ۸) Accessibility ──
+✅ حلقه فوکوس فقط برای کیبورد است
+✅ skip-link هست
+✅ landmarkها اعلام شده
+✅ تب‌ها ARIA درست دارند
+✅ شمارنده ردیف به صفحه‌خوان اعلام می‌شود
+✅ هر جدول caption دارد
+✅ prefers-reduced-motion احترام گذاشته می‌شود
+✅ حرکت فقط transform/opacity است
+✅ هیچ محتوایی نامرئی نمی‌ماند
+✅ ناحیه لمسی حداقل ۳۶ پیکسل
+✅ حالت کنتراست اجباری ویندوز پشتیبانی می‌شود
+✅ متن SVG جهتش را از خودش می‌گیرد
+✅ هر نمودار aria-label دارد
+
+── ۹) Dev Handoff ──
+✅ توکن ماشین‌خوان کامل است
+✅ ممیزی دسترس‌پذیری داخل خروجی handoff است
+✅ هر وضعیت کنتراستش را گزارش می‌کند
+✅ گزارش متنی هر نه لایه را پوشش می‌دهد
+✅ متغیرهای CSS قابل استخراج‌اند
+✅ نگاشت Auto Layout فیگما ↔ CSS مستند است
+✅ مرجع فیگما در خروجی ماشین‌خوان هست
+✅ جمع متغیرهای فیگما با فهرست مجموعه‌ها می‌خواند
+✅ یازده صفحه GSI در فیگما نام‌گذاری شده‌اند
+✅ تعداد متغیر رنگ فیگما با تعداد توکن رنگ می‌خواند
+✅ تعداد متغیر تایپ فیگما = چهار ویژگی در هر سبک
+✅ تعداد متغیر فاصله و گردی و نقطه‌شکست می‌خواند
+✅ گزارش متنی به فایل فیگما ارجاع می‌دهد
+
+── قرارداد رنگ ──
+✅ هیچ رنگ هگز دستی در gsi/ و app/ نمانده → پاک
+✅ پالت نمودار Excel همان طیف دسته‌ای است
+✅ رنگ نوارهای وضعیت در Excel از توکن می‌آید
+✅ سلول وضعیت در خروجی Studio کف WCAG را رد نمی‌کند
+✅ «در حال بحرانی شدن» با «بحرانی» اشتباه گرفته نمی‌شود
+✅ چهار لایه بینش هر کدام بالای کف کنتراست‌اند
+✅ قرمز نماهای تأمین همان ink بحرانی است
+✅ رنگ باندهای کتاب قوانین با توکن‌ها یکی است → پاک
+✅ هر هفت باند کتاب قوانین به یک وضعیت سیستم طراحی نگاشت می‌شود
+✅ پالت وضعیت اپ Streamlit از توکن می‌آید
+✅ هر باند اپ آیکن و برچسب دارد، نه فقط رنگ
+✅ طیف قالب‌بندی شرطی از wash وضعیت‌ها می‌آید
+
+── قرارداد اجرایی ──
+✅ جاوااسکریپت خروجی در scope مشترک معتبر است
+✅ هیچ منبع بیرونی بارگذاری نمی‌شود
+
+==============================================================================
+نتیجه: 93 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۳) برداری‌سازی ۳۸، سامانه انبار، پنجره اعتبار قوانین
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+V26.20.2 — برداری‌سازی ۳۸، سامانه انبار، پنجره اعتبار قوانین
+==============================================================================
+
+── ۱) مرحله ۳۸: برداری‌سازی بدون تغییر معنا ──
+✅ هیچ پیمایش ردیف‌به‌ردیفی در کد مرحله نمانده  → پاک
+✅ تبدیل عددی برداری با منطق مرجع یکی است  → 30 مقدار لبه‌ای
+✅ عدد فارسی‌نویس «نامشخص» شمرده نمی‌شود
+✅ عدد عربی‌نویس هم درست خوانده می‌شود
+✅ Missing با Zero یکی نمی‌شود  → [nan, 0.0, nan, 0.0]
+✅ NaN به رشته 'nan' تبدیل نمی‌شود
+2026-09-19 14:44:39,318 | INFO    | 📦 [supply-position] کامل 1 | ناقص 2 | فاقد داده 1 | تعارض 1; Missing هرگز Zero نشده است.
+✅ جمع قطعی فقط وقتی هر پنج مؤلفه هست ساخته می‌شود  → [480.0, nan, nan, nan, 18.0]
+✅ حداقل قابل اثبات از مؤلفه‌های موجود ساخته می‌شود
+✅ وضعیت‌ها درست تفکیک می‌شوند  → ['COMPLETE', 'PARTIAL', 'MISSING', 'PARTIAL', 'CONFLICT']
+✅ ردیف بدون تعارض، CONFLICT اعلام نمی‌شود
+✅ شکاف‌ها با نام و ترتیب درست گزارش می‌شوند  → Oracle/SAPCO، Expert/نزد سازنده، Expert/در راه، Expert/گمرک
+✅ پوشش داده درصد درست می‌دهد  → [100.0, 80.0, 0.0, 20.0, 100.0]
+
+── ۲) سامانه جامع انبارها ──
+✅ بسته قوانین انبار بارگذاری می‌شود
+✅ هشت وضعیت اظهار تعریف شده است  → ['DECLARED', 'LATE', 'OVERDUE', 'CRITICAL_GAP', 'SEQUENCE_CONFLICT', 'PENDING', 'NOT_CLEARED', 'UNKNOWN']
+✅ هیچ مهلت انبار خودکار اعمال نمی‌شود  → {'declare_inbound_days': False, 'declare_outbound_days': False}
+✅ مهلت‌های قانونی needs_verification علامت خورده‌اند
+✅ آستانه‌های پایش صریحاً internal‌اند، نه قاعده قانونی
+✅ قبض انبار به فریم اصلی می‌رسد
+2026-09-19 14:44:39,444 | INFO    | 🏭 [warehouse] اظهارشده 2 | با تأخیر 1 | شکاف شاهد 1 | تناقض تاریخ 1 | در مهلت 1 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+✅ هر شش سناریو وضعیت درست می‌گیرند  → ['DECLARED', 'LATE', 'CRITICAL_GAP', 'PENDING', 'DECLARED', 'SEQUENCE_CONFLICT']
+✅ فاصله اظهار برای ردیف به‌موقع محاسبه می‌شود  → 2.0
+✅ عمر شکاف فقط برای ردیف بدون قبض انبار پر می‌شود
+✅ فاصله منفی هرگز به‌عنوان مدت گزارش نمی‌شود  → nan
+✅ ردیف بدون تاریخ ترخیص، شکاف شمرده نمی‌شود
+✅ هر وضعیت برچسب فارسی دارد
+✅ مبنای تاریخ ترخیص در خروجی ثبت می‌شود
+✅ پایه قاعده در خروجی اعلام می‌شود که خودکار نیست
+2026-09-19 14:44:39,457 | INFO    | 🏭 [warehouse] اظهارشده 0 | با تأخیر 0 | شکاف شاهد 0 | تناقض تاریخ 0 | در مهلت 0 | نامشخص 0؛ مهلت قانونی اعمال نشد (needs_verification).
+✅ بدون داده، Unknown اعلام می‌شود نه شکاف  → ['NOT_CLEARED', 'NOT_CLEARED']
+✅ آهنگ رنگی هر وضعیت در سیستم طراحی وجود دارد  → {'unknown', 'warning', 'serious', 'critical', 'neutral', 'good'}
+✅ هر وضعیت YAML آهنگ رنگی دارد
+
+── ۳) پنجره اعتبار قوانین (expires_on) ──
+✅ قاعده معتبر با active() برگردانده می‌شود
+✅ قاعده منقضی با active() برگردانده نمی‌شود
+✅ get() همچنان قاعده منقضی را برای نمایش می‌دهد  → ممیزی باید بتواند قاعده منقضی را ببیند، وگرنه ناپدید می‌شود
+✅ is_expired تاریخ مرجع را می‌سنجد
+✅ شمارش روز تا انقضا درست است  → 4 / -1
+✅ قاعده بی‌انقضا همیشه معتبر است
+✅ ممیزی انقضا در تاریخ گذشته خالی و در آینده پر است  → 0 / 2
+✅ قاعده منقضی سطح error دارد، نه warning
+✅ پیش‌هشدار انقضا پیش از تاریخ انقضا می‌آید
+✅ پیش‌هشدار سطح warning دارد
+✅ پنجره پیش‌هشدار یک عدد مستند است  → 30
+✅ پیام انقضا تاریخ و فاصله را می‌گوید
+✅ داخل پنجره، نسخه موقت انتخاب می‌شود
+✅ پس از انقضا، به نسخه پیشین برمی‌گردد نه نسخه منقضی  → قدیمی
+✅ جدول پنجره اعتبار ساخته می‌شود و ستون‌های لازم را دارد  → ['بسته', 'قاعده', 'موضوع', 'از تاریخ', 'تا تاریخ', 'روز باقی\u200cمانده', 'وضعیت', 'اعمال خودکار', 'اعتبار منبع']
+✅ جدول از نزدیک‌ترین انقضا مرتب می‌شود
+✅ خلاصه سلامت، انقضای نزدیک را اعلام می‌کند  → ['وضعیت داده امروز', 'سورس سالم / ناقص / خراب', 'قاعده نزدیک انقضا']
+✅ doctor پنجره اعتبار را بررسی می‌کند
+
+==============================================================================
+نتیجه: 47 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۴) مخاطب، لحن و صداقت خروجی
+██████████████████████████████████████████████████████████████████████████████
+==============================================================================
+V27 — مخاطب، لحن و صداقت خروجی
+==============================================================================
+
+── ۱) پروفایل مخاطب ──
+✅ چهار پروفایل تعریف شده است  → ['expert', 'manager', 'executive', 'analyst']
+✅ پیش‌فرض کارشناس است، چون پرتعدادترین خواننده است
+✅ هر پروفایل پرسشی دارد که خواننده‌اش صبح می‌پرسد
+✅ هر پروفایل می‌گوید برای چه کسی است
+✅ هرچه بالاتر، ردیف کمتر و یافته کمتر  → ردیف 200/80/10 · یافته 5/4/3
+✅ عمق روایت برای کارشناس بیشترین و برای مدیر ارشد کمترین است
+✅ مدیر ارشد جدول بلند نمی‌گیرد
+✅ هیچ پروفایل عملیاتی سنجه کیفیت داده نمی‌بیند
+✅ فقط تحلیل‌گر کیفیت داده می‌بیند
+✅ بخش quality فقط در پروفایل تحلیل‌گر است
+✅ انتخاب با متغیر محیطی کار می‌کند
+✅ نام ناشناخته به پیش‌فرض برمی‌گردد، نه خطا
+
+── ۲) لحن ──
+✅ بزرگ‌نمایی خنثی می‌شود
+✅ ادعای علّی به همبستگی تبدیل می‌شود
+✅ واژگان اتهامی به «مانع» تبدیل می‌شود
+✅ علامت تعجب پیاپی جمع می‌شود
+✅ عدد بدون مخرج منتشر نمی‌شود  → ۱۴۷ قلم از ۱٬۲۰۴
+✅ سهم همیشه با صورت و مخرج می‌آید
+✅ مخرج صفر، درصد نمی‌سازد
+✅ نمونه کوچک صریحاً کم اعلام می‌شود
+✅ نبود شاهد، سلامت گزارش نمی‌شود
+✅ چهار حالت ندانستن از هم جدا مانده‌اند
+✅ اقدام بدون مالک، «تعیین نشده» می‌گوید نه حدس
+✅ یافته بدون اقدام، خودش را لو می‌دهد
+✅ تیتر وقتی چیزی نیست، صادق می‌ماند
+✅ ارقام فارسی با جداکننده درست
+
+── ۳) خروجی HTML، مخاطب‌محور ──
+✅ نمای «کارشناس» ساخته می‌شود
+✅ نمای «مدیر میانی» ساخته می‌شود
+✅ نمای «مدیر ارشد» ساخته می‌شود
+✅ نمای «تحلیل‌گر داده» ساخته می‌شود
+✅ سه نمای عملیاتی در هر فایل هست تا خواننده جابه‌جا شود
+✅ نمای تحلیل‌گر فقط در فایل تحلیل‌گر پیشنهاد می‌شود
+✅ پرسش هر مخاطب در صفحه نوشته می‌شود
+✅ بخش‌ها با data-section علامت خورده‌اند تا جابه‌جایی کار کند
+✅ اندازه صفحه از پروفایل می‌آید، نه عدد ثابت
+✅ انتخاب مخاطب ماندگار می‌شود ولی فقط در مرورگر خود خواننده
+
+── ۴) آنچه عمداً دیده نمی‌شود ──
+✅ نمای «کارشناس» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ نمای «مدیر میانی» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ نمای «مدیر ارشد» سنجه کیفیت داده را نشان نمی‌دهد  → پاک
+✅ این اعداد در شیت سلامت سیستم جای خود را دارند
+
+── ۵) بدون ادعای بیش از داده ──
+✅ «هیچ ریسکی نیست» ادعا نمی‌شود؛ دامنه سنجش اعلام می‌شود
+✅ ریسک چندبعدی سنجیده می‌شود، نه فقط موجودی
+✅ تنوع مسیر قطعی تفسیر نمی‌شود
+✅ همبستگی، علت نامیده نمی‌شود
+✅ دامنه جدول‌های فرآیند صریح است
+✅ «انتظار» با «زمان کار» یکی گرفته نمی‌شود
+
+==============================================================================
+نتیجه: 46 موفق | 0 ناموفق
+==============================================================================
+
+
+██████████████████████████████████████████████████████████████████████████████
+█  ۲۵) فضای شخصی رمزگذاری‌شده و Snapshot بدون IP
+██████████████████████████████████████████████████████████████████████████████
+نتیجه: 32 موفق | 0 ناموفق
+
+test_launcher_renders_from_shared_store_to_local_cache (__main__.PersonalPublisherTests.test_launcher_renders_from_shared_store_to_local_cache) ... ok
+test_personal_html_has_local_live_protocol_not_http_api (__main__.PersonalPublisherTests.test_personal_html_has_local_live_protocol_not_http_api) ... ok
+test_personal_html_reads_shared_store_and_keeps_preferences (__main__.PersonalPublisherTests.test_personal_html_reads_shared_store_and_keeps_preferences) ... ok
+test_publish_scopes_each_user (__main__.PersonalPublisherTests.test_publish_scopes_each_user) ... ok
+test_shared_files_are_only_encrypted_store_files (__main__.PersonalPublisherTests.test_shared_files_are_only_encrypted_store_files) ... ok
+test_audit_does_not_store_value (__main__.PersonalStoreTests.test_audit_does_not_store_value) ... ok
+test_central_publish_fails_closed_without_master_even_if_user_key_exists (__main__.PersonalStoreTests.test_central_publish_fails_closed_without_master_even_if_user_key_exists) ... ok
+test_employee_folder_is_canonical_eight_digits (__main__.PersonalStoreTests.test_employee_folder_is_canonical_eight_digits) ... ok
+test_encrypted_file_does_not_expose_plaintext (__main__.PersonalStoreTests.test_encrypted_file_does_not_expose_plaintext) ... ok
+test_from_env_prefers_user_key_without_master (__main__.PersonalStoreTests.test_from_env_prefers_user_key_without_master) ... ok
+test_identity_fails_closed_when_missing (__main__.PersonalStoreTests.test_identity_fails_closed_when_missing) ... ok
+test_identity_resolution_never_uses_ip (__main__.PersonalStoreTests.test_identity_resolution_never_uses_ip) ... ok
+test_integrity_check (__main__.PersonalStoreTests.test_integrity_check) ... ok
+test_local_config_restores_root_identity_and_user_key_without_env (__main__.PersonalStoreTests.test_local_config_restores_root_identity_and_user_key_without_env) ... ok
+test_master_key_file_must_not_be_inside_profile_root (__main__.PersonalStoreTests.test_master_key_file_must_not_be_inside_profile_root) ... ok
+test_per_user_key_can_open_only_its_user_store (__main__.PersonalStoreTests.test_per_user_key_can_open_only_its_user_store) ... ok
+test_profile_persists_between_store_instances (__main__.PersonalStoreTests.test_profile_persists_between_store_instances) ... ok
+test_snapshot_is_separate_from_profile (__main__.PersonalStoreTests.test_snapshot_is_separate_from_profile) ... ok
+test_snapshot_replace_drops_stale_keys (__main__.PersonalStoreTests.test_snapshot_replace_drops_stale_keys) ... ok
+test_tamper_is_detected (__main__.PersonalStoreTests.test_tamper_is_detected) ... ok
+test_user_isolation_uses_distinct_crypto_context (__main__.PersonalStoreTests.test_user_isolation_uses_distinct_crypto_context) ... ok
+test_windows_installer_uses_local_launcher_and_recommends_key_file (__main__.PersonalStoreTests.test_windows_installer_uses_local_launcher_and_recommends_key_file) ... ok
+test_workspace_defaults_and_saved_preferences (__main__.PersonalStoreTests.test_workspace_defaults_and_saved_preferences) ... ok
+test_wrong_key_fails_closed (__main__.PersonalStoreTests.test_wrong_key_fails_closed) ... ok
+test_atomic_write_retries_before_giving_up (__main__.V27_1_RegressionTests.test_atomic_write_retries_before_giving_up)
+روی ویندوز/SMB، os.replace وقتی خواننده‌ای فایل را باز دارد خطا می‌دهد. ... ok
+test_audience_caps_reach_the_personal_html (__main__.V27_1_RegressionTests.test_audience_caps_reach_the_personal_html)
+تغییر مخاطب باید واقعاً تعداد سطر و یافته را عوض کند، نه فقط ذخیره شود. ... ok
+test_broken_user_key_is_not_reported_as_master_key (__main__.V27_1_RegressionTests.test_broken_user_key_is_not_reported_as_master_key)
+پیام خطا باید همان فایلی را نام ببرد که خراب است. ... ok
+test_doctor_checks_the_shared_store (__main__.V27_1_RegressionTests.test_doctor_checks_the_shared_store)
+تنها ابزار تشخیص این استقرار باید پوشه مشترک را هم بررسی کند. ... ok
+test_handoff_points_at_the_real_figma_file (__main__.V27_1_RegressionTests.test_handoff_points_at_the_real_figma_file) ... ok
+test_namespace_and_get_share_one_error_contract (__main__.V27_1_RegressionTests.test_namespace_and_get_share_one_error_contract)
+هر دو باید ProfileIntegrityError بدهند، نه یکی JSONDecodeError خام. ... ok
+test_numpy_bool_stays_boolean (__main__.V27_1_RegressionTests.test_numpy_bool_stays_boolean)
+np.bool_ نباید به رشته «True»/«False» تبدیل شود؛ «False» رشته‌ای truthy است. ... ok
+test_vanished_share_gives_an_actionable_error (__main__.V27_1_RegressionTests.test_vanished_share_gives_an_actionable_error)
+قطع شدن درایو شبکه نباید FileNotFoundError خام روی فایل .lock بدهد. ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 0.507s
+
+OK
+
+
+══════════════════════════════════════════════════════════════════════════════
+جمع کل: 816 تست موفق | 0 ناموفق
+✅ همه تست‌ها سبز — سیستم آماده اجرا روی داده واقعی است.
+══════════════════════════════════════════════════════════════════════════════

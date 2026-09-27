@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Field Intelligence Sources — منابع میدانی/آموزشی برای کشف Signal
+# هیچ پیام تلگرامی به‌تنهایی Rule الزام‌آور یا Fraud Finding ایجاد نمی‌کند.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: intelligence_sources
+version: "1.0"
+updated_at: "2026-09-17"
+
+trust_model:
+  binding_levels:
+    - code: OFFICIAL_BINDING
+      fa: "رسمی و لازم‌الاتباع"
+      can_auto_enforce: true
+      examples: ["بانک مرکزی", "گمرک جمهوری اسلامی ایران", "سامانه جامع تجارت/وزارت صمت", "هیئت وزیران", "روزنامه رسمی"]
+    - code: OFFICIAL_OPERATIONAL
+      fa: "اطلاعیه رسمی عملیاتی سامانه/دستگاه"
+      can_auto_enforce: true
+      requires_effective_date: true
+    - code: VERIFIED_FIELD_INTELLIGENCE
+      fa: "اطلاع میدانی صحت‌سنجی‌شده"
+      can_auto_enforce: false
+      minimum_corroboration: "اصل بخشنامه/اطلاعیه رسمی یا حداقل دو شاهد مستقل معتبر"
+    - code: FIELD_SIGNAL
+      fa: "سیگنال میدانی تأییدنشده"
+      can_auto_enforce: false
+      action: "فقط Investigation Lead / هشدار داده‌ای"
+
+verification_workflow:
+  - "ذخیره متن/تصویر/فایل پیام و تاریخ انتشار"
+  - "استخراج شماره بخشنامه، مرجع صادرکننده، تاریخ اثر و دامنه شمول"
+  - "تطبیق با منبع رسمی بانک مرکزی/گمرک/NTSW/مصوبه"
+  - "ثبت نسخه Rule با effective_from / expires_on / eligibility"
+  - "عدم اعمال خودکار در صورت نبود اصل سند یا ابهام در دامنه شمول"
+
+telegram_sources:
+  - id: iranexpconfederation
+    url: "https://t.me/iranexpconfederation"
+    level: FIELD_SIGNAL
+    scope: ["صادرات و واردات", "بخشنامه‌ها", "رویه‌های تجاری"]
+  - id: arziiran2
+    url: "https://t.me/arziiran2"
+    level: FIELD_SIGNAL
+    scope: ["ارز", "رفع تعهد", "بانک مرکزی", "سامانه جامع تجارت"]
+  - id: taahodatearzibankgomrok1400
+    url: "https://t.me/taahodatearzibankgomrok1400"
+    level: FIELD_SIGNAL
+    scope: ["تعهدات ارزی", "بانک", "گمرک", "ثبت سفارش"]
+  - id: educationtegarat
+    url: "https://t.me/educationtegarat"
+    level: FIELD_SIGNAL
+    scope: ["آموزش سامانه جامع تجارت", "خطاهای عملیاتی", "رویه کاربری"]
+  - id: hoghoghearzi
+    url: "https://t.me/hoghoghearzi"
+    level: FIELD_SIGNAL
+    scope: ["حقوق ارزی", "تفسیر مقررات", "رفع تعهد"]
+
+bale_sources:
+  - id: ntsw_ir
+    url: "https://ble.ir/ntsw_ir"
+    level: OFFICIAL_OPERATIONAL
+    scope: ["سامانه جامع تجارت", "اطلاعیه عملیاتی NTSW", "تغییرات کاربری و فرآیندی"]
+    note: "برای تبدیل به Rule الزام‌آور، اصل ابلاغ/اطلاعیه و تاریخ اثر در Evidence Registry نگهداری شود."
+  - id: customs_commercial
+    url: "https://ble.ir/customs_commercial"
+    level: FIELD_SIGNAL
+    scope: ["مقررات گمرکی", "بازرگانی", "ترخیص", "بخشنامه‌ها"]
+    note: "منبع کشف Signal؛ متن الزام‌آور باید با گمرک/وزارت صمت/بانک مرکزی تطبیق شود."
+
+policy:
+  never_from_field_signal_only:
+    - "اعلام قطعی تقلب یا سوءنیت"
+    - "محاسبه جریمه قانونی"
+    - "بستن پرونده رفع تعهد"
+    - "اعمال مهلت قانونی جدید"
+    - "مجاز دانستن جابه‌جایی پول بین پرونده‌ها"
+  allowed_outputs:
+    - "Evidence Gap"
+    - "Investigation Signal"
+    - "پیشنهاد صحت‌سنجی Rule"
+    - "روایت عملیاتی با برچسب منبع و سطح اعتبار"

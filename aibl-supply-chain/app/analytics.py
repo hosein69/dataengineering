@@ -13,9 +13,13 @@ from __future__ import annotations
 from typing import Callable, Dict, List
 
 import pandas as pd
-import streamlit as st
 
-from .theme import SEQUENTIAL, SERIES, STATUS
+try:
+    import streamlit as st
+except ImportError:  # pure helpers/tests must remain importable without UI extras
+    st = None
+
+from .theme import SURFACE, SEQUENTIAL, SERIES, STATUS
 
 try:
     import plotly.graph_objects as go
@@ -45,6 +49,8 @@ def _is_numeric(s: pd.Series) -> bool:
 
 
 def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
+    if st is None:
+        raise RuntimeError("Streamlit is required to render the Analytics UI.")
     if fdf.empty:
         st.info("فیلتر فعلی هیچ ردیفی برنمی‌گرداند.")
         return
@@ -123,7 +129,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
             fig = go.Figure(go.Bar(
                 x=ser.values, y=[_short(i, 34) for i in ser.index.astype(str)],
                 orientation="h", customdata=list(ser.index.astype(str)),
-                marker=dict(color=SERIES[0], line=dict(color="#fcfcfb", width=2)),
+                marker=dict(color=SERIES[0], line=dict(color=SURFACE, width=2)),
                 text=[f"{v:,.1f}" if isinstance(v, float) else f"{v:,}" for v in ser.values],
                 textposition="outside",
                 hovertemplate="%{customdata}<br>" + agg_name + " %{x:,.1f}<extra></extra>"))
@@ -139,7 +145,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
         st.dataframe(show, use_container_width=True, hide_index=True, height=320)
         st.download_button("⬇ دانلود جدول متقاطع (CSV)",
                            show.to_csv(index=False).encode("utf-8-sig"),
-                           file_name="AIBL_pivot.csv", mime="text/csv")
+                           file_name="GSI_pivot.csv", mime="text/csv")
 
     # ── توزیع یک ستون عددی ──
     with st.container(border=True):
@@ -158,7 +164,7 @@ def render(fdf: pd.DataFrame, catalog, lab: Callable[[str], str]) -> None:
         if HAS_PLOTLY:
             fig = go.Figure(go.Histogram(
                 x=v, nbinsx=min(30, max(5, int(len(v) ** 0.5) * 3)),
-                marker=dict(color=SEQUENTIAL[3], line=dict(color="#fcfcfb", width=2)),
+                marker=dict(color=SEQUENTIAL[3], line=dict(color=SURFACE, width=2)),
                 hovertemplate="%{x}<br>%{y} ردیف<extra></extra>"))
             med = float(v.median())
             fig.add_vline(x=med, line_width=2, line_dash="dash",

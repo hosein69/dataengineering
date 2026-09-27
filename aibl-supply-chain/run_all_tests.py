@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""اجرای هر سه مجموعه تست.
+"""اجرای همه مجموعه‌های تست ثبت‌شده.
 
     python run_all_tests.py
 """
@@ -17,6 +17,12 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SUITES = [
+    ("۲۹) دیتاورهوس و مخاطبان V28", "tests/test_warehouse_v28.py"),
+    ("۲۸) رفع خطای زمان اجرا", "tests/test_runtime_v27_2_1.py"),
+    ("۲۷) مرکز مخاطبان و منابع", "tests/test_control_center_v27_2.py"),
+    ("۲۶) خطاهای شبکه و ذخیره‌سازی", "tests/test_network_outlook_debugged.py"),
+    ("۰) اتحاد شیت‌های اوراکل (V28.1)", "tests/test_oracle_union_v28_1.py"),
+    ("۰) زنجیره تعهد ارزی (V28.1)", "tests/test_fx_obligation_v28_1.py"),
     ("۱) الگوریتمی و بیزینسی", "tests/test_validation.py"),
     ("۲) کتابخانه قوانین و سورس مقاومت", "tests/test_rules_and_moghavemat.py"),
     ("۳) مقاومت قطعه و بحرانی بودن", "tests/test_criticality.py"),
@@ -26,17 +32,30 @@ SUITES = [
     ("۷) سیستمی و استقرار", "tests/test_import_hygiene.py"),
     ("۸) ادعاهای مستندات", "tests/test_doc_claims.py"),
     ("۹) بسته ایمیل مدیریتی", "tests/test_email_report.py"),
-    ("۱۰) AIBL Studio ماژولار", "tests/test_studio.py"),
+    ("۱۰) GSI Studio ماژولار", "tests/test_studio.py"),
     ("۱۱) سازنده گزارش و صحت دانه‌ای", "tests/test_report_builder.py"),
     ("۱۲) حوزه مسئولیت، مالکیت قطعه و نماهای تأمین", "tests/test_supply_views.py"),
     ("۱۳) نقاط کور سیستمی و فرآیندی", "tests/test_system_health.py"),
+    ("۱۴) Oracle چندشیتی V26.14", "tests/test_oracle_multisheet_v26_14.py"),
+    ("۱۵) Studio V26.12", "tests/test_studio_v26_12.py"),
+    ("۱۶) HTML Process V26.15", "tests/test_html_export_v26_15.py"),
+    ("۱۷) FX Traceability V26.16", "tests/test_fx_traceability_v26_16.py"),
+    ("۱۸) برج کنترل جریان پول V26.18", "tests/test_money_flow_v26_18.py"),
+    ("۱۹) انتقال دانش نسل قدیم V26.19", "tests/test_legacy_knowledge_v26_19.py"),
+    ("۲۰) صف تخصیص، اقدام پرونده و موجودی V26.20", "tests/test_v26_20_case_action_inventory.py"),
+    ("۲۱) runtime مرورگر، دانه موجودی و COM اوت‌لوک", "tests/test_v26_20_runtime_and_grain.py"),
+    ("۲۲) سیستم طراحی — توکن، کامپوننت، دسترس‌پذیری", "tests/test_design_system.py"),
+    ("۲۳) برداری‌سازی ۳۸، سامانه انبار، پنجره اعتبار قوانین",
+     "tests/test_v26_20_2_engine_hardening.py"),
+    ("۲۴) مخاطب، لحن و صداقت خروجی", "tests/test_v27_audience_and_voice.py"),
+    ("۲۵) فضای شخصی رمزگذاری‌شده و Snapshot بدون IP", "tests/test_personalization_v27_1.py"),
 ]
 
 
 #: سقف زمان هر مجموعه. تست تولیدی نباید بدون سقف اجرا شود: یک حلقه
 #: بی‌پایان یا یک I/O معلق، اجرای CI را تا ابد نگه می‌دارد و کسی نمی‌فهمد
 #: کدام مجموعه گیر کرده. با سقف، خروجی صریح TIMEOUT می‌شود.
-SUITE_TIMEOUT_S = int(os.environ.get("AIBL_TEST_TIMEOUT", "600"))
+SUITE_TIMEOUT_S = int(os.environ.get("GSI_TEST_TIMEOUT", "600"))
 
 
 def main() -> int:

@@ -5,9 +5,9 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path: sys.path.insert(0, ROOT)
 import tempfile
 import pandas as pd
-from aibl.studio_core.filters import FilterState, apply_filters
-from aibl.studio_core.html_export import build_dynamic_html
-from aibl.studio_core.excel_export import build_custom_excel
+from gsi.studio_core.filters import FilterState, apply_filters
+from gsi.studio_core.html_export import build_dynamic_html
+from gsi.studio_core.excel_export import build_custom_excel
 PASS=[]; FAIL=[]
 def check(name, cond, detail=""):
     (PASS if cond else FAIL).append(name)

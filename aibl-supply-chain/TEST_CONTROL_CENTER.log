@@ -1,0 +1,23 @@
+test_cluster_import_keeps_template (__main__.CenterTests.test_cluster_import_keeps_template) ... ok
+test_defaults_revision_conflict (__main__.CenterTests.test_defaults_revision_conflict) ... ok
+test_draft_never_sends (__main__.CenterTests.test_draft_never_sends) ... ok
+test_drift_preserves_config (__main__.CenterTests.test_drift_preserves_config) ... ok
+test_duplicate_header (__main__.CenterTests.test_duplicate_header) ... ok
+test_duplicate_identity (__main__.CenterTests.test_duplicate_identity) ... ok
+test_inactive_member (__main__.CenterTests.test_inactive_member) ... ok
+test_membership_integrity (__main__.CenterTests.test_membership_integrity) ... ok
+test_missing_rows_preserved (__main__.CenterTests.test_missing_rows_preserved) ... ok
+test_partial_invalid_file (__main__.CenterTests.test_partial_invalid_file) ... ok
+test_personal_store_unchanged_on_export (__main__.CenterTests.test_personal_store_unchanged_on_export) ... ok
+test_raw_archive_and_idempotency (__main__.CenterTests.test_raw_archive_and_idempotency) ... ok
+test_restore_revision (__main__.CenterTests.test_restore_revision) ... ok
+test_snapshot_required (__main__.CenterTests.test_snapshot_required) ... ok
+test_template_rejects_attribute_access (__main__.CenterTests.test_template_rejects_attribute_access) ... ok
+test_unknown_columns_not_in_config (__main__.CenterTests.test_unknown_columns_not_in_config) ... ok
+test_xlsx_codes (__main__.CenterTests.test_xlsx_codes) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.097s
+
+OK
+نتیجه: 17 موفق | 0 شکست

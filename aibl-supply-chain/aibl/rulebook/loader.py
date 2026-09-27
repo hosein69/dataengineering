@@ -285,16 +285,40 @@ class RuleBook:
         return "", ""
 
     def transport_mode(self, text: Any) -> str:
+        """تبدیل مقدار خام/نام فایل/شیت به کد استاندارد حمل.
+
+        تطبیق ابتدا دقیق و سپس alias است. «Land» به‌صورت صریح ROAD است؛
+        این مورد مهم است چون در سورس ترخیص نام فایل خودش نوع حمل را مشخص می‌کند.
+        """
         s = str(text or "").strip().lower()
-        if not s:
+        if not s or s in ("nan", "none", "nat", "<na>"):
             return ""
         for m in self.get("transport.modes", []) or []:
-            if s == m["code"].lower():
+            if s == str(m["code"]).lower():
+                return m["code"]
+            if s == str(m.get("fa", "")).strip().lower():
                 return m["code"]
             for a in m.get("aliases", []) or []:
-                if str(a).lower() in s:
+                if s == str(a).strip().lower() or str(a).strip().lower() in s:
                     return m["code"]
+        # نام فایل/شیت ممکن است چند کلمه داشته باشد.
+        # این fallback فقط برای tokenهای صریح حمل است.
+        token_map = {
+            "land": "ROAD", "road": "ROAD", "truck": "ROAD",
+            "air": "AIR", "sea": "SEA", "ocean": "SEA",
+            "rail": "RAIL",
+        }
+        for token, code in token_map.items():
+            if re.search(rf"(?<![a-z]){re.escape(token)}(?![a-z])", s):
+                return code
         return ""
+
+    def transport_mode_fa(self, code: Any) -> str:
+        c = str(code or "").strip().upper()
+        for m in self.get("transport.modes", []) or []:
+            if str(m.get("code", "")).upper() == c:
+                return str(m.get("fa") or c)
+        return c
 
     def fiscal_year_start(self) -> date:
         v = self.get("fx_governance.fiscal_year.starts_on")

@@ -1,0 +1,12 @@
+AIBL 26.16.0 — Final validation
+
+Doctor: 0 errors; manifest fingerprints valid (99 package files).
+Mandatory regression checks: 491 passed.
+Optional browser check: 1 Chromium test may skip when Chromium is unavailable/unhealthy.
+Registered test files: 18.
+Pipeline smoke test: 13/13 sources loaded; 6 rows x 409 columns final frame.
+Official workbook: 18 sheets; System Health and Management Trend present.
+KPI history CSV: created successfully.
+Thin orchestrator contract: 298 effective lines (<300).
+
+Notes: Doctor warnings about inaccessible corporate network paths are expected outside the organization network. jdatetime is optional because AIBL has an internal Jalali converter.

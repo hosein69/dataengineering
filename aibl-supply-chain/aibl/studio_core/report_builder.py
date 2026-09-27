@@ -11,7 +11,7 @@
 """
 from __future__ import annotations
 
-__contract__ = 1
+__contract__ = 3
 
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +24,7 @@ from .excel_export import OfficialReportOverwrite, build_custom_excel
 from .grain import fanout, integrity_report, summarize
 from .html_export import build_dynamic_html
 from .pdf_export import html_to_pdf
+from .access_control import AccessScope, apply_row_scope, filter_fields
 
 
 @dataclass
@@ -38,6 +39,20 @@ class ReportSpec:
     tables: bool = True
     max_rows: int = 0                 # صفر یعنی از قالب بخوان
     file_stem: str = "AIBL Report"
+    # تب‌های سفارشی مشترک بین HTML و Excel:
+    # [{"title": "...", "fields": [...], "max_rows": 5000}]
+    tabs: List[Dict] = field(default_factory=list)
+    # نمودارهای HTML و ایمیل مستقل انتخاب می‌شوند.
+    html_charts: List[str] = field(default_factory=list)
+    email_charts: List[str] = field(default_factory=list)
+    # کنترل دسترسی پیش از ساخت artifact؛ فیلتر داخل HTML امنیت محسوب نمی‌شود.
+    persona: str = "expert"
+    departments: List[str] = field(default_factory=list)
+    experts: List[str] = field(default_factory=list)
+    allowed_fields: List[str] = field(default_factory=list)
+    deny_sensitive: bool = True
+    # Snapshot lineage written into the HTML artifact for auditability.
+    warehouse_run_id: str = ""
 
 
 @dataclass
@@ -106,14 +121,35 @@ def _section_frames(df: pd.DataFrame, extras: Dict, sections: List[str],
     return out
 
 
+def _filtered_process_extras(extras: Dict, df: pd.DataFrame) -> Dict:
+    out=dict(extras or {}); keys=set()
+    for c in ("CASE_KEY","_CASE_KEY"):
+        if c in df.columns: keys.update(df[c].dropna().astype(str).str.strip().replace("",pd.NA).dropna().tolist())
+    if not keys:return out
+    for name in ("eventlog","case_table","conformance_cases"):
+        t=out.get(name)
+        if isinstance(t,pd.DataFrame) and not t.empty:
+            kc="_CASE_KEY" if "_CASE_KEY" in t.columns else ("CASE_KEY" if "CASE_KEY" in t.columns else None)
+            if kc:out[name]=t[t[kc].astype(str).isin(keys)].copy()
+    ev=out.get("eventlog")
+    if isinstance(ev,pd.DataFrame) and not ev.empty and {"_CASE_KEY","ACTIVITY_FA","EVENTTIME"}.issubset(ev.columns):
+        e=ev.copy();e["EVENTTIME"]=pd.to_datetime(e["EVENTTIME"],errors="coerce");e=e.sort_values(["_CASE_KEY","EVENTTIME"]);e["_NEXT"]=e.groupby("_CASE_KEY")["ACTIVITY_FA"].shift(-1);e["_NEXT_TIME"]=e.groupby("_CASE_KEY")["EVENTTIME"].shift(-1);x=e.dropna(subset=["_NEXT","EVENTTIME","_NEXT_TIME"]).copy();x["WAIT"]=(x["_NEXT_TIME"]-x["EVENTTIME"]).dt.total_seconds()/86400
+        if not x.empty:out["bottlenecks"]=x.groupby(["ACTIVITY_FA","_NEXT"]).agg(**{"میانگین روز":("WAIT","mean"),"تعداد پرونده":("_CASE_KEY","nunique")}).reset_index().rename(columns={"ACTIVITY_FA":"از فعالیت","_NEXT":"به فعالیت"}).sort_values("میانگین روز",ascending=False)
+    return out
+
 def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
           labels: Optional[Dict[str, str]] = None,
           out_dir: str | Path = ".") -> ReportResult:
     """گزارش را در قالب‌های خواسته‌شده می‌سازد."""
     t = tpl.get(spec.template)
     labels = labels or {}
+    scope = AccessScope(persona=spec.persona, departments=list(spec.departments),
+                        experts=list(spec.experts), allowed_fields=list(spec.allowed_fields),
+                        deny_sensitive=spec.deny_sensitive)
+    df = apply_row_scope(df, scope)
     sections = t.active_sections(spec.visuals, spec.tables)
-    fields = [c for c in (spec.fields or t.default_fields) if c in df.columns]
+    requested_fields = filter_fields((spec.fields or t.default_fields), scope)
+    fields = [c for c in requested_fields if c in df.columns]
     if not fields:
         fields = [c for c in t.default_fields if c in df.columns] or list(df.columns[:10])
     max_rows = spec.max_rows or t.max_rows
@@ -133,7 +169,10 @@ def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
         df, spec.ref_date, title=spec.title, max_rows=max_rows,
         selected_fields=fields, labels=labels,
         template_title=f"{t.icon} {t.title}", subtitle=subtitle,
-        show_visuals=spec.visuals and ("criticality" in sections))
+        show_visuals=spec.visuals, show_tables=spec.tables,
+        show_process=any(x in sections for x in ("bottlenecks", "variants", "conformance", "eventlog")),
+        tabs=spec.tabs, charts=(spec.html_charts or spec.email_charts), process_extras=_filtered_process_extras(extras, df),
+        lineage={"warehouse_run_id": spec.warehouse_run_id} if spec.warehouse_run_id else None)
 
     if "html" in spec.formats:
         p = out_dir / f"{spec.ref_date}_{stem}.html"
@@ -152,8 +191,9 @@ def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
                 modules.append("table")
             build_custom_excel(df, p, modules, spec.ref_date,
                                max_rows=max_rows, selected_fields=fields,
-                               field_labels=labels)
+                               field_labels=labels, email_charts=(spec.html_charts or spec.email_charts))
             _append_sheets(p, frames)
+            _append_tab_sheets(p, df, spec.tabs, labels, max_rows)
             res.files["excel"] = p
             res.messages.append(f"Excel: {p.name}")
         except OfficialReportOverwrite as ex:
@@ -188,3 +228,42 @@ def _append_sheets(path: Path, frames: Dict[str, pd.DataFrame]) -> None:
             if t is None or t.empty:
                 continue
             t.to_excel(w, sheet_name=str(name)[:31], index=False)
+
+
+def _append_tab_sheets(path: Path, df: pd.DataFrame, tabs: List[Dict],
+                       labels: Dict[str, str], max_rows: int) -> None:
+    """هر تب سفارشی HTML یک شیت هم‌نام در Excel دارد."""
+    if not tabs:
+        return
+    with pd.ExcelWriter(path, engine="openpyxl", mode="a",
+                        if_sheet_exists="replace") as w:
+        used = set()
+        for tab in tabs:
+            title = str(tab.get("title") or "تب")
+            sheet = title[:31] or "Tab"
+            # Excel نام شیت تکراری را نمی‌پذیرد.
+            base_name, n = sheet, 2
+            while sheet in used:
+                suffix = f" {n}"
+                sheet = (base_name[:31-len(suffix)] + suffix)
+                n += 1
+            used.add(sheet)
+            cols = [c for c in tab.get("fields", []) if c in df.columns]
+            if not cols:
+                cols = list(df.columns[:12])
+            cap = int(tab.get("max_rows") or max_rows)
+            out = df[cols].head(cap).copy()
+            ren = {c: labels.get(c, c) for c in cols}
+            if len(set(ren.values())) == len(ren):
+                out = out.rename(columns=ren)
+            out.to_excel(w, sheet_name=sheet, index=False)
+    # شیت‌های تازه‌افزوده‌شده هم باید همان استاندارد خوانایی خروجی Studio را داشته باشند.
+    from .excel_export import _style_sheet
+    from openpyxl import load_workbook
+    wb = load_workbook(path)
+    for tab in tabs:
+        name = str(tab.get("title") or "تب")[:31]
+        # ممکن است به علت تکرار، نام نهایی suffix گرفته باشد؛ نزدیک‌ترین نام را style می‌کنیم.
+    for ws in wb.worksheets:
+        _style_sheet(ws)
+    wb.save(path)
