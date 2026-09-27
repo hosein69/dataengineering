@@ -9,6 +9,8 @@ from pathlib import Path
 from datetime import date
 import pandas as pd
 
+from ..design import tokens as T
+
 
 def export_published_snapshot(output_path=None, ref_date=None, max_rows=200000):
     from .service import last_report
@@ -66,7 +68,7 @@ def export_published_snapshot(output_path=None, ref_date=None, max_rows=200000):
             for j, h in enumerate(evidence.columns, 1):
                 c = ws.cell(1, j, h)
                 c.font = Font(name="IRANSans Light", size=10, bold=True, color="FFFFFF")
-                c.fill = PatternFill("solid", fgColor="0B1F33")
+                c.fill = PatternFill("solid", fgColor=T.BRAND_NAVY.lstrip("#").upper())
                 c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             for i, row in enumerate(evidence.itertuples(index=False, name=None), 2):
                 for j, v in enumerate(row, 1):

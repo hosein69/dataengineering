@@ -8,6 +8,7 @@ from io import BytesIO
 import pandas as pd
 import streamlit as st
 
+from gsi.design import tokens as T
 from gsi.report.shipping_insights import build_shipping_insights
 
 try:
@@ -35,7 +36,7 @@ def render(frame: pd.DataFrame, as_of: date | str) -> None:
     if px is not None:
         fig = px.bar(coverage, x="پوشش (%)", y="شاهد", orientation="h",
                      hover_data=["دارای شاهد", "متعارض", "بارنامه واجدشرایط"],
-                     color_discrete_sequence=["#137C84"])
+                     color_discrete_sequence=[T.BRAND_TEAL])
         fig.update_layout(height=330, yaxis=dict(autorange="reversed"),
                           xaxis=dict(range=[0, 100], title="پوشش شواهد (%)"),
                           margin=dict(l=12, r=12, t=12, b=12))
@@ -48,7 +49,7 @@ def render(frame: pd.DataFrame, as_of: date | str) -> None:
         st.markdown("#### سبد روش حمل")
         counts = dossiers.groupby("روش حمل", dropna=False)["بارنامه"].nunique().reset_index(name="بارنامه")
         if px is not None:
-            fig = px.bar(counts, x="روش حمل", y="بارنامه", color_discrete_sequence=["#137C84"])
+            fig = px.bar(counts, x="روش حمل", y="بارنامه", color_discrete_sequence=[T.BRAND_TEAL])
             fig.update_layout(height=320, margin=dict(l=12, r=12, t=12, b=12))
             st.plotly_chart(fig, width="stretch")
         else:
@@ -61,7 +62,7 @@ def render(frame: pd.DataFrame, as_of: date | str) -> None:
         if not elapsed.empty and px is not None:
             fig = px.box(elapsed, x="روش حمل", y="تخلیه تا دریافت ترخیصیه (روز)",
                          points="all", hover_data=["بارنامه"],
-                         color_discrete_sequence=["#137C84"])
+                         color_discrete_sequence=[T.BRAND_TEAL])
             fig.update_layout(height=320, margin=dict(l=12, r=12, t=12, b=12))
             st.plotly_chart(fig, width="stretch")
         elif not elapsed.empty:

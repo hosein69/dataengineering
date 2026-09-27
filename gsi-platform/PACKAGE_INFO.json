@@ -1,191 +1,40 @@
 {
-  "version": "29.15.9",
-  "release_channel": "material-output-propagation-20260927",
-  "base": "GSI 29.15.8",
-  "scope": "End-to-end visibility of complete expert material code/description evidence across the official order matrix, Excel material view, HTML material view and explicit Published Snapshot Excel export, while keeping expert evidence non-operational.",
+  "version": "29.15.10",
+  "release_channel": "expert-material-primary-20260927",
+  "base": "GSI 29.15.9 (as delivered by the user, committed unchanged)",
+  "scope": "Every Commercial Expert Order×Material is a labelled row of the main material view (HTML, Excel sheet 14, Studio) with all descriptions and its record gaps; calculations unchanged.",
   "business_logic_changed": false,
-  "business_logic_change_note": "Output propagation and evidence visibility only. No financial formula, criticality rule, process duration, operational status, owner, order/BL relation or source-authority decision changes.",
-  "source_authority_changed": false,
+  "business_logic_change_note": "Presentation-layer change in the material views only. Mart, KPIs, sums, criticality and trust grades are identical to 29.15.9 (A/B on the reproduction data). Expert-only rows never carry operational position or BL events.",
+  "source_authority_changed": true,
   "regulatory_rulebook_changed": false,
   "financial_semantics_changed": false,
   "production_certified": false,
   "validation": {
-    "targeted": "68/68 affected/regression/release tests passed in 22.58 s, including material, expert ledger, source-boundary, feedback, process context, shipping, supply views, validation/report integration, manifest and documentation checks.",
-    "real_dataset": "NTSW-IKCO.xlsx was inspected, but it contains no Commercial Expert Data/Expert Data sheet. It cannot certify the expert-material source branch end-to-end; this limitation is explicitly not reported as PASS.",
-    "source_authority": "Expert Order×Material rows are exposed only as evidence; operational position/owner/BL state continues to be derived from the operational mart and independent authority rules.",
-    "full_suite": "Broad full-suite execution was attempted twice in this tool environment and exceeded the execution time ceiling before producing a final result. It is explicitly NOT claimed as PASS; affected/release gates were run separately and are green.",
-    "post_pack": "Clean ZIP candidate: CRC PASS; package SHA-256 manifest 1106/1106 files matched; no SQLite/pyc/cache leakage; 68/68 affected/release tests passed after extraction in 22.46 s."
+    "runner": "python run_all_tests.py",
+    "this_release_result": "1518 passed, 0 failed (first complete green run since 29.15.1; two failures pre-existing in 29.15.9 fixed)",
+    "reproduction": "Full 29.15.9 pipeline on an expert file with the owner's cases: second material of an order and an order-less row had no main-view row; after the fix both do, labelled, and every frame is identical to 29.15.9",
+    "regression_tests": "tests/test_expert_material_primary_v29_15_10.py: 8 tests; the 4 behavioural ones fail on 29.15.9"
   },
-  "review_report": "docs/MATERIAL_OUTPUT_29_15_9_FA.md",
+  "review_report": "docs/EXPERT_MATERIAL_PRIMARY_29_15_10_FA.md",
   "previous_release": {
-    "version": "29.15.8",
-    "release_channel": "shipping-evidence-insights-20260927",
-    "base": "GSI 29.15.7",
-    "scope": "Evidence-led BL-grained shipping cockpit, coverage and descriptive interval charts on the published filtered mart; offline transport knowledge and nonbinding operational rule contract.",
+    "version": "29.15.9",
+    "release_channel": "material-output-propagation-20260927",
+    "base": "GSI 29.15.8",
+    "scope": "End-to-end visibility of complete expert material code/description evidence across the official order matrix, Excel material view, HTML material view and explicit Published Snapshot Excel export, while keeping expert evidence non-operational.",
     "business_logic_changed": false,
-    "business_logic_change_note": "Adds a separate shipping analytic and UI; existing financial, legal and main population calculations remain unchanged.",
+    "business_logic_change_note": "Output propagation and evidence visibility only. No financial formula, criticality rule, process duration, operational status, owner, order/BL relation or source-authority decision changes.",
     "source_authority_changed": false,
     "regulatory_rulebook_changed": false,
-    "regulatory_rulebook_change_note": "No numeric legal limit or operational SLA is introduced; transport guidance/status and external-source references updated.",
     "financial_semantics_changed": false,
     "production_certified": false,
     "validation": {
-      "targeted": "6 shipping/process tests passed; 42 architecture checks passed; rulebook structural errors 0; offline knowledge manifest verified; 1096 BL/5480 synthetic rows processed in 1.21 s.",
-      "real_shipping_workbooks": "Not present in this execution workspace; requires reconciliation on organisation snapshot",
-      "streamlit_visual": "Streamlit and Plotly absent here; source compiles and fallback render smoke passed, live visual acceptance pending on target Windows environment.",
-      "full_suite": "Not rerun; previous release broad runner had 68 pytest-only suites unavailable in this runtime. Targeted UI fallback smoke passed."
+      "targeted": "68/68 affected/regression/release tests passed in 22.58 s, including material, expert ledger, source-boundary, feedback, process context, shipping, supply views, validation/report integration, manifest and documentation checks.",
+      "real_dataset": "NTSW-IKCO.xlsx was inspected, but it contains no Commercial Expert Data/Expert Data sheet. It cannot certify the expert-material source branch end-to-end; this limitation is explicitly not reported as PASS.",
+      "source_authority": "Expert Order×Material rows are exposed only as evidence; operational position/owner/BL state continues to be derived from the operational mart and independent authority rules.",
+      "full_suite": "Broad full-suite execution was attempted twice in this tool environment and exceeded the execution time ceiling before producing a final result. It is explicitly NOT claimed as PASS; affected/release gates were run separately and are green.",
+      "post_pack": "Clean ZIP candidate: CRC PASS; package SHA-256 manifest 1106/1106 files matched; no SQLite/pyc/cache leakage; 68/68 affected/release tests passed after extraction in 22.46 s."
     },
-    "review_report": "docs/SHIPPING_INSIGHTS_29_15_8_FA.md",
-    "previous_release": {
-      "version": "29.15.7",
-      "release_channel": "process-context-kpi-20260927",
-      "base": "GSI 29.15.6",
-      "scope": "Process transition duration is contextual and descriptive; FX settlement is assessed against its own case deadline, never globally ranked against shipping/customs by raw duration.",
-      "business_logic_changed": true,
-      "business_logic_change_note": "Process KPI interpretation and display changed; event dates, durations, financial and rulebook calculations unchanged.",
-      "source_authority_changed": false,
-      "regulatory_rulebook_changed": false,
-      "financial_semantics_changed": false,
-      "production_certified": false,
-      "validation": {
-        "targeted": "9 process/runtime unit tests, 42 architecture checks, 4 manifest checks; HTML design verification run separately",
-        "full_suite": "969 passed; 70 reported failed in broad runner: 68 pytest-only suites unavailable; two stale-manifest checks were rerun green after regeneration. Architecture sheet-name test also rerun green after compatibility fix.",
-        "real_data": "Unavailable for this environment"
-      },
-      "review_report": "docs/PROCESS_CONTEXT_29_15_7_FA.md",
-      "previous_release": {
-        "version": "29.15.6",
-        "release_channel": "decision-feedback-measurement-20260927",
-        "base": "GSI 29.15.5",
-        "scope": "Published-snapshot decision feedback workbook and privacy-preserving aggregate measurement of material coverage, reviewer-assessed evidence quality and observed outcomes.",
-        "business_logic_changed": false,
-        "source_authority_changed": false,
-        "regulatory_rulebook_changed": false,
-        "financial_semantics_changed": false,
-        "authorization_scope_changed": false,
-        "production_certified": false,
-        "ui_usability_score_certified": false,
-        "figma_reference": "https://www.figma.com/design/T9Ps72EYpriHdov9fmNFQu",
-        "validation": {
-          "targeted": "6 new feedback cases plus expert-material and related regressions",
-          "full_suite": "See docs/DECISION_FEEDBACK_29_15_6_FA.md; pytest unavailable in this environment",
-          "visual": "Existing Figma-guided RTL foundations reused; live Streamlit pass pending",
-          "real_hr": "not available; must reconcile on organisation snapshot"
-        },
-        "review_report": "docs/DECISION_FEEDBACK_29_15_6_FA.md",
-        "previous_release": {
-          "version": "29.15.5",
-          "release_channel": "expert-material-completeness-20260927",
-          "scope": "All expert material descriptions and a separate ORDER×MATERIAL evidence-led supply ledger",
-          "financial_semantics_changed": true,
-          "review_report": "docs/EXPERT_MATERIAL_29_15_5_FA.md",
-          "previous_release": {
-            "version": "29.15.4",
-            "release_channel": "hr-routed-role-mail-20260927",
-            "scope": "Exact HR-routed role email, RTL preview, guarded draft/send",
-            "review_report": "docs/ROLE_MAIL_29_15_4_FA.md",
-            "previous_release": {
-              "version": "29.15.3",
-              "release_channel": "hr-hierarchy-rtl-workspace-20260927",
-              "scope": "Four HR-derived personal scopes and Figma-guided RTL workspace",
-              "review_report": "docs/HR_HIERARCHY_UI_29_15_3_FA.md",
-              "previous_release": {
-                "version": "29.15.2",
-                "release_channel": "financial-snapshot-guard-20260927",
-                "base": "GSI 29.15.1",
-                "scope": "Published-run isolation for financial obligation chain/coverage and missing-evidence semantics for eight additional derived financial fields.",
-                "business_logic_changed": true,
-                "business_logic_change_note": "Unpublished or archived NTSW records no longer appear in chain/coverage by default; missing derived financial amounts are unknown rather than zero; witnessed zero is retained.",
-                "source_authority_changed": false,
-                "regulatory_rulebook_changed": false,
-                "financial_semantics_changed": true,
-                "production_certified": false,
-                "validation": {
-                  "independently_executed": "3 new financial regression tests, 8 legacy obligation tests, 61 core validation checks, 7 previous release A/B tests",
-                  "full_suite": "NOT RUN in this environment: pytest and UI dependencies unavailable",
-                  "doctor": "2 expired time-bound configuration rules remain; organisation workbook and Windows acceptance unavailable"
-                },
-                "review_report": "docs/FINANCIAL_GUARD_29_15_2_FA.md",
-                "previous_release": {
-                  "version": "29.15.1",
-                  "release_channel": "ab-debug-20260927",
-                  "base": "GSI 29.15.0 (same repository)",
-                  "scope": "A/B test of 29.14.0 vs 29.15.0 on identical inputs; six bugs fixed with the smallest changes, each locked by a test that fails on 29.15.0.",
-                  "review_report": "docs/AB_TEST_29_15_1_FA.md",
-                  "business_logic_changed": true,
-                  "business_logic_change_note": "Two corrections of values that were wrong since 29.12, both following existing policy rather than new policy: an unknown INVOICE_VALUE is now missing instead of 0 (F031 rule, UNKNOWN_SENSITIVE), and the four invoice-valued FX timeline events carry the invoice's own SATA currency (INVOICE_CURRENCY) instead of a currency from another source or none. No engine formula, rule, grade threshold or authority changed.",
-                  "source_authority_changed": false,
-                  "regulatory_rulebook_changed": false,
-                  "financial_semantics_changed": false,
-                  "rows_deleted_for_quality": false,
-                  "values_changed_without_human_approval": false,
-                  "key_changes": [
-                    "Anomaly detection: rarity guard (modes are not outliers), no pooling of currency-less amounts, flood collapse into one MIXED_POPULATION question",
-                    "s20_derive: INVOICE_VALUE in UNKNOWN_SENSITIVE; new INVOICE_CURRENCY from SATA",
-                    "s55: invoice-valued events use INVOICE_CURRENCY",
-                    "Trust snapshot no longer copies the anomaly list; CLI reads the published frame (125 KB -> 4.4 KB per run)",
-                    "tools/ab/: reusable A/B harness (scaled synthetic data, per-arm isolation, cell-by-cell comparison, Excel row/column alignment, treatment arm)"
-                  ],
-                  "validation": {
-                    "runner": "python run_all_tests.py",
-                    "interpreter": "CPython 3.11.15 (Linux)",
-                    "previous_release_result": "1466 passed, 0 failed",
-                    "this_release_result": "1473 passed, 0 failed (1466 from 29.15.0 + 7 new); verified again from a clean extraction of the ZIP",
-                    "ab_baseline": "29.14.0 vs 29.15.0: identical business outputs on demo, synthetic and 40x data, 4 runs each; every Excel difference aligned to a declared addition",
-                    "ab_final": "29.14.0 vs 29.15.1: only differences are fixes 3 and 6; 118 -> 4 questions on 40x data; treatment arm healed exactly the approved cells",
-                    "regression_tests": "tests/test_ab_findings_v29_15_1.py: 6 of 7 fail on 29.15.0 (the 7th guards against over-suppression and passes on both)"
-                  },
-                  "dwh_default": "D:\\GSI_DATA\\warehouse.sqlite",
-                  "ui_default_mode": "published_snapshot_only",
-                  "refresh_mode": "explicit_only",
-                  "excel_export_mode": "published_snapshot_no_etl",
-                  "material_required_for_ntsw_gate": false,
-                  "production_certified": false,
-                  "production_certification_reason": "Inherited from 29.9.0: real corporate workbooks and Windows/SMB/Outlook acceptance were not available in this environment, and two emergency rules expired 2026-09-22 await an official successor decision. The trust layer itself is additive and does not change that status.",
-                  "previous_release": {
-                    "version": "29.15.0",
-                    "release_channel": "anomaly-inquiry-approved-healing-20260926",
-                    "base": "GSI 29.14.0 (same repository)",
-                    "scope": "Anomaly inquiry (detect, test hypotheses against the data, ask a named person for a one-sentence answer) and human-approved healing re-applied before every engine. Nothing is removed, and nothing changes without an answer.",
-                    "review_report": "GSI_TRUST_LAYER_REPORT_V29_10_0_FA.md",
-                    "business_logic_changed": false,
-                    "business_logic_change_note": "No engine, rule, grade or authority changed. A new tolerant stage 21 applies only repairs a person approved (none by default; then the mart differs only by an empty HEALED_FIELDS column). A new tolerant stage 96 detects anomalies and writes questions to extras and the trust snapshot. All 1426 pre-existing tests unchanged and green; 40 new tests.",
-                    "source_authority_changed": false,
-                    "regulatory_rulebook_changed": false,
-                    "financial_semantics_changed": false,
-                    "rows_deleted_for_quality": false,
-                    "values_changed_without_human_approval": false,
-                    "key_changes": [
-                      "gsi/trust/anomaly.py: VALUE_OUTLIER, CATEGORY_VARIANT, NEW_CATEGORY, VOLUME_DROP, TOO_GOOD at entity grain, each with evidence-ranked hypotheses; 'it is real' always offered and leads on ties",
-                      "gsi/trust/inquiry.py: append-only answer register in wh_audit; every answer needs a name and a sentence; 'we don't know' capped at 30 days then overdue; revoke instead of delete; CLI",
-                      "gsi/stages/s21_heal.py: approved RESCALE/ALIAS repairs applied after derive and before every engine, bound to the exact approved value, with HEALED_FIELDS provenance; keys and computed outputs never healed",
-                      "gsi/stages/s96_anomaly.py: detection after the trust stage; per-run observations (source volumes, coverage, totals, vocabularies) stored in the trust snapshot so the next run can compare",
-                      "app/trust_view.py: new tab «ناهنجاری‌ها — اول بپرس» with hypothesis cards, before/after repair preview, answer form, revoke and full answer history",
-                      "gsi/trust/trend.load_payloads(): raw stored summaries for detectors that need more than the trend row"
-                    ],
-                    "validation": {
-                      "runner": "python run_all_tests.py",
-                      "interpreter": "CPython 3.11.15 (Linux)",
-                      "previous_release_result": "1426 passed, 0 failed",
-                      "this_release_result": "1466 passed, 0 failed (1426 pre-existing + 40 new)",
-                      "negative_tests": "Key-column guard and value-binding guard each removed in turn; the corresponding test failed both times, then passed with the guard restored",
-                      "pipeline_verification": "Demo snapshot: approval recorded in the warehouse, next pipeline run rescaled exactly that case (417,130 → 417.13) before any engine, HEALED_FIELDS on that row only, row count unchanged",
-                      "visual_verification": "New tab driven in a real browser: empty answer refused and not recorded, named approval recorded, card moved to 'repair approved', revoke and history appeared; one real detection gap (unit slip at the edge of the normal band) found from the render and fixed with a test that fails on the old rule"
-                    },
-                    "dwh_default": "D:\\GSI_DATA\\warehouse.sqlite",
-                    "ui_default_mode": "published_snapshot_only",
-                    "refresh_mode": "explicit_only",
-                    "excel_export_mode": "published_snapshot_no_etl",
-                    "material_required_for_ntsw_gate": false,
-                    "production_certified": false,
-                    "production_certification_reason": "Inherited from 29.9.0: real corporate workbooks and Windows/SMB/Outlook acceptance were not available in this environment, and two emergency rules expired 2026-09-22 await an official successor decision. The trust layer itself is additive and does not change that status."
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+    "review_report": "docs/MATERIAL_OUTPUT_29_15_9_FA.md"
+  },
+  "source_authority_change_note": "Owner decision 1405-07-05: the Commercial Expert file is the primary criterion for which materials appear in the material views. Oracle remains the only source of stock/need and material resistance; experts remain advisory for operational status."
 }

@@ -42,7 +42,9 @@ def test_html_composer_process_kanban_order_and_header():
         header_title="هدر اختصاصی مدیر", header_subtitle="زیرعنوان اختصاصی")
     assert "هدر اختصاصی مدیر" in h and "زیرعنوان اختصاصی" in h
     assert "کانبان / Scrum Action Board" in h
-    assert "فرآیند و گلوگاه‌ها" in h
+    # 29.15.7 renamed the block on purpose — raw transition time is not a
+    # bottleneck (docs/PROCESS_CONTEXT_29_15_7_FA.md); the test followed late.
+    assert "فرآیند و زمان گذارها" in h
     positions = [h.index(f'data-composer-block="{x}"') for x in blocks]
     assert positions == sorted(positions)
     assert "پیگیری ارز" in h

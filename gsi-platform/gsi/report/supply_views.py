@@ -569,6 +569,160 @@ def build_expert_material_evidence_view(material_positions: pd.DataFrame | None)
     return out.sort_values(["متریال اعلامی کارشناسان", "سفارش اعلامی کارشناسان"],
                            kind="stable", ignore_index=True)
 
+
+def _float_or_none(value):
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return None
+    return None if f != f else f
+
+
+#: Row-source labels of the material views (29.15.10).
+SOURCE_COL = "منبع ردیف"
+GAPS_COL = "شکاف ثبت کارشناس"
+SOURCE_OPERATIONAL = "عملیاتی"
+SOURCE_EXPERT_ONLY = "فقط فایل کارشناسان — در محاسبات لحاظ نشده"
+_UNKNOWN_TEXT_COLS = {"موقعیت فعلی", "مرحله فعلی", "معطل حوزه", "حوزه مسئول وضعیت",
+                      "فعالیت بعدی مورد انتظار"}
+
+
+def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
+                            df: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Every Commercial Expert material in the material view — the owner's rule.
+
+    «معیار اصلی فایل کارشناسان است؛ حتی اگر ناقص باشد، نشان داده و ناقص‌بودنش
+    گزارش می‌شود و از گزارش اصلی حذف نمی‌شود» (مالک کسب‌وکار، ۱۴۰۵/۰۷/۰۵).
+
+    The operational view keeps one row per operational (Oracle-backed, first
+    per order) material. Until 29.15.9 a material that was the second item of
+    an order, had no order number, or had no Oracle match got no row at all —
+    only a side evidence table outside the searchable view. This appends each
+    such Order×Material from the expert ledger as its own, clearly labelled row:
+    every expert description, the missing record fields, and Oracle stock/need
+    where the exact code exists. Position stays «نامشخص» and no order/BL event
+    is attached: the expert link is evidence, not operational authority. Nothing
+    here feeds the mart, KPIs or sums — the calculations are unchanged.
+
+    Materials already in the view get the complete description list from the
+    ledger (all orders), not only the one their first order carried.
+
+    ``df`` scopes the ledger to the orders present in the data being reported
+    (a filtered Studio export must not grow materials from other slices); rows
+    without an order number belong to no slice and are always kept.
+    """
+    if not isinstance(ledger, pd.DataFrame) or ledger.empty or "KEY_MATERIAL" not in ledger:
+        return view
+    led = ledger.copy()
+    led["__mat"] = _s(led, "KEY_MATERIAL")
+    led["__ord"] = _s(led, "KEY_ORDER") if "KEY_ORDER" in led else _s(led, "CANONICAL_ORDER")
+    led = led[led["__mat"].ne("")]
+    if isinstance(df, pd.DataFrame) and not df.empty:
+        orders = set(_s(df, "CANONICAL_ORDER")) | set(_s(df, "KEY_ORDER"))
+        orders.discard("")
+        led = led[led["__ord"].eq("") | led["__ord"].isin(orders)]
+    if led.empty:
+        return view
+
+    def split(text: str) -> list:
+        return [t.strip() for t in str(text).split(" | ") if t.strip()]
+
+    descs: dict = {}
+    for mat, text in zip(led["__mat"], _s(led, "MOGH_MATERIAL_DESCS_ALL")):
+        bucket = descs.setdefault(mat, [])
+        bucket.extend(d for d in split(text) if d not in bucket)
+    gaps_by_mat: dict = {}
+    for mat, order, gap in zip(led["__mat"], led["__ord"], _s(led, "EXPERT_RECORD_GAPS")):
+        parts = ([] if order else ["شماره سفارش"]) + [g.strip() for g in gap.split("،") if g.strip()]
+        if parts:
+            gaps_by_mat.setdefault(mat, []).append(f"{order or 'بدون سفارش'}: {'، '.join(parts)}")
+
+    out = view.copy() if isinstance(view, pd.DataFrame) else pd.DataFrame()
+    mat_col = "متریال"
+    present = set(_s(out, mat_col)) if mat_col in out else set()
+    if not out.empty and mat_col in out:
+        keys = _s(out, mat_col)
+        if "شرح‌های ثبت‌شده کارشناسان" in out:
+            merged = []
+            for key, have in zip(keys, _s(out, "شرح‌های ثبت‌شده کارشناسان")):
+                items = split(have)
+                items += [d for d in descs.get(key, []) if d not in items]
+                merged.append(" | ".join(items))
+            out["شرح‌های ثبت‌شده کارشناسان"] = merged
+        if "اختلاف شرح متریال" in out:
+            many = keys.map(lambda k: len(descs.get(k, [])) > 1)
+            out["اختلاف شرح متریال"] = _s(out, "اختلاف شرح متریال").mask(
+                many, "⚠ چند شرح برای یک متریال")
+        out[GAPS_COL] = keys.map(lambda k: " ؛ ".join(gaps_by_mat.get(k, [])))
+        out[SOURCE_COL] = SOURCE_OPERATIONAL
+
+    extra = led[~led["__mat"].isin(present)]
+    if extra.empty:
+        return _front(out)
+    from ..engines.criticality import CriticalityEngine
+    engine = CriticalityEngine()
+    rows = []
+    for rec in extra.to_dict("records"):
+        mat, order = rec["__mat"], rec["__ord"]
+        mat_descs = descs.get(mat, [])
+        gap = str(rec.get("EXPERT_RECORD_GAPS") or "").strip()
+        gap_text = "، ".join(p for p in (([] if order else ["شماره سفارش"]) + ([gap] if gap else [])))
+        stock = {k: _float_or_none(rec.get(k)) for k in ("STOCK_IKCO", "STOCK_SAPCO", "DAILY_NEED")}
+        crit = engine.evaluate(stock) if any(v is not None for v in stock.values()) else None
+        warn = ["⚠ فقط در فایل کارشناسان — در محاسبات لحاظ نشده"]
+        if gap_text:
+            warn.append("⚠ داده کارشناسی ناقص")
+        note = []
+        if gap_text:
+            note.append("کمبود ثبت کارشناس: " + gap_text)
+        note.append("سفارش اعلامی: " + (order or "ثبت نشده"))
+        # Unknown is NaN in numeric columns: an empty string would turn the whole
+        # column — operational rows included — into text.
+        row = {c: (float("nan") if pd.api.types.is_numeric_dtype(out[c]) else "")
+               for c in out.columns}
+        for c in _UNKNOWN_TEXT_COLS & set(out.columns):
+            row[c] = "نامشخص"
+        row.update({
+            "کلید گروه": mat, "عنوان گروه": mat, mat_col: mat,
+            "شرح متریال": str(rec.get("ORC_MATERIAL_DESC") or "").strip() or (mat_descs[0] if mat_descs else ""),
+            "شرح‌های ثبت‌شده کارشناسان": " | ".join(mat_descs),
+            "اختلاف شرح متریال": "⚠ چند شرح برای یک متریال" if len(mat_descs) > 1 else "",
+            "سفارش": order or "—",
+            "هشدار کارشناسان": " ؛ ".join(warn), "کامنت کارشناسان": " ؛ ".join(note),
+            "داده مفقود برای تعیین وضعیت": "رویداد تاریخ‌دار مستقل برای این قلم ثبت نشده است",
+            "چرایی / مبنای وضعیت": "این قلم فقط در فایل کارشناسان است؛ وضعیت عملیاتی به آن نسبت داده نمی‌شود.",
+            GAPS_COL: " ؛ ".join(gaps_by_mat.get(mat, [])),
+            SOURCE_COL: SOURCE_EXPERT_ONLY,
+        })
+        if crit is not None:      # Oracle-only fact for this exact code; display, not a KPI
+            row["مقاومت (روز)"] = crit.resistance_warehouse
+            row["بحرانی"] = crit.band_short
+        rows.append(row)
+    added = pd.DataFrame(rows)
+    if not out.empty:
+        added = added[[c for c in out.columns if c in added.columns]]
+    for c in ("تعداد ردیف تفصیلی گروه", "تعداد سفارش یکتای گروه", "تعداد بارنامه یکتای گروه"):
+        if c in added:
+            added[c] = 0
+    if "تعداد ردیف تفصیلی گروه" in added:
+        added["تعداد ردیف تفصیلی گروه"] = added.groupby(mat_col)[mat_col].transform("size")
+    if "تعداد سفارش یکتای گروه" in added:
+        added["تعداد سفارش یکتای گروه"] = added.groupby(mat_col)["سفارش"].transform(
+            lambda x: x[x.ne("—")].nunique())
+    combined = pd.concat([out, added], ignore_index=True)
+    sort_col = "کلید گروه" if "کلید گروه" in combined else mat_col
+    return _front(combined.sort_values(sort_col, kind="stable", ignore_index=True))
+
+
+def _front(view: pd.DataFrame) -> pd.DataFrame:
+    """Row source and record gaps next to the descriptions, not behind a scroll."""
+    cols = [c for c in view.columns if c not in (SOURCE_COL, GAPS_COL)]
+    anchor = "شرح‌های ثبت‌شده کارشناسان" if "شرح‌های ثبت‌شده کارشناسان" in cols else (
+        "شرح متریال" if "شرح متریال" in cols else None)
+    at = cols.index(anchor) + 1 if anchor else len(cols)
+    extra = [c for c in (SOURCE_COL, GAPS_COL) if c in view.columns]
+    return view[cols[:at] + extra + cols[at:]]
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  نوشتن در Excel
 # ═══════════════════════════════════════════════════════════════════════════
@@ -612,7 +766,7 @@ SHEETS = ("۱۴. متریال محور", "۱۵. بارنامه محور", "۱۶.
 
 
 def write_supply_sheets(wb, df: pd.DataFrame, material_positions: pd.DataFrame | None = None) -> dict:
-    material = build_material_view(df)
+    material = append_expert_materials(build_material_view(df), material_positions, df=df)
     evidence = build_expert_material_evidence_view(material_positions)
     specs = [(SHEETS[0], material),
              (SHEETS[1], build_bl_view(df)),

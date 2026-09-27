@@ -594,8 +594,13 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
     # every authored Composer tab or changing their grain.
     # Enforce the contract even if an old caller supplies a precomputed view.
     # Do not hide failures: a missing advisory view must not look successful.
-    from ..report.supply_views import build_material_html_view, build_expert_material_evidence_view
+    from ..report.supply_views import (append_expert_materials, build_expert_material_evidence_view,
+                                       build_material_html_view)
     material_view = build_material_html_view(df, today=ref_date) if include_material_view else pd.DataFrame()
+    # 29.15.10 — the expert file is the primary material criterion: every expert
+    # Order×Material is a row of the searchable view, flagged and outside KPIs.
+    if include_material_view:
+        material_view = append_expert_materials(material_view, material_supply_view, df=df)
     # ``material_supply_view`` is deliberately NOT trusted as an operational
     # material view.  It is accepted only as the dedicated Order×Material expert
     # ledger and sanitized to evidence-only columns.  This closes the long-standing
@@ -812,7 +817,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
         mtable = C.panel(
             f'<div class="tablewrap material-table"><table><caption class="sr-only">دید تأمین — متریال محور</caption><thead><tr>{mhead}</tr></thead><tbody id="tb_{mi}"></tbody></table></div><div class="material-mobile" id="mc_{mi}"></div><div class="pager no-print" id="pager_{mi}"></div>',
             title="دید تأمین — متریال محور",
-            note="کارشناسان و NTSW فقط Advisory: هشدار و کامنت. اتصال متریال به سفارش/بارنامه بدون شاهد مستقل، تأیید نشده است. شمارش این نما مربوط به متریال‌های دارای مرجع مستقل در داده انتخاب‌شده است.",
+            note="همه متریال‌های فایل کارشناسان اینجا هستند، حتی ناقص‌ها — ستون «منبع ردیف» می‌گوید کدام ردیف فقط از فایل کارشناسان آمده و در محاسبات لحاظ نشده، و «شکاف ثبت کارشناس» می‌گوید چه چیزی کم است. برای موقعیت و وضعیت، کارشناسان و NTSW فقط Advisory‌اند: اتصال متریال به سفارش/بارنامه بدون شاهد مستقل، تأیید عملیاتی نشده است.",
             aside=f'<span class="note" id="cnt_{mi}" role="status" aria-live="polite"></span>',
             section="table")
         panes.append(f'<section id="{mid}" class="pane stack stack-md" role="tabpanel" aria-labelledby="tab_{mi}" hidden>{mtoolbar}{expert_material_html}{material_gap_html}<section data-composer-block="table">{mtable}</section></section>')

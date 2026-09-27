@@ -1,4 +1,15 @@
-# Current release: GSI 29.15.8 — 2026-09-27
+# Current release: GSI 29.15.10 — 2026-09-27
+
+- Every Commercial Expert Order×Material is a row of the main material view (HTML, Excel sheet 14,
+  Studio); rows that exist only in the expert file are labelled and are **not** counted in KPIs,
+  sums or the mart. Whether they should enter calculations is an open owner decision.
+- Expert-only rows never carry an operational position/stage/BL event («نامشخص»); Oracle stock and
+  need are shown only for the exact same material code.
+- The flat order mart and Excel sheet 2 are still at order grain (one representative material);
+  the complete lists are in `MOGH_MATERIALS_ALL` / `MOGH_MATERIAL_DESCS_ALL` there.
+- Acceptance on the organisation's real Commercial Expert file is still pending (not available here).
+
+# GSI 29.15.8 — 2026-09-27
 
 - The shipping tab is computed on the current published and filtered main mart;
   it does not reconstruct omitted BLs or certify transport performance.

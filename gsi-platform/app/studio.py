@@ -41,7 +41,8 @@ from gsi.studio_core.excel_export import (DEFAULT_CUSTOM_NAME, OfficialReportOve
 from gsi.studio_core.field_catalog import build_catalog, catalog_groups, unique_labels
 from gsi.studio_core.filters import FilterState, apply_filters, filter_options
 from gsi.studio_core.html_export import build_dynamic_html
-from gsi.report.supply_views import build_material_view, build_bl_view, build_dept_view
+from gsi.report.supply_views import (append_expert_materials, build_bl_view, build_dept_view,
+                                    build_material_view)
 from gsi.report.financial_summary import commitment_display, commitment_equivalent_display
 
 try:
@@ -518,10 +519,20 @@ with tab_analytics:
 #  ۳) دید تأمین — کجا / کِی / دست کیست
 # ══════════════════════════════════════════════════════════════════════════
 @st.cache_data(show_spinner=False)
-def _supply_view(kind: str, frame: pd.DataFrame) -> pd.DataFrame:
+def _supply_view(kind: str, frame: pd.DataFrame, ledger=None) -> pd.DataFrame:
     """نما را کش می‌کند تا با هر تعامل کوچک از نو ساخته نشود."""
-    return {"material": build_material_view, "bl": build_bl_view,
+    view = {"material": build_material_view, "bl": build_bl_view,
             "dept": build_dept_view}[kind](frame)
+    if kind == "material":
+        # همه متریال‌های فایل کارشناسان، حتی ناقص — برچسب‌دار و خارج از محاسبات (29.15.10)
+        view = append_expert_materials(view, ledger, df=frame)
+    return view
+
+
+try:
+    _expert_ledger = extras.get("expert_material_positions")
+except Exception:
+    _expert_ledger = None
 
 
 with tab_shipping:
@@ -542,7 +553,7 @@ with tab_supply:
                 st.markdown("#### شواهد منبع برای متریال جست‌وجوشده")
                 st.caption("این ردیف‌ها در Grain اصلی Commercial Expert هستند؛ اختلاف شرح یا PR باعث حذفشان نمی‌شود.")
                 st.dataframe(_source_hits, width="stretch", hide_index=True)
-            view = _supply_view(kind, fdf)
+            view = _supply_view(kind, fdf, _expert_ledger if kind == "material" else None)
             if view.empty:
                 if kind == "material" and search.strip() and not _source_hits.empty:
                     st.info("این متریال در Commercial Expert وجود دارد اما هنوز در Population جدول پایه/BL mart رابطه اثبات‌شده ندارد؛ بنابراین فقط در شواهد منبع نمایش داده می‌شود.")

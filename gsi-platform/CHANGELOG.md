@@ -1,3 +1,48 @@
+# GSI 29.15.10 — The expert file is the primary material criterion — 2026-09-27
+
+The owner: materials in the expert file that are partially filled still do not
+show; a code with two descriptions shows only one; it must not be removed from
+the main report; the expert file is the primary criterion — even when incomplete
+it can be reported as incomplete.
+
+Reproduced with the full 29.15.9 pipeline on an expert file carrying the
+owner's cases. Incompleteness alone did not drop a material; the grain did:
+the order mart carries one material per order, and the HTML material view took
+identity and description from Oracle only. The second material of an order, a
+row without an order number, and the second description of a multi-material
+order (the owner's own 823107D / 9654003280 / B-2) existed only in a side
+evidence table with no search or filter.
+
+`append_expert_materials()` (supply_views) now adds every expert Order×Material
+missing from the operational view as its own row of the main view — HTML
+material tab, Excel sheet 14 main table and the Studio supply view — with all
+descriptions of the code, a «شکاف ثبت کارشناس» column naming exactly what is
+missing per order, Oracle stock/need/resistance for the exact code, and the
+label «فقط فایل کارشناسان — در محاسبات لحاظ نشده». Operational materials get
+the complete description list too.
+
+Unchanged by design: the mart, KPIs, sums, criticality and trust grades (A/B on
+the reproduction data: every frame identical to 29.15.9); expert-only rows get
+position «نامشخص» and no BL event (the 29.6.9 boundary and its BYPASS tests
+stand). A filtered report adds only its own orders' rows; order-less rows belong
+to no slice and always show.
+
+8 tests (`tests/test_expert_material_primary_v29_15_10.py`) on the owner's case;
+the four behavioural ones fail on 29.15.9. One found a real side effect during
+development — empty strings in numeric columns turned whole columns to text —
+fixed before release. Report: `docs/EXPERT_MATERIAL_PRIMARY_29_15_10_FA.md`.
+
+Two failures already present in 29.15.9 (its own notes say the full suite
+never completed there), each fixed minimally: hard-coded colours added in
+29.15.8/9 (`export_snapshot.py`, `shipping_view.py`) now come from the audited
+design tokens; and `test_report_composer_v28` still expected the process block
+title «فرآیند و گلوگاه‌ها» that 29.15.7 deliberately renamed to «فرآیند و زمان
+گذارها» (raw time is not a bottleneck) — the test was updated, the code was
+right. Full suite: 1518 passed, 0 failed — the first complete green run of the
+29.15.2–29.15.9 line.
+
+---
+
 # GSI 29.15.9 — Material output propagation — 2026-09-27
 
 The dedicated Commercial Expert `Order×Material` ledger now reaches every intended output surface without being promoted to operational authority. The official matrix exposes all expert material codes/descriptions, Excel sheet 14 appends a separately labelled filterable evidence table, standalone HTML renders the same evidence ledger, and explicit Published Snapshot export appends `Material Evidence`. Operational position/owner/BL state remains derived only from operational/independent sources; financial and regulatory semantics are unchanged. Validation and the real-data limitation are documented in `docs/MATERIAL_OUTPUT_29_15_9_FA.md`.
