@@ -27,7 +27,7 @@
   "config/keys.py": "3f54ad5246927acd",
   "config/keys.yaml": "8f19a88f00b44ce2",
   "config/metrics.yaml": "9f04cf797a7499d2",
-  "config/settings.py": "e3f00aaf7eb91b06",
+  "config/settings.py": "28453d47c435c7b9",
   "config/sources.py": "4c71ae79945f8c75",
   "config/sources.yaml": "7f166792e0500e0d",
   "control_center/__init__.py": "c3431459c5a40487",
@@ -60,7 +60,7 @@
   "engines/criticality.py": "baa5a69e58525619",
   "engines/math_engine.py": "956021bba1eb3ac2",
   "engines/risk.py": "dfddf283ea7b6a58",
-  "factsheet.py": "f6a60152bb828e26",
+  "factsheet.py": "35b56d7ec6a48102",
   "finance/__init__.py": "b9b143c5e16c64b7",
   "finance/equivalents.py": "58c8c65ab8ef2077",
   "health.py": "8c8ec1e7cd0efc6f",
@@ -100,6 +100,7 @@
   "report/__init__.py": "e3b0c44298fc1c14",
   "report/charts.py": "6a3787fb54e59472",
   "report/dashboard.py": "c9c4eaf76b340516",
+  "report/decision_brief.py": "702575ac88805bb7",
   "report/expert_material.py": "8f4c40eb4c84545e",
   "report/extracts.py": "0dd9682c0e9a021c",
   "report/financial_summary.py": "4bfa91b6e947a3a8",
@@ -173,13 +174,13 @@
   "studio_core/filters.py": "b2321cc5e25f2972",
   "studio_core/grain.py": "d5fd3bff2af92f2b",
   "studio_core/html_customizer.py": "f9b0fcdd608d727d",
-  "studio_core/html_export.py": "7b9878e9548ab364",
+  "studio_core/html_export.py": "b37325d5468730d3",
   "studio_core/metric_registry.py": "c74432d638f57814",
   "studio_core/pdf_export.py": "0f5605abc99e04b1",
   "studio_core/process_diagrams.py": "e7671fb8773df8e9",
   "studio_core/process_views_html.py": "57c3526ef3bb6380",
   "studio_core/registry.py": "474645204139b06d",
-  "studio_core/report_builder.py": "7d7c60a77ed08198",
+  "studio_core/report_builder.py": "e34eaefeaf28ffde",
   "studio_core/runtime_data.py": "5edac648fc6f55ce",
   "studio_core/semantic_metrics.py": "d59baf05cd7f3971",
   "studio_core/streamlit_dragdrop.py": "2eacb67c56fd2113",
@@ -217,5 +218,5 @@
   "warehouse/store.py": "9411327a1bb81b51",
   "warehouse/writer_lock.py": "154ce442a0608614"
  },
- "package_version": "29.15.12"
+ "package_version": "29.15.13"
 }

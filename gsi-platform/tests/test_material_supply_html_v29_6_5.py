@@ -21,7 +21,14 @@ def test_html_contains_one_filterable_material_supply_tab(tmp_path):
         tabs=[{'id':'main','title':'نمای اصلی','fields':['CANONICAL_ORDER'],'blocks':['table']}],
         file_stem='material-test'
     )
-    res = build(df, {}, spec, {}, tmp_path)
+    # 29.15.13: the HTML supply tab is off by default (owner, GSI_HTML_SUPPLY_TAB);
+    # this test guards what it shows when switched on.
+    import dataclasses
+    from unittest import mock
+    import gsi.config.settings as settings
+    on = dataclasses.replace(settings.SETTINGS, HTML_SUPPLY_MATERIAL_TAB=True)
+    with mock.patch.object(settings, "SETTINGS", on):
+        res = build(df, {}, spec, {}, tmp_path)
     h = res.html
     # Exact supply view is a dedicated tab, not a global/floating duplicate.
     assert h.count('دید تأمین — متریال محور</button>') == 1

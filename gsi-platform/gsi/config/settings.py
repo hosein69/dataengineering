@@ -78,6 +78,13 @@ class Settings:
     # FIX-8: شروع سال ۱۴۰۵ = ۲۰۲۶-۰۳-۲۱ (نه ۲۰۲۶-۰۱-۰۱)
     FISCAL_YEAR_START: date = date(2026, 3, 21)
 
+    # تب HTML «دید تأمین — متریال محور». تصمیم مالک (۱۴۰۵/۰۷/۰۵): پیش‌فرض خاموش.
+    # GSI_HTML_SUPPLY_TAB=1 آن را روشن می‌کند؛ Excel شیت ۱۴ و Studio همیشه آن را دارند.
+    HTML_SUPPLY_MATERIAL_TAB: bool = field(default_factory=lambda: _env("GSI_HTML_SUPPLY_TAB", "0").strip().lower() in ("1", "true", "yes", "on"))
+    # «برگ تصمیم» بالای HTML (DONE/OWNER/DATE/RISK/NEXT/ASK + صف اقدام). 29.15.13، پیش‌فرض روشن.
+    # کلید برگشت (Reversibility Gate): GSI_HTML_DECISION_BRIEF=0 آن را برمی‌دارد.
+    HTML_DECISION_BRIEF: bool = field(default_factory=lambda: _env("GSI_HTML_DECISION_BRIEF", "1").strip().lower() in ("1", "true", "yes", "on"))
+
     FUZZY_THRESHOLD: float = 0.80
     STUCK_CRITICAL_DAYS: int = 45
 

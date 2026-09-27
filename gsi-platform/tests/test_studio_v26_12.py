@@ -32,7 +32,9 @@ def test_tabs_and_design():
                                                {"title":"سفارش","fields":["CANONICAL_ORDER"]}])
         r=build(df,{},spec,labels,td)
         h=Path(r.files["html"]).read_text(encoding="utf8")
-        assert h.count('role="tab"')==3 and h.count('role="tabpanel"')==3
+        # 29.15.13: the two user tabs only — the HTML supply tab is off by default
+        # (owner's decision, GSI_HTML_SUPPLY_TAB).
+        assert h.count('role="tab"')==2 and h.count('role="tabpanel"')==2
         from openpyxl import load_workbook
         wb=load_workbook(r.files["excel"])
         assert "حمل" in wb.sheetnames and "سفارش" in wb.sheetnames

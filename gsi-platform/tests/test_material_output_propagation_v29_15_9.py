@@ -14,6 +14,10 @@ from gsi.report.dashboard import ExcelDashboardBuilder
 from gsi.report.supply_views import SHEETS, build_expert_material_evidence_view
 from gsi.stages.s10_resolve import ResolveStage
 from gsi.studio_core.html_export import build_dynamic_html
+from functools import partial
+# 29.15.13: the HTML supply tab is off by default (owner's decision, GSI_HTML_SUPPLY_TAB);
+# these tests guard what it shows when it is switched on.
+build_dynamic_html = partial(build_dynamic_html, include_material_view=True)
 
 
 def _fixture():

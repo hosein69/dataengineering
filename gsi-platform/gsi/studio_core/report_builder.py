@@ -300,7 +300,7 @@ def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
         learning_lesson=(spec.learning_lesson if spec.learning_enabled else None),
         anythingllm_embed=(spec.anythingllm_embed if spec.learning_enabled else None),
         knowledge_chat=(spec.knowledge_chat if spec.learning_enabled else None),
-        material_supply_view=_expert_material_positions, include_material_view=not bool(scope.allowed_fields))
+        material_supply_view=_expert_material_positions, include_material_view=None if not scope.allowed_fields else False)
 
     html_bytes = len(res.html.encode("utf-8"))
     html_mb = html_bytes / (1024 * 1024)

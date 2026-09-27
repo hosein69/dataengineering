@@ -1,6 +1,10 @@
 from gsi.factsheet import VERSION
 import pandas as pd
 from gsi.studio_core.html_export import build_dynamic_html
+from functools import partial
+# 29.15.13: the HTML supply tab is off by default (owner's decision, GSI_HTML_SUPPLY_TAB);
+# these tests guard what it shows when it is switched on.
+build_dynamic_html = partial(build_dynamic_html, include_material_view=True)
 
 
 def test_html_exposes_build_and_material_filter_in_every_tab():

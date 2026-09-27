@@ -1,3 +1,60 @@
+# GSI 29.15.13 — Decision brief on top of the HTML; financial-safe package merged; supply tab off by a setting — 2026-09-27
+
+The owner sent the package `GSI_29_15_12_FINANCIAL_ACTION_ALGORITHM_SAFE` and a decision model
+(Adaptive Decision Twin: criteria O E R S Q D T A V, gates Evidence / Ownership / Closure /
+Reversibility / Confidentiality, report format DONE / OWNER / DATE / RISK / NEXT / ASK) and asked for
+a full review of the code and the UI/UX with it. Review, scores and prioritised findings:
+`docs/DECISION_TWIN_REVIEW_29_15_13_FA.md`. The owner chose option B, «V1 تصمیم‌محور».
+
+**Financial package merged as delivered** (commit `4742e93`, unchanged): planned FX is no longer a
+purchase (`_actual_purchase_rows` everywhere); a missing conversion fee is unknown, not 0
+(`FX_CONVERSION_IMPACT_RIAL` nullable); a positive commitment balance blocks «settled»; physical
+source references where file metadata exists; `fx_financial_decisions` (INVESTIGATE_ONLY,
+NON_ADDITIVE); `ACTION_ID` hashed from `KEY_REG|ACTION_CODE` so it survives a due-date change;
+SQLite `quick_check` by default (`GSI_SQLITE_FULL_INTEGRITY_CHECK=1` for the full check).
+Its own review: `FINANCIAL_ACTION_ALGORITHM_REVIEW_FA.md`, `FINANCIAL_GAP_ANALYSIS_FROM_29_15_12_FA.md`.
+
+**HTML supply tab: off, cleanly.** The package turned «دید تأمین — متریال محور» off with `if False`
+and left the ten suites that guard it failing. The owner's decision was «خاموش بماند، تمیز»: it is
+now behind `SETTINGS.HTML_SUPPLY_MATERIAL_TAB` (`GSI_HTML_SUPPLY_TAB`, default 0) and the
+`include_material_view` argument; the ten suites guard it switched on, a new test locks the default
+off. Excel sheet 14 and Studio always keep the view. Scoped reports (`allowed_fields`) never get it.
+The package's `if False` only hid the tab: the material view was still computed and every HTML
+carried it as hidden data (338 KB on the 40× A/B data). Off now means not computed: that HTML went
+from 608 KB to 280 KB, and nobody receives data they cannot see.
+
+**Decision brief (V1)** — `gsi/report/decision_brief.py`, inserted right under the HTML header,
+before the process chain and the tabs:
+* six cards in the manager's order DONE / OWNER / DATE / RISK / NEXT / ASK, each naming its source
+  columns; dates in Jalali and Gregorian, codes bidi-isolated;
+* action queue (first 7, one per `NEXT_ACTION_ID`, sibling materials listed), ordered overdue →
+  priority → due date, each with its gate: «بدون مالک — آماده اجرا نیست» (Ownership),
+  «بدون موعد — هنوز Task نشده» (Closure), «آماده اجرا — شاهد ناقص» (Evidence), «آماده اجرا»;
+* RISK lists stockout/critical materials and flags those whose case is not in the action queue,
+  with their s40 advice — a stockout can have advice but no owner and no due date (review F4);
+* ASK only with evidence (ownerless actions, stockout/critical outside the queue, overdue critical
+  actions); otherwise «درخواستی از مدیر نیست»;
+* built only from the `df` the HTML receives (after the audience's row and field scope), never from
+  extras; a missing column makes its card «نامشخص» with the column named — never 0;
+* off with `GSI_HTML_DECISION_BRIEF=0` or `include_decision_brief=False`.
+No calculation, mart column or Excel sheet changed.
+
+**Test fix:** `test_personalization_v27_1::test_shared_files_are_only_encrypted_store_files` looked
+for a 3-byte marker in ~28 KB of AES-GCM ciphertext and failed by chance (3 in 3000 runs measured);
+the marker is now long enough that a chance match is impossible.
+
+**A/B** (`tools/ab`; 29.15.12 `2af7471`, the package `4742e93`, 29.15.13; 35-column repro,
+old-format, 40× twice). Package → 29.15.13: zero differences in every frame, extra, count and Excel
+sheet except stage run times (sheet 17); HTML gains the brief and loses the hidden supply data.
+29.15.12 → package, each root-caused: conversion impact and credit fields 0 → unknown (not in the
+source — correct); commitment released/balance unknown → 0 and reconciliation
+NO_COMMITMENT_EVIDENCE → OK for 82 cases (a **29.15.12 bug**: s56 `maybe_num` used
+`is_empty_val` with zero-as-empty, so NTSW's recorded «released 300,000, balance 0» read as no
+evidence — the package's `treat_zero_as_empty=False` is right); every `ACTION_ID` once (new stable
+hash); commitment evidence text; new `fx_financial_decisions`.
+
+Tests: `tests/test_decision_brief_v29_15_13.py` (9).
+
 # GSI 29.15.12 — The expert file exactly as it is: 35 columns, part states from Order Status — 2026-09-27
 
 The owner gave the file's exact 35 headers and asked to rewrite the code on

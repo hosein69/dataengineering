@@ -312,13 +312,18 @@ class PersonalPublisherTests(unittest.TestCase):
 
     def test_shared_files_are_only_encrypted_store_files(self):
         from gsi.personalization.publisher import publish_employee_snapshots
-        df = self.pd.DataFrame([{"KEY_EMP":"1001","KEY_REG":"R-A"}])
+        # The ciphertext is ~28 KB of random AES-GCM bytes, so a 3-byte marker
+        # such as b"R-A" occurs in it by chance about once per 1,000 runs
+        # (measured 3/3,000) — a false failure, not a leak. A long marker makes
+        # a chance match impossible (~2^-136 per position).
+        marker = "REG@PLAINTEXT#1001"
+        df = self.pd.DataFrame([{"KEY_EMP":"1001","KEY_REG":marker}])
         publish_employee_snapshots(df)
         user = self.root / "00001001"
         self.assertEqual(sorted(p.name for p in user.iterdir()), ["snapshot", "state"])
         self.assertEqual(sorted(p.name for p in (user / "snapshot").iterdir()), ["current.gsi"])
         self.assertEqual(list((user / "state").iterdir()), [])
-        self.assertNotIn(b"R-A", (user / "snapshot" / "current.gsi").read_bytes())
+        self.assertNotIn(marker.encode(), (user / "snapshot" / "current.gsi").read_bytes())
 
 class V27_1_RegressionTests(unittest.TestCase):
     """رگرسیون باگ‌هایی که در ممیزی مویرگی V27.1 پیدا و رفع شدند."""

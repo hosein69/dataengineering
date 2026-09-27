@@ -481,7 +481,8 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
                        anythingllm_embed: Optional[Dict] = None,
                        knowledge_chat: Optional[Dict] = None,
                        material_supply_view: Optional[pd.DataFrame] = None,
-                       include_material_view: bool = True) -> str:
+                       include_material_view: Optional[bool] = None,
+                       include_decision_brief: Optional[bool] = None) -> str:
     """HTML خودبسنده با تب‌های واقعی، فیلتر زنده و نمای مخاطب‌محور.
 
     ``audience`` تعیین می‌کند این artifact برای چه Persona ساخته شود؛ هر
@@ -596,6 +597,21 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
     # Do not hide failures: a missing advisory view must not look successful.
     from ..report.supply_views import (append_expert_materials, build_expert_material_evidence_view,
                                        build_material_html_view)
+    # برگ تصمیم: از همین df (که دامنه مخاطب قبلاً روی آن اعمال شده)، نه از extras.
+    if include_decision_brief is None:
+        from ..config.settings import SETTINGS as _S
+        include_decision_brief = bool(getattr(_S, "HTML_DECISION_BRIEF", True))
+    decision_brief_html = ""
+    decision_brief_css = ""
+    if include_decision_brief:
+        from ..report import decision_brief as _DB
+        decision_brief_html = _DB.build_decision_brief_html(df, ref_date)
+        decision_brief_css = _DB.CSS
+    if include_material_view is None:
+        # Owner's decision (1405-07-05): the HTML supply tab is off unless
+        # GSI_HTML_SUPPLY_TAB=1. When off, the view is not even computed.
+        from ..config.settings import SETTINGS
+        include_material_view = bool(SETTINGS.HTML_SUPPLY_MATERIAL_TAB)
     material_view = build_material_html_view(df, today=ref_date) if include_material_view else pd.DataFrame()
     # 29.15.10 — the expert file is the primary material criterion: every expert
     # Order×Material is a row of the searchable view, flagged and outside KPIs.
@@ -799,7 +815,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
             material_gap_html = ('<details><summary>هشدارهای فاقد مرجع مستقل — خارج از شمارش عملیاتی</summary>'
                                  + '<div class="tablewrap">' + alerts.to_html(index=False, escape=True, classes="advisory-gaps") + '</div></details>')
     # ONE dedicated material tab, including its explicit empty state.
-    if False and (not material_view.empty or material_gap_html or expert_material_html):
+    if include_material_view and (not material_view.empty or material_gap_html or expert_material_html):
         mi = len(metas)
         mid = "pane_supply_material"
         mcols = list(material_view.columns)
@@ -1043,11 +1059,13 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
 .gsi-user{{background:#e7f4f3;margin-right:12%}} .gsi-bot{{background:white;border:1px solid var(--border,#dbe3e7);margin-left:12%}}
 .gsi-chat-row{{display:flex;gap:8px;margin-top:8px}} .gsi-chat-row textarea{{flex:1;min-height:58px;border:1px solid var(--border,#dbe3e7);border-radius:10px;padding:9px;font:inherit}}
 .gsi-chat-row button{{border:0;background:var(--brand,#0a7c86);color:white;border-radius:10px;padding:0 18px;font:inherit;font-weight:700}} .gsi-chat-link{{display:inline-block;margin-top:8px;font-size:12px;color:var(--brand,#0a7c86)}}
+{decision_brief_css}
 </style>
 </head><body>
 {C.skip_link()}
 <div class="shell stack stack-md">
 {header}
+{decision_brief_html}
 {persona_html}
 <div class="cluster cluster-sm">{flow_html}</div>
 {legend_html}

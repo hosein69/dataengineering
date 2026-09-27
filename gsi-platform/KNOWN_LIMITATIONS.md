@@ -1,4 +1,19 @@
-# Current release: GSI 29.15.12 — 2026-09-27
+# Current release: GSI 29.15.13 — 2026-09-27
+
+- The decision brief reads s58's action queue, which has financial / commitment rules only. Supply
+  stoppages (s40 «اقدام پیشنهادی مقاومت») are advice without owner or due date; the brief shows
+  them as outside the queue and asks for an owner, it does not create the action. A supply rule in
+  s58 needs the owner's SLA (review F4).
+- Owners are roles («رفع تعهد/بانک عامل»), not people; the role → person map exists for e-mail
+  (`role_mail`) and is not shown in the HTML.
+- Which output the manager actually reads (HTML, Excel, e-mail) is unknown; if it is Excel, the
+  brief belongs on sheet 1 (same `compute_decision_brief`) — not yet done.
+- Filter labels in the HTML still show technical keys (`KEY_MATERIAL`, …).
+- The HTML supply tab is off by default (`GSI_HTML_SUPPLY_TAB=1` to show it).
+- `doctor` still reports the two expired emergency rules (FX overlay 1405_05_14, customs
+  `emergency_sata_waiver_1405`); their successors are a regulatory decision.
+
+# GSI 29.15.12 — 2026-09-27
 
 - The expert file is read on its exact 35 headers only. A renamed header is reported missing, not
   guessed; add the new spelling to `EXPERT_HEADERS` deliberately.

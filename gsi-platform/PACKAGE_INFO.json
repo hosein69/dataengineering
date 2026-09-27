@@ -1,24 +1,23 @@
 {
-  "version": "29.15.12",
-  "release_channel": "expert-file-exact-35-columns-20260927",
-  "base": "GSI 29.15.11 (commit 4b3e94f) + the two targeted-debug fixes from the owner's 29.15.11 package",
-  "scope": "Commercial Expert adapter rewritten on the file's exact 35 headers; part states (نزد سازنده/آماده حمل/در راه/در گمرک) from Order Status × Quantity In Part; phantom and duplicate expert headers removed from every report.",
-  "business_logic_changed": true,
-  "business_logic_change_note": "Expert supply quantities now come only from Quantity In Part by Order Status (in customs net of Customs Cleared Quantity); the former supplier = Order − Part and the discharge-date split are removed. A fourth state, READY_QTY (آماده حمل), joins the supply position. Criticality (Oracle-based), commitments and penalties are unchanged.",
-  "source_authority_changed": true,
+  "version": "29.15.13",
+  "release_channel": "decision-brief-financial-safe-20260927",
+  "base": "GSI 29.15.12 FINANCIAL_ACTION_ALGORITHM_SAFE package as delivered (commit 4742e93), on 29.15.12 (commit 2af7471)",
+  "scope": "Owner's decision model (Adaptive Decision Twin) applied: scored review of code and UI/UX; decision brief (DONE/OWNER/DATE/RISK/NEXT/ASK + gated action queue) on top of every HTML; the package's financial fixes merged; HTML supply tab off by an explicit setting instead of `if False`.",
+  "business_logic_changed": false,
+  "business_logic_change_note": "This release adds presentation only (decision brief) and removes hidden, never-shown data from the HTML. The merged package changes financial semantics (unknown conversion fee / credit are not 0; a recorded zero commitment balance is evidence; positive balance blocks settlement; stable ACTION_ID) — see CHANGELOG A/B.",
+  "source_authority_changed": false,
   "regulatory_rulebook_changed": false,
-  "financial_semantics_changed": false,
+  "financial_semantics_changed": true,
   "production_certified": false,
   "validation": {
     "runner": "python run_all_tests.py",
-    "this_release_result": "1547 passed, 0 failed (working tree); re-verified from the clean ZIP extraction",
-    "ab_test": "tools/ab, 29.15.11 vs 29.15.12: dataset with the exact 35 headers — 6 of 10 materials had their quantity in the wrong state and now follow Order Status; complete supply coverage 0→6; criticality, resistance, commitments, penalties and scorecard identical. Old-format data — only change is a removed guess (supplier = Order − Part).",
-    "regression_tests": "tests/test_expert_file_exact_35_columns_v29_15_12.py: 17 tests"
+    "this_release_result": "1564 passed, 0 failed (working tree); re-verified from the clean ZIP extraction",
+    "ab_test": "tools/ab, 29.15.12 (2af7471) vs package (4742e93) vs 29.15.13 on 35-column repro, old-format and 40x data: package→29.15.13 zero differences in frames/extras/counts/Excel except stage run times; HTML gains the brief, loses 338 KB of hidden supply data (608→280 KB). 29.15.12→package differences each root-caused (a 29.15.12 zero-as-empty bug in s56 among them).",
+    "regression_tests": "tests/test_decision_brief_v29_15_13.py: 9 tests; 10 supply-tab suites re-enabled on the explicit setting"
   },
-  "review_report": "docs/EXPERT_FILE_35_COLUMNS_29_15_12_FA.md",
+  "review_report": "docs/DECISION_TWIN_REVIEW_29_15_13_FA.md",
   "previous_release": {
-    "version": "29.15.11",
-    "release_channel": "expert-material-in-calculations-20260927"
-  },
-  "source_authority_change_note": "The expert file contract is exactly its 35 headers (EXPERT_HEADERS); no field is read or invented beyond them. Order Status is now authoritative for a part's state."
+    "version": "29.15.12",
+    "release_channel": "expert-file-exact-35-columns-20260927"
+  }
 }

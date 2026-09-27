@@ -3,6 +3,10 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 from gsi.report.supply_views import build_material_html_view
 from gsi.studio_core.html_export import build_dynamic_html
+from functools import partial
+# 29.15.13: the HTML supply tab is off by default (owner's decision, GSI_HTML_SUPPLY_TAB);
+# these tests guard what it shows when it is switched on.
+build_dynamic_html = partial(build_dynamic_html, include_material_view=True)
 from gsi.studio_core.report_builder import ReportSpec, build
 from gsi.stages.s20_derive import DERIVED, DeriveStage
 
@@ -97,7 +101,13 @@ def test_composer_financial_data_is_preserved(tmp_path):
     x=frame()
     spec=ReportSpec(ref_date='2026-09-21',formats=['html'],fields=['NTSW_BALANCE'],
         tabs=[{'id':'financial','title':'Financial / FX','fields':['NTSW_BALANCE'],'blocks':['table']}])
-    h=build(x,{},spec,{},tmp_path).html
+    # 29.15.13: the HTML supply tab is off by default; switch it on for this check.
+    import dataclasses
+    from unittest import mock
+    import gsi.config.settings as settings
+    with mock.patch.object(settings, "SETTINGS",
+                           dataclasses.replace(settings.SETTINGS, HTML_SUPPLY_MATERIAL_TAB=True)):
+        h=build(x,{},spec,{},tmp_path).html
     assert payload(h)[0]['موقعیت فعلی']=='نامشخص'
     # The financial table keeps its authorized original amount.
     assert 'NTSW_BALANCE' in h and '150' in h

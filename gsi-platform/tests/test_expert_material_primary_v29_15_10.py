@@ -34,6 +34,10 @@ from gsi.report.supply_views import (SHEETS, SOURCE_COL, SOURCE_EXPERT_NO_ORACLE
                                      append_expert_materials, build_material_html_view,
                                      build_material_view)
 from gsi.studio_core.html_export import build_dynamic_html
+from functools import partial
+# 29.15.13: the HTML supply tab is off by default (owner's decision, GSI_HTML_SUPPLY_TAB);
+# these tests guard what it shows when it is switched on.
+build_dynamic_html = partial(build_dynamic_html, include_material_view=True)
 
 
 def _owner_case():
