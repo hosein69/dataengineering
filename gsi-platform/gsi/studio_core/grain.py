@@ -76,6 +76,7 @@ DERIVED_GRAIN: Dict[str, str] = {
     # می‌شد و یک قطعه که روی سه بارنامه پخش است، «موجودی کل تأییدشده»‌اش
     # سه برابر جمع می‌خورد. دانه اعلام‌شده خود مرحله ۳۸: Order × Material.
     "SUPPLIER_QTY": "MATERIAL",
+    "READY_QTY": "MATERIAL",
     "IN_TRANSIT_QTY": "MATERIAL",
     "IN_CUSTOMS_QTY": "MATERIAL",
     "STOCK_IKCO": "MATERIAL",

@@ -401,11 +401,8 @@ def build(root: str) -> dict:
         "Part No.\n(شماره پارت در حمل پارشیالی)": [""] * n,
         "Quantity In Part": ["0"] * n,
         "Customs Cleared Quantity": ["0"] * n,
-        # V26.20: سه سبد موجودی عملیاتی مرجع کارشناسان هستند.
-        # صفر صریح یعنی کارشناس مقدار را صفر تأیید کرده؛ blank یعنی UNKNOWN.
-        "موجودی نزد سازنده": [0] * n,
-        "موجودی در راه": [0] * n,
-        "موجودی گمرک": [0] * n,
+        # 29.15.12: فایل واقعی این سه ستون موجودی را ندارد؛ وضعیت هر پارت از
+        # Order Status است و مقدارش از Quantity In Part (صفر صریح = صفر تأییدشده).
         "Order Status": ["", "در گمرک", "", "", "", ""],
         "Mode of Transport": [""] * n,
         "Transport No.": [""] * n,
@@ -423,7 +420,7 @@ def build(root: str) -> dict:
         "Employee Code": ["10201069_GS", "10201070", "201071",
                            "10201069_GS", "940187", "10201070"],
     })
-    assert len(mogh.columns) == 38, f"باید ۳۸ ستون باشد، {len(mogh.columns)} است"
+    assert len(mogh.columns) == 35, f"باید ۳۵ ستون باشد، {len(mogh.columns)} است"
     _w(os.path.join(dirs["gs_combine"], "Commercial Expert Data.xlsx"),
        {"Expert Data": mogh})
 

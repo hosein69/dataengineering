@@ -91,7 +91,7 @@ def test_engine() -> None:
     for ikco, sapco, transit, customs, need, exp_days, exp_band in cases:
         stock, daily = ikco + sapco, need
         r = eng.evaluate({"STOCK_IKCO": ikco, "STOCK_SAPCO": sapco,
-                          "SUPPLIER_QTY": 0,
+                          "SUPPLIER_QTY": 0, "READY_QTY": 0,
                           "IN_TRANSIT_QTY": transit, "IN_CUSTOMS_QTY": customs,
                           "DAILY_NEED": need})
         got = -1.0 if r.resistance_days is None else r.resistance_days  # 0.0 falsy است
@@ -102,7 +102,7 @@ def test_engine() -> None:
     check("مرزهای ۱۰ و ۲۰ روز دقیقاً طبق تعریف کاربر", ok,
           "؛ ".join(bad) or f"{len(cases)} حالت درست")
 
-    r = eng.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+    r = eng.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                       "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 0})
     check("نیاز روزانه صفر ⇒ «بدون مصرف» نه «بحرانی»",
           r.band == "NO_CONSUMPTION" and r.resistance_days is None, r.band_short)
@@ -111,7 +111,7 @@ def test_engine() -> None:
     check("داده غایب ⇒ «نامشخص» نه «توقف خط»",
           r.band == "UNKNOWN", r.band_short)
 
-    r = eng.evaluate({"STOCK_IKCO": 0, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+    r = eng.evaluate({"STOCK_IKCO": 0, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                       "IN_TRANSIT_QTY": 200, "IN_CUSTOMS_QTY": 0,
                       "DAILY_NEED": 5})
     check("مقاومت انبار جدا از مقاومت کل گزارش می‌شود",
@@ -120,7 +120,7 @@ def test_engine() -> None:
 
 
     check("ترتیب مرتب‌سازی طبقات درست است",
-          [eng.evaluate({"STOCK_IKCO": s, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+          [eng.evaluate({"STOCK_IKCO": s, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                          "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0,
                          "DAILY_NEED": 10}).sort_rank
            for s in (0, 50, 150, 300, 1000)] == [0, 1, 2, 3, 4],
@@ -259,17 +259,17 @@ def test_configurable() -> None:
         yaml.safe_dump(rules, f, allow_unicode=True)
 
     eng = CriticalityEngine(RuleBook(rules_dir=ext))
-    r = eng.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+    r = eng.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                       "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("با تغییر آستانه به ۱۵ روز، ۱۲ روز «بحرانی» می‌شود",
           r.band == "CRITICAL", f"{r.resistance_days} روز → {r.band}")
-    r2 = eng.evaluate({"STOCK_IKCO": 500, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+    r2 = eng.evaluate({"STOCK_IKCO": 500, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                        "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("۲۵ روز با آستانه جدید «در حال بحرانی شدن» است",
           r2.band == "BECOMING_CRITICAL", f"{r2.resistance_days} روز → {r2.band}")
 
     eng_default = CriticalityEngine(get_rulebook())
-    r3 = eng_default.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0,
+    r3 = eng_default.evaluate({"STOCK_IKCO": 240, "STOCK_SAPCO": 0, "SUPPLIER_QTY": 0, "READY_QTY": 0,
                                "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 20})
     check("قوانین اصلی دست‌نخورده ماند (۱۲ روز = در حال بحرانی شدن)",
           r3.band == "BECOMING_CRITICAL", r3.band_short)
@@ -287,7 +287,7 @@ def test_group_criticality() -> None:
         "CANONICAL_BL": ["BL-1", "BL-1", "BL-2"],
         "CANONICAL_ORDER": ["ORD-1", "ORD-1", "ORD-2"],
         "STOCK_IKCO": [0, 1000, 1000], "STOCK_SAPCO": [0,0,0],
-        "SUPPLIER_QTY": [0,0,0], "IN_TRANSIT_QTY": [0,0,0], "IN_CUSTOMS_QTY": [0,0,0],
+        "SUPPLIER_QTY": [0,0,0], "READY_QTY": [0,0,0], "IN_TRANSIT_QTY": [0,0,0], "IN_CUSTOMS_QTY": [0,0,0],
         "DAILY_NEED": [10,10,100],
     })
     out = CriticalityStage().run(df, ctx)

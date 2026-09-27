@@ -1,5 +1,7 @@
 # سیاست Commercial Expert Data و مقاومت قطعه
 
+> **منسوخ از 29.15.12:** «نزد سازنده = Order − Part» و پخش در راه/گمرک با تاریخ تخلیه کنار گذاشته شد. وضعیت هر پارت از «Order Status» و مقدارش از «Quantity In Part» است — `docs/EXPERT_FILE_35_COLUMNS_29_15_12_FA.md`.
+
 ## Employee Code
 `Employee Code` مانند `10201069_GS` قبل از اتصال به HR به `10201069` نرمال می‌شود.
 

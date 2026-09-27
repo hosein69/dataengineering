@@ -42,7 +42,7 @@ def test_column_scope_blocks_material_and_hidden_fields(tmp_path):
 def test_oracle_resistance_survives_advisory_boundary():
     df=pd.DataFrame({'KEY_MATERIAL':['M1'],'ORC_PART_NO':['M1'],'MOGH_MATERIAL':['M1'],
         'ORC_STOCK_IKCO':[60],'ORC_STOCK_SAPCO':[40],'ORC_DAILY_NEED':[20],
-        'MOGH_SUPPLIER_STOCK_QTY':[100000],'مقاومت (روز)':[999]})
+        'MOGH_QTY_AT_SUPPLIER':[100000],'مقاومت (روز)':[999]})
     view=build_material_html_view(df)
     assert view.iloc[0]['مقاومت (روز)']==5
     assert view.iloc[0]['بحرانی']=='بحرانی'

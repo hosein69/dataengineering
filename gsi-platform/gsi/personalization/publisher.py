@@ -25,8 +25,10 @@ DEFAULT_FIELDS = (
     "ORG_MANAGER", "ORG_HEAD", "مرحله جاری", "انتظار جاری (روز)",
     "بحرانی (کوتاه)", "مقاومت (روز)", "مانع فعلی", "مانده تعهد", "روزهای تأخیر",
     "FX_CURRENT_STAGE", "FX_TIME_DAYS_LEFT", "FX_EVIDENCE_COVERAGE",
-    "SUPPLIER_OPEN_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY",
-    "ORACLE_IKCO_QTY", "ORACLE_SAPCO_QTY", "SUPPLY_POSITION_COVERAGE",
+    # 29.15.12: the former SUPPLIER_OPEN_QTY / ORACLE_*_QTY / SUPPLY_POSITION_COVERAGE
+    # were produced by nothing and were silently skipped; these are the real columns.
+    "SUPPLIER_QTY", "READY_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY",
+    "STOCK_IKCO", "STOCK_SAPCO", "SUPPLY_POSITION_COVERAGE_PCT",
     "NEXT_ACTION_TITLE", "NEXT_ACTION_PRIORITY", "NEXT_ACTION_DUE_DATE", "NEXT_ACTION_OWNER", "NEXT_ACTION_ID", "کد طبقه بحرانی",
     "FX_ACTION_TITLE", "FX_ACTION_PRIORITY", "FX_ACTION_DUE_DATE",
 )

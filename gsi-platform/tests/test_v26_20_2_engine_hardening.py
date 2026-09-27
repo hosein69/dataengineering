@@ -102,14 +102,14 @@ def test_s38_vectorised() -> None:
         "STOCK_IKCO":     [100, 100, "", 50, 10],
         "STOCK_SAPCO":    [50, 50, "", "", 5],
         "SUPPLIER_QTY":   [300, "", "", "", 1],
+        "READY_QTY":      [0, 0, "", "", 1],
         "IN_TRANSIT_QTY": [20, 20, "", "", 1],
         "IN_CUSTOMS_QTY": [10, 10, "", "", 1],
-        "EXPERT_INV_CONFLICT": ["", "", "", "", "دو snapshot متعارض"],
-        "EXPERT_INV_ASOF": [np.nan, "", "", "", "1405/06/15"],
+        "EXPERT_INV_CONFLICT": ["", "", "", "", "Part 1: در راه | در گمرک"],
     })
     ctx = PipelineContext(rb=get_rulebook(), today=date(2026, 8, 31))
     out = SupplyPositionStage().run(df.copy(), ctx)
-    check("جمع قطعی فقط وقتی هر پنج مؤلفه هست ساخته می‌شود",
+    check("جمع قطعی فقط وقتی هر شش مؤلفه هست ساخته می‌شود",
           out["SUPPLY_TOTAL_CONFIRMED"].iloc[0] == 480
           and pd.isna(out["SUPPLY_TOTAL_CONFIRMED"].iloc[1]),
           str(list(out["SUPPLY_TOTAL_CONFIRMED"])))
@@ -125,10 +125,10 @@ def test_s38_vectorised() -> None:
           and out["SUPPLY_POSITION_STATUS"].iloc[0] != "CONFLICT")
     check("شکاف‌ها با نام و ترتیب درست گزارش می‌شوند",
           out["SUPPLY_POSITION_GAPS"].iloc[3]
-          == "Oracle/SAPCO، Expert/نزد سازنده، Expert/در راه، Expert/گمرک",
+          == "Oracle/SAPCO، Expert/نزد سازنده، Expert/آماده حمل، Expert/در راه، Expert/در گمرک",
           out["SUPPLY_POSITION_GAPS"].iloc[3])
     check("پوشش داده درصد درست می‌دهد",
-          list(out["SUPPLY_POSITION_COVERAGE_PCT"]) == [100.0, 80.0, 0.0, 20.0, 100.0],
+          list(out["SUPPLY_POSITION_COVERAGE_PCT"]) == [100.0, 83.3, 0.0, 16.7, 100.0],
           str(list(out["SUPPLY_POSITION_COVERAGE_PCT"])))
 
 

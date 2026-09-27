@@ -268,8 +268,7 @@ def _expert_advisory(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
         notes.append(raw_alert)
 
     for col, label in (("MOGH_COMMERCIAL_NOTE", "کامنت بازرگانی"),
-                       ("MOGH_LOGISTICS_NOTE", "کامنت لجستیک"),
-                       ("MOGH_INVENTORY_NOTE", "کامنت موجودی")):
+                       ("MOGH_LOGISTICS_NOTE", "کامنت لجستیک")):
         x = _s(df, col)
         notes.append(pd.Series("", index=idx).mask(x.ne(""), label + ": " + x))
 
@@ -388,7 +387,7 @@ def build_material_html_view(df: pd.DataFrame, today=None) -> pd.DataFrame:
                      ["NTSW_COMMIT_DATE", "NTSW_ALLOC_DATE"], errors="ignore")
     if raw_expert:
         work = work.drop(columns=["PO_SENT_DATE"], errors="ignore")
-    for c in ("MOGH_COMMERCIAL_NOTE", "MOGH_LOGISTICS_NOTE", "MOGH_INVENTORY_NOTE",
+    for c in ("MOGH_COMMERCIAL_NOTE", "MOGH_LOGISTICS_NOTE",
               "MOGH_ALERTS", "ALERTS", "شرح هشدارها", "روایت",
               "BL_CRITICAL_REASON", "ORDER_CRITICAL_REASON"):
         work[c] = ""
@@ -560,10 +559,12 @@ def build_expert_material_evidence_view(material_positions: pd.DataFrame | None)
         "تعداد شرح‌های ثبت‌شده": num("MOGH_MATERIAL_DESC_COUNT"),
         "تعداد ردیف منبع": num("EXPERT_SOURCE_ROWS"),
         "شکاف ثبت کارشناس": txt("EXPERT_RECORD_GAPS"),
-        "وضعیت موجودی قلم": txt("SUPPLY_POSITION_STATUS"),
-        "موجودی کل تأییدشده قلم": num("SUPPLY_TOTAL_CONFIRMED"),
-        "حداقل موجودی قابل اثبات قلم": num("SUPPLY_TOTAL_LOWER_BOUND"),
-        "شکاف‌های موجودی قلم": txt("SUPPLY_POSITION_GAPS"),
+        # Quantity In Part by Order Status — only what the expert file holds (29.15.12)
+        "نزد سازنده": num("SUPPLIER_QTY"),
+        "آماده حمل": num("READY_QTY"),
+        "در راه": num("IN_TRANSIT_QTY"),
+        "در گمرک": num("IN_CUSTOMS_QTY"),
+        "مقدار با وضعیت نامشخص": num("EXPERT_INV_UNKNOWN_QTY"),
         "شرح مرجع Oracle": txt("ORC_MATERIAL_DESC"),
         "موجودی ایران خودرو": num("STOCK_IKCO"),
         "موجودی ساپکو": num("STOCK_SAPCO"),
@@ -627,6 +628,10 @@ def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
     without an order number belong to no slice and are always kept.
     """
     if not isinstance(ledger, pd.DataFrame) or ledger.empty or "KEY_MATERIAL" not in ledger:
+        return view
+    if isinstance(df, pd.DataFrame) and df.empty:
+        # An empty filtered report stays empty; it must not refill from the
+        # whole expert ledger (targeted debug of 29.15.11).
         return view
     led = ledger.copy()
     led["__mat"] = _s(led, "KEY_MATERIAL")

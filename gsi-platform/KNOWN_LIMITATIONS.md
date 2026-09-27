@@ -1,4 +1,15 @@
-# Current release: GSI 29.15.11 — 2026-09-27
+# Current release: GSI 29.15.12 — 2026-09-27
+
+- The expert file is read on its exact 35 headers only. A renamed header is reported missing, not
+  guessed; add the new spelling to `EXPERT_HEADERS` deliberately.
+- Part states come only from Order Status. Only the four states and a few English equivalents are
+  recognised (`status_lexicon.yaml → part_states`); any other text is «وضعیت نامشخص» until added.
+- Quantity ordered but not yet in any part (Quantity In Order − Σ Quantity In Part) is in no state
+  and is not shown as «نزد سازنده» — an open owner decision.
+- Order-less expert lines keep their part states in the mart and the ledger; the warehouse supply
+  fact table is keyed by order and records them only as partial evidence.
+
+# GSI 29.15.11 — 2026-09-27
 
 - Every Commercial Expert Order×Material is a row of the mart and of every calculation
   (`MOGH_ITEM_ROLE` = FIRST / ADDITIONAL / NO_ORDER). This supersedes the 29.15.8 and 29.15.10 notes

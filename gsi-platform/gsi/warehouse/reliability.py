@@ -88,10 +88,14 @@ CONTRACTS: dict[str, GrainContract] = {
     ),
     "moghavemat/inventory": GrainContract(
         name="moghavemat/inventory",
-        grain="order × material supply position",
+        grain="order × material part states (Quantity In Part by Order Status)",
         natural_key=("KEY_ORDER", "KEY_MATERIAL"),
         required_columns=("KEY_ORDER", "KEY_MATERIAL"),
-        description="Commercial supply position. Snapshot quantities are non-additive across duplicate lines.",
+        # 29.15.12: an expert line without an order number is kept and reported
+        # as incomplete (owner, 1405-07-05) — a warning, never a blocked publish.
+        key_completeness_policy="partial_evidence",
+        description="Commercial part states per order × material; order-less expert lines are retained "
+                    "as incomplete evidence. Quantities are non-additive across duplicate lines.",
     ),
     "moghavemat/order_material_pr_item": GrainContract(
         name="moghavemat/order_material_pr_item",

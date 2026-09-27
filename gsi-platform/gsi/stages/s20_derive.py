@@ -71,17 +71,15 @@ DERIVED = {
     "CLEARED_PCT":        (["MOGH_CLEARED_PCT"], 0, True),
     "BL_SUSPECT":         (["MOGH_BL_SUSPECT"], "", False),
     "PO_SENT_DATE":       (["MOGH_PO_SENT_DATE"], "", False),
-    # ── موقعیت موجودی کارشناسی — منبع اصلی سه bucket ──
+    # ── وضعیت پارت‌ها از فایل کارشناسان: Quantity In Part × Order Status ──
     # عددها عمداً numeric=False هستند تا blank به 0 تبدیل نشود. مرحله
     # supply_position عددی‌سازی، پوشش و reconciliation را انجام می‌دهد.
-    "SUPPLIER_QTY":       (["MOGH_SUPPLIER_STOCK_QTY", "MOGH_SUPPLIER_STOCK_QTY_DERIVED"], "", False),
-    "IN_TRANSIT_QTY":     (["MOGH_IN_TRANSIT_QTY"], "", False),
-    "IN_CUSTOMS_QTY":     (["MOGH_IN_CUSTOMS_QTY"], "", False),
-    "EXPERT_INV_ASOF":    (["MOGH_INVENTORY_ASOF_DATE"], "", False),
-    "EXPERT_INV_NOTE":    (["MOGH_INVENTORY_NOTE"], "", False),
-    "EXPERT_INV_MISSING": (["MOGH_INVENTORY_MISSING"], "", False),
+    "SUPPLIER_QTY":       (["MOGH_QTY_AT_SUPPLIER"], "", False),
+    "READY_QTY":          (["MOGH_QTY_READY"], "", False),
+    "IN_TRANSIT_QTY":     (["MOGH_QTY_IN_TRANSIT"], "", False),
+    "IN_CUSTOMS_QTY":     (["MOGH_QTY_IN_CUSTOMS"], "", False),
+    "EXPERT_INV_UNKNOWN_QTY": (["MOGH_QTY_STATE_UNKNOWN"], "", False),
     "EXPERT_INV_CONFLICT":(["MOGH_INVENTORY_CONFLICT"], "", False),
-    "EXPERT_INV_COVERAGE":(["MOGH_INVENTORY_COVERAGE_PCT"], "", False),
     # ── موجودی و نیاز (سورس Oracle) — عمداً بدون پیش‌فرض ۰ ──
     # «۰» یعنی موجودی صفر (توقف خط)، «خالی» یعنی متریال در Oracle نبود.
     "STOCK_IKCO":         (["ORC_STOCK_IKCO"], "", False),
@@ -239,39 +237,20 @@ class DeriveStage(Stage):
 
     @staticmethod
     def _inventory_pipeline(df: pd.DataFrame, ctx: PipelineContext) -> pd.DataFrame:
-        """فقط وضعیت لجستیکی را از رویدادها می‌سازد؛ **مقدار موجودی را نه**.
+        """پرچم‌های «در راه / در گمرک»؛ **مقدار** فقط از فایل کارشناسان می‌آید.
 
-        از V26.20 سه مقدار کمی SUPPLIER_QTY / IN_TRANSIT_QTY / IN_CUSTOMS_QTY
-        فقط از سورس کارشناسان می‌آیند. تاریخ تخلیه، BL یا وضعیت حمل می‌تواند
-        بگوید محموله «کجاست»، اما حق ندارد مقدار کمی بسازد. این جداسازی
-        Unknown را از Zero جدا می‌کند.
+        مقدار هر وضعیت از Quantity In Part همان پارت و وضعیتش از Order Status
+        است (adapter فایل کارشناسان). تاریخ تخلیه یا ترخیص می‌تواند بگوید
+        محموله کجاست، اما حق ندارد مقدار بسازد یا مقدار را بین وضعیت‌ها پخش کند.
         """
         from ..core.text import is_empty_val
 
         discharged = ~df.get("DISCHARGE_DATE", pd.Series("", index=df.index)).map(
             lambda v: is_empty_val(v, treat_zero_as_empty=False))
         full_clear = df.get("IS_FULL_CLEARED", pd.Series(False, index=df.index)).astype(bool)
-
-        q_transit = pd.to_numeric(df.get("IN_TRANSIT_QTY", pd.Series(index=df.index, dtype=object)),
-                                  errors="coerce")
-        q_customs = pd.to_numeric(df.get("IN_CUSTOMS_QTY", pd.Series(index=df.index, dtype=object)),
-                                  errors="coerce")
-
-        # هدر واقعی Commercial Expert Data ستون مستقیم «در راه/گمرک» ندارد.
-        # مقدار بازِ حمل از Quantity In Part - Customs Cleared Quantity ساخته می‌شود
-        # و فقط با شاهد مکانی مستقل (تخلیه/ترخیص) بین Transit و Customs پخش می‌شود.
-        open_ship = pd.to_numeric(df.get("MOGH_OPEN_SHIPPED_QTY", pd.Series(index=df.index, dtype=object)),
-                                  errors="coerce")
-        no_transit = q_transit.isna()
-        no_customs = q_customs.isna()
-        assign_customs = no_customs & open_ship.notna() & discharged & (~full_clear)
-        assign_transit = no_transit & open_ship.notna() & (~discharged) & (~full_clear)
-        if "IN_CUSTOMS_QTY" not in df.columns:
-            df["IN_CUSTOMS_QTY"] = pd.Series("", index=df.index, dtype=object)
-        if "IN_TRANSIT_QTY" not in df.columns:
-            df["IN_TRANSIT_QTY"] = pd.Series("", index=df.index, dtype=object)
-        df.loc[assign_customs, "IN_CUSTOMS_QTY"] = open_ship.loc[assign_customs]
-        df.loc[assign_transit, "IN_TRANSIT_QTY"] = open_ship.loc[assign_transit]
+        for c in ("SUPPLIER_QTY", "READY_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY"):
+            if c not in df.columns:
+                df[c] = pd.Series("", index=df.index, dtype=object)
         q_transit = pd.to_numeric(df["IN_TRANSIT_QTY"], errors="coerce")
         q_customs = pd.to_numeric(df["IN_CUSTOMS_QTY"], errors="coerce")
 
@@ -279,16 +258,14 @@ class DeriveStage(Stage):
         df["IS_IN_TRANSIT"] = q_transit.gt(0) | ((~discharged) & (~full_clear))
         df["IS_IN_CUSTOMS"] = q_customs.gt(0) | (discharged & (~full_clear))
 
-        missing_any = False
-        for c in ("SUPPLIER_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY"):
-            if c not in df.columns or df[c].map(
-                    lambda v: is_empty_val(v, treat_zero_as_empty=False)).all():
-                missing_any = True
+        missing_any = any(
+            df[c].map(lambda v: is_empty_val(v, treat_zero_as_empty=False)).all()
+            for c in ("SUPPLIER_QTY", "READY_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY"))
         ctx.extras["expert_inventory_qty_missing"] = bool(missing_any)
         if missing_any:
             log.warning(
-                "⚠️ یکی یا بیشتر از سه bucket کارشناسی «نزد سازنده / در راه / "
-                "گمرک» مقدار کمی ندارند؛ مقدار خالی صفر نمی‌شود و مقاومت کل "
+                "⚠️ یکی یا بیشتر از چهار وضعیت پارت «نزد سازنده / آماده حمل / در راه / "
+                "در گمرک» در هیچ ردیفی مقدار ندارد؛ مقدار خالی صفر نمی‌شود و مقاومت کل "
                 "در مرحله Supply Position با پوشش داده گزارش می‌شود.")
         return df
 

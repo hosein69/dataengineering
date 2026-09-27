@@ -360,13 +360,14 @@ def _build_material(self, df: "pd.DataFrame") -> None:
         stuck = pd.to_numeric(g.get("روزهای رسوب"), errors="coerce").max()
         bal = commitment_display(g) if "مانده تعهد" in g.columns else "—"
         risk = pd.to_numeric(g.get("امتیاز ریسک"), errors="coerce").max()
+        # unknown total (a missing component) stays empty — Unknown ≠ Zero
+        total = pd.to_numeric(g.get("موجودی کل قابل احتساب"), errors="coerce").max()
         vals = ([mat,
                  str(g.get("CANONICAL_GOODS_DESC", pd.Series([""])).iloc[0]),
                  str(g.get("طبقه بحرانی", pd.Series([""])).iloc[0]),
                  None if pd.isna(res) else float(res),
                  float(pd.to_numeric(g.get("نیاز روزانه"), errors="coerce").max() or 0),
-                 float(pd.to_numeric(g.get("موجودی کل قابل احتساب"),
-                                     errors="coerce").max() or 0)]
+                 None if pd.isna(total) else float(total)]
                 + counts
                 + [broken,
                    0 if pd.isna(stuck) else float(stuck),

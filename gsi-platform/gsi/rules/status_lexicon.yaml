@@ -131,11 +131,21 @@ extra_stages:
     terminal: true
     excluded_from_kpi: true
 
-# وضعیت‌های سفارش (ستون Order Status در فایل مقاومت)
-order_status_map:
-  "Open": OPEN
-  "Closed": CLOSED
-  "Cancelled": CANCELLED
-  "باز": OPEN
-  "بسته": CLOSED
-  "ابطال": CANCELLED
+# وضعیت هر پارت — ستون «Order Status» فایل کارشناسان (تصمیم مالک ۱۴۰۵/۰۷/۰۵).
+# «Quantity In Part» هر ردیف در یکی از این چهار وضعیت است. تطبیق دقیق است (پس از
+# یکسان‌سازی فاصله، ی/ک و حروف بزرگ/کوچک) — زیررشته نه. مقداری که اینجا نیست حدس
+# زده نمی‌شود: مقدار پارت «وضعیت نامشخص» می‌ماند و متن آن در لاگ می‌آید تا این
+# فهرست کامل شود. (فهرست قبلی order_status_map هیچ مصرف‌کننده‌ای نداشت.)
+part_states:
+  AT_SUPPLIER:
+    fa: "نزد سازنده"
+    aliases: ["نزد سازنده", "At Manufacturer", "At Supplier"]
+  READY:
+    fa: "آماده حمل"
+    aliases: ["آماده حمل", "Ready for Shipment", "Ready to Ship"]
+  IN_TRANSIT:
+    fa: "در راه"
+    aliases: ["در راه", "In Transit"]
+  IN_CUSTOMS:
+    fa: "در گمرک"
+    aliases: ["در گمرک", "In Customs"]

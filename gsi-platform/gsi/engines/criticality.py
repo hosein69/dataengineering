@@ -42,6 +42,7 @@ class CriticalityResult:
     stock_ikco: Optional[float]
     stock_sapco: Optional[float]
     supplier_qty: Optional[float]
+    ready_qty: Optional[float]
     in_transit_qty: Optional[float]
     in_customs_qty: Optional[float]
     daily_need: Optional[float]
@@ -64,6 +65,7 @@ class CriticalityResult:
             "موجودی ایران خودرو": self.stock_ikco,
             "موجودی ساپکو": self.stock_sapco,
             "موجودی نزد سازنده": self.supplier_qty,
+            "موجودی آماده حمل": self.ready_qty,
             "موجودی در راه": self.in_transit_qty,
             "موجودی در گمرک": self.in_customs_qty,
             "موجودی کل قابل احتساب": self.total_confirmed,
@@ -135,6 +137,9 @@ class CriticalityEngine:
                 missing.append(c.get("fa") or field)
             else:
                 comps[field] = num_safe(raw)
+        # پارتی با Order Status نامعلوم: هیچ وضعیتی کامل نیست (29.15.12).
+        if not is_empty_val(row.get("EXPERT_INV_UNKNOWN_QTY"), treat_zero_as_empty=True):
+            missing.append("وضعیت نامشخص")
 
         def n(field: str) -> Optional[float]:
             raw = row.get(field)
@@ -145,6 +150,7 @@ class CriticalityEngine:
         ikco = n("STOCK_IKCO")
         sapco = n("STOCK_SAPCO")
         supplier = n("SUPPLIER_QTY")
+        ready = n("READY_QTY")
         transit = n("IN_TRANSIT_QTY")
         customs = n("IN_CUSTOMS_QTY")
         need = n("DAILY_NEED")
@@ -163,7 +169,7 @@ class CriticalityEngine:
             wh_days = round(min(warehouse / need, self.max_days), 1)
 
         # تعریف کسب‌وکار: «مقاومت قطعه» فقط موجودی انبار IKCO + SAPCO است.
-        # سه bucket نزد سازنده/درراه/گمرک مقاومت‌های مستقل و دید کل تامین‌اند؛
+        # چهار وضعیت پارت (نزد سازنده/آماده حمل/درراه/گمرک) مقاومت‌های مستقل و دید کل تامین‌اند؛
         # نبود آن‌ها نباید طبقه بحرانی قطعه را UNKNOWN کند.
         total_supply_days = None
         if has_need and need is not None and need > 0 and complete and total_confirmed is not None:
@@ -190,7 +196,7 @@ class CriticalityEngine:
             sort_rank=int(band.get("sort", 9)),
             action=band.get("action", ""),
             risk_score=self.scores.get(band["code"], 0.0),
-            stock_ikco=ikco, stock_sapco=sapco, supplier_qty=supplier,
+            stock_ikco=ikco, stock_sapco=sapco, supplier_qty=supplier, ready_qty=ready,
             in_transit_qty=transit, in_customs_qty=customs,
             daily_need=need, components=comps, missing_components=missing,
             coverage_pct=coverage, total_confirmed=total_confirmed,

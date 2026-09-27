@@ -30,19 +30,19 @@ def test_unknown_not_zero():
     from gsi.rulebook import get_rulebook
     e = CriticalityEngine(get_rulebook(reload=True))
     r = e.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 50,
-                    "SUPPLIER_QTY": "", "IN_TRANSIT_QTY": 20,
+                    "SUPPLIER_QTY": "", "READY_QTY": 0, "IN_TRANSIT_QTY": 20,
                     "IN_CUSTOMS_QTY": 10, "DAILY_NEED": 10})
     check("مقاومت انبار مستقل؛ مقاومت کل با فقدان موجودی سازنده نامشخص است",
           r.resistance_warehouse == 15.0 and r.resistance_total_supply is None and r.supplier_qty is None,
           f"band={r.band}, supplier={r.supplier_qty}, days={r.resistance_days}")
     check("با داده ناقص حداقل قابل اثبات حفظ می‌شود",
-          abs((r.total_lower_bound or 0)-180) < 0.01 and r.coverage_pct == 80.0,
+          abs((r.total_lower_bound or 0)-180) < 0.01 and r.coverage_pct == 83.3,
           f"lower={r.total_lower_bound}, coverage={r.coverage_pct}")
 
     r2 = e.evaluate({"STOCK_IKCO": 100, "STOCK_SAPCO": 50,
-                     "SUPPLIER_QTY": 300, "IN_TRANSIT_QTY": 20,
+                     "SUPPLIER_QTY": 300, "READY_QTY": 0, "IN_TRANSIT_QTY": 20,
                      "IN_CUSTOMS_QTY": 10, "DAILY_NEED": 10})
-    check("فرمول پنج‌جزئی: Oracle + سه سبد کارشناسی",
+    check("فرمول شش‌جزئی: Oracle + چهار وضعیت پارت (Quantity In Part × Order Status)",
           r2.total_confirmed == 480 and abs((r2.resistance_total_supply or 0)-48) < .01,
           f"total={r2.total_confirmed}, days={r2.resistance_days}")
 

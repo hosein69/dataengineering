@@ -1,3 +1,60 @@
+# GSI 29.15.12 — The expert file exactly as it is: 35 columns, part states from Order Status — 2026-09-27
+
+The owner gave the file's exact 35 headers and asked to rewrite the code on
+them, «که کثیف نشه», and to show only what exists. Quantity In Part is in one
+of four states — نزد سازنده, آماده حمل, در راه, در گمرک — read from Order Status.
+
+**Adapter rewritten on a single contract** (`moghavemat.EXPERT_HEADERS`, the 35
+headers verbatim, in file order). Headers match by whole name only (full
+header, the name before its parentheses, or the text inside them); no
+substring matching — «Part No.» can no longer resolve to «Manufacturer Part
+Number». Missing columns are warned and left blank, extra columns are ignored
+and named, blank numbers stay NaN, source values are not overwritten.
+
+**Five phantom fields removed** (supplier / in-transit / in-customs stock,
+inventory date, inventory note): the file never had them; they were created
+empty on every run and reached the reports as extra headers. Also removed:
+supplier stock guessed as «Quantity In Order − Quantity In Part», and the
+in-transit/customs split guessed from BL discharge dates.
+
+**Part states** (`status_lexicon.yaml → part_states`, whole-word match): each
+line's Quantity In Part goes to the state named by its Order Status; in customs
+it is net of Customs Cleared Quantity. Unknown status text is never guessed:
+the quantity is reported as «وضعیت نامشخص», the text is logged. Per order ×
+material, a Part No. repeated on several PR items counts once; a part with two
+states is a recorded conflict; an unknown-state part makes zeros elsewhere
+unknown. The mart row of every order × material (and every order-less
+material) carries its own four states, so the separate inventory join was
+dropped; the warehouse keeps order-less part states as partial evidence (a
+warning, not a blocked publish).
+
+**Reports show only what exists.** Sheet 7 is the file's 35 headers plus the
+four states. Sheet 2 lists each state once (the criticality stage no longer
+repeats them as «(کارشناس)» columns, nor a second total). Sheet 14 / HTML
+evidence shows the four states and the unknown-status quantity. In Studio/HTML
+the expert group holds exactly the 35 headers; computed columns are grouped
+apart. Publisher defaults pointed at four columns nothing produced.
+
+A/B 29.15.11 ↔ 29.15.12 on a dataset with the exact 35 headers: six of ten
+materials had their quantity in the wrong state (e.g. «آماده حمل» shown in
+customs, «نزد سازنده» in transit, a blank status guessed as in transit); now
+each follows Order Status. Complete supply coverage 0 → 6. Criticality,
+resistance, commitments, penalties and the scorecard are identical. On the old
+data format the only numeric change is a removed guess (IK55555555: 50 «at the
+manufacturer» without any Quantity In Part is now unknown).
+
+Carried from the targeted debug that came with the owner's 29.15.11 package:
+the first material's attributes are never borrowed from a sibling, and an
+empty filtered report stays empty.
+
+Tests: `tests/test_expert_file_exact_35_columns_v29_15_12.py` (17); tests that
+pinned the three-bucket model, «Order − Part» or derived sheet-7 headers moved
+to the new contract. `rulebook.loader` contract → 4 (`part_state`).
+Report: `docs/EXPERT_FILE_35_COLUMNS_29_15_12_FA.md`.
+Full suite: 1547 passed, 0 failed.
+
+---
+
 # GSI 29.15.11 — Every expert-file material is in the mart and in every calculation — 2026-09-27
 
 The owner: «معیار فایل کارشناسان هست و نباید حذف یا از محاسبات خارج شود؛ اگر

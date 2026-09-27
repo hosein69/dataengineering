@@ -1,24 +1,24 @@
 {
-  "version": "29.15.11",
-  "release_channel": "expert-material-in-calculations-20260927",
-  "base": "GSI 29.15.10 (commit 235aaea)",
-  "scope": "Every Commercial Expert Order×Material is a mart row (MOGH_ITEM_ROLE FIRST/ADDITIONAL/NO_ORDER) and enters every calculation; case-level facts are counted once per case (grain.case_rows).",
+  "version": "29.15.12",
+  "release_channel": "expert-file-exact-35-columns-20260927",
+  "base": "GSI 29.15.11 (commit 4b3e94f) + the two targeted-debug fixes from the owner's 29.15.11 package",
+  "scope": "Commercial Expert adapter rewritten on the file's exact 35 headers; part states (نزد سازنده/آماده حمل/در راه/در گمرک) from Order Status × Quantity In Part; phantom and duplicate expert headers removed from every report.",
   "business_logic_changed": true,
-  "business_logic_change_note": "Mart grain changed from one row per expert order to one row per expert Order×Material (owner's decision). Material-level measures now include every expert material; case-level measures (red commitments, demurrage average, conformance, commitment register, scorecard, BL-grain safe_agg, cashflow PI registration) count each case once. Pre-existing scorecard bug fixed: BL-less cases were collapsed into one arbitrary row.",
+  "business_logic_change_note": "Expert supply quantities now come only from Quantity In Part by Order Status (in customs net of Customs Cleared Quantity); the former supplier = Order − Part and the discharge-date split are removed. A fourth state, READY_QTY (آماده حمل), joins the supply position. Criticality (Oracle-based), commitments and penalties are unchanged.",
   "source_authority_changed": true,
   "regulatory_rulebook_changed": false,
   "financial_semantics_changed": false,
   "production_certified": false,
   "validation": {
     "runner": "python run_all_tests.py",
-    "this_release_result": "1530 passed, 0 failed (working tree); re-verified from the clean ZIP extraction",
-    "ab_test": "tools/ab, 29.15.10 vs 29.15.11 on identical inputs: reproduction data (owner's cases) — mart 8→10 rows, none lost, commitment totals / red commitments / deviating cases identical, every other change traced to the two new rows; 40x scaled data (2 runs) — no calculation changed; treatment arm (5 runs) — identical except the scorecard in the half-source run (pre-existing bug fixed: 81 of 82 experts with BL-less cases were missing)",
-    "regression_tests": "tests/test_expert_material_in_calculations_v29_15_11.py: 11 tests, 10 fail on 29.15.10"
+    "this_release_result": "1547 passed, 0 failed (working tree); re-verified from the clean ZIP extraction",
+    "ab_test": "tools/ab, 29.15.11 vs 29.15.12: dataset with the exact 35 headers — 6 of 10 materials had their quantity in the wrong state and now follow Order Status; complete supply coverage 0→6; criticality, resistance, commitments, penalties and scorecard identical. Old-format data — only change is a removed guess (supplier = Order − Part).",
+    "regression_tests": "tests/test_expert_file_exact_35_columns_v29_15_12.py: 17 tests"
   },
-  "review_report": "docs/EXPERT_MATERIAL_IN_CALCULATIONS_29_15_11_FA.md",
+  "review_report": "docs/EXPERT_FILE_35_COLUMNS_29_15_12_FA.md",
   "previous_release": {
-    "version": "29.15.10",
-    "release_channel": "expert-material-primary-20260927"
+    "version": "29.15.11",
+    "release_channel": "expert-material-in-calculations-20260927"
   },
-  "source_authority_change_note": "The Commercial Expert file is the population criterion for materials: every Order×Material, including incomplete and order-less lines, is a mart row. BLs still come only from independent sources and attach to the order's first material; expert data still never sets operational position."
+  "source_authority_change_note": "The expert file contract is exactly its 35 headers (EXPERT_HEADERS); no field is read or invented beyond them. Order Status is now authoritative for a part's state."
 }

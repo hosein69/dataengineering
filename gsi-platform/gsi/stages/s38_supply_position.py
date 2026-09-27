@@ -4,12 +4,13 @@
 V26.20 یک اصل بیزینسی را صریح می‌کند:
 
     موجودی قابل اتکا = Oracle(IKCO + SAPCO)
-                      + Expert(نزد سازنده + در راه + گمرک)
+                      + Expert(نزد سازنده + آماده حمل + در راه + در گمرک)
 
-سه bucket کارشناسی **مقدار اصلی عملیاتی** هستند و از وضعیت BL/گمرک استنتاج
-نمی‌شوند. Oracle موجودی انبار و نیاز روزانه را می‌دهد. Missing با Zero یکی
-نیست: اگر کارشناس مقدار یک bucket را نداده باشد، جمع قطعی ساخته نمی‌شود و فقط
-«حداقل قابل اثبات» گزارش می‌گردد.
+چهار وضعیت کارشناسی از «Quantity In Part» هر پارت و وضعیتش از «Order Status»
+فایل کارشناسان می‌آیند (29.15.12) و از وضعیت BL/گمرک استنتاج نمی‌شوند. Oracle
+موجودی انبار و نیاز روزانه را می‌دهد. Missing با Zero یکی نیست: اگر مقدار یک
+وضعیت معلوم نباشد یا پارتی وضعیت نامعلوم داشته باشد، جمع قطعی ساخته نمی‌شود و
+فقط «حداقل قابل اثبات» گزارش می‌گردد.
 """
 from __future__ import annotations
 
@@ -97,23 +98,26 @@ class SupplyPositionStage(Stage):
     name = "supply_position"
     title = "یکپارچه‌سازی موجودی کارشناسی + Oracle با تفکیک Missing از Zero"
     order = 38
-    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY",
+    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "READY_QTY",
                 "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY", "DAILY_NEED"]
     provides = [
         "SUPPLY_ORACLE_STOCK", "SUPPLY_EXPERT_STOCK", "SUPPLY_TOTAL_CONFIRMED",
         "SUPPLY_TOTAL_LOWER_BOUND", "SUPPLY_POSITION_COVERAGE_PCT",
         "SUPPLY_POSITION_STATUS", "SUPPLY_POSITION_GAPS", "SUPPLY_POSITION_LINEAGE",
         "SUPPLY_EXPERT_COVERAGE_PCT", "SUPPLY_ORACLE_COVERAGE_PCT",
-        "SUPPLY_POSITION_CONFLICT", "SUPPLY_POSITION_ASOF",
+        "SUPPLY_POSITION_CONFLICT",
     ]
 
     ORACLE = (("STOCK_IKCO", "Oracle/IKCO"), ("STOCK_SAPCO", "Oracle/SAPCO"))
     EXPERT = (("SUPPLIER_QTY", "Expert/نزد سازنده"),
+              ("READY_QTY", "Expert/آماده حمل"),
               ("IN_TRANSIT_QTY", "Expert/در راه"),
-              ("IN_CUSTOMS_QTY", "Expert/گمرک"))
+              ("IN_CUSTOMS_QTY", "Expert/در گمرک"))
+    #: مقدار پارت‌هایی که Order Status آن‌ها خالی یا ناشناخته است.
+    UNKNOWN_STATE = ("EXPERT_INV_UNKNOWN_QTY", "Expert/وضعیت نامشخص")
 
-    LINEAGE = ("Oracle: STOCK_IKCO + STOCK_SAPCO | Expert: "
-               "SUPPLIER_QTY + IN_TRANSIT_QTY + IN_CUSTOMS_QTY")
+    LINEAGE = ("Oracle: STOCK_IKCO + STOCK_SAPCO | Expert (Quantity In Part × Order Status): "
+               "SUPPLIER_QTY + READY_QTY + IN_TRANSIT_QTY + IN_CUSTOMS_QTY")
 
     @staticmethod
     def _text_col(df: pd.DataFrame, name: str) -> pd.Series:
@@ -147,8 +151,13 @@ class SupplyPositionStage(Stage):
         k_oracle, k_expert = ok_oracle.sum(axis=1), ok_expert.sum(axis=1)
         k_all = k_oracle + k_expert
 
+        # پارتی با وضعیت نامعلوم یعنی هیچ وضعیتی کامل نیست (ممکن است همان‌جا باشد).
+        unknown_col = self.UNKNOWN_STATE[0]
+        unknown_qty = (_numeric_or_nan(df[unknown_col]) if unknown_col in df.columns
+                       else pd.Series(np.nan, index=df.index, dtype="float64"))
+        has_unknown = unknown_qty.fillna(0).gt(0)
         oracle_complete = k_oracle == n_oracle
-        expert_complete = k_expert == n_expert
+        expert_complete = (k_expert == n_expert) & ~has_unknown
         complete = oracle_complete & expert_complete
 
         sum_oracle = vals[[f for f, _ in self.ORACLE]].sum(axis=1, skipna=True)
@@ -179,9 +188,10 @@ class SupplyPositionStage(Stage):
         df["SUPPLY_EXPERT_COVERAGE_PCT"] = (100 * k_expert / n_expert).round(1)
         df["SUPPLY_ORACLE_COVERAGE_PCT"] = (100 * k_oracle / n_oracle).round(1)
         df["SUPPLY_POSITION_STATUS"] = status
-        df["SUPPLY_POSITION_GAPS"] = code.map(lut)
+        df["SUPPLY_POSITION_GAPS"] = code.map(lut).where(
+            ~has_unknown,
+            code.map(lut).map(lambda t: "، ".join(x for x in (t, self.UNKNOWN_STATE[1]) if x)))
         df["SUPPLY_POSITION_CONFLICT"] = conflict
-        df["SUPPLY_POSITION_ASOF"] = self._text_col(df, "EXPERT_INV_ASOF")
         df["SUPPLY_POSITION_LINEAGE"] = self.LINEAGE
 
         ctx.extras["supply_position"] = self._ledger(df)
@@ -235,11 +245,11 @@ class SupplyPositionStage(Stage):
     def _ledger(df: pd.DataFrame) -> pd.DataFrame:
         cols = [c for c in [
             "KEY_MATERIAL", "CANONICAL_ORDER", "CANONICAL_BL",
-            "STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "IN_TRANSIT_QTY",
-            "IN_CUSTOMS_QTY", "SUPPLY_ORACLE_STOCK", "SUPPLY_EXPERT_STOCK",
-            "SUPPLY_TOTAL_CONFIRMED", "SUPPLY_TOTAL_LOWER_BOUND",
+            "STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "READY_QTY", "IN_TRANSIT_QTY",
+            "IN_CUSTOMS_QTY", "EXPERT_INV_UNKNOWN_QTY", "SUPPLY_ORACLE_STOCK",
+            "SUPPLY_EXPERT_STOCK", "SUPPLY_TOTAL_CONFIRMED", "SUPPLY_TOTAL_LOWER_BOUND",
             "SUPPLY_POSITION_COVERAGE_PCT", "SUPPLY_POSITION_STATUS",
-            "SUPPLY_POSITION_GAPS", "SUPPLY_POSITION_CONFLICT", "SUPPLY_POSITION_ASOF",
+            "SUPPLY_POSITION_GAPS", "SUPPLY_POSITION_CONFLICT",
             "DAILY_NEED",
         ] if c in df.columns]
         if not cols:
@@ -248,23 +258,26 @@ class SupplyPositionStage(Stage):
 
     def columns(self) -> List[ColumnSpec]:
         return [
-            ColumnSpec("SUPPLIER_QTY", "موجودی نزد سازنده", 16, GROUP_MAIN,
+            # چهار وضعیت «Quantity In Part» به تفکیک «Order Status» فایل کارشناسان
+            ColumnSpec("SUPPLIER_QTY", "نزد سازنده", 14, GROUP_MAIN,
                        fmt=FMT_DECIMAL, order=4),
-            ColumnSpec("IN_TRANSIT_QTY", "موجودی در راه", 14, GROUP_MAIN,
+            ColumnSpec("READY_QTY", "آماده حمل", 13, GROUP_MAIN,
                        fmt=FMT_DECIMAL, order=5),
-            ColumnSpec("IN_CUSTOMS_QTY", "موجودی در گمرک", 14, GROUP_MAIN,
+            ColumnSpec("IN_TRANSIT_QTY", "در راه", 12, GROUP_MAIN,
                        fmt=FMT_DECIMAL, order=6),
+            ColumnSpec("IN_CUSTOMS_QTY", "در گمرک", 12, GROUP_MAIN,
+                       fmt=FMT_DECIMAL, order=7),
             ColumnSpec("SUPPLY_TOTAL_CONFIRMED", "موجودی کل تأییدشده", 17,
-                       GROUP_MAIN, fmt=FMT_DECIMAL, order=7),
+                       GROUP_MAIN, fmt=FMT_DECIMAL, order=8),
             ColumnSpec("SUPPLY_TOTAL_LOWER_BOUND", "حداقل موجودی قابل اثبات", 18,
-                       GROUP_DETAIL, fmt=FMT_DECIMAL, order=8),
+                       GROUP_DETAIL, fmt=FMT_DECIMAL, order=9),
             ColumnSpec("SUPPLY_POSITION_COVERAGE_PCT", "پوشش داده موجودی (٪)", 17,
                        GROUP_ANALYTIC, fmt=FMT_DECIMAL, color_rule="scale_low_bad", order=91),
             ColumnSpec("SUPPLY_POSITION_STATUS", "وضعیت صحت موجودی", 17,
                        GROUP_ANALYTIC, order=92),
             ColumnSpec("SUPPLY_POSITION_GAPS", "شکاف‌های موجودی", 36,
                        GROUP_ANALYTIC, wrap=True, order=93),
-            ColumnSpec("SUPPLY_POSITION_CONFLICT", "تعارض snapshot کارشناسی", 36,
+            ColumnSpec("SUPPLY_POSITION_CONFLICT", "تعارض وضعیت پارت", 36,
                        GROUP_ANALYTIC, wrap=True, order=94),
         ]
 
@@ -274,7 +287,7 @@ class SupplyPositionStage(Stage):
         return {
             "موجودی با پوشش کامل": (
                 int((df["SUPPLY_POSITION_STATUS"] == "COMPLETE").sum()),
-                "Oracle + نزد سازنده + در راه + گمرک"),
+                "Oracle + نزد سازنده + آماده حمل + در راه + در گمرک"),
             "شکاف داده موجودی": (
                 int(df["SUPPLY_POSITION_STATUS"].isin(["PARTIAL", "MISSING", "CONFLICT"]).sum()),
                 "Unknown با Zero یکی نشده است"),
@@ -282,8 +295,10 @@ class SupplyPositionStage(Stage):
 
     def math_docs(self, ctx: PipelineContext) -> Dict[str, Dict[str, Any]]:
         return {"Supply Position V26.20": {
-            "جمع قطعی": "Oracle(IKCO+SAPCO) + Expert(Supplier+Transit+Customs)",
+            "جمع قطعی": "Oracle(IKCO+SAPCO) + Expert(نزد سازنده+آماده حمل+در راه+در گمرک)",
+            "مقدار هر وضعیت": "جمع Quantity In Part پارت‌های همان Order Status "
+                              "(در گمرک: منهای Customs Cleared Quantity)",
             "حداقل قابل اثبات": "جمع فقط مؤلفه‌های دارای شاهد کمی",
-            "قاعده Missing": "هر bucket خالی = UNKNOWN؛ هرگز 0 فرض نمی‌شود",
+            "قاعده Missing": "وضعیت خالی = UNKNOWN؛ پارت با Order Status نامعلوم جمع قطعی را می‌بندد",
             "دانه کارشناسی": "Order × Material",
         }}

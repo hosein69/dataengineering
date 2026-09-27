@@ -316,8 +316,11 @@ def test_excel(res) -> None:
     check("مهلت ۵۴۰ روز در شیت قوانین مستند شد", 540 in values)
     check("ویرایش Incoterms در شیت قوانین آمده", "Incoterms 2020" in values)
     ws2 = wb["۷. اقلام سفارش (سطح PR و PI)"]
-    check("ستون قرنطینه BL در شیت اقلام وجود دارد",
-          any(c.value == "مقدار مشکوک BL" for c in ws2[1]))
+    # 29.15.12: the sheet shows the expert file's own headers only; the BL value
+    # stays as written under «BL No.» and its quarantine lives in MOGH_BL_SUSPECT.
+    heads = [c.value for c in ws2[1]]
+    check("شیت اقلام دقیقاً هدرهای فایل کارشناسان را دارد (بدون ستون ساختگی)",
+          "BL No." in heads and "مقدار مشکوک BL" not in heads, str(heads[:5]))
 
 
 # ═══════════ ۷) کانفیگ کلیدها — تغییر کلید و کلید مرکب ═══════════

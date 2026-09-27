@@ -497,10 +497,10 @@ class JoinDiagnostics:
             ("ORC_STOCK_IKCO", "oracle", "main", "موجودی ایران‌خودرو — صورت کسر مقاومت", "required"),
             ("ORC_STOCK_SAPCO", "oracle", "main", "موجودی ساپکو — صورت کسر مقاومت", "required"),
             ("ORC_DAILY_NEED", "oracle", "main", "نیاز روزانه — مخرج کسر مقاومت", "required"),
-            ("MOGH_SUPPLIER_STOCK_QTY", "moghavemat", "inventory", "موجودی مستقیم نزد سازنده — جزء Supply Position", "optional_direct"),
-            ("MOGH_SUPPLIER_STOCK_QTY_DERIVED", "moghavemat", "inventory", "موجودی مشتق نزد سازنده از Quantity In Order/Part — با basis قابل ممیزی", "derived"),
-            ("MOGH_IN_TRANSIT_QTY", "moghavemat", "inventory", "موجودی مستقیم در راه — فقط اگر صریحاً در سورس ثبت شده باشد", "optional_direct"),
-            ("MOGH_IN_CUSTOMS_QTY", "moghavemat", "inventory", "موجودی مستقیم در گمرک — فقط اگر صریحاً در سورس ثبت شده باشد", "optional_direct"),
+            # 29.15.12: چهار وضعیت پارت از دو ستون واقعی فایل کارشناسان ساخته می‌شوند.
+            ("MOGH_QTY_IN_PART", "moghavemat", "lines", "Quantity In Part — مقدار هر پارت", "required"),
+            ("MOGH_ORDER_STATUS", "moghavemat", "lines", "Order Status — وضعیت هر پارت: نزد سازنده/آماده حمل/در راه/در گمرک", "required"),
+            ("MOGH_QTY_STATE_UNKNOWN", "moghavemat", "inventory", "مقدار پارت‌هایی که Order Status خالی یا ناشناخته دارند", "derived"),
             ("KEY_MATERIAL", "moghavemat", "inventory", "کلید Order×Material Commercial Expert — اتصال به Oracle", "required"),
             ("KEY_MATERIAL", "oracle", "main", "کلید متریال Oracle — اتصال مقاومت", "required"),
             ("BL_DISCHARGE_DATE", "abbasi", "main", "تاریخ تخلیه — مبنای روزهای رسوب", "required"),
@@ -546,7 +546,7 @@ class JoinDiagnostics:
             if mode == "optional_direct" and pct == 0:
                 status = "ℹ️ مقدار مستقیم ثبت نشده؛ Missing است نه Zero و نه خطای adapter"
             elif mode == "derived" and pct > 0:
-                status = "✅ مشتق قابل ممیزی (basis در inventory ذخیره شده)"
+                status = "✅ مشتق قابل ممیزی از ستون‌های واقعی فایل کارشناسان"
             else:
                 status = ("✅ سالم" if pct >= 50 else
                           "⚠️ کم" if pct > 0 else "❌ همه تهی — قرارداد/نگاشت را بررسی کنید")

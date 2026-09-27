@@ -74,7 +74,7 @@ def test_reproduce_user_bug() -> None:
     from gsi.engines.criticality import CriticalityEngine
 
     r = CriticalityEngine().evaluate({
-        "STOCK_IKCO": 0, "STOCK_SAPCO": 440, "SUPPLIER_QTY": 0,
+        "STOCK_IKCO": 0, "STOCK_SAPCO": 440, "SUPPLIER_QTY": 0, "READY_QTY": 0,
         "IN_TRANSIT_QTY": 0, "IN_CUSTOMS_QTY": 0, "DAILY_NEED": 110})
     d = r.as_dict()
 
@@ -127,7 +127,7 @@ def test_report_keys_exist() -> None:
 
     # ستون‌های حیاتی مقاومت واقعاً در خروجی هستند
     need = ["مقاومت (روز)", "مقاومت انبار (روز)", "موجودی ایران خودرو",
-            "موجودی ساپکو", "موجودی نزد سازنده", "موجودی در راه", "موجودی در گمرک",
+            "موجودی ساپکو", "موجودی نزد سازنده", "موجودی آماده حمل", "موجودی در راه", "موجودی در گمرک",
             "موجودی کل قابل احتساب", "نیاز روزانه"]
     absent = [c for c in need if c not in produced]
     check("همه ستون‌های اجزای مقاومت در خروجی موجودند", not absent, str(absent))
@@ -157,12 +157,12 @@ def test_arithmetic_visible(res) -> None:
     for _, r in df.iterrows():
         parts = sum(pd.to_numeric(r.get(c), errors="coerce") or 0 for c in
                     ("موجودی ایران خودرو", "موجودی ساپکو", "موجودی نزد سازنده",
-                     "موجودی در راه", "موجودی در گمرک"))
+                     "موجودی آماده حمل", "موجودی در راه", "موجودی در گمرک"))
         total = pd.to_numeric(r.get("موجودی کل قابل احتساب"), errors="coerce") or 0
         if abs(parts - total) > 0.01:
             ok2 = False
             bad2.append(f"{r.get('KEY_MATERIAL')}: {parts} ≠ {total}")
-    check("جمع پنج جزء با «موجودی کل» برابر است", ok2,
+    check("جمع شش جزء با «موجودی کل» برابر است", ok2,
           "؛ ".join(bad2) or "همه ردیف‌ها سازگار")
 
 

@@ -86,10 +86,16 @@ class ExpertMaterialTests(unittest.TestCase):
         self.assertEqual(a["EXPERT_SOURCE_ROWS"], 2)
         self.assertIn("شماره درخواست خرید", a["EXPERT_RECORD_GAPS"])
         self.assertIn("ارزش PI", a["EXPERT_RECORD_GAPS"])
+        # 29.15.12: a part's place comes only from its Order Status. These rows
+        # have none, so their Quantity In Part is «وضعیت نامشخص» — never guessed
+        # as «Order − Part = at the manufacturer» (the pre-29.15.12 arithmetic
+        # gave 13 and 10 here). Only Oracle stock is provable.
         self.assertEqual(a["SUPPLY_POSITION_STATUS"], "PARTIAL")
-        self.assertEqual(a["SUPPLY_TOTAL_LOWER_BOUND"], 13.0)
+        self.assertEqual(a["EXPERT_INV_UNKNOWN_QTY"], 2.0)       # one part (rows 57/58) of 2
+        self.assertIn("وضعیت نامشخص", a["SUPPLY_POSITION_GAPS"])
+        self.assertEqual(a["SUPPLY_TOTAL_LOWER_BOUND"], 5.0)
         self.assertTrue(pd.isna(a["SUPPLY_TOTAL_CONFIRMED"]))
-        self.assertEqual(b["SUPPLY_TOTAL_LOWER_BOUND"], 10.0)
+        self.assertEqual(b["SUPPLY_TOTAL_LOWER_BOUND"], 7.0)
         self.assertNotIn("قطعه دیگر", a["MOGH_MATERIAL_DESCS_ALL"])
 
         display = main.copy()
@@ -117,8 +123,15 @@ class ExpertMaterialTests(unittest.TestCase):
         builder.build_order_lines(lines, positions)
         ws = builder.wb[SHEET_LINES]
         self.assertEqual(ws.max_row >= 4, True)
-        self.assertIn("هدف چرخشي", str(ws.cell(2, 30).value))
-        self.assertEqual(ws.cell(2, 34).value, 13.0)
+        # 29.15.12: the sheet is the expert file as it is — its 35 headers, then
+        # Quantity In Part in the column of its Order Status; every line keeps
+        # its own description.
+        headers = [ws.cell(1, c).value for c in range(1, ws.max_column + 1)]
+        self.assertEqual(headers[:3], ["Row No.", "Order No.\n(Our Reference)", "PR No."])
+        self.assertEqual(len(headers), 39)
+        desc = headers.index("Material Description") + 1
+        self.assertEqual(ws.cell(3, desc).value, "هدف چرخشي ترمز ضدقفل")
+        self.assertIn(ws.cell(2, 36).value, (None, ""))   # no Order Status → no state column
 
 
 if __name__ == "__main__":

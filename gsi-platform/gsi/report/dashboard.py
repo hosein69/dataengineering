@@ -500,59 +500,44 @@ SHEET_RULES = "۸. کتابخانه قوانین"
 
 
 def _build_order_lines(self, lines: "pd.DataFrame", material_positions: "pd.DataFrame" = None) -> None:
-    """جدول سطح-قلم سورس مقاومت — drill-down زیر هر سفارش."""
+    """فایل کارشناسان همان‌طور که هست: ۳۵ ستون با همان نام و ترتیب + چهار وضعیت پارت.
+
+    29.15.12 (مالک: «هدرهای کارشناسان در گزارش‌ها بیشتر از آنچه هست ... فقط
+    هرآنچه هست بیار»): این شیت دیگر ستون ساختگی ندارد (ریشه سفارش، مرحله،
+    پیشرفت، تعرفه پیشنهادی، وضعیت موجودی قلم، …). تنها افزوده، مقدار
+    «Quantity In Part» هر ردیف در ستون وضعیت خودش (از «Order Status») است.
+    ``material_positions`` برای سازگاری امضا پذیرفته می‌شود.
+    """
+    from ..adapters.moghavemat import EXPERT_HEADERS, PART_STATES
     ws = self._new_sheet(SHEET_LINES)
-    headers = [
-        "مرجع سفارش", "ریشه سفارش", "شماره PR", "قلم PR", "متریال", "شرح کالا",
-        "شماره فنی سازنده", "کد فروشنده", "شماره PI فروشنده", "ارز",
-        "تعداد PI", "قیمت واحد", "ارزش قلم", "هزینه‌های افزوده",
-        "تعداد سفارش", "تعداد پارت", "تعداد ترخیص‌شده",
-        "روش حمل", "حمل‌کننده", "شماره بارنامه (معتبر)", "مقدار مشکوک BL",
-        "علت رد BL", "وضعیت بازرگانی", "وضعیت لجستیک", "مرحله", "پیشرفت (٪)",
-        "تعرفه پیشنهادی", "کلیدواژه تعرفه", "کد پرسنلی",
-        "همه شرح‌های همین سفارش و متریال", "شکاف ثبت کارشناس",
-        "وضعیت موجودی قلم", "موجودی کل تأییدشده قلم",
-        "حداقل موجودی قابل اثبات قلم", "شکاف‌های موجودی قلم",
-    ]
-    widths = [16, 14, 14, 10, 14, 34, 20, 14, 18, 8,
-              12, 14, 16, 16, 12, 12, 14, 12, 16, 20, 20,
-              24, 30, 26, 14, 12, 14, 16, 14, 48, 38, 20, 19, 22, 38]
-    groups = {i: 1 for i in range(11, 18)}
-    groups.update({i: 2 for i in range(20, 30)})
+    source_headers = [h.strip() for _, h in EXPERT_HEADERS]
+    state_headers = [f"{fa} (Quantity In Part)" for _, fa, _ in PART_STATES]
+    headers = source_headers + state_headers
+    wide = {"MATERIAL_DESC": 34, "MATERIAL_SHORT": 24, "REF_LETTER_NO": 22, "PO_SENT_DATE": 22,
+            "PART_NO_PARTIAL": 18, "ADDITIONAL_DATA": 40, "ORDER_REF": 16, "MFR_PART_NO": 20}
+    widths = [wide.get(f, 14) for f, _ in EXPERT_HEADERS] + [15] * len(state_headers)
+    groups = {len(source_headers) + i: 1 for i in range(1, len(state_headers) + 1)}
     self._write_header(ws, headers, widths=widths, groups=groups)
 
-    p = "MOGH_"
-    cols = [p + c for c in [
-        "ORDER_REF", "ORDER_BASE", "PR_NO", "PR_ITEM", "MATERIAL", "MATERIAL_DESC",
-        "MFR_PART_NO", "VENDOR_CODE", "VENDOR_PI_NO", "CURRENCY",
-        "PI_QTY", "PI_UNIT_PRICE", "PI_LINE_VALUE", "PI_ADDITIONAL",
-        "QTY_IN_ORDER", "QTY_IN_PART", "CLEARED_QTY",
-        "TRANSPORT_MODE_CODE", "CARRIER", "BL_NO", "BL_SUSPECT",
-        "BL_REJECT_REASON", "COMMERCIAL_NOTE", "LOGISTICS_NOTE", "STAGE_FA",
-        "PROGRESS", "HS_SUGGESTED", "HS_KEYWORD", "KEY_EMP"]]
-
-    positions = {}
-    if isinstance(material_positions, pd.DataFrame) and not material_positions.empty:
-        for _, item in material_positions.iterrows():
-            positions[(str(item.get("KEY_ORDER", "")), str(item.get("KEY_MATERIAL", "")))] = item
-    extra_cols = ["MOGH_MATERIAL_DESCS_ALL", "EXPERT_RECORD_GAPS",
-                  "SUPPLY_POSITION_STATUS", "SUPPLY_TOTAL_CONFIRMED",
-                  "SUPPLY_TOTAL_LOWER_BOUND", "SUPPLY_POSITION_GAPS"]
-
-    numeric = {11, 12, 13, 14, 15, 16, 17, 26}
-    currency_cols = {12, 13, 14}
+    cols = [f"MOGH_{f}" for f, _ in EXPERT_HEADERS] + [f"MOGH_{c}" for _, _, c in PART_STATES]
+    position = {f: i for i, (f, _) in enumerate(EXPERT_HEADERS, start=1)}
+    numeric = {position[f] for f in ("PR_TOTAL_QTY", "QTY_IN_ORDER", "PI_QTY", "PI_UNIT_PRICE",
+                                     "PI_LINE_VALUE", "PI_ADDITIONAL", "QTY_IN_PART", "CLEARED_QTY")}
+    numeric |= {len(source_headers) + i for i in range(1, len(state_headers) + 1)}
+    currency_cols = {position[f] for f in ("PI_UNIT_PRICE", "PI_LINE_VALUE", "PI_ADDITIONAL")}
     r = 2
     for _, row in lines.iterrows():
-        suspect = str(row.get(p + "BL_SUSPECT", "")).strip() != ""
-        cancelled = bool(row.get(p + "EXCLUDED_FROM_KPI", False))
+        cancelled = bool(row.get("MOGH_EXCLUDED_FROM_KPI", False))
+        # quantity whose Order Status is blank or not one of the four states
+        state_unknown = (str(row.get("MOGH_PART_STATE", "")) in ("", "UNRECOGNIZED")
+                         and pd.notna(row.get("MOGH_QTY_IN_PART")))
+        suspect = str(row.get("MOGH_BL_SUSPECT", "")).strip() != ""
         for i, key in enumerate(cols, start=1):
-            ws.cell(row=r, column=i, value=self._cell_value(row.get(key, "")))
-        position = positions.get((str(row.get("KEY_ORDER", "")), str(row.get("KEY_MATERIAL", ""))), {})
-        for i, key in enumerate(extra_cols, start=len(cols) + 1):
-            value = position.get(key, "")
-            ws.cell(row=r, column=i, value="" if pd.isna(value) else self._cell_value(value))
+            value = row.get(key, "")
+            ws.cell(row=r, column=i, value="" if value is None or (isinstance(value, float) and pd.isna(value))
+                    else self._cell_value(value))
         fill = (P.CRITICAL_FILL if cancelled else
-                dx.SUSPECT_FILL if suspect else P.GREEN_L4)
+                dx.SUSPECT_FILL if (state_unknown or suspect) else P.GREEN_L4)
         self._style_row(ws, r, len(headers), fill)
         for i in numeric:
             ws.cell(row=r, column=i).number_format = (
@@ -561,18 +546,12 @@ def _build_order_lines(self, lines: "pd.DataFrame", material_positions: "pd.Data
 
     last = r - 1
     if last >= 2:
-        ws.conditional_formatting.add(
-            f"Z2:Z{last}",
-            ColorScaleRule(start_type="num", start_value=0, start_color=dx.SCALE_BAD,
-                           mid_type="num", mid_value=50, mid_color=dx.SCALE_MID,
-                           end_type="num", end_value=100, end_color=dx.SCALE_GOOD))
-        ws.conditional_formatting.add(
-            f"U2:U{last}",
-            FormulaRule(formula=['LEN($U2)>0'], fill=P.fill(dx.SCALE_BAD)))
-        ws.cell(row=last + 2, column=12, value="جمع ارزش:").font = P.font_body(bold=True)
-        ws.cell(row=last + 2, column=13,
-                value=f"=SUBTOTAL(109,M2:M{last})").number_format = NUM_FORMAT_CURRENCY
-    log.info(f"📄 شیت «{SHEET_LINES}» ساخته شد — {last - 1} قلم.")
+        value_col = get_column_letter(position["PI_LINE_VALUE"])
+        ws.cell(row=last + 2, column=position["PI_LINE_VALUE"] - 1, value="جمع ارزش:").font = P.font_body(bold=True)
+        ws.cell(row=last + 2, column=position["PI_LINE_VALUE"],
+                value=f"=SUBTOTAL(109,{value_col}2:{value_col}{last})").number_format = NUM_FORMAT_CURRENCY
+    log.info(f"📄 شیت «{SHEET_LINES}» ساخته شد — {last - 1} ردیف فایل کارشناسان، "
+             f"{len(source_headers)} ستون منبع + {len(state_headers)} ستون وضعیت پارت.")
 
 
 def _build_rulebook_sheet(self, rb) -> None:

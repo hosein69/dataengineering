@@ -23,7 +23,7 @@ from __future__ import annotations
 
 #: نسخه قرارداد این ماژول — gsi/version.py آن را می‌سنجد.
 #: با هر تغییر در رابط عمومی، این عدد یکی زیاد می‌شود.
-__contract__ = 3
+__contract__ = 4   # part_state / part_state_fa — adapter فایل کارشناسان به آن تکیه دارد
 
 
 import os
@@ -365,6 +365,31 @@ class RuleBook:
         out["PROGRESS"] = max(best_progress, 0)
         out["ALERTS"] = " ؛ ".join(out["ALERTS"])
         return out
+
+    # ── وضعیت پارت (Order Status فایل کارشناسان) ──
+    @staticmethod
+    def _state_key(value: Any) -> str:
+        from ..core.text import normalize_persian_text
+        return re.sub(r"\s+", "", normalize_persian_text(value).replace("\u200c", " ")).lower()
+
+    def part_state(self, value: Any) -> str:
+        """کد وضعیت پارت؛ «» برای خالی و «UNRECOGNIZED» برای متن ناشناخته."""
+        key = self._state_key(value)
+        if key in ("", "nan", "none", "<na>"):
+            return ""
+        for code, spec in (self.get("status_lexicon.part_states", {}) or {}).items():
+            for alias in [spec.get("fa", "")] + list(spec.get("aliases", []) or []):
+                if alias and self._state_key(alias) == key:
+                    return str(code)
+        return "UNRECOGNIZED"
+
+    def part_state_fa(self, code: Any) -> str:
+        c = str(code or "")
+        if not c:
+            return ""
+        if c == "UNRECOGNIZED":
+            return "وضعیت نامشخص"
+        return str(self.get(f"status_lexicon.part_states.{c}.fa", c))
 
     # ── بارنامه و HS ──
     def validate_bl(self, value: Any) -> Tuple[bool, str]:

@@ -9,7 +9,7 @@ def test_registration_file_hub_and_order_material_grain(tmp_path):
     sources={
       'ntsw': {'import_license': pd.DataFrame([{KEY_REG_FILE:'664823825',KEY_REG:'98404279',KEY_ORDER:'502805'}])},
       'ilappend': {'main': pd.DataFrame([{KEY_REG_FILE:'664823825',KEY_REG:'98404279',KEY_ORDER:'502805'}])},
-      'moghavemat': {'inventory': pd.DataFrame([{KEY_ORDER:'502805',KEY_MATERIAL:'M1','MOGH_SUPPLIER_STOCK_QTY':3}])},
+      'moghavemat': {'inventory': pd.DataFrame([{KEY_ORDER:'502805',KEY_MATERIAL:'M1','MOGH_QTY_AT_SUPPLIER':3}])},
     }
     with wh.run({'t':1}) as rid:
         counts=build(wh,sources,rid)

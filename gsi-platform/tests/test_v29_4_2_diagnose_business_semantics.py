@@ -89,14 +89,14 @@ def test_critical_diagnostic_uses_real_clearance_field_and_mogh_grains():
     d.sources = {
         "clearance":{"main": pd.DataFrame({"CL_CLEAR_DATE":["1405/01/01"]})},
         "moghavemat":{
+            # 29.15.12: part states come from the file's own Quantity In Part and
+            # Order Status; no direct stock columns exist in the real file.
             "inventory": pd.DataFrame({
                 KEY_MATERIAL:["M1"],
-                "MOGH_SUPPLIER_STOCK_QTY":[""],
-                "MOGH_SUPPLIER_STOCK_QTY_DERIVED":[12.0],
-                "MOGH_IN_TRANSIT_QTY":[""],
-                "MOGH_IN_CUSTOMS_QTY":[""],
+                "MOGH_QTY_STATE_UNKNOWN":[3.0],
             }),
-            "lines": pd.DataFrame({"MOGH_ADDITIONAL_DATA":["ارسال شده"]}),
+            "lines": pd.DataFrame({"MOGH_ADDITIONAL_DATA":["ارسال شده"],
+                                   "MOGH_QTY_IN_PART":[3.0], "MOGH_ORDER_STATUS":[""]}),
         },
     }
     out=d.critical_columns()
@@ -104,10 +104,13 @@ def test_critical_diagnostic_uses_real_clearance_field_and_mogh_grains():
     assert clear["نرخ پر بودن (٪)"] == 100.0
     mat=out[(out["ستون"].eq(KEY_MATERIAL)) & (out["سورس"].eq("moghavemat/inventory"))].iloc[0]
     assert mat["نرخ پر بودن (٪)"] == 100.0
-    derived=out[out["ستون"].eq("MOGH_SUPPLIER_STOCK_QTY_DERIVED")].iloc[0]
+    derived=out[out["ستون"].eq("MOGH_QTY_STATE_UNKNOWN")].iloc[0]
     assert "مشتق قابل ممیزی" in derived["وضعیت"]
-    transit=out[out["ستون"].eq("MOGH_IN_TRANSIT_QTY")].iloc[0]
-    assert "Missing" in transit["وضعیت"]
+    qty=out[out["ستون"].eq("MOGH_QTY_IN_PART")].iloc[0]
+    assert qty["نرخ پر بودن (٪)"] == 100.0
+    status=out[out["ستون"].eq("MOGH_ORDER_STATUS")].iloc[0]
+    assert status["نرخ پر بودن (٪)"] == 0.0 and "تهی" in status["وضعیت"]
+    assert not out["ستون"].str.contains("SUPPLIER_STOCK|MOGH_IN_TRANSIT_QTY|MOGH_IN_CUSTOMS_QTY").any()
 
 
 def test_derive_accepts_actual_clearance_adapter_column():

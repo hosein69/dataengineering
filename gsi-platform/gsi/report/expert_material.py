@@ -43,31 +43,34 @@ def build_expert_material_positions(lines: pd.DataFrame, inventory: pd.DataFrame
                      "EXPERT_RECORD_GAPS": "، ".join(label for _, label in gaps)})
     out = pd.DataFrame(rows)
     if isinstance(inventory, pd.DataFrame) and not inventory.empty:
+        # Part states per Order×Material, order-less materials included (29.15.12).
         inv_cols = [KEY_ORDER, KEY_MATERIAL] + [c for c in (
-            "MOGH_SUPPLIER_STOCK_QTY", "MOGH_SUPPLIER_STOCK_QTY_DERIVED",
-            "MOGH_IN_TRANSIT_QTY", "MOGH_IN_CUSTOMS_QTY",
-            "MOGH_INVENTORY_CONFLICT", "MOGH_INVENTORY_ASOF_DATE") if c in inventory]
-        out = out.merge(inventory[inv_cols], on=[KEY_ORDER, KEY_MATERIAL], how="left", validate="m:1")
+            "MOGH_QTY_AT_SUPPLIER", "MOGH_QTY_READY", "MOGH_QTY_IN_TRANSIT",
+            "MOGH_QTY_IN_CUSTOMS", "MOGH_QTY_STATE_UNKNOWN", "MOGH_INVENTORY_CONFLICT")
+            if c in inventory]
+        inv = inventory[inv_cols].copy()
+        inv[KEY_ORDER] = inv[KEY_ORDER].fillna("").astype(str).str.strip()
+        out = out.merge(inv, on=[KEY_ORDER, KEY_MATERIAL], how="left", validate="m:1")
     if isinstance(oracle, pd.DataFrame) and not oracle.empty:
         orc_cols = [KEY_MATERIAL] + [c for c in (
             "ORC_STOCK_IKCO", "ORC_STOCK_SAPCO", "ORC_DAILY_NEED", "ORC_MATERIAL_DESC") if c in oracle]
         out = out.merge(oracle[orc_cols], on=KEY_MATERIAL, how="left", validate="m:1")
-    for target, candidates in {
-        "SUPPLIER_QTY": ("MOGH_SUPPLIER_STOCK_QTY", "MOGH_SUPPLIER_STOCK_QTY_DERIVED"),
-        "IN_TRANSIT_QTY": ("MOGH_IN_TRANSIT_QTY",),
-        "IN_CUSTOMS_QTY": ("MOGH_IN_CUSTOMS_QTY",),
-        "STOCK_IKCO": ("ORC_STOCK_IKCO",),
-        "STOCK_SAPCO": ("ORC_STOCK_SAPCO",),
-        "DAILY_NEED": ("ORC_DAILY_NEED",),
-        "EXPERT_INV_CONFLICT": ("MOGH_INVENTORY_CONFLICT",),
-        "EXPERT_INV_ASOF": ("MOGH_INVENTORY_ASOF_DATE",),
+    for target, col in {
+        "SUPPLIER_QTY": "MOGH_QTY_AT_SUPPLIER",
+        "READY_QTY": "MOGH_QTY_READY",
+        "IN_TRANSIT_QTY": "MOGH_QTY_IN_TRANSIT",
+        "IN_CUSTOMS_QTY": "MOGH_QTY_IN_CUSTOMS",
+        "EXPERT_INV_UNKNOWN_QTY": "MOGH_QTY_STATE_UNKNOWN",
+        "EXPERT_INV_CONFLICT": "MOGH_INVENTORY_CONFLICT",
+        "STOCK_IKCO": "ORC_STOCK_IKCO",
+        "STOCK_SAPCO": "ORC_STOCK_SAPCO",
+        "DAILY_NEED": "ORC_DAILY_NEED",
     }.items():
-        value = pd.Series("", index=out.index, dtype=object)
-        for col in candidates:
-            if col in out:
-                valid = out[col].map(lambda v: not is_empty_val(v, treat_zero_as_empty=False))
-                value = value.where(value.map(lambda v: not is_empty_val(v, treat_zero_as_empty=False)), out[col].where(valid, ""))
-        out[target] = value
+        if col in out:
+            valid = out[col].map(lambda v: not is_empty_val(v, treat_zero_as_empty=False))
+            out[target] = out[col].where(valid, "")
+        else:
+            out[target] = pd.Series("", index=out.index, dtype=object)
     out["CANONICAL_ORDER"] = out[KEY_ORDER]
     ctx = SimpleNamespace(extras={})
     return SupplyPositionStage().run(out, ctx)

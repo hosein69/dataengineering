@@ -38,7 +38,7 @@ REQUIRED_CONTRACTS: Dict[str, int] = {
     "core.text": 3,           # clean_order_ref() و order_ref_base()
     "core.jalali": 1,
     "dataio.merge": 2,
-    "rulebook.loader": 1,
+    "rulebook.loader": 4,   # part_state — وضعیت پارت از Order Status فایل کارشناسان
     "engines.criticality": 3,
     "stages.base": 1,
     "trust": 2,             # frames() با رول‌آپ سازمانی — s95_trust به آن تکیه دارد

@@ -52,17 +52,17 @@ sources:
     join_on: ORDER
     frames:
       main: ORDER
-      inventory: ORDER_MATERIAL
     weight: 1.00
     required: false
-    role: "مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + موجودی کارشناسی نزد سازنده/درراه/گمرک"
+    role: "مرجع درجه‌اول و سازنده جمعیت: چرخه خرید + وضعیت هر پارت (نزد سازنده/آماده حمل/در راه/در گمرک)"
     enabled: true
     notes: >
-      ستون Data type چند مقدار دارد (Pre Purchase Approval Data / Purchase
-      Approval Data) پس فایل چندنوعی است. ستون BL No. حاوی شماره فنی/پروفرما
-      است نه بارنامه و قرنطینه می‌شود. سه مقدار کمی «نزد سازنده / در راه /
-      گمرک» منبع اصلی کارشناسی Supply Position هستند و در فریم inventory با
-      دانه ORDER_MATERIAL ادغام می‌شوند؛ blank هرگز صفر فرض نمی‌شود.
+      دقیقاً ۳۵ ستون (gsi/adapters/moghavemat.EXPERT_HEADERS). ستون Data type
+      چند مقدار دارد پس فایل چندنوعی است. ستون BL No. گاهی شماره فنی/پروفرما
+      است و قرنطینه می‌شود. وضعیت هر پارت از Order Status و مقدارش از Quantity
+      In Part است؛ فریم main از 29.15.11 در دانه سفارش × متریال است و مقدار
+      چهار وضعیت را خودش دارد، پس فریم inventory دیگر جدا ادغام نمی‌شود (برای
+      انبار داده و دفتر متریال منتشر می‌شود). blank هرگز صفر فرض نمی‌شود.
 
   sata:
     folder: "${BLS_TOTAL_DIR}"

@@ -595,12 +595,13 @@ with tab_formula:
                 key="resistance_require_all",
                 help="روشن = Missing هرگز صفر نمی‌شود. خاموش = از اجزای موجود حداقل قابل اثبات ساخته می‌شود.")
 
-    st.info("پیش‌فرض بحرانی: موجودی ساپکو + موجودی ایران‌خودرو؛ مخرج = نیاز روزانه Oracle. مقاومت نزد سازنده/درراه/گمرک جداگانه نمایش داده می‌شوند و می‌توانید برای تحلیل سفارشی به صورت اضافه‌شان کنید.")
+    st.info("پیش‌فرض بحرانی: موجودی ساپکو + موجودی ایران‌خودرو؛ مخرج = نیاز روزانه Oracle. مقاومت نزد سازنده/آماده حمل/درراه/گمرک جداگانه نمایش داده می‌شوند و می‌توانید برای تحلیل سفارشی به صورت اضافه‌شان کنید.")
     preview_cols=[c for c in ["KEY_MATERIAL", "ORC_DAILY_NEED_SHEET1", "ORC_DAILY_NEED_SAPCO_IK",
                               "DAILY_NEED", "STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY",
-                              "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY", "موجودی سفارشی",
+                              "READY_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY", "موجودی سفارشی",
                               "مقاومت سفارشی (روز)", "مقاومت انبار (روز)",
-                              "مقاومت نزد سازنده (روز)", "مقاومت در راه (روز)",
+                              "مقاومت نزد سازنده (روز)", "مقاومت آماده حمل (روز)",
+                              "مقاومت در راه (روز)",
                               "مقاومت در گمرک (روز)", "ORC_FOREIGN_SHARE"] if c in df.columns]
     st.dataframe(fdf[preview_cols].head(500),width="stretch",hide_index=True)
 

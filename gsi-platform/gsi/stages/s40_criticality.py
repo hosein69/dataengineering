@@ -21,16 +21,18 @@ class CriticalityStage(Stage):
     name = "criticality"
     title = "محاسبه مقاومت قطعه (IKCO + SAPCO ÷ نیاز روزانه) + مقاومت‌های زنجیره"
     order = 40
-    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY", "DAILY_NEED"]
+    requires = ["STOCK_IKCO", "STOCK_SAPCO", "SUPPLIER_QTY", "READY_QTY", "IN_TRANSIT_QTY",
+                "IN_CUSTOMS_QTY", "DAILY_NEED"]
     provides = ["مقاومت (روز)", "مقاومت انبار (روز)", "طبقه بحرانی",
                 "بحرانی (کوتاه)", "کد طبقه بحرانی", "CRITICALITY_SORT",
                 "اقدام پیشنهادی مقاومت", "موجودی ایران خودرو", "موجودی ساپکو",
-                "موجودی نزد سازنده", "موجودی کل قابل احتساب",
+                "موجودی نزد سازنده", "موجودی آماده حمل", "موجودی کل قابل احتساب",
                 "حداقل موجودی قابل اثبات", "پوشش اجزای موجودی (٪)",
                 "شکاف اجزای موجودی", "نیاز روزانه", "موجودی در راه",
                 "موجودی در گمرک", "مقاومت انبار (روز)",
                 "مقاومت ایران خودرو (روز)", "مقاومت ساپکو (روز)",
-                "مقاومت نزد سازنده (روز)", "مقاومت در راه (روز)", "مقاومت در گمرک (روز)",
+                "مقاومت نزد سازنده (روز)", "مقاومت آماده حمل (روز)", "مقاومت در راه (روز)",
+                "مقاومت در گمرک (روز)",
                 "PART_CRITICALITY_SCORE",
                 "BL_CRITICAL", "BL_CRITICAL_LEVEL", "BL_CRITICAL_MATERIALS",
                 "BL_CRITICAL_REASON", "ORDER_CRITICAL", "ORDER_CRITICAL_LEVEL",
@@ -51,6 +53,7 @@ class CriticalityStage(Stage):
             "مقاومت ایران خودرو (روز)": "STOCK_IKCO",
             "مقاومت ساپکو (روز)": "STOCK_SAPCO",
             "مقاومت نزد سازنده (روز)": "SUPPLIER_QTY",
+            "مقاومت آماده حمل (روز)": "READY_QTY",
             "مقاومت در راه (روز)": "IN_TRANSIT_QTY",
             "مقاومت در گمرک (روز)": "IN_CUSTOMS_QTY",
         }
@@ -64,7 +67,7 @@ class CriticalityStage(Stage):
         if known == 0:
             log.critical(
                 "🚨 مقاومت انبار هیچ قطعه‌ای محاسبه نشد — موجودی IKCO/SAPCO یا نیاز روزانه ناقص است.\n"
-                "   ⇒ سه bucket کارشناسی شرط محاسبه طبقه بحرانی نیستند؛ Oracle/KEY_MATERIAL را بررسی کنید.")
+                "   ⇒ چهار وضعیت پارت کارشناسی شرط محاسبه طبقه بحرانی نیستند؛ Oracle/KEY_MATERIAL را بررسی کنید.")
         else:
             log.info(f"🔧 مقاومت قطعی برای {known} از {len(df)} ردیف — "
                      f"UNKNOWN={unknown}, پوشش ناقص={partial}, "
@@ -128,13 +131,8 @@ class CriticalityStage(Stage):
                        fmt="decimal", order=2, color_rule="scale_low_bad"),
             ColumnSpec("موجودی ایران خودرو", "موجودی ایران‌خودرو (Oracle)", 18, GROUP_MAIN, fmt="decimal", order=3),
             ColumnSpec("موجودی ساپکو", "موجودی ساپکو (Oracle)", 17, GROUP_MAIN, fmt="decimal", order=4),
-            ColumnSpec("موجودی نزد سازنده", "نزد سازنده (کارشناس)", 18, GROUP_MAIN, fmt="decimal", order=5),
-            ColumnSpec("موجودی در راه", "در راه (کارشناس)", 16, GROUP_MAIN, fmt="decimal", order=6),
-            ColumnSpec("موجودی در گمرک", "گمرک (کارشناس)", 16, GROUP_MAIN, fmt="decimal", order=7),
-            ColumnSpec("موجودی کل قابل احتساب", "موجودی کل قطعی", 16, GROUP_MAIN, fmt="decimal", order=8),
-            ColumnSpec("حداقل موجودی قابل اثبات", "حداقل قابل اثبات", 17, GROUP_MAIN, fmt="decimal", order=9),
-            ColumnSpec("پوشش اجزای موجودی (٪)", "پوشش موجودی (٪)", 15, GROUP_MAIN, fmt="decimal", order=10),
-            ColumnSpec("شکاف اجزای موجودی", "شکاف موجودی", 34, GROUP_MAIN, wrap=True, order=11),
+            # چهار وضعیت پارت، جمع‌ها، پوشش و شکاف موجودی را مرحله ۳۸ (supply_position)
+            # یک بار نشان می‌دهد؛ تکرارشان اینجا ستون‌های هم‌معنای دوم می‌ساخت (29.15.12).
             ColumnSpec("نیاز روزانه", "نیاز روزانه (Oracle)", 16, GROUP_MAIN, fmt="decimal", order=12),
             ColumnSpec("BL_CRITICAL", "بحرانی بودن بارنامه", 16, GROUP_MAIN, order=28),
             ColumnSpec("BL_CRITICAL_MATERIALS", "متریال بحرانی بارنامه", 34, GROUP_MAIN, wrap=True, order=29),
@@ -171,5 +169,5 @@ class CriticalityStage(Stage):
             "🔴 قطعات بحرانی (مقاومت زیر ۱۰ روز)": (n("CRITICAL"), "نیازمند اقدام فوری"),
             "🟠 در حال بحرانی شدن (۱۰ تا ۲۰ روز)": (n("BECOMING_CRITICAL"), "پیگیری هفتگی"),
             "کمترین مقاومت قطعی (روز)": (low_value, "بحرانی‌ترین قطعه با داده کامل"),
-            "پوشش متوسط اجزای موجودی (٪)": (cov_value, "Oracle + سه سبد کارشناسی"),
+            "پوشش متوسط اجزای موجودی (٪)": (cov_value, "Oracle + چهار وضعیت پارت کارشناسی"),
         }

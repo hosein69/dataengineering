@@ -1,107 +1,176 @@
 # -*- coding: utf-8 -*-
-"""سورس مقاومت — ساختار جدید (۳۵ ستون استاندارد انگلیسی).
+"""سورس Commercial Expert Data (فایل کارشناسان) — دقیقاً بر اساس ۳۵ ستون واقعی.
 
-این سورس دیگر یک لیست ساده بارنامه نیست؛ یک **جدول سطح-قلم** (line level) از
-کل چرخه خرید است: PR → PO → PI → حمل → ترخیص. بنابراین:
+## قرارداد
 
-  • کلید اتصال «Order No. (Our Reference)» است، نه بارنامه.
-  • هر سفارش می‌تواند چند ردیف داشته باشد (حمل پارشیالی / چند قلم PR).
-    ⇒ adapter دو خروجی می‌دهد:
-        lines : جدول کامل سطح-قلم (برای drill-down و شیت جزئیات)
-        main  : تجمیع‌شده در سطح سفارش (برای ادغام بدون تکثیر سطر)
-  • ستون «BL No.» در نمونه‌های واقعی حاوی شماره فنی سازنده یا شماره پروفرما
-    بود (541339، 2036866948، 603111/1، KBL5001350). هر مقدار با
-    ``RuleBook.validate_bl`` سنجیده و مقادیر مشکوک به ستون قرنطینه منتقل
-    می‌شوند تا کلید بارنامه آلوده نشود.
-  • ستون «Additional Data» قالب «وضعیت بازرگانی // وضعیت لجستیک» دارد و با
-    واژگان status_lexicon.yaml به مرحله چرخه عمر و درصد پیشرفت تبدیل می‌شود.
+:data:`EXPERT_HEADERS` تنها منبع حقیقت است: ۳۵ ستون، به همان ترتیب و همان متن
+فایل کارشناسان (تأیید مالک ۱۴۰۵/۰۷/۰۵). هیچ ستون دیگری از این فایل خوانده
+نمی‌شود و هیچ ستون خیالی ساخته نمی‌شود.
+
+* تطبیق هدر **دقیق** است: فاصله/شکست خط/حروف بزرگ‌وکوچک نادیده گرفته می‌شود و
+  هدر کامل، نام پیش از پرانتز یا متن داخل پرانتز پذیرفته می‌شود («Part No.» و
+  «Our Reference» همان هدرهای رسمی‌اند) — همیشه نام کامل. تطبیق تقریبی/زیررشته‌ای
+  ممنوع است: «Part No.» هرگز «Manufacturer Part Number» را نمی‌گیرد.
+* ستون غایب: هشدار صریح و مقدار خالی (هرگز صفر). ستون اضافه: نادیده و گزارش.
+* مقدار خالی عدد، ``NaN`` می‌ماند — Unknown با Zero یکی نیست.
+
+## وضعیت پارت (تصمیم مالک ۱۴۰۵/۰۷/۰۵)
+
+«Quantity In Part» هر ردیف در یکی از چهار وضعیت است و وضعیت از ستون
+«Order Status» همان ردیف خوانده می‌شود: نزد سازنده، آماده حمل، در راه، در گمرک
+(واژگان در ``rules/status_lexicon.yaml → part_states``). مقدار ناشناخته حدس
+زده نمی‌شود: مقدار آن پارت «وضعیت نامشخص» گزارش می‌شود و متن ناشناخته در لاگ
+می‌آید تا به واژگان افزوده شود. در وضعیت «در گمرک»، «Customs Cleared Quantity»
+از مقدار پارت کم می‌شود (کالای ترخیص‌شده دیگر در گمرک نیست).
+
+## خروجی‌ها
+
+    lines  : هر ردیف فایل (۳۵ ستون + کلیدها + وضعیت و مقدار هر پارت)
+    main   : یک ردیف برای هر سفارش × متریال (29.15.11) + ردیف هر متریال بدون
+             شماره سفارش؛ مقادیر سطح سفارش تکرار می‌شوند و مقدار چهار وضعیت
+             مال همان متریال است
+    inventory : همان چهار وضعیت در دانه سفارش × متریال (انبار داده و دفتر متریال)
+    order_material_pr_item : رابطه سفارش × متریال × PR × قلم PR
+
+ستون «BL No.» در نمونه‌های واقعی شماره فنی یا پروفرما هم داشت (541339،
+2036866948، 603111/1)؛ هر مقدار با ``RuleBook.validate_bl`` سنجیده و مقدار مشکوک
+قرنطینه می‌شود تا کلید بارنامه آلوده نشود. «Additional Data» قالب «وضعیت
+بازرگانی // وضعیت لجستیک» دارد و با ``status_lexicon`` به مرحله تبدیل می‌شود.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
-from ..core.text import (clean_employee_code, clean_order_ref, clean_part_no,
-                         is_empty_val, num_safe, order_ref_base)
+from ..core.columns import _norm
+from ..core.numeric_parse import parse_decimal
+from ..core.text import (clean_employee_code, clean_key, clean_order_ref, clean_part_no,
+                         is_empty_val, order_ref_base)
 from .. import health
 from ..dataio.logging_setup import log
 from ..rulebook import get_rulebook
-from .base import KEY_MATERIAL, KEY_ORDER, SourceAdapter, register
+from .base import KEY_MATERIAL, KEY_ORDER, KEY_PR, SharedList, SourceAdapter, register
+
+#: ۳۵ ستون فایل کارشناسان — همان متن و همان ترتیب فایل واقعی.
+EXPERT_HEADERS: Tuple[Tuple[str, str], ...] = (
+    ("ROW_NO", "Row No."),
+    ("ORDER_REF", "Order No.\n(Our Reference)"),
+    ("PR_NO", "PR No."),
+    ("PR_ITEM", "PR Item"),
+    ("MATERIAL", "Material"),
+    ("MATERIAL_DESC", "Material Description"),
+    ("MATERIAL_SHORT", "Material Short Text"),
+    ("MFR_PART_NO", "Manufacturer Part Number"),
+    ("PGR", "PGR"),
+    ("PR_TOTAL_QTY", "PR Total Quantity"),
+    ("UOM", "Unit Of Measure"),
+    ("REF_LETTER_NO", "Reference Letter No.\n(شماره نامه اتوماسیونی)"),
+    ("DATA_TYPE", "Data type "),
+    ("QTY_IN_ORDER", "Quantity In Order"),
+    ("MFR_VENDOR_CODE", "Manufacturer Vendor Code "),
+    ("MFR_PI_NO", "Manufacturer\nPI Number "),
+    ("VENDOR_CODE", "Vendor Code "),
+    ("VENDOR_PI_NO", "Vendor\nPI Number "),
+    ("PI_QTY", "PI Quantity "),
+    ("PI_UNIT_PRICE", "PI Unit Price"),
+    ("CURRENCY", "Currency"),
+    ("PI_LINE_VALUE", "PI Line Value"),
+    ("PI_ADDITIONAL", "PI Additional Costs"),
+    ("PO_SENT_DATE", " PO Sent Date\n( با فرمت میلادی PO تاریخ ابلاغ فرم)"),
+    ("PART_NO_PARTIAL", "Part No.\n(شماره پارت در حمل پارشیالی)"),
+    ("QTY_IN_PART", "Quantity In Part"),
+    ("CLEARED_QTY", "Customs Cleared Quantity"),
+    ("ORDER_STATUS", "Order Status"),
+    ("TRANSPORT_MODE", "Mode of Transport"),
+    ("TRANSPORT_NO", "Transport No."),
+    ("BL_RAW", "BL No."),
+    ("CARRIER", "Carrier Name"),
+    ("SCHEDULED_SHIP", "Scheduled Shipment Date"),
+    ("ADDITIONAL_DATA", "Additional Data (Note , Brand etc.)"),
+    ("EMP_CODE", "Employee Code"),
+)
+
+#: وضعیت‌های پارت: (کد، عنوان، ستون مقدار). ترتیب همان ترتیب مسیر کالاست.
+PART_STATES: Tuple[Tuple[str, str, str], ...] = (
+    ("AT_SUPPLIER", "نزد سازنده", "QTY_AT_SUPPLIER"),
+    ("READY", "آماده حمل", "QTY_READY"),
+    ("IN_TRANSIT", "در راه", "QTY_IN_TRANSIT"),
+    ("IN_CUSTOMS", "در گمرک", "QTY_IN_CUSTOMS"),
+)
+#: مقدار پارت‌هایی که Order Status آن‌ها خالی یا ناشناخته است.
+STATE_UNKNOWN_QTY = "QTY_STATE_UNKNOWN"
+
+
+def _base(header: str) -> str:
+    """متن پیش از اولین پرانتز: «Part No.\\n(…)» ← «Part No.»."""
+    return header.split("(", 1)[0]
+
+
+def _inner(header: str) -> str:
+    """متن داخل پرانتز: «Order No.\\n(Our Reference)» ← «Our Reference»."""
+    return header.split("(", 1)[1].rsplit(")", 1)[0] if "(" in header else ""
+
+
+def _number(value: Any) -> float:
+    """عدد یا NaN. خالی و متن غیرعددی هرگز ۰ نمی‌شوند."""
+    if is_empty_val(value, treat_zero_as_empty=False):
+        return float("nan")
+    parsed = parse_decimal(value, strict=False)
+    return float(parsed) if parsed is not None else float("nan")
 
 
 @register
 class MoghavematAdapter(SourceAdapter):
     key, prefix = "moghavemat", "MOGH"
+    #: Studio/HTML catalog: this source's group holds exactly EXPERT_HEADERS.
+    EXACT_HEADER_CONTRACT = True
 
-    #: نگاشت ۳۵ ستون رسمی. برای تغییر نام هدر فقط همین دیکشنری را ویرایش کنید.
-    COLUMN_MAP: Dict[str, List[str]] = {
-        "ROW_NO":            ["Row No."],
-        "ORDER_REF":         ["Order No. (Our Reference)", "Order No.", "Our Reference"],
-        "PR_NO":             ["PR No."],
-        "PR_ITEM":           ["PR Item"],
-        "MATERIAL":          ["Material"],
-        "MATERIAL_DESC":     ["Material Description"],
-        "MATERIAL_SHORT":    ["Material Short Text"],
-        "MFR_PART_NO":       ["Manufacturer Part Number"],
-        "PGR":               ["PGR"],
-        "PR_TOTAL_QTY":      ["PR Total Quantity"],
-        "UOM":               ["Unit Of Measure"],
-        "REF_LETTER_NO":     ["Reference Letter No.", "شماره نامه اتوماسیونی"],
-        "DATA_TYPE":         ["Data type"],
-        "QTY_IN_ORDER":      ["Quantity In Order"],
-        "MFR_VENDOR_CODE":   ["Manufacturer Vendor Code"],
-        "MFR_PI_NO":         ["Manufacturer PI Number"],
-        "VENDOR_CODE":       ["Vendor Code"],
-        "VENDOR_PI_NO":      ["Vendor PI Number"],
-        "PI_QTY":            ["PI Quantity"],
-        "PI_UNIT_PRICE":     ["PI Unit Price"],
-        "CURRENCY":          ["Currency"],
-        "PI_LINE_VALUE":     ["PI Line Value"],
-        "PI_ADDITIONAL":     ["PI Additional Costs"],
-        "PO_SENT_DATE":      ["PO Sent Date", "تاریخ ابلاغ فرم"],
-        "PART_NO_PARTIAL":   ["Part No.", "شماره پارت در حمل پارشیالی"],
-        "QTY_IN_PART":       ["Quantity In Part"],
-        "CLEARED_QTY":       ["Customs Cleared Quantity"],
-        # ── موجودی‌های کارشناسی؛ منبع اصلی Supply Position ──
-        # این سه عدد باید توسط کارشناس/فایل کارشناسی ثبت شوند. وضعیت حمل یا
-        # تاریخ گمرکی جایگزین مقدار کمی نیست و از روی آن عدد ساخته نمی‌شود.
-        "SUPPLIER_STOCK_QTY": [
-            "Supplier Stock Qty", "Supplier Inventory", "Qty at Supplier",
-            "Quantity at Supplier", "Stock at Supplier", "Vendor Stock",
-            "موجودی نزد سازنده", "موجودی سازنده", "موجودی نزد تامین کننده",
-            "موجودی نزد تأمین کننده", "موجودی تامین کننده", "نزد سازنده"
-        ],
-        "IN_TRANSIT_QTY": [
-            "In Transit Qty", "Quantity in Transit", "In Transit Inventory",
-            "Transit Stock", "موجودی در راه", "تعداد در راه", "در راه"
-        ],
-        "IN_CUSTOMS_QTY": [
-            "In Customs Qty", "Quantity in Customs", "Customs Inventory",
-            "Customs Stock", "موجودی گمرک", "موجودی در گمرک", "تعداد در گمرک",
-            "نزد گمرک"
-        ],
-        "INVENTORY_ASOF_DATE": [
-            "Inventory As Of Date", "Inventory Update Date", "As Of Date",
-            "تاریخ بروزرسانی موجودی", "تاریخ به روز رسانی موجودی", "تاریخ موجودی"
-        ],
-        "INVENTORY_NOTE": [
-            "Inventory Note", "Supply Position Note", "Inventory Comment",
-            "توضیحات موجودی", "شرح موجودی", "یادداشت موجودی"
-        ],
-        "ORDER_STATUS":      ["Order Status"],
-        "TRANSPORT_MODE":    ["Mode of Transport"],
-        "TRANSPORT_NO":      ["Transport No."],
-        "BL_RAW":            ["BL No."],
-        "CARRIER":           ["Carrier Name"],
-        "SCHEDULED_SHIP":    ["Scheduled Shipment Date"],
-        "ADDITIONAL_DATA":   ["Additional Data", "Note , Brand"],
-        "EMP_CODE":          ["Employee Code"],
-    }
+    #: نام استاندارد → [هدر رسمی]. فقط برای سازگاری؛ قرارداد EXPERT_HEADERS است.
+    COLUMN_MAP: Dict[str, List[str]] = {field: [header] for field, header in EXPERT_HEADERS}
 
     NUMERIC_FIELDS = ["PR_TOTAL_QTY", "QTY_IN_ORDER", "PI_QTY", "PI_UNIT_PRICE",
                       "PI_LINE_VALUE", "PI_ADDITIONAL", "QTY_IN_PART", "CLEARED_QTY"]
-    INVENTORY_NUMERIC_FIELDS = ["SUPPLIER_STOCK_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY"]
+
+    # ═══════════ نگاشت دقیق ۳۵ ستون ═══════════
+    def _map_headers(self, df: pd.DataFrame) -> pd.DataFrame:
+        """هر ستون رسمی ← همان ستون فایل؛ بدون تطبیق تقریبی."""
+        by_norm: Dict[str, List[Any]] = {}
+        for col in df.columns:
+            by_norm.setdefault(_norm(col), []).append(col)
+        cols: Dict[str, pd.Series] = {}
+        used: set = set()
+        missing: List[str] = []
+        for field, header in EXPERT_HEADERS:
+            found = None
+            # the whole header, the name before its parentheses, or the text
+            # inside them — always a whole name, never a substring
+            for key in dict.fromkeys((_norm(header), _norm(_base(header)), _norm(_inner(header)))):
+                if not key:
+                    continue
+                hits = by_norm.get(key, [])
+                if len(hits) > 1:
+                    raise ValueError(f"AMBIGUOUS_EXPERT_HEADER: «{header.strip()}» ← {hits}")
+                if hits:
+                    found = hits[0]
+                    break
+            if found is None:
+                missing.append(header.strip())
+                cols[self.p(field)] = pd.Series("", index=df.index, dtype=object)
+                log.warning(f"   ⚠️ [{self.key}] ستون «{' '.join(header.split())}» در فایل کارشناسان "
+                            f"نیست — با مقدار خالی پر شد (صفر فرض نمی‌شود).")
+            else:
+                used.add(found)
+                cols[self.p(field)] = df[found].copy()
+        extra = [str(c) for c in df.columns if c not in used and _norm(c)]
+        if extra:
+            log.info(f"   ℹ️ [{self.key}] {len(extra)} ستون خارج از قرارداد ۳۵ ستونی خوانده نشد: "
+                     f"{extra[:8]}")
+        out = pd.DataFrame(cols, index=df.index)
+        out.attrs["source_headers"] = SharedList(str(c) for c in df.columns)
+        out.attrs["missing_mappings"] = SharedList(missing)
+        out.attrs["ignored_headers"] = SharedList(extra)
+        return out
 
     # ═══════════ تبدیل ═══════════
     def transform(self, sheets: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
@@ -109,55 +178,42 @@ class MoghavematAdapter(SourceAdapter):
         if df is None or df.empty:
             return {}
         rb = get_rulebook()
-
-        lines = self.std(df, self.COLUMN_MAP, exclude=["توضیح"])
         p = self.p
+        lines = self._map_headers(df)
 
-        # ── کلیدها ──
+        # ── کلیدها (ستون‌های منبع دست نمی‌خورند؛ کلید ستون جدا است) ──
         lines[KEY_ORDER] = lines[p("ORDER_REF")].map(clean_order_ref)
-        # دانه موجودی کارشناسی Order × Material است. اگر Material خالی بود،
-        # شماره فنی سازنده fallback می‌شود؛ خالی هرگز به «0» تبدیل نمی‌شود.
+        # دانه موجودی Order × Material است. اگر Material خالی بود، شماره فنی
+        # سازنده جایگزین می‌شود؛ خالی هرگز به «0» تبدیل نمی‌شود.
         material = lines[p("MATERIAL")].map(clean_part_no)
         mfr = lines[p("MFR_PART_NO")].map(clean_part_no)
         lines[KEY_MATERIAL] = material.where(material.astype(str).str.strip().ne(""), mfr)
         lines[p("ORDER_BASE")] = lines[p("ORDER_REF")].map(order_ref_base)
         lines[p("KEY_EMP")] = lines[p("EMP_CODE")].map(clean_employee_code)
-        lines[p("MFR_PART_NO")] = lines[p("MFR_PART_NO")].map(clean_part_no)
+        lines[KEY_PR] = lines[p("PR_NO")].map(clean_key)
+        lines[p("KEY_PR")] = lines[KEY_PR]   # نسخه پیشوندی، تا در ادغام حذف نشود
 
-        # ── عددی‌سازی ──
+        # ── عددی‌سازی: خالی = NaN ──
         for f in self.NUMERIC_FIELDS:
-            raw = lines[p(f)]
-            converted = raw.map(num_safe)
-            if f == "PI_LINE_VALUE":
-                # A missing PI amount is unknown, not a witnessed zero. The
-                # order-level sum(min_count=len(g)) then stays unknown when any
-                # source line has no PI value, while explicit zero survives.
-                missing = raw.map(lambda v: is_empty_val(v, treat_zero_as_empty=False))
-                converted = converted.where(~missing, float("nan"))
-            lines[p(f)] = converted
-        # در موجودی، blank و zero دو معنای کاملاً متفاوت دارند.
-        for f in self.INVENTORY_NUMERIC_FIELDS:
-            lines[p(f)] = lines[p(f)].map(
-                lambda v: "" if is_empty_val(v, treat_zero_as_empty=False) else num_safe(v))
+            lines[p(f)] = lines[p(f)].map(_number).astype("float64")
 
         # ── ارز ──
         lines[p("CURRENCY")] = lines[p("CURRENCY")].map(rb.normalize_currency)
 
+        # ── وضعیت و مقدار هر پارت (Order Status × Quantity In Part) ──
+        self._part_states(lines, rb)
+
         # ── اعتبارسنجی بارنامه و قرنطینه مقادیر مشکوک ──
         checks = lines[p("BL_RAW")].map(rb.validate_bl)
-        lines[p("BL_VALID")] = [v for v, _ in checks]
-        lines[p("BL_REJECT_REASON")] = [r for _, r in checks]
-        lines[p("BL_NO")] = [
-            str(v).strip().upper() if ok else ""
-            for v, ok in zip(lines[p("BL_RAW")], lines[p("BL_VALID")])]
+        valid = [v for v, _ in checks]
+        lines[p("BL_VALID")] = valid
+        lines[p("BL_NO")] = [str(v).strip().upper() if ok else ""
+                             for v, ok in zip(lines[p("BL_RAW")], valid)]
         # مقدار تهی «مشکوک» نیست؛ فقط مقادیر پرشده‌ای که بارنامه نیستند قرنطینه می‌شوند
-        lines[p("BL_SUSPECT")] = [
-            "" if (ok or is_empty_val(v)) else str(v).strip()
-            for v, ok in zip(lines[p("BL_RAW")], lines[p("BL_VALID")])]
-        lines[p("BL_REJECT_REASON")] = [
-            "" if (ok or is_empty_val(v)) else reason
-            for v, ok, reason in zip(lines[p("BL_RAW")], lines[p("BL_VALID")],
-                                     lines[p("BL_REJECT_REASON")])]
+        lines[p("BL_SUSPECT")] = ["" if (ok or is_empty_val(v)) else str(v).strip()
+                                  for v, ok in zip(lines[p("BL_RAW")], valid)]
+        lines[p("BL_REJECT_REASON")] = ["" if (ok or is_empty_val(v)) else reason
+                                        for v, (ok, reason) in zip(lines[p("BL_RAW")], checks)]
         n_susp = int((lines[p("BL_SUSPECT")].astype(str).str.strip() != "").sum())
         if n_susp:
             log.warning(
@@ -167,7 +223,7 @@ class MoghavematAdapter(SourceAdapter):
         # ── روش حمل ──
         lines[p("TRANSPORT_MODE_CODE")] = lines[p("TRANSPORT_MODE")].map(rb.transport_mode)
 
-        # ── وضعیت متنی → مرحله چرخه عمر ──
+        # ── Additional Data → مرحله چرخه عمر ──
         parsed = [rb.parse_status_note(v) for v in lines[p("ADDITIONAL_DATA")]]
         for field in ("COMMERCIAL_NOTE", "LOGISTICS_NOTE", "STAGE", "STAGE_FA",
                       "PROGRESS", "BLOCKING", "TERMINAL", "EXCLUDED_FROM_KPI",
@@ -179,28 +235,49 @@ class MoghavematAdapter(SourceAdapter):
         lines[p("HS_SUGGESTED")] = [c for c, _ in hs]
         lines[p("HS_KEYWORD")] = [k for _, k in hs]
 
-        # ── تشخیص قالب فایل (تک‌نوع یا چندنوع Data type) ──
         dtypes = sorted({str(v).strip() for v in lines[p("DATA_TYPE")] if not is_empty_val(v)})
         if len(dtypes) > 1:
             log.info(f"   🧩 [moghavemat] فایل چندنوعی است — Data type: {dtypes}")
         elif dtypes:
             log.info(f"   🧩 [moghavemat] تک‌نوع — Data type: {dtypes[0]}")
 
-        # کلید PR برای اتصال به گردش کار SAP
-        from .base import KEY_PR
-        from ..core.text import clean_key as _ck
-        lines[KEY_PR] = lines[p("PR_NO")].map(_ck)
-        lines[p("KEY_PR")] = lines[KEY_PR]   # نسخه پیشوندی، تا در ادغام حذف نشود
         lines[p("PRESENT")] = True
-        agg = self._aggregate(lines)
         inv = self._aggregate_inventory(lines)
+        agg = self._aggregate(lines, inv)
         ompi = self._aggregate_order_material_pr_item(lines)
-        n_orders = int(agg[KEY_ORDER].astype(str).str.strip().replace("", pd.NA).nunique()) if KEY_ORDER in agg else len(agg)
-        log.info(f"   📊 [moghavemat] {len(lines)} قلم در {n_orders} سفارش و {len(agg)} ردیف سفارش×متریال تجمیع شد؛ "
-                 f"{len(inv)} موقعیت موجودی Order×Material و {len(ompi)} رابطه Order×Material×PR×PR Item ساخته شد.")
+        n_orders = int(agg[KEY_ORDER].astype(str).str.strip().replace("", pd.NA).nunique()) \
+            if KEY_ORDER in agg else len(agg)
+        log.info(f"   📊 [moghavemat] {len(lines)} قلم در {n_orders} سفارش و {len(agg)} ردیف "
+                 f"سفارش×متریال تجمیع شد؛ {len(inv)} موقعیت پارت Order×Material و {len(ompi)} "
+                 f"رابطه Order×Material×PR×PR Item ساخته شد.")
         return {"main": agg, "inventory": inv, "order_material_pr_item": ompi, "lines": lines}
 
-    # ═══════════ تجمیع سطح سفارش ═══════════
+    # ═══════════ وضعیت هر پارت ═══════════
+    def _part_states(self, lines: pd.DataFrame, rb) -> None:
+        """Order Status → وضعیت؛ Quantity In Part → ستون همان وضعیت."""
+        p = self.p
+        codes = [rb.part_state(v) for v in lines[p("ORDER_STATUS")]]
+        lines[p("PART_STATE")] = codes
+        lines[p("PART_STATE_FA")] = [rb.part_state_fa(c) for c in codes]
+        qty = lines[p("QTY_IN_PART")]
+        cleared = lines[p("CLEARED_QTY")]
+        in_customs = (qty - cleared.fillna(0.0)).clip(lower=0.0)
+        state = pd.Series(codes, index=lines.index)
+        for code, _, col in PART_STATES:
+            value = in_customs if code == "IN_CUSTOMS" else qty
+            lines[p(col)] = value.where(state.eq(code))
+        unknown = sorted({str(v).strip() for v, c in zip(lines[p("ORDER_STATUS")], codes)
+                          if c == "UNRECOGNIZED"})
+        if unknown:
+            log.warning(f"   ⚠️ [{self.key}] Order Status ناشناخته (حدس زده نشد؛ مقدار پارت «وضعیت "
+                        f"نامشخص» می‌ماند): {unknown[:10]} — در status_lexicon.yaml → part_states "
+                        f"اضافه کنید.")
+            health.current().find(
+                "وضعیت پارت", health.WARN,
+                f"{len(unknown)} مقدار Order Status ناشناخته",
+                "مقدار این پارت‌ها در هیچ یک از چهار وضعیت شمرده نشد؛ واژه را به "
+                "rules/status_lexicon.yaml → part_states اضافه کنید.")
+
     @staticmethod
     def _uniq_values(s: pd.Series) -> List[str]:
         """مقادیر یکتا و مرتب، بدون خالی — برای حفظ نسب."""
@@ -213,130 +290,73 @@ class MoghavematAdapter(SourceAdapter):
                 seen.append(t)
         return sorted(seen)
 
-    def _aggregate_inventory(self, lines: pd.DataFrame) -> pd.DataFrame:
-        """جدول موجودی کارشناسی در دانه Order × Material.
+    # ═══════════ موقعیت پارت‌ها در دانه سفارش × متریال ═══════════
+    def _part_position(self, g: pd.DataFrame) -> Dict[str, Any]:
+        """چهار وضعیت برای یک سفارش × متریال، بدون دوباره‌شماری.
 
-        سه bucket کارشناسی منبع اصلی‌اند: نزد سازنده، در راه و گمرک.
-        اگر یک bucket در فایل نیامده باشد مقدار آن blank باقی می‌ماند؛ صفر فقط
-        وقتی پذیرفته می‌شود که کارشناس صریحاً صفر ثبت کرده باشد. تکرار یک
-        snapshot روی چند ردیف با sum دوباره‌شماری نمی‌شود؛ برای هر bucket
-        آخرین/اولین مقدار معتبر همان کلید نگه داشته می‌شود و تعارض ثبت می‌گردد.
+        هر «Part No.» یک بار شمرده می‌شود (ردیف با بیشترین Quantity In Part؛ یک
+        پارت ممکن است در چند قلم PR تکرار شده باشد). ردیف‌های بدون Part No. هم
+        یک پارت‌اند (بیشترین مقدار) — همان قاعده پیشین حمل پارشیالی.
+
+        * هیچ پارتی مقدار ندارد ← هر چهار وضعیت نامعلوم (خالی).
+        * همه پارت‌ها وضعیت معلوم دارند ← وضعیتی که پارتی ندارد صفرِ واقعی است.
+        * پارتی با وضعیت نامعلوم ← مقدارش در «وضعیت نامشخص» و صفرها نامعلوم‌اند
+          (آن پارت ممکن است در همان وضعیت باشد).
+        * یک پارت با دو وضعیت متفاوت ← تعارض ثبت می‌شود.
         """
         p = self.p
-        cols = [p(x) for x in self.INVENTORY_NUMERIC_FIELDS]
-        # Only these columns are read per Order×Material group. Grouping the full
-        # standardized line frame split every mapped column for each key.
-        used = [KEY_ORDER, KEY_MATERIAL, *cols, p("INVENTORY_ASOF_DATE"), p("INVENTORY_NOTE"),
-                p("QTY_IN_ORDER"), p("QTY_IN_PART"), p("CLEARED_QTY"), p("PART_NO_PARTIAL")]
-        lines = lines[[c for c in dict.fromkeys(used) if c in lines.columns]]
-        src = lines[(lines[KEY_ORDER].astype(str).str.strip() != "") &
-                    (lines[KEY_MATERIAL].astype(str).str.strip() != "")].copy()
+        qty = g[p("QTY_IN_PART")]
+        part = g[p("PART_NO_PARTIAL")].map(lambda v: "" if is_empty_val(v) else str(v).strip())
+        state = g[p("PART_STATE")]
+        counted: List[Any] = []
+        conflicts: List[str] = []
+        for name, idx in part.groupby(part, sort=True).groups.items():
+            q = qty.loc[idx]
+            if q.notna().any():
+                counted.append(q.idxmax())
+            states = sorted({s for s in state.loc[idx] if s not in ("", "UNRECOGNIZED")})
+            if len(states) > 1:
+                label = f"Part {name}" if name else "بدون Part No."
+                conflicts.append(f"{label}: " + " | ".join(
+                    get_rulebook().part_state_fa(s) for s in states))
+        row: Dict[str, Any] = {p(STATE_UNKNOWN_QTY): float("nan"),
+                               p("INVENTORY_CONFLICT"): " ؛ ".join(conflicts)}
+        for _, _, col in PART_STATES:
+            row[p(col)] = float("nan")
+        if not counted:
+            return row
+        sums = {code: 0.0 for code, _, _ in PART_STATES}
+        unknown = 0.0
+        for i in counted:
+            code = state.loc[i]
+            if code in sums:
+                col = next(c for k, _, c in PART_STATES if k == code)
+                sums[code] += float(g.at[i, p(col)])
+            else:
+                unknown += float(qty.loc[i])
+        row[p(STATE_UNKNOWN_QTY)] = unknown
+        for code, _, col in PART_STATES:
+            value = sums[code]
+            row[p(col)] = value if (value > 0 or unknown == 0) else float("nan")
+        return row
+
+    def _aggregate_inventory(self, lines: pd.DataFrame) -> pd.DataFrame:
+        """چهار وضعیت پارت در دانه سفارش × متریال — شامل متریال بدون سفارش."""
+        p = self.p
+        out_cols = [KEY_ORDER, KEY_MATERIAL] + [p(c) for _, _, c in PART_STATES] + \
+                   [p(STATE_UNKNOWN_QTY), p("INVENTORY_CONFLICT")]
+        src = lines[lines[KEY_MATERIAL].astype(str).str.strip().ne("")]
         if src.empty:
-            return pd.DataFrame(columns=[KEY_ORDER, KEY_MATERIAL] + cols)
-
-        def vals(series):
-            out=[]
-            for v in series.tolist():
-                if is_empty_val(v, treat_zero_as_empty=False):
-                    continue
-                try: x=float(v)
-                except Exception: continue
-                if x not in out: out.append(x)
-            return out
-
-        rows=[]
-        conflict_count=0
-
-        def _max_valid(series):
-            vals=[]
-            for v in series.tolist():
-                if is_empty_val(v, treat_zero_as_empty=False):
-                    continue
-                try: vals.append(float(v))
-                except Exception: continue
-            return max(vals) if vals else None
-
-        def _partial_total(group, qty_col):
-            """جمع حمل/ترخیص بدون دوباره‌شماری ردیف‌های یک Part No.
-
-            Commercial Expert Data ممکن است یک Part No. را در چند مرحله تکرار کند.
-            برای هر Part No. بیشترین مقدار ثبت‌شده گرفته می‌شود و سپس Partها جمع
-            می‌شوند. ردیف‌های فاقد Part No. فقط با بیشترین مقدار نمایندگی می‌شوند.
-            """
-            part_col=p("PART_NO_PARTIAL")
-            if qty_col not in group.columns:
-                return None
-            # Same arithmetic as the former per-group DataFrame pipeline
-            # (max per Part No., summed in sorted-key order with pandas; max of
-            # unnamed rows) without allocating five intermediate frames per key.
-            qty=pd.to_numeric(group[qty_col], errors="coerce").tolist()
-            parts=group[part_col].tolist() if part_col in group.columns else [""]*len(qty)
-            named={}; unnamed=None
-            for part, q in zip(parts, qty):
-                if pd.isna(q):
-                    continue
-                part="" if pd.isna(part) else str(part).strip()
-                if part:
-                    named[part]=q if part not in named else max(named[part], q)
-                else:
-                    unnamed=q if unnamed is None else max(unnamed, q)
-            if not named and unnamed is None:
-                return None
-            total=0.0
-            if named:
-                total += float(pd.Series([named[k] for k in sorted(named)], dtype="float64").sum())
-            if unnamed is not None:
-                total += float(unnamed)
-            return total
-
+            return pd.DataFrame(columns=out_cols)
+        rows = []
         for (order, material), g in src.groupby([KEY_ORDER, KEY_MATERIAL], sort=False):
-            row={KEY_ORDER: order, KEY_MATERIAL: material}
-            missing=[]; conflicts=[]
-            for field in self.INVENTORY_NUMERIC_FIELDS:
-                c=p(field); vv=vals(g[c]) if c in g.columns else []
-                if not vv:
-                    row[c]=""; missing.append(field)
-                else:
-                    # snapshot quantity: تکرار مقدار یکسان sum نمی‌شود. اگر چند
-                    # مقدار متفاوت وجود داشت، آخرین مقدار معتبرِ فایل استفاده و
-                    # تعارض برای ممیزی نگه داشته می‌شود.
-                    row[c]=vv[-1]
-                    if len(vv)>1:
-                        conflicts.append(f"{field}:"+"|".join(str(x) for x in vv))
-            asof=[v for v in g.get(p("INVENTORY_ASOF_DATE"), pd.Series(dtype=object)).tolist()
-                  if not is_empty_val(v, treat_zero_as_empty=False)]
-            notes=[str(v).strip() for v in g.get(p("INVENTORY_NOTE"), pd.Series(dtype=object)).tolist()
-                   if not is_empty_val(v, treat_zero_as_empty=False)]
-            row[p("INVENTORY_ASOF_DATE")]=str(asof[-1]) if asof else ""
-            row[p("INVENTORY_NOTE")]=notes[-1] if notes else ""
-            row[p("INVENTORY_MISSING")]=", ".join(missing)
-            row[p("INVENTORY_CONFLICT")]= " ; ".join(conflicts)
-            # ── مشتق عملیاتی از هدر واقعی Commercial Expert Data ──
-            # Quantity In Order = مقدار سفارش، Quantity In Part = مقدار ارسال‌شده،
-            # Customs Cleared Quantity = مقدار ترخیص‌شده. این مقادیر منبع جایگزین
-            # سه bucket صریح‌اند و فقط وقتی ستون مستقیم خالی است استفاده می‌شوند.
-            ordered=_max_valid(g[p("QTY_IN_ORDER")]) if p("QTY_IN_ORDER") in g.columns else None
-            shipped=_partial_total(g, p("QTY_IN_PART"))
-            cleared=_partial_total(g, p("CLEARED_QTY"))
-            supplier_derived=(max(ordered-(shipped or 0.0),0.0) if ordered is not None and shipped is not None else None)
-            open_shipped=(max((shipped or 0.0)-(cleared or 0.0),0.0) if shipped is not None and cleared is not None else None)
-            row[p("SUPPLIER_STOCK_QTY_DERIVED")]=supplier_derived if supplier_derived is not None else ""
-            row[p("OPEN_SHIPPED_QTY")]=open_shipped if open_shipped is not None else ""
-            row[p("QTY_IN_ORDER_BASIS")]=ordered if ordered is not None else ""
-            row[p("QTY_IN_PART_BASIS")]=shipped if shipped is not None else ""
-            row[p("CLEARED_QTY_BASIS")]=cleared if cleared is not None else ""
-            row[p("INVENTORY_DERIVATION")]=(
-                "Supplier=max(Quantity In Order-Quantity In Part,0); "
-                "OpenShipped=max(Quantity In Part-Customs Cleared Quantity,0)"
-                if ordered is not None or shipped is not None or cleared is not None else "")
-
-            row[p("INVENTORY_COVERAGE_PCT")]=round(100*(3-len(missing))/3,1)
-            if conflicts:
-                conflict_count += 1
-            rows.append(row)
-        if conflict_count:
-            log.warning(f"⚠️ [moghavemat] {conflict_count} کلید Order×Material چند snapshot موجودی متفاوت دارد؛ آخرین مقدار فایل استفاده و تعارض ثبت شد.")
-        return pd.DataFrame(rows)
+            rows.append({KEY_ORDER: order, KEY_MATERIAL: material, **self._part_position(g)})
+        out = pd.DataFrame(rows, columns=out_cols)
+        n_conf = int(out[p("INVENTORY_CONFLICT")].astype(str).str.strip().ne("").sum())
+        if n_conf:
+            log.warning(f"⚠️ [moghavemat] {n_conf} سفارش×متریال پارتی با دو وضعیت متفاوت دارد؛ "
+                        f"تعارض در MOGH_INVENTORY_CONFLICT ثبت شد.")
+        return out
 
     def _aggregate_order_material_pr_item(self, lines: pd.DataFrame) -> pd.DataFrame:
         """Bridge evidence at the business relation grain Order×Material×PR×PR Item.
@@ -346,70 +366,79 @@ class MoghavematAdapter(SourceAdapter):
         only at this relation grain and retained as evidence_count/source_rows.
         """
         p = self.p
-        from .base import KEY_PR
-        cols=[KEY_ORDER, KEY_MATERIAL, KEY_PR, p("PR_ITEM"), p("ROW_NO"),
-              p("MATERIAL_DESC"), p("MATERIAL_SHORT")]
-        have=[c for c in cols if c in lines.columns]
-        src=lines[have].copy()
+        cols = [KEY_ORDER, KEY_MATERIAL, KEY_PR, p("PR_ITEM"), p("ROW_NO"),
+                p("MATERIAL_DESC"), p("MATERIAL_SHORT")]
+        have = [c for c in cols if c in lines.columns]
+        src = lines[have].copy()
+        empty = pd.DataFrame(columns=[KEY_ORDER, KEY_MATERIAL, KEY_PR, p("PR_ITEM"), p("OMPI_KEY"),
+                                      p("EVIDENCE_COUNT"), p("SOURCE_ROWS")])
         if src.empty:
-            return pd.DataFrame(columns=[KEY_ORDER, KEY_MATERIAL, KEY_PR, p("PR_ITEM"), p("OMPI_KEY"), p("EVIDENCE_COUNT"), p("SOURCE_ROWS")])
+            return empty
         for c in (KEY_ORDER, KEY_MATERIAL, KEY_PR):
-            if c not in src.columns: src[c]=""
-            src[c]=src[c].fillna("").astype(str).str.strip()
-        item=p("PR_ITEM")
-        if item not in src.columns: src[item]=""
+            if c not in src.columns:
+                src[c] = ""
+            src[c] = src[c].fillna("").astype(str).str.strip()
+        item = p("PR_ITEM")
+        if item not in src.columns:
+            src[item] = ""
+
         def _clean_item(v):
-            if is_empty_val(v): return ""
-            t=str(v).strip()
+            if is_empty_val(v):
+                return ""
+            t = str(v).strip()
             # Excel often turns integer PR Item 20 into 20.0; preserve business identity.
             try:
-                f=float(t)
-                if f.is_integer(): return str(int(f))
+                f = float(t)
+                if f.is_integer():
+                    return str(int(f))
             except Exception:
                 pass
             return t
-        src[item]=src[item].map(_clean_item)
-        src=src[(src[KEY_ORDER]!="") & (src[KEY_MATERIAL]!="") & (src[KEY_PR]!="")].copy()
+        src[item] = src[item].map(_clean_item)
+        src = src[(src[KEY_ORDER] != "") & (src[KEY_MATERIAL] != "") & (src[KEY_PR] != "")].copy()
         if src.empty:
-            return pd.DataFrame(columns=[KEY_ORDER, KEY_MATERIAL, KEY_PR, item, p("OMPI_KEY"), p("EVIDENCE_COUNT"), p("SOURCE_ROWS")])
-        rows=[]
-        for (order, material, pr, pr_item), g in src.groupby([KEY_ORDER, KEY_MATERIAL, KEY_PR, item], sort=False, dropna=False):
-            source_rows=[]
+            return empty
+        rows = []
+        for (order, material, pr, pr_item), g in src.groupby(
+                [KEY_ORDER, KEY_MATERIAL, KEY_PR, item], sort=False, dropna=False):
+            source_rows = []
             if p("ROW_NO") in g.columns:
                 for v in g[p("ROW_NO")].tolist():
-                    if is_empty_val(v): continue
-                    t=_clean_item(v)
-                    if t and t not in source_rows: source_rows.append(t)
-            desc=self._uniq_values(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g.columns else []
-            short=self._uniq_values(g[p("MATERIAL_SHORT")]) if p("MATERIAL_SHORT") in g.columns else []
-            key=f"{order}|{material}|{pr}|{pr_item or '<BLANK>'}"
+                    if is_empty_val(v):
+                        continue
+                    t = _clean_item(v)
+                    if t and t not in source_rows:
+                        source_rows.append(t)
+            desc = self._uniq_values(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g.columns else []
+            short = self._uniq_values(g[p("MATERIAL_SHORT")]) if p("MATERIAL_SHORT") in g.columns else []
             rows.append({
-                KEY_ORDER:order, KEY_MATERIAL:material, KEY_PR:pr, item:pr_item,
-                p("OMPI_KEY"):key, p("EVIDENCE_COUNT"):int(len(g)),
-                p("SOURCE_ROWS"):",".join(source_rows),
-                p("MATERIAL_DESC"):"، ".join(desc),
-                p("MATERIAL_SHORT"):"، ".join(short),
+                KEY_ORDER: order, KEY_MATERIAL: material, KEY_PR: pr, item: pr_item,
+                p("OMPI_KEY"): f"{order}|{material}|{pr}|{pr_item or '<BLANK>'}",
+                p("EVIDENCE_COUNT"): int(len(g)),
+                p("SOURCE_ROWS"): ",".join(source_rows),
+                p("MATERIAL_DESC"): "، ".join(desc),
+                p("MATERIAL_SHORT"): "، ".join(short),
             })
         return pd.DataFrame(rows)
 
-    def _aggregate(self, lines: pd.DataFrame) -> pd.DataFrame:
+    # ═══════════ تجمیع سطح سفارش ═══════════
+    @staticmethod
+    def _first_valid(s: pd.Series) -> Any:
+        for v in s:
+            if not is_empty_val(v):
+                return v
+        return ""
+
+    def _order_rows(self, src: pd.DataFrame) -> pd.DataFrame:
+        """یک ردیف برای هر سفارش (مقادیر سطح سفارش)."""
         p = self.p
-        src = lines[lines[KEY_ORDER].astype(str).str.strip() != ""]
-        if src.empty:
-            # Order-less lines still belong in the report (29.15.11).
-            return self._expand_materials(pd.DataFrame(columns=[KEY_ORDER]), lines)
-
         _uniq = self._uniq_values
-
-        def first_valid(s: pd.Series) -> Any:
-            for v in s:
-                if not is_empty_val(v):
-                    return v
-            return ""
-
+        first_valid = self._first_valid
         rows: List[Dict[str, Any]] = []
         for order, g in src.groupby(KEY_ORDER, sort=False):
             top = g.loc[g[p("PROGRESS")].astype(float).idxmax()] if len(g) else g.iloc[0]
+            currency = first_valid(g[p("CURRENCY")])
+            one_currency = g[p("CURRENCY")].fillna("").nunique(dropna=False) == 1 and str(currency).strip()
             rows.append({
                 KEY_ORDER: order,
                 p("PRESENT"): True,
@@ -423,17 +452,17 @@ class MoghavematAdapter(SourceAdapter):
                 p("MULTI_PR"): bool(len(_uniq(g[p("KEY_PR")])) > 1),
                 p("MATERIAL"): first_valid(g[p("MATERIAL")]),
                 p("MATERIAL_DESC"): first_valid(g[p("MATERIAL_DESC")]),
-                # The order mart keeps one compatibility description, but all
-                # distinct expert descriptions remain visible and auditable.
-                # These are labels, never additive facts.
                 p("MATERIAL_DESCS_ALL"): " | ".join(_uniq(g[p("MATERIAL_DESC")])),
                 p("MATERIAL_DESC_COUNT"): len(_uniq(g[p("MATERIAL_DESC")])),
                 p("KEY_MATERIAL_COUNT"): len(_uniq(g[KEY_MATERIAL])),
                 p("MFR_PART_NO"): first_valid(g[p("MFR_PART_NO")]),
                 p("VENDOR_CODE"): first_valid(g[p("VENDOR_CODE")]),
                 p("VENDOR_PI_NO"): first_valid(g[p("VENDOR_PI_NO")]),
-                p("CURRENCY"): first_valid(g[p("CURRENCY")]),
-                p("PI_VALUE_SUM"): (float(g[p("PI_LINE_VALUE")].sum(min_count=len(g))) if g[p("CURRENCY")].fillna("").nunique(dropna=False) == 1 and str(first_valid(g[p("CURRENCY")])).strip() else float("nan")),
+                p("CURRENCY"): currency,
+                # A missing PI amount is unknown: the order sum stays unknown
+                # when any line has none, and never mixes currencies.
+                p("PI_VALUE_SUM"): (float(g[p("PI_LINE_VALUE")].sum(min_count=len(g)))
+                                    if one_currency else float("nan")),
                 p("PI_ADDITIONAL_SUM"): float(g[p("PI_ADDITIONAL")].sum()),
                 p("ORDER_QTY_SUM"): float(g[p("QTY_IN_ORDER")].sum()),
                 p("PART_QTY_SUM"): float(g[p("QTY_IN_PART")].sum()),
@@ -457,51 +486,49 @@ class MoghavematAdapter(SourceAdapter):
                 p("EXCLUDED_FROM_KPI"): bool(g[p("EXCLUDED_FROM_KPI")].any()),
                 p("CLEARANCE_HINT"): first_valid(g[p("CLEARANCE_HINT")]),
                 p("ALERTS"): " ؛ ".join(sorted({a for a in g[p("ALERTS")] if a})),
-                # ── نسب متریال ──────────────────────────────────────────
-                # سورس در دانه «قلم درخواست» است و اینجا به دانه «سفارش»
-                # تجمیع می‌شود. برای متریال از first_valid استفاده می‌شود،
-                # یعنی اگر سفارشی پنج قلم داشته باشد جدول اصلی فقط یکی را
-                # نمایندگی می‌کند و چهارتای دیگر **بی‌صدا ناپدید می‌شوند**.
-                #
-                # این نقطه کور واقعیِ داده است، نه یک شرط اشتباه؛ با عوض
-                # کردن یک خط حل نمی‌شود چون دانه جدول اصلی سفارش است.
-                # کاری که می‌شود و باید کرد این است که نسب حفظ شود و
-                # سفارش چندمتریاله صریحاً علامت بخورد، تا هیچ تحلیلی
-                # ناخواسته آن را «تک‌متریال» فرض نکند.
-                p("MATERIAL_COUNT"): int(_uniq(g[p("MATERIAL")]).__len__()),
+                p("MATERIAL_COUNT"): len(_uniq(g[p("MATERIAL")])),
                 p("MATERIALS_ALL"): "، ".join(_uniq(g[p("MATERIAL")])),
                 p("PARTS_ALL"): "، ".join(_uniq(g[p("MFR_PART_NO")])),
                 p("MULTI_MATERIAL"): bool(len(_uniq(g[p("MATERIAL")])) > 1),
             })
         out = pd.DataFrame(rows)
-        multi = int(out[p("MULTI_MATERIAL")].sum()) if not out.empty else 0
+        if out.empty:
+            return out
+        ordered = out[p("ORDER_QTY_SUM")].astype(float)
+        cleared = out[p("CLEARED_QTY_SUM")].astype(float)
+        out[p("CLEARED_PCT")] = [round(c / o * 100, 1) if o > 0 else 0.0
+                                 for c, o in zip(cleared, ordered)]
+        return out
+
+    def _aggregate(self, lines: pd.DataFrame, positions: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        p = self.p
+        src = lines[lines[KEY_ORDER].astype(str).str.strip() != ""]
+        out = self._order_rows(src) if not src.empty else pd.DataFrame(columns=[KEY_ORDER])
+        multi = int(out[p("MULTI_MATERIAL")].sum()) if p("MULTI_MATERIAL") in out else 0
         if multi:
             log.warning(
-                f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. از 29.15.11 هر متریال "
-                f"ردیف خودش را در جمعیت و محاسبات دارد؛ مقادیر سطح سفارش روی همه "
-                f"ردیف‌های آن سفارش تکرار می‌شوند و جمع ردیفی آن‌ها مجاز نیست.")
+                f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. هر متریال ردیف خودش را در "
+                f"جمعیت و محاسبات دارد؛ مقادیر سطح سفارش روی همه ردیف‌های آن سفارش تکرار "
+                f"می‌شوند و جمع ردیفی آن‌ها مجاز نیست.")
             health.current().find(
                 "دانه‌بندی", health.WARN,
                 f"{multi} سفارش چندمتریاله در سورس خرید",
                 "هر متریال ردیف خودش را دارد (MOGH_ITEM_ROLE). مقادیر سطح سفارش "
                 "(PI، مقادیر سفارش، NTSW) روی ردیف‌های سفارش تکرار می‌شوند — مثل "
                 "ردیف‌های چند بارنامه — و فقط در دانه سفارش/ثبت سفارش جمع می‌شوند.")
-        multi_pr = int(out[p("MULTI_PR")].sum()) if not out.empty and p("MULTI_PR") in out.columns else 0
+        multi_pr = int(out[p("MULTI_PR")].sum()) if p("MULTI_PR") in out else 0
         if multi_pr:
             log.warning(
-                f"⚠️ [{self.key}] {multi_pr} سفارش بیش از یک PR دارد. PR اول فقط برای سازگاری legacy نگه داشته شده؛ "
-                f"رابطه کامل در {p('PRS_ALL')} و frame مستقل order_material_pr_item حفظ شده است.")
+                f"⚠️ [{self.key}] {multi_pr} سفارش بیش از یک PR دارد. PR اول فقط برای سازگاری "
+                f"legacy نگه داشته شده؛ رابطه کامل در {p('PRS_ALL')} و frame مستقل "
+                f"order_material_pr_item حفظ شده است.")
             health.current().find(
                 "دانه‌بندی", health.WARN,
                 f"{multi_pr} سفارش چند-PR در سورس خرید",
                 "هیچ PR حذف نشده است؛ برای تحلیل رابطه از frame Order×Material×PR×PR Item استفاده شود.")
-
-        # درصد تکمیل ترخیص در سطح سفارش (بدون تقسیم بر صفر)
-        ordered = out[p("ORDER_QTY_SUM")].astype(float)
-        cleared = out[p("CLEARED_QTY_SUM")].astype(float)
-        out[p("CLEARED_PCT")] = [
-            round(c / o * 100, 1) if o > 0 else 0.0 for c, o in zip(cleared, ordered)]
-        return self._expand_materials(out, lines)
+        if positions is None:
+            positions = self._aggregate_inventory(lines)
+        return self._expand_materials(out, lines, positions)
 
     # ═══════════ هر سفارش × متریال یک ردیف (29.15.11) ═══════════
     #: Fields that belong to the material, not the order. Everything else on an
@@ -511,68 +538,63 @@ class MoghavematAdapter(SourceAdapter):
     _GAP_FIELDS = (("PR_NO", "شماره درخواست خرید"), ("PO_SENT_DATE", "تاریخ ابلاغ سفارش"),
                    ("VENDOR_CODE", "کد تأمین‌کننده"), ("PI_LINE_VALUE", "ارزش PI"))
 
-    def _expand_materials(self, out: pd.DataFrame, lines: pd.DataFrame) -> pd.DataFrame:
+    def _expand_materials(self, out: pd.DataFrame, lines: pd.DataFrame,
+                          positions: pd.DataFrame) -> pd.DataFrame:
         """One population row per Order×Material, and one per order-less material.
 
         Owner's decision (1405-07-05): the expert file is the criterion — no
         material in it may be dropped from the report or kept out of the
         calculations; if something is wrong, it is investigated, not excluded.
-        Until 29.15.10 the order row carried only its first material, and lines
-        without an order number were not in the population at all.
 
-        The order row itself is unchanged except for its own material's
-        description list and record gaps. Each further material of the order is
-        a copy of that row with only the material identity replaced, so every
-        order-level value is exactly what the order row already carries (and
-        already repeats on each BL row). Inventory (Order×Material) and Oracle
-        (Material) then join per row, so criticality and supply position are
-        computed for every material.
+        Each further material of an order is a copy of the order row with only
+        the material identity replaced, so every order-level value is exactly
+        what the order row already carries (and already repeats on each BL
+        row). Every row — first, further and order-less — carries its own
+        material's identity and its own four part states.
         """
         p = self.p
         role = p("ITEM_ROLE")
-        order_key = lines[KEY_ORDER].fillna("").astype(str).str.strip() if KEY_ORDER in lines \
-            else pd.Series("", index=lines.index)
+        order_key = lines[KEY_ORDER].fillna("").astype(str).str.strip()
         mat_key = lines[KEY_MATERIAL].fillna("").astype(str).str.strip()
         work = lines.assign(_o_key=order_key.values, _m_key=mat_key.values)
-
-        def first_valid(s: pd.Series) -> Any:
-            for v in s:
-                if not is_empty_val(v):
-                    return v
-            return ""
+        first_valid = self._first_valid
+        pos_cols = [p(c) for _, _, c in PART_STATES] + [p(STATE_UNKNOWN_QTY), p("INVENTORY_CONFLICT")]
+        pos = {}
+        if isinstance(positions, pd.DataFrame) and not positions.empty:
+            for rec in positions.to_dict("records"):
+                pos[(str(rec[KEY_ORDER]).strip(), str(rec[KEY_MATERIAL]).strip())] = \
+                    {c: rec.get(c) for c in pos_cols}
+        blank_pos = {c: (float("nan") if c != p("INVENTORY_CONFLICT") else "") for c in pos_cols}
 
         def identity(g: pd.DataFrame) -> Dict[str, Any]:
-            descs = self._uniq_values(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g else []
-            first_desc = first_valid(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g else ""
+            descs = self._uniq_values(g[p("MATERIAL_DESC")])
             gaps = [label for f, label in self._GAP_FIELDS
-                    if p(f) in g and any(is_empty_val(v, treat_zero_as_empty=(f != "PI_LINE_VALUE"))
-                                         for v in g[p(f)])]
-            row = {p(f): first_valid(g[p(f)]) for f in self._MATERIAL_FIELDS if p(f) in g}
-            row.update({p("MATERIAL_DESC"): first_desc,
-                        p("MATERIAL_DESCS_ALL"): " | ".join(descs),
+                    if any(is_empty_val(v, treat_zero_as_empty=(f != "PI_LINE_VALUE")) for v in g[p(f)])]
+            row = {p(f): first_valid(g[p(f)]) for f in self._MATERIAL_FIELDS}
+            row.update({p("MATERIAL_DESCS_ALL"): " | ".join(descs),
                         p("MATERIAL_DESC_COUNT"): len(descs),
                         p("ITEM_LINE_COUNT"): int(len(g)),
                         p("ITEM_RECORD_GAPS"): "، ".join(gaps)})
             return row
 
-        from ..core.text import clean_part_no
         rows: List[Dict[str, Any]] = []
         by_order = {o: g for o, g in work[work["_o_key"].ne("")].groupby("_o_key", sort=False)}
         for rec in (out.to_dict("records") if not out.empty else []):
             order = str(rec.get(KEY_ORDER, "")).strip()
             g = by_order.get(order)
             if g is None:
-                rows.append({**rec, role: "FIRST"})
+                rows.append({**rec, **blank_pos, role: "FIRST"})
                 continue
             groups = [(m, mg) for m, mg in g[g["_m_key"].ne("")].groupby("_m_key", sort=False)]
             # the material the order row already represents (same rule as keys.yaml)
             rep = clean_part_no(rec.get(p("MATERIAL"), "")) or clean_part_no(rec.get(p("MFR_PART_NO"), ""))
             rep_group = next((mg for m, mg in groups if m == rep), None)
-            first = {**rec, role: "FIRST"}
+            first = {**rec, **pos.get((order, rep), blank_pos), role: "FIRST"}
             if rep_group is not None:
-                ident = identity(rep_group)
-                first.update({k: ident[k] for k in (p("MATERIAL_DESCS_ALL"), p("MATERIAL_DESC_COUNT"),
-                                                    p("ITEM_LINE_COUNT"), p("ITEM_RECORD_GAPS"))})
+                # Every material attribute from this exact material, including
+                # missing ones: the order-level first_valid() may have taken a
+                # sibling's description, part number or HS.
+                first.update(identity(rep_group))
             rows.append(first)
             for m, mg in groups:
                 if m == rep:
@@ -580,23 +602,24 @@ class MoghavematAdapter(SourceAdapter):
                 ident = identity(mg)
                 if is_empty_val(ident.get(p("MATERIAL"), "")):
                     ident[p("MATERIAL")] = ""          # KEY_MATERIAL then comes from the part number
-                rows.append({**rec, **ident, role: "ADDITIONAL"})
+                rows.append({**rec, **ident, **pos.get((order, m), blank_pos), role: "ADDITIONAL"})
         orderless = work[work["_o_key"].eq("") & work["_m_key"].ne("")]
         if not orderless.empty:
             # Same aggregation as any order, one group per material: a
             # placeholder order key groups the lines, then is removed again.
             tmp = orderless.drop(columns=["_o_key", "_m_key"]).copy()
             tmp[KEY_ORDER] = "\x00NO_ORDER\x00" + tmp[KEY_MATERIAL].astype(str)
-            agg = self._aggregate(tmp)
-            agg[KEY_ORDER] = ""
-            agg[p("ORDER_BASE")] = ""
-            agg[role] = "NO_ORDER"
-            rows.extend(agg.to_dict("records"))
+            agg = self._order_rows(tmp)
+            for rec, (m, mg) in zip(agg.to_dict("records"),
+                                     tmp.groupby(KEY_ORDER, sort=False)):
+                material = str(mg[KEY_MATERIAL].iloc[0]).strip()
+                rows.append({**rec, **identity(mg), **pos.get(("", material), blank_pos),
+                             KEY_ORDER: "", p("ORDER_BASE"): "", role: "NO_ORDER"})
         result = pd.DataFrame(rows) if rows else out
-        added = int((result.get(role, pd.Series(dtype=object)) != "FIRST").sum()) if rows else 0
-        if added:
+        if rows:
             n_add = int((result[role] == "ADDITIONAL").sum())
             n_none = int((result[role] == "NO_ORDER").sum())
-            log.info(f"   🧩 [{self.key}] هر سفارش×متریال یک ردیف: {n_add} متریال اضافهٔ سفارش‌ها و "
-                     f"{n_none} متریال بدون شماره سفارش وارد جمعیت و محاسبات شد.")
+            if n_add or n_none:
+                log.info(f"   🧩 [{self.key}] هر سفارش×متریال یک ردیف: {n_add} متریال اضافهٔ سفارش‌ها و "
+                         f"{n_none} متریال بدون شماره سفارش وارد جمعیت و محاسبات شد.")
         return result

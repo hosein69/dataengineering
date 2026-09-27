@@ -46,8 +46,9 @@ class RiskStage(Stage):
 
     def columns(self) -> List[ColumnSpec]:
         return [
+            # after the four part states and their totals (29.15.12), not between them
             ColumnSpec("هشدار ترکیبی بحرانی", "هشدار ترکیبی بحرانی", 46,
-                       GROUP_MAIN, wrap=True, order=5, color_rule="flag_nonempty"),
+                       GROUP_MAIN, wrap=True, order=10, color_rule="flag_nonempty"),
             ColumnSpec("امتیاز ریسک", "امتیاز ریسک", 14, GROUP_ANALYTIC,
                        fmt="decimal", order=84, color_rule="scale_high_bad"),
             ColumnSpec("طبقه ریسک", "طبقه ریسک", 16, GROUP_ANALYTIC, order=85),

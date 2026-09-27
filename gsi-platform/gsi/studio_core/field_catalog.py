@@ -41,6 +41,18 @@ COMPUTED_LABELS: Dict[str, str] = {
     "MOGH_KEY_MATERIAL_COUNT": "تعداد کدهای متریال کارشناسان در سفارش",
     "MOGH_MATERIAL_DESCS_ALL": "همه شرح‌های ثبت‌شده کارشناسان در سفارش",
     "MOGH_MATERIAL_DESC_COUNT": "تعداد شرح‌های کارشناسان در سفارش",
+    # 29.15.12: part state = Order Status, quantity = Quantity In Part
+    "MOGH_PART_STATE": "کد وضعیت پارت (از Order Status)",
+    "MOGH_PART_STATE_FA": "وضعیت پارت (از Order Status)",
+    "MOGH_QTY_AT_SUPPLIER": "نزد سازنده (Quantity In Part)",
+    "MOGH_QTY_READY": "آماده حمل (Quantity In Part)",
+    "MOGH_QTY_IN_TRANSIT": "در راه (Quantity In Part)",
+    "MOGH_QTY_IN_CUSTOMS": "در گمرک (Quantity In Part − Customs Cleared Quantity)",
+    "MOGH_QTY_STATE_UNKNOWN": "Quantity In Part با Order Status نامشخص",
+    "MOGH_INVENTORY_CONFLICT": "تعارض وضعیت پارت",
+    "MOGH_ITEM_ROLE": "نقش ردیف متریال در سفارش",
+    "MOGH_ITEM_LINE_COUNT": "تعداد ردیف فایل کارشناسان برای این متریال",
+    "MOGH_ITEM_RECORD_GAPS": "شکاف ثبت کارشناس برای این متریال",
     # نقش‌های کارشناسی — هر نقش مستقل، بدون سرریز به نقش دیگر
     "EXPERT_ROLE": "نقش کارشناس مالک",
     "EXPERT_BUYER": "کارشناس خرید خارجی",
@@ -78,10 +90,14 @@ COMPUTED_LABELS: Dict[str, str] = {
 DERIVED_LABELS: Dict[str, str] = {
     # موجودی و مصرف
     "STOCK_IKCO": "موجودی انبار ایران‌خودرو", "STOCK_SAPCO": "موجودی انبار ساپکو",
-    "IN_TRANSIT_QTY": "تعداد در راه", "IN_CUSTOMS_QTY": "تعداد در گمرک",
+    # چهار وضعیت پارت: Quantity In Part به تفکیک Order Status فایل کارشناسان
+    "SUPPLIER_QTY": "نزد سازنده", "READY_QTY": "آماده حمل",
+    "IN_TRANSIT_QTY": "در راه", "IN_CUSTOMS_QTY": "در گمرک",
+    "EXPERT_INV_UNKNOWN_QTY": "مقدار پارت با وضعیت نامشخص",
     "DAILY_NEED": "نیاز روزانه", "CARS_ON_FLOOR": "تعداد خودرو کف",
     "موجودی ایران خودرو": "موجودی ایران‌خودرو", "موجودی ساپکو": "موجودی ساپکو",
-    "موجودی در راه": "موجودی در راه", "موجودی در گمرک": "موجودی در گمرک",
+    "موجودی نزد سازنده": "نزد سازنده", "موجودی آماده حمل": "آماده حمل",
+    "موجودی در راه": "در راه", "موجودی در گمرک": "در گمرک",
     # متریال
     "MATERIAL_DESC": "شرح متریال", "MATERIAL_STATUS": "وضعیت متریال",
     "PART_GROUP": "گروه قطعه", "PART_CLASS": "رده‌بندی قطعه",
@@ -295,6 +311,12 @@ def source_prefix_groups() -> Dict[str, tuple]:
             role = cls().spec.role or key
         except Exception:
             role = key
+        # A source with an exact header contract (the expert file's 35 columns)
+        # keeps its own group to exactly those headers; everything the system
+        # computes from them is grouped apart, so the source group never shows
+        # more headers than the file has (owner, 1405-07-05).
+        if getattr(cls, "EXACT_HEADER_CONTRACT", False):
+            role = f"{role} — محاسبه‌شده (در فایل نیست)"
         out[prefix] = (role, key)
     return out
 

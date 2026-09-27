@@ -5,7 +5,7 @@
 #        مقاومت (روز) = موجودی قابل مصرف ÷ مصرف روزانه
 #
 #  منبع داده: Oracle برای موجودی انبار/مصرف + سورس کارشناسان برای
-#  نزد سازنده/درراه/گمرک. Missing هرگز Zero فرض نمی‌شود.
+#  نزد سازنده/آماده حمل/درراه/گمرک. Missing هرگز Zero فرض نمی‌شود.
 #  این لایه در نسخه ۲۰.۱ اصلاً وجود نداشت و در بازنویسی اول هم جا مانده بود.
 # ═══════════════════════════════════════════════════════════════════════════
 pack: criticality
@@ -19,7 +19,7 @@ status: internal
 formula:
   # مقاومت بحرانی اصلی = (STOCK_IKCO + STOCK_SAPCO) ÷ نیاز روزانه قطعات.
   # فهرست زیر برای «پوشش کل زنجیره تأمین» و مقاومت‌های تکمیلی است؛
-  # سه bucket کارشناسی شرط طبقه بحرانی اصلی نیستند و Missing آن‌ها بحرانی را UNKNOWN نمی‌کند.
+  # چهار وضعیت پارت کارشناسی شرط طبقه بحرانی اصلی نیستند و Missing آن‌ها بحرانی را UNKNOWN نمی‌کند.
   numerator_components:
     - field: STOCK_IKCO
       fa: "موجودی انبار ایران خودرو"
@@ -29,19 +29,25 @@ formula:
       fa: "موجودی انبار ساپکو"
       source: "oracle → موجودي انبار ساپکو"
       enabled: true
+    # چهار وضعیت پارت: Quantity In Part به تفکیک Order Status فایل کارشناسان
     - field: SUPPLIER_QTY
-      fa: "موجودی نزد سازنده/تأمین‌کننده"
-      source: "Commercial Expert Data → موجودی نزد سازنده"
+      fa: "نزد سازنده"
+      source: "Commercial Expert Data → Quantity In Part (Order Status = نزد سازنده)"
+      enabled: true
+      status: internal_source_of_truth
+    - field: READY_QTY
+      fa: "آماده حمل"
+      source: "Commercial Expert Data → Quantity In Part (Order Status = آماده حمل)"
       enabled: true
       status: internal_source_of_truth
     - field: IN_TRANSIT_QTY
-      fa: "موجودی در راه"
-      source: "Commercial Expert Data → موجودی در راه"
+      fa: "در راه"
+      source: "Commercial Expert Data → Quantity In Part (Order Status = در راه)"
       enabled: true
       status: internal_source_of_truth
     - field: IN_CUSTOMS_QTY
-      fa: "موجودی در گمرک"
-      source: "Commercial Expert Data → موجودی گمرک"
+      fa: "در گمرک"
+      source: "Commercial Expert Data → Quantity In Part − Customs Cleared Quantity (Order Status = در گمرک)"
       enabled: true
       status: internal_source_of_truth
   denominator: DAILY_NEED           # نیاز روزانه قطعات (oracle)
@@ -54,7 +60,7 @@ formula:
     monthly: 0.033333       # ÷ ۳۰
     yearly: 0.002740        # ÷ ۳۶۵
 
-  # سه bucket کارشناسی فقط برای مقاومت کل تأمین/دید زنجیره استفاده می‌شوند.
+  # چهار وضعیت پارت کارشناسی فقط برای مقاومت کل تأمین/دید زنجیره استفاده می‌شوند.
   include_in_transit: true
   criticality_numerator: [STOCK_IKCO, STOCK_SAPCO]
   # مقاومت انبار (فقط موجودی فیزیکی قابل مصرف) همیشه جداگانه گزارش می‌شود

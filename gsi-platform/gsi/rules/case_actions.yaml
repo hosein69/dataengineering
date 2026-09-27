@@ -68,7 +68,7 @@ clearance_to_settlement:
 
 supply_position_missing:
   owner_role: "کارشناس خرید خارجی"
-  action_fa: "سه سبد موجودی نزد سازنده/در راه/گمرک تکمیل و با Oracle تطبیق شود"
+  action_fa: "در فایل کارشناسان Quantity In Part و Order Status (نزد سازنده/آماده حمل/در راه/در گمرک) هر پارت تکمیل و با Oracle تطبیق شود"
 
 unexplained_reallocation:
   owner_role: "مالی + حقوقی + بازرسی"
