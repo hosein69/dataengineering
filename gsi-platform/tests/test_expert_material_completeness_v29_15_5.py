@@ -7,6 +7,7 @@ import unittest
 import pandas as pd
 
 from gsi.adapters.moghavemat import MoghavematAdapter
+from gsi.core.text import clean_part_no
 from gsi.report.expert_material import build_expert_material_positions
 from gsi.report.supply_views import build_material_view
 from gsi.report.dashboard import ExcelDashboardBuilder, SHEET_LINES
@@ -59,10 +60,18 @@ class ExpertMaterialTests(unittest.TestCase):
                     "Customs Cleared Quantity"])
         transformed = MoghavematAdapter().transform({"Expert Data": raw})
         main, lines = transformed["main"], transformed["lines"]
-        self.assertEqual(len(main), 1)
+        # 29.15.11: every Order×Material is its own row — the expert file is the
+        # criterion and nothing leaves the calculations. Descriptions stay with
+        # their own material; B-2's text no longer lands on 9654003280.
+        self.assertEqual(len(main), 2)
+        self.assertEqual(list(main["MOGH_ITEM_ROLE"]), ["FIRST", "ADDITIONAL"])
         self.assertEqual(len(lines), 3)
-        self.assertEqual(main.iloc[0]["MOGH_MATERIAL_DESC_COUNT"], 3)
-        self.assertIn("هدف چرخشي ترمز ضدقفل", main.iloc[0]["MOGH_MATERIAL_DESCS_ALL"])
+        first, second = main.iloc[0], main.iloc[1]
+        self.assertEqual(first["MOGH_MATERIAL_DESC_COUNT"], 2)
+        self.assertIn("هدف چرخشي ترمز ضدقفل", first["MOGH_MATERIAL_DESCS_ALL"])
+        self.assertNotIn("قطعه دیگر", first["MOGH_MATERIAL_DESCS_ALL"])
+        self.assertEqual(second["MOGH_MATERIAL_DESCS_ALL"], "قطعه دیگر")
+        self.assertEqual(second["KEY_ORDER"], first["KEY_ORDER"])
         oracle = pd.DataFrame([
             {"KEY_MATERIAL": "9654003280", "ORC_STOCK_IKCO": 5,
              "ORC_STOCK_SAPCO": 0, "ORC_DAILY_NEED": 2},
@@ -84,11 +93,20 @@ class ExpertMaterialTests(unittest.TestCase):
         self.assertNotIn("قطعه دیگر", a["MOGH_MATERIAL_DESCS_ALL"])
 
         display = main.copy()
-        display["KEY_MATERIAL"] = "9654003280"
-        view = build_material_view(display)
-        # Multi-material order descriptions cannot be attributed to the first material.
-        self.assertEqual(view.iloc[0]["شرح‌های ثبت‌شده کارشناسان"], "")
-        single = main.copy()
+        display["KEY_MATERIAL"] = display["MOGH_MATERIAL"].map(clean_part_no)
+        view = build_material_view(display).set_index("متریال")
+        # Each material row shows its own descriptions, never another material's.
+        own = view.loc["9654003280", "شرح‌های ثبت‌شده کارشناسان"]
+        self.assertIn("هدف چرخشي", own)
+        self.assertNotIn("قطعه دیگر", own)
+        self.assertEqual(view.loc["B2", "شرح‌های ثبت‌شده کارشناسان"], "قطعه دیگر")
+        # A legacy order-grain row (no item role) of a multi-material order still
+        # cannot attribute the order's descriptions to its first material.
+        legacy = main.iloc[[0]].drop(columns=["MOGH_ITEM_ROLE"]).copy()
+        legacy["MOGH_MATERIAL_DESCS_ALL"] = "رينگ ضدقفل مغناطيسي | قطعه دیگر"
+        legacy["KEY_MATERIAL"] = "9654003280"
+        self.assertEqual(build_material_view(legacy).iloc[0]["شرح‌های ثبت‌شده کارشناسان"], "")
+        single = main.iloc[[0]].copy()
         single["MOGH_KEY_MATERIAL_COUNT"] = 1
         single["MOGH_MATERIAL_DESCS_ALL"] = a["MOGH_MATERIAL_DESCS_ALL"]
         single["KEY_MATERIAL"] = "9654003280"

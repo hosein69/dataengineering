@@ -26,6 +26,7 @@ from ..rulebook import get_rulebook
 from .palette import (LuxuryPalette as P, NUM_FORMAT_CURRENCY, NUM_FORMAT_INT,
                       NUM_FORMAT_PCT)
 from .financial_summary import commitment_display, penalty_display, commitment_equivalent_display
+from ..studio_core.grain import case_rows
 
 SHEET_EXEC = "۱. خلاصه اجرایی"
 SHEET_MATRIX = "۲. کالبدشکافی ۳ لایه‌ای ماتریسی"
@@ -291,6 +292,9 @@ class ExcelDashboardBuilder:
     # ═══════════ شیت ۴ — رفع تعهد ارزی ═══════════
     def build_commitment(self, df: pd.DataFrame) -> None:
         ws = self._new_sheet(SHEET_COMMIT)
+        # تعهد واقعیت سطح پرونده است: متریال دوم سفارش همان تعهد را تکرار
+        # می‌کند و سطر دوم تعهد نیست (29.15.11).
+        df = case_rows(df)
         headers = ["شماره ثبت سفارش", "شماره بارنامه", "نوع پرونده", "ارز",
                    "تعهد اولیه", "مانده تعهد", "تاریخ ایجاد تعهد", "مهلت رفع تعهد",
                    "مهلت قانونی محاسبه‌شده", "روزهای تأخیر", "جریمه برآوردی",
@@ -347,14 +351,27 @@ class ExcelDashboardBuilder:
         # «پرونده بحرانی» خوانده می‌شود؛ نه از اولین ردیف بارنامه.
         # یک BL می‌تواند چند متریال داشته باشد و متریال بحرانی ممکن است
         # در ردیفی غیر از اولین ردیف قرار گرفته باشد.
-        uniq = df.drop_duplicates(subset=["CANONICAL_BL"], keep="first") if "CANONICAL_BL" in df else df.copy()
+        #
+        # 29.15.11: ردیف بدون بارنامه، بارنامه نیست. قبلاً همه آن‌ها در یک
+        # «بارنامه خالی» ادغام می‌شدند و فقط اولین‌شان — هر کارشناسی که بود —
+        # در کارنامه می‌ماند و یک بارنامه خیالی می‌گرفت. طبق قرارداد
+        # grain._dedup هر ردیف بی‌کلید واحد مستقل خودش است. متریال دوم سفارش
+        # بارنامه‌اش عمداً خالی است و پرونده دوم نیست (case_rows).
+        df = case_rows(df)
+        if "CANONICAL_BL" in df:
+            bl = df["CANONICAL_BL"].fillna("").astype(str).str.strip()
+            own = pd.Series([f"\x00ROW{i}" for i in range(len(df))], index=df.index)
+            df = df.assign(_BL_UNIT=bl.where(bl != "", own), _BL_REAL=bl)
+            uniq = df.drop_duplicates(subset=["_BL_UNIT"], keep="first")
+        else:
+            uniq = df.copy()
         if uniq.empty:
             return
         if {"CANONICAL_BL", "BL_CRITICAL"}.issubset(df.columns):
             crit_by_bl = (df.assign(_BL_CRITICAL=df["BL_CRITICAL"].astype(bool))
-                            .groupby("CANONICAL_BL", dropna=False)["_BL_CRITICAL"].any()
+                            .groupby("_BL_UNIT", dropna=False)["_BL_CRITICAL"].any()
                             .rename("_BL_CRITICAL_GROUP"))
-            uniq = uniq.merge(crit_by_bl, left_on="CANONICAL_BL", right_index=True, how="left")
+            uniq = uniq.merge(crit_by_bl, left_on="_BL_UNIT", right_index=True, how="left")
         else:
             base = uniq.get("وضعیت هوشمند", pd.Series(index=uniq.index, dtype=object)).astype(str)
             uniq["_BL_CRITICAL_GROUP"] = base.str.contains("بحرانی")
@@ -366,9 +383,9 @@ class ExcelDashboardBuilder:
             crit = int(g.get("_BL_CRITICAL_GROUP", pd.Series(False, index=g.index)).astype(bool).sum())
             levels = []
             if {"CANONICAL_BL", "BL_CRITICAL_LEVEL"}.issubset(df.columns):
-                level_rows = (df[df["CANONICAL_BL"].isin(g["CANONICAL_BL"])]
-                              [["CANONICAL_BL", "BL_CRITICAL_LEVEL"]]
-                              .drop_duplicates("CANONICAL_BL"))
+                level_rows = (df[df["_BL_UNIT"].isin(g["_BL_UNIT"])]
+                              [["_BL_UNIT", "BL_CRITICAL_LEVEL"]]
+                              .drop_duplicates("_BL_UNIT"))
                 levels = [str(x) for x in level_rows["BL_CRITICAL_LEVEL"].tolist()]
             if crit:
                 row_fill, crit_color = P.STATUS_CRITICAL_FILL, P.STATUS_CRITICAL
@@ -382,7 +399,7 @@ class ExcelDashboardBuilder:
                 row_fill, crit_color = P.STATUS_GOOD_FILL, P.STATUS_GOOD
 
             vals = list(keys) + [
-                int(g["CANONICAL_BL"].nunique()), crit,
+                int(g["_BL_REAL"].replace("", pd.NA).nunique()) if "_BL_REAL" in g else 0, crit,
                 round(pd.to_numeric(g["روزهای رسوب"], errors="coerce").mean() or 0, 1),
                 round(pd.to_numeric(g.get("امتیاز ریسک", 0), errors="coerce").mean() or 0, 1),
                 commitment_display(g),

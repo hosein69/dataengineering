@@ -32,6 +32,7 @@ import pandas as pd
 from openpyxl.styles import Border, Side
 from openpyxl.utils import get_column_letter
 
+from ..core.text import clean_part_no
 from ..resolve import part_status as ps
 from ..resolve.expert_scope import OWNER_GAP, OWNER_NAME, SCOPES
 from .palette import LuxuryPalette as P
@@ -118,10 +119,14 @@ def _base(df: pd.DataFrame, group_col: str, kind: str) -> pd.DataFrame:
         declared_key = _first_col(work, ["MOGH_MATERIAL", "MOGH_MFR_PART_NO"], "")
         source_count = _num(work, "MOGH_KEY_MATERIAL_COUNT")
         single = source_count.eq(1) if "MOGH_KEY_MATERIAL_COUNT" in work else pd.Series(True, index=work.index)
+        # 29.15.11: each Order×Material has its own row whose description
+        # lineage belongs to that material alone (MOGH_ITEM_ROLE is set).
+        if "MOGH_ITEM_ROLE" in work:
+            single = single | _s(work, "MOGH_ITEM_ROLE").ne("")
         source_desc = _first_col(work, ["MOGH_MATERIAL_DESCS_ALL", "MOGH_MATERIAL_DESC"], "")
         variants = {}
         for key, declared, ok, value in zip(keys, declared_key, single, source_desc):
-            if not ok or not key or key != declared or not value:
+            if not ok or not key or key != clean_part_no(declared) or not value:
                 continue
             bucket = variants.setdefault(key, [])
             for item in value.split(" | "):
@@ -582,7 +587,12 @@ def _float_or_none(value):
 SOURCE_COL = "منبع ردیف"
 GAPS_COL = "شکاف ثبت کارشناس"
 SOURCE_OPERATIONAL = "عملیاتی"
-SOURCE_EXPERT_ONLY = "فقط فایل کارشناسان — در محاسبات لحاظ نشده"
+#: 29.15.11: every expert material is in the mart and in the calculations; a
+#: row appended here only lacks an Oracle reference for its exact code.
+SOURCE_EXPERT_NO_ORACLE = "فایل کارشناسان — بدون مرجع Oracle"
+#: In the expert ledger but missing from the calculated data: a defect to be
+#: root-caused, never a normal state (owner's rule, 1405-07-05).
+SOURCE_EXPERT_ONLY = "⚠ در دفتر کارشناسان هست ولی در داده محاسبه‌شده نیست — علت‌یابی شود"
 _UNKNOWN_TEXT_COLS = {"موقعیت فعلی", "مرحله فعلی", "معطل حوزه", "حوزه مسئول وضعیت",
                       "فعالیت بعدی مورد انتظار"}
 
@@ -594,15 +604,20 @@ def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
     «معیار اصلی فایل کارشناسان است؛ حتی اگر ناقص باشد، نشان داده و ناقص‌بودنش
     گزارش می‌شود و از گزارش اصلی حذف نمی‌شود» (مالک کسب‌وکار، ۱۴۰۵/۰۷/۰۵).
 
-    The operational view keeps one row per operational (Oracle-backed, first
-    per order) material. Until 29.15.9 a material that was the second item of
-    an order, had no order number, or had no Oracle match got no row at all —
-    only a side evidence table outside the searchable view. This appends each
-    such Order×Material from the expert ledger as its own, clearly labelled row:
-    every expert description, the missing record fields, and Oracle stock/need
-    where the exact code exists. Position stays «نامشخص» and no order/BL event
-    is attached: the expert link is evidence, not operational authority. Nothing
-    here feeds the mart, KPIs or sums — the calculations are unchanged.
+    The operational view holds the Oracle-backed materials of the mart. Until
+    29.15.9 a material that was the second item of an order, had no order
+    number, or had no Oracle match got no row at all — only a side evidence
+    table outside the searchable view. This appends each such Order×Material
+    from the expert ledger as its own, clearly labelled row: every expert
+    description, the missing record fields, and Oracle stock/need where the
+    exact code exists. Position stays «نامشخص» and no BL event is attached: the
+    expert link is evidence, not operational authority.
+
+    Since 29.15.11 every expert Order×Material is a row of the mart and of every
+    calculation («معیار فایل کارشناسان هست و نباید حذف یا از محاسبات خارج شود»),
+    so an appended row normally only lacks an Oracle reference for its code
+    (:data:`SOURCE_EXPERT_NO_ORACLE`). A ledger material that is *not* in the
+    calculated data is a defect to be root-caused (:data:`SOURCE_EXPERT_ONLY`).
 
     Materials already in the view get the complete description list from the
     ledger (all orders), not only the one their first order carried.
@@ -659,6 +674,7 @@ def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
     extra = led[~led["__mat"].isin(present)]
     if extra.empty:
         return _front(out)
+    in_data = set(_s(df, "KEY_MATERIAL")) if isinstance(df, pd.DataFrame) and "KEY_MATERIAL" in df else set()
     from ..engines.criticality import CriticalityEngine
     engine = CriticalityEngine()
     rows = []
@@ -669,7 +685,9 @@ def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
         gap_text = "، ".join(p for p in (([] if order else ["شماره سفارش"]) + ([gap] if gap else [])))
         stock = {k: _float_or_none(rec.get(k)) for k in ("STOCK_IKCO", "STOCK_SAPCO", "DAILY_NEED")}
         crit = engine.evaluate(stock) if any(v is not None for v in stock.values()) else None
-        warn = ["⚠ فقط در فایل کارشناسان — در محاسبات لحاظ نشده"]
+        calculated = mat in in_data
+        warn = ["⚠ بدون مرجع Oracle برای همین کد — در محاسبات هست؛ موجودی/نیاز نامعلوم"
+                if calculated else SOURCE_EXPERT_ONLY]
         if gap_text:
             warn.append("⚠ داده کارشناسی ناقص")
         note = []
@@ -690,9 +708,9 @@ def append_expert_materials(view: pd.DataFrame, ledger: pd.DataFrame | None,
             "سفارش": order or "—",
             "هشدار کارشناسان": " ؛ ".join(warn), "کامنت کارشناسان": " ؛ ".join(note),
             "داده مفقود برای تعیین وضعیت": "رویداد تاریخ‌دار مستقل برای این قلم ثبت نشده است",
-            "چرایی / مبنای وضعیت": "این قلم فقط در فایل کارشناسان است؛ وضعیت عملیاتی به آن نسبت داده نمی‌شود.",
+            "چرایی / مبنای وضعیت": "اتصال مستقل متریال به بارنامه/رویداد ثبت نشده است؛ وضعیت عملیاتی حدس زده نمی‌شود.",
             GAPS_COL: " ؛ ".join(gaps_by_mat.get(mat, [])),
-            SOURCE_COL: SOURCE_EXPERT_ONLY,
+            SOURCE_COL: SOURCE_EXPERT_NO_ORACLE if calculated else SOURCE_EXPERT_ONLY,
         })
         if crit is not None:      # Oracle-only fact for this exact code; display, not a KPI
             row["مقاومت (روز)"] = crit.resistance_warehouse

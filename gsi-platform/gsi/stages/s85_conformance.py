@@ -103,14 +103,17 @@ class ConformanceStage(Stage):
 
         ctx.extras["conformance_cases"] = pd.DataFrame(
             [{"_CASE_KEY": k, **v} for k, v in per_case.items()])
-        roots = self._root_causes(df)
+        # هر پرونده فرایندی یک بار؛ متریال دوم سفارش همان پرونده را تکرار می‌کند.
+        from ..studio_core.grain import case_rows
+        cases = case_rows(df)
+        roots = self._root_causes(cases)
         ctx.extras["conformance_root_causes"] = roots
         df["عوامل همراه با انحراف"] = self._explain(df, roots)
 
-        judged = df["انحراف فرآیند"] != "شاهد کافی نداریم"
-        n_dev = int((judged & (df["انحراف فرآیند"] != "بدون انحراف")).sum())
+        judged = cases["انحراف فرآیند"] != "شاهد کافی نداریم"
+        n_dev = int((judged & (cases["انحراف فرآیند"] != "بدون انحراف")).sum())
         n_unknown = int((~judged).sum())
-        mean_score = pd.to_numeric(df["امتیاز انطباق (٪)"], errors="coerce").mean()
+        mean_score = pd.to_numeric(cases["امتیاز انطباق (٪)"], errors="coerce").mean()
         log.info(f"🔍 [conformance] {n_dev} از {int(judged.sum())} پرونده قابل‌ارزیابی "
                  f"انحراف دارند · {n_unknown} پرونده شاهد کافی ندارند · "
                  f"میانگین انطباق {mean_score:.1f}٪ (فقط قابل‌ارزیابی‌ها)")
@@ -309,6 +312,9 @@ class ConformanceStage(Stage):
     def kpis(self, df: pd.DataFrame, ctx: PipelineContext) -> Dict[str, tuple]:
         if "انحراف فرآیند" not in df.columns or df.empty:
             return {}
+        # انطباق ویژگی پرونده فرایندی است؛ متریال دوم سفارش پرونده دوم نیست.
+        from ..studio_core.grain import case_rows
+        df = case_rows(df)
         judged = df["انحراف فرآیند"] != "شاهد کافی نداریم"
         dev = int((judged & (df["انحراف فرآیند"] != "بدون انحراف")).sum())
         unknown = int((~judged).sum())

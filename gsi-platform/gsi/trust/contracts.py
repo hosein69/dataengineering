@@ -12,7 +12,8 @@ crashing the run.
 """
 from __future__ import annotations
 
-__contract__ = 1
+#: 2 — KEYLESS_BY_DESIGN, read by trust.assess (29.15.11).
+__contract__ = 2
 
 from typing import Dict, Tuple
 
@@ -117,6 +118,15 @@ CROSS_SOURCE: Dict[str, Tuple[CrossSourceRule, ...]] = {
             title_fa="ارز فاکتور", kind=CURRENCY,
             owner_column="EXPERT_CLEARANCE", owner_role_fa="کارشناس ترخیص"),
     ),
+}
+
+#: Rows that lack an entity's key by design, not by omission (29.15.11). An
+#: order's further materials get their own rows, but which BL carries which
+#: material is not evidenced, so they carry no BL — they are not «rows without a
+#: BL key» for someone to type in. Rows with no order number are NOT listed:
+#: their missing keys are real gaps and stay reported.
+KEYLESS_BY_DESIGN: Dict[str, Tuple[str, Tuple[str, ...]]] = {
+    BL: ("MOGH_ITEM_ROLE", ("ADDITIONAL",)),
 }
 
 RULES: Dict[str, Tuple[FieldRule, ...]] = {

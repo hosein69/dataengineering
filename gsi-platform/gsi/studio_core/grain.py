@@ -25,7 +25,7 @@
 """
 from __future__ import annotations
 
-__contract__ = 1
+__contract__ = 2   # case_rows — s50/s60/s85 و گزارش‌ها به آن تکیه دارند
 
 import re
 from dataclasses import dataclass
@@ -178,15 +178,40 @@ def column_grain(column: str, prefix_map: Optional[Dict[str, str]] = None) -> st
     return ROW_GRAIN
 
 
+#: 29.15.11 — هر Order×Material فایل کارشناسان ردیف خودش را دارد. متریال دوم به
+#: بعد یک سفارش (``ADDITIONAL``) واقعیت‌های سطح سفارش را فقط **تکرار** می‌کند
+#: (ثبت سفارش، تعهد، فرایند) و بارنامه‌اش عمداً خالی است (بارنامه فقط روی ردیف
+#: اول سفارش می‌نشیند؛ معلوم نیست این متریال روی کدام بارنامه است).
+ITEM_ROLE_COL = "MOGH_ITEM_ROLE"
+MATERIAL_ONLY_ROLES = ("ADDITIONAL",)
+
+
+def case_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """ردیف‌هایی که پرونده (سفارش / ثبت سفارش / بارنامه) را حمل می‌کنند.
+
+    هر سنجه‌ای که واقعیت سطح پرونده را می‌شمارد — تعداد تعهد، میانگین روز
+    رسوب، انطباق فرایند، تعداد بارنامه — روی همین ردیف‌ها حساب می‌شود؛ وگرنه
+    سفارشی با سه متریال سه تعهد و سه پرونده فرایندی نشان می‌داد. سنجه‌های
+    متریال‌محور (بحرانی، مقاومت، موجودی، ریسک ردیف) همه ردیف‌ها را می‌شمارند.
+    ردیف بدون سفارش (``NO_ORDER``) پرونده مستقل است و می‌ماند.
+    """
+    if df is None or ITEM_ROLE_COL not in df.columns:
+        return df
+    return df[~df[ITEM_ROLE_COL].astype(str).isin(MATERIAL_ONLY_ROLES)]
+
+
 def _dedup(df: pd.DataFrame, grain: str) -> pd.DataFrame:
     """یکتاسازی بر اساس کلید دانه.
 
     ردیف‌هایی که کلیدشان تهی است، موجودیت مستقل‌اند و **حذف نمی‌شوند** —
-    وگرنه داده‌ی بدون کلید بی‌صدا از گزارش می‌افتاد.
+    وگرنه داده‌ی بدون کلید بی‌صدا از گزارش می‌افتاد. استثنا: ردیف متریال
+    افزوده در دانه بارنامه، که بارنامه‌اش عمداً خالی است و بارنامه مستقلی نیست.
     """
     key = GRAIN_KEYS.get(grain)
     if not key or key not in df.columns:
         return df
+    if grain == "BL":
+        df = case_rows(df)
     k = df[key].astype(str).str.strip()
     keyed = df[k != ""]
     unkeyed = df[k == ""]

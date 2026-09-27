@@ -817,7 +817,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
         mtable = C.panel(
             f'<div class="tablewrap material-table"><table><caption class="sr-only">دید تأمین — متریال محور</caption><thead><tr>{mhead}</tr></thead><tbody id="tb_{mi}"></tbody></table></div><div class="material-mobile" id="mc_{mi}"></div><div class="pager no-print" id="pager_{mi}"></div>',
             title="دید تأمین — متریال محور",
-            note="همه متریال‌های فایل کارشناسان اینجا هستند، حتی ناقص‌ها — ستون «منبع ردیف» می‌گوید کدام ردیف فقط از فایل کارشناسان آمده و در محاسبات لحاظ نشده، و «شکاف ثبت کارشناس» می‌گوید چه چیزی کم است. برای موقعیت و وضعیت، کارشناسان و NTSW فقط Advisory‌اند: اتصال متریال به سفارش/بارنامه بدون شاهد مستقل، تأیید عملیاتی نشده است.",
+            note="همه متریال‌های فایل کارشناسان اینجا و در محاسبات هستند، حتی ناقص‌ها — «شکاف ثبت کارشناس» می‌گوید چه چیزی کم است و «منبع ردیف» می‌گوید کدام کد مرجع Oracle ندارد (یا اگر قلمی در داده محاسبه‌شده نبود، باید علت‌یابی شود). برای موقعیت و وضعیت، کارشناسان و NTSW فقط Advisory‌اند: اتصال متریال به سفارش/بارنامه بدون شاهد مستقل، تأیید عملیاتی نشده است.",
             aside=f'<span class="note" id="cnt_{mi}" role="status" aria-live="polite"></span>',
             section="table")
         panes.append(f'<section id="{mid}" class="pane stack stack-md" role="tabpanel" aria-labelledby="tab_{mi}" hidden>{mtoolbar}{expert_material_html}{material_gap_html}<section data-composer-block="table">{mtable}</section></section>')

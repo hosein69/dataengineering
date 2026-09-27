@@ -1,4 +1,23 @@
-# Current release: GSI 29.15.10 — 2026-09-27
+# Current release: GSI 29.15.11 — 2026-09-27
+
+- Every Commercial Expert Order×Material is a row of the mart and of every calculation
+  (`MOGH_ITEM_ROLE` = FIRST / ADDITIONAL / NO_ORDER). This supersedes the 29.15.8 and 29.15.10 notes
+  below that the mart stays at order grain and expert-only materials are not calculated.
+- Which BL carries an order's second material is not recorded in any source, so `ADDITIONAL` rows
+  carry no BL and no BL-derived state; their row-level demurrage days read 0 like any row without a
+  discharge date, and case-level averages skip them. A per-line BL column in the expert file would
+  let them carry their own.
+- Order-level columns (PI value, REG, commitment, dates) are repeated on every material row of the
+  order. They must be aggregated with the grain helpers (`safe_agg`, `case_rows`), never summed
+  row-wise; every built-in report does so, an ad-hoc export sum would not.
+- Row counts labelled «پرونده» in sheets 11, 12 and 16 count supply rows (BL × material), so a
+  multi-material order contributes one per material; order/BL counts there stay distinct counts.
+- `python -m gsi.doctor` reports two regulatory rules that expired on 2026-09-22 (the 1405-05-14 emergency
+  deadline overlay in fx_governance and the 1405 emergency SATA waiver in customs). Their successors are
+  regulatory facts to be supplied by the owner; nothing was invented. Same in 29.15.10.
+- Acceptance on the organisation's real Commercial Expert file is still pending (not available here).
+
+# GSI 29.15.10 — 2026-09-27
 
 - Every Commercial Expert Order×Material is a row of the main material view (HTML, Excel sheet 14,
   Studio); rows that exist only in the expert file are labelled and are **not** counted in KPIs,

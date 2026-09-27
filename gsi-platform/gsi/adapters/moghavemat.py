@@ -195,7 +195,8 @@ class MoghavematAdapter(SourceAdapter):
         agg = self._aggregate(lines)
         inv = self._aggregate_inventory(lines)
         ompi = self._aggregate_order_material_pr_item(lines)
-        log.info(f"   📊 [moghavemat] {len(lines)} قلم در {len(agg)} سفارش تجمیع شد؛ "
+        n_orders = int(agg[KEY_ORDER].astype(str).str.strip().replace("", pd.NA).nunique()) if KEY_ORDER in agg else len(agg)
+        log.info(f"   📊 [moghavemat] {len(lines)} قلم در {n_orders} سفارش و {len(agg)} ردیف سفارش×متریال تجمیع شد؛ "
                  f"{len(inv)} موقعیت موجودی Order×Material و {len(ompi)} رابطه Order×Material×PR×PR Item ساخته شد.")
         return {"main": agg, "inventory": inv, "order_material_pr_item": ompi, "lines": lines}
 
@@ -395,7 +396,8 @@ class MoghavematAdapter(SourceAdapter):
         p = self.p
         src = lines[lines[KEY_ORDER].astype(str).str.strip() != ""]
         if src.empty:
-            return pd.DataFrame(columns=[KEY_ORDER])
+            # Order-less lines still belong in the report (29.15.11).
+            return self._expand_materials(pd.DataFrame(columns=[KEY_ORDER]), lines)
 
         _uniq = self._uniq_values
 
@@ -475,15 +477,15 @@ class MoghavematAdapter(SourceAdapter):
         multi = int(out[p("MULTI_MATERIAL")].sum()) if not out.empty else 0
         if multi:
             log.warning(
-                f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. جدول اصلی در دانه "
-                f"«سفارش» خلاصه شده و ستون متریال فقط یکی از اقلام را نشان "
-                f"می‌دهد؛ فهرست کامل در «{p('MATERIALS_ALL')}» است. دفتر "
-                f"موقعیت هر سفارش×متریال جداگانه محاسبه می‌شود.")
+                f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. از 29.15.11 هر متریال "
+                f"ردیف خودش را در جمعیت و محاسبات دارد؛ مقادیر سطح سفارش روی همه "
+                f"ردیف‌های آن سفارش تکرار می‌شوند و جمع ردیفی آن‌ها مجاز نیست.")
             health.current().find(
                 "دانه‌بندی", health.WARN,
                 f"{multi} سفارش چندمتریاله در سورس خرید",
-                "جدول اصلی در دانه سفارش است؛ ستون متریال یکی از اقلام را "
-                "نمایندگی می‌کند. فهرست کامل اقلام در ستون نسب متریال است.")
+                "هر متریال ردیف خودش را دارد (MOGH_ITEM_ROLE). مقادیر سطح سفارش "
+                "(PI، مقادیر سفارش، NTSW) روی ردیف‌های سفارش تکرار می‌شوند — مثل "
+                "ردیف‌های چند بارنامه — و فقط در دانه سفارش/ثبت سفارش جمع می‌شوند.")
         multi_pr = int(out[p("MULTI_PR")].sum()) if not out.empty and p("MULTI_PR") in out.columns else 0
         if multi_pr:
             log.warning(
@@ -499,4 +501,102 @@ class MoghavematAdapter(SourceAdapter):
         cleared = out[p("CLEARED_QTY_SUM")].astype(float)
         out[p("CLEARED_PCT")] = [
             round(c / o * 100, 1) if o > 0 else 0.0 for c, o in zip(cleared, ordered)]
-        return out
+        return self._expand_materials(out, lines)
+
+    # ═══════════ هر سفارش × متریال یک ردیف (29.15.11) ═══════════
+    #: Fields that belong to the material, not the order. Everything else on an
+    #: order row is order-level and is repeated unchanged on each of its
+    #: material rows — exactly as it already is on each of its BL rows.
+    _MATERIAL_FIELDS = ("MATERIAL", "MATERIAL_DESC", "MFR_PART_NO", "HS_SUGGESTED")
+    _GAP_FIELDS = (("PR_NO", "شماره درخواست خرید"), ("PO_SENT_DATE", "تاریخ ابلاغ سفارش"),
+                   ("VENDOR_CODE", "کد تأمین‌کننده"), ("PI_LINE_VALUE", "ارزش PI"))
+
+    def _expand_materials(self, out: pd.DataFrame, lines: pd.DataFrame) -> pd.DataFrame:
+        """One population row per Order×Material, and one per order-less material.
+
+        Owner's decision (1405-07-05): the expert file is the criterion — no
+        material in it may be dropped from the report or kept out of the
+        calculations; if something is wrong, it is investigated, not excluded.
+        Until 29.15.10 the order row carried only its first material, and lines
+        without an order number were not in the population at all.
+
+        The order row itself is unchanged except for its own material's
+        description list and record gaps. Each further material of the order is
+        a copy of that row with only the material identity replaced, so every
+        order-level value is exactly what the order row already carries (and
+        already repeats on each BL row). Inventory (Order×Material) and Oracle
+        (Material) then join per row, so criticality and supply position are
+        computed for every material.
+        """
+        p = self.p
+        role = p("ITEM_ROLE")
+        order_key = lines[KEY_ORDER].fillna("").astype(str).str.strip() if KEY_ORDER in lines \
+            else pd.Series("", index=lines.index)
+        mat_key = lines[KEY_MATERIAL].fillna("").astype(str).str.strip()
+        work = lines.assign(_o_key=order_key.values, _m_key=mat_key.values)
+
+        def first_valid(s: pd.Series) -> Any:
+            for v in s:
+                if not is_empty_val(v):
+                    return v
+            return ""
+
+        def identity(g: pd.DataFrame) -> Dict[str, Any]:
+            descs = self._uniq_values(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g else []
+            first_desc = first_valid(g[p("MATERIAL_DESC")]) if p("MATERIAL_DESC") in g else ""
+            gaps = [label for f, label in self._GAP_FIELDS
+                    if p(f) in g and any(is_empty_val(v, treat_zero_as_empty=(f != "PI_LINE_VALUE"))
+                                         for v in g[p(f)])]
+            row = {p(f): first_valid(g[p(f)]) for f in self._MATERIAL_FIELDS if p(f) in g}
+            row.update({p("MATERIAL_DESC"): first_desc,
+                        p("MATERIAL_DESCS_ALL"): " | ".join(descs),
+                        p("MATERIAL_DESC_COUNT"): len(descs),
+                        p("ITEM_LINE_COUNT"): int(len(g)),
+                        p("ITEM_RECORD_GAPS"): "، ".join(gaps)})
+            return row
+
+        from ..core.text import clean_part_no
+        rows: List[Dict[str, Any]] = []
+        by_order = {o: g for o, g in work[work["_o_key"].ne("")].groupby("_o_key", sort=False)}
+        for rec in (out.to_dict("records") if not out.empty else []):
+            order = str(rec.get(KEY_ORDER, "")).strip()
+            g = by_order.get(order)
+            if g is None:
+                rows.append({**rec, role: "FIRST"})
+                continue
+            groups = [(m, mg) for m, mg in g[g["_m_key"].ne("")].groupby("_m_key", sort=False)]
+            # the material the order row already represents (same rule as keys.yaml)
+            rep = clean_part_no(rec.get(p("MATERIAL"), "")) or clean_part_no(rec.get(p("MFR_PART_NO"), ""))
+            rep_group = next((mg for m, mg in groups if m == rep), None)
+            first = {**rec, role: "FIRST"}
+            if rep_group is not None:
+                ident = identity(rep_group)
+                first.update({k: ident[k] for k in (p("MATERIAL_DESCS_ALL"), p("MATERIAL_DESC_COUNT"),
+                                                    p("ITEM_LINE_COUNT"), p("ITEM_RECORD_GAPS"))})
+            rows.append(first)
+            for m, mg in groups:
+                if m == rep:
+                    continue
+                ident = identity(mg)
+                if is_empty_val(ident.get(p("MATERIAL"), "")):
+                    ident[p("MATERIAL")] = ""          # KEY_MATERIAL then comes from the part number
+                rows.append({**rec, **ident, role: "ADDITIONAL"})
+        orderless = work[work["_o_key"].eq("") & work["_m_key"].ne("")]
+        if not orderless.empty:
+            # Same aggregation as any order, one group per material: a
+            # placeholder order key groups the lines, then is removed again.
+            tmp = orderless.drop(columns=["_o_key", "_m_key"]).copy()
+            tmp[KEY_ORDER] = "\x00NO_ORDER\x00" + tmp[KEY_MATERIAL].astype(str)
+            agg = self._aggregate(tmp)
+            agg[KEY_ORDER] = ""
+            agg[p("ORDER_BASE")] = ""
+            agg[role] = "NO_ORDER"
+            rows.extend(agg.to_dict("records"))
+        result = pd.DataFrame(rows) if rows else out
+        added = int((result.get(role, pd.Series(dtype=object)) != "FIRST").sum()) if rows else 0
+        if added:
+            n_add = int((result[role] == "ADDITIONAL").sum())
+            n_none = int((result[role] == "NO_ORDER").sum())
+            log.info(f"   🧩 [{self.key}] هر سفارش×متریال یک ردیف: {n_add} متریال اضافهٔ سفارش‌ها و "
+                     f"{n_none} متریال بدون شماره سفارش وارد جمعیت و محاسبات شد.")
+        return result

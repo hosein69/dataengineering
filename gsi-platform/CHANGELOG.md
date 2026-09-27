@@ -1,3 +1,57 @@
+# GSI 29.15.11 — Every expert-file material is in the mart and in every calculation — 2026-09-27
+
+The owner: «معیار فایل کارشناسان هست و نباید حذف یا از محاسبات خارج شود؛ اگر
+اشتباه بود باید علت‌یابی شود» — the answer to 29.15.10's open question.
+
+**Grain.** The mart held one row per order (its first material). Now every
+Commercial Expert Order×Material is a mart row, tagged `MOGH_ITEM_ROLE`:
+`FIRST` (carries the order's BLs, as before), `ADDITIONAL` (further materials of
+the order — order-level values repeated, BL left empty on purpose because no
+source says which BL carries which material) and `NO_ORDER` (an expert line
+with no order number — its own case, key `MATERIAL:<code>`). Each row's
+identity is its own material's: code, all its descriptions, part number, HS,
+line count and record gaps. Process evidence keeps a source observation per
+row but records the order's stages once; the trust layer does not report the
+by-design empty BL of an `ADDITIONAL` row as a data-entry gap.
+
+**Counting.** Material-level measures count every material (criticality,
+resistance, stock and coverage, row risk and certainty). Case-level facts are
+counted once per case through `grain.case_rows`: red commitments (s50),
+average demurrage (s60), conformance KPIs and associated-factor table (s85),
+the commitment register (sheet 4), the organisational scorecard (sheet 5),
+sheet 12's demurrage and conformance, `safe_agg` at BL grain, and the PI
+registration the financial workspace reads from the expert frame. Money sums
+were already grain-safe and are unchanged.
+
+**A/B 29.15.10 ↔ 29.15.11** (`tools/ab`, full pipeline, identical inputs):
+- reproduction data (owner's cases): mart 8 → 10 rows, none lost; commitment
+  totals, red commitments and deviating cases identical; every other changed
+  number traced to one of the two new rows (details in the report);
+- 40× scaled data, two runs: no calculation changed (new columns, timings and
+  in-run evidence IDs only);
+- treatment arm: identical except the scorecard in the run with half a source
+  removed — pre-existing bug 1 below.
+
+Pre-existing bugs this root-cause pass found and fixed:
+1. The organisational scorecard deduplicated on BL and treated all BL-less
+   cases as one "empty BL": in that run 81 of 82 experts with BL-less cases
+   were missing from sheet 5 and one got a phantom BL. Each unkeyed case is now
+   its own unit (the `grain._dedup` contract); only real BLs are counted.
+2. A second material's description was attributed to the order's first
+   material (IK013581CR showed IK55555555's «یاتاقان چرخ»).
+3. The material view compared the cleaned key `B2` with the raw declared code
+   `B-2`, so codes with a hyphen lost their expert descriptions.
+4. The adapter log counted rows as orders.
+
+Tests: `tests/test_expert_material_in_calculations_v29_15_11.py` (11; 10 fail
+on 29.15.10). Two older tests that pinned one-row-per-order were moved to the
+new contract, keeping their guard for legacy order-grain rows.
+`studio_core.grain` contract → 2 (`case_rows`), `trust.contracts` → 2
+(`KEYLESS_BY_DESIGN`). Report: `docs/EXPERT_MATERIAL_IN_CALCULATIONS_29_15_11_FA.md`.
+Full suite: 1530 passed, 0 failed.
+
+---
+
 # GSI 29.15.10 — The expert file is the primary material criterion — 2026-09-27
 
 The owner: materials in the expert file that are partially filled still do not

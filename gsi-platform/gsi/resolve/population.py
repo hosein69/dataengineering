@@ -92,6 +92,8 @@ def _merge_expert_with_ntsw(expert: pd.DataFrame, ntsw_rows: pd.DataFrame,
         base[POP_SOURCE] = "EXPERT"
         if not bridge.empty:
             b = bridge.drop_duplicates(subset=[KEY_ORDER], keep="first")
+            # an expert row without an order number has no ORDER→REG relation
+            b = b[b[KEY_ORDER].map(clean_order_ref).ne("")]
             base = base.merge(b, on=KEY_ORDER, how="left")
             hit = base["NTSW_KEY_REG"].fillna("").astype(str).str.strip().ne("")
             base.loc[hit, POP_NTSW] = True
@@ -161,8 +163,9 @@ def _merge_expert_with_ntsw(expert: pd.DataFrame, ntsw_rows: pd.DataFrame,
     nreg = base.get("NTSW_KEY_REG", pd.Series("", index=base.index)).map(_clean_reg)
     blank = base[KEY_REG].map(_clean_reg).eq("")
     base.loc[blank, KEY_REG] = nreg.loc[blank]
-    base[POP_KEY] = [f"ORDER:{o}" if o else f"REG:{r}" for o, r in
-                     zip(base[KEY_ORDER].map(clean_order_ref), base[KEY_REG].map(_clean_reg))]
+    mats = base.get("MOGH_MATERIAL", pd.Series("", index=base.index)).fillna("").astype(str).str.strip()
+    base[POP_KEY] = [f"ORDER:{o}" if o else (f"REG:{r}" if r else f"MATERIAL:{m}") for o, r, m in
+                     zip(base[KEY_ORDER].map(clean_order_ref), base[KEY_REG].map(_clean_reg), mats)]
     return base.reset_index(drop=True)
 
 
@@ -192,7 +195,15 @@ def _attach_abbasi(base: pd.DataFrame, abbasi: pd.DataFrame) -> pd.DataFrame:
     clashes = [c for c in right.columns if c != KEY_ORDER and c in base.columns]
     if clashes:
         right = right.drop(columns=clashes)
-    out = base.merge(right, on=KEY_ORDER, how="left")
+    # 29.15.11: an order's further materials get their own rows, but which BL
+    # carries which material is not evidenced — the order's BLs stay on its
+    # first-material row as before, and no BL is invented for the others.
+    role = base.get("MOGH_ITEM_ROLE", pd.Series("", index=base.index)).fillna("").astype(str)
+    carries_bl = ~role.isin(["ADDITIONAL", "NO_ORDER"])
+    base = base.assign(_pop_pos=range(len(base)))
+    out = pd.concat([base[carries_bl].merge(right, on=KEY_ORDER, how="left"), base[~carries_bl]],
+                    ignore_index=True, sort=False)
+    out = out.sort_values("_pop_pos", kind="stable").drop(columns="_pop_pos").reset_index(drop=True)
     if KEY_BL not in out.columns:
         out[KEY_BL] = ""
     out[KEY_BL] = out[KEY_BL].fillna("")

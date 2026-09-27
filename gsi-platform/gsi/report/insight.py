@@ -41,6 +41,7 @@ from openpyxl.styles import Font
 
 from .palette import LuxuryPalette as P
 from .financial_summary import commitment_display, penalty_display, commitment_status_summary
+from ..studio_core.grain import case_rows
 
 
 def _font(color: str, size: int = 11, bold: bool = False) -> Font:
@@ -152,10 +153,11 @@ def _write_row(ws, r: int, level: int, label: str, counts: List[int],
 
 
 def _metrics(g: pd.DataFrame) -> Dict[str, Any]:
-    def m(col: str, fn: str = "mean") -> Any:
-        if col not in g.columns:
+    def m(col: str, fn: str = "mean", rows: Optional[pd.DataFrame] = None) -> Any:
+        rows = g if rows is None else rows
+        if col not in rows.columns:
             return 0
-        s = pd.to_numeric(g[col], errors="coerce")
+        s = pd.to_numeric(rows[col], errors="coerce")
         if s.notna().sum() == 0:
             return 0
         return round(float(getattr(s, fn)()), 1)
@@ -166,7 +168,8 @@ def _metrics(g: pd.DataFrame) -> Dict[str, Any]:
         "پرونده": len(g),
         "بحرانی": crit,
         "میانگین مقاومت": m("مقاومت (روز)"),
-        "میانگین رسوب": m("روزهای رسوب"),
+        # رسوب واقعیت بارنامه است؛ متریال دوم سفارش بارنامه ندارد (case_rows).
+        "میانگین رسوب": m("روزهای رسوب", rows=case_rows(g)),
         "مانده تعهد": commitment_display(g) if "مانده تعهد" in g.columns else "—",
         "میانگین ریسک": m("امتیاز ریسک"),
     }
@@ -197,7 +200,9 @@ def _advanced(g: pd.DataFrame) -> List[tuple]:
                     "یک‌چهارم قطعات زیر این عدد قرار دارند"))
         out.append(("میانه مقاومت (روز)", round(float(res.median()), 1),
                     "مقاوم‌تر از میانگین در برابر مقادیر پرت"))
-    stuck = num("روزهای رسوب")
+    # رسوب (بارنامه) و انطباق (فرایند) واقعیت پرونده‌اند، نه متریال (29.15.11).
+    cases = case_rows(g)
+    stuck = pd.to_numeric(cases.get("روزهای رسوب"), errors="coerce")
     if stuck.notna().sum():
         out.append(("صدک ۹۰ روزهای رسوب", round(float(stuck.quantile(0.90)), 1),
                     f"آستانه رسوب شدید: {rb.demurrage_critical_days()} روز"))
@@ -218,7 +223,7 @@ def _advanced(g: pd.DataFrame) -> List[tuple]:
             out.append(("جریمه برآوردی", pen_text,
                         "سناریوی داخلی، در دانه ثبت سفارش و به تفکیک ارز"))
     if "امتیاز انطباق (٪)" in g.columns:
-        conf = num("امتیاز انطباق (٪)")
+        conf = pd.to_numeric(cases.get("امتیاز انطباق (٪)"), errors="coerce")
         if conf.notna().sum():
             out.append(("میانگین انطباق فرآیند (٪)", round(float(conf.mean()), 1),
                         "۱۰۰ یعنی اجرای کامل مطابق چرخه عمر"))

@@ -268,7 +268,11 @@ def _observations(sources: Mapping[str, Mapping[str, pd.DataFrame]]) -> pd.DataF
                                       raw.get("SAP_PACK_PACKED")),
                               detail=("PR item=" + _s(raw.get("SAP_PR_ITEM")) +
                                       ("; workflow=" + _s(raw.get("SAP_WORKFLOW_ID")) if _s(raw.get("SAP_WORKFLOW_ID")) else "")))
-                elif source == "moghavemat":
+                elif source == "moghavemat" and _s(raw.get("MOGH_ITEM_ROLE")) != "ADDITIONAL":
+                    # 29.15.11: an order's further material rows repeat its
+                    # order-level fields; the order's intake/creation stages are
+                    # observed once, on its first-material row. The further rows
+                    # keep their own SOURCE_OBSERVATION above.
                     _emit(rows, source, frame, idx, raw, "EXPERT_INTAKE",
                           event_date=_date_first(raw, ["MOGH_PO_SENT_DATE", "MOGH_CREATE_DATE"]),
                           status=raw.get("MOGH_STATUS"), detail="Commercial Expert evidence")

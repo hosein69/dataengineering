@@ -255,6 +255,10 @@ def bundle_from_dwh(as_of=None, warehouse: Optional[Warehouse] = None, *, scope=
     mogh = sources.get("moghavemat", {}).get("main")
     if isinstance(mogh, pd.DataFrame) and not mogh.empty:
         for i, r in mogh.reset_index(drop=True).iterrows():
+            # 29.15.11: each Order×Material has a row; the order aggregate is
+            # emitted once, from its first material (the others repeat it).
+            if _clean(r.get("MOGH_ITEM_ROLE")) == "ADDITIONAL":
+                continue
             order = _clean(r.get(KEY_ORDER))
             reg = order_to_reg.get(order, "")
             amount = r.get("MOGH_PI_VALUE_SUM")

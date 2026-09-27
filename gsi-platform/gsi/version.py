@@ -44,7 +44,8 @@ REQUIRED_CONTRACTS: Dict[str, int] = {
     "trust": 2,             # frames() با رول‌آپ سازمانی — s95_trust به آن تکیه دارد
     "trust.verdict": 2,     # Owner.manager/vice و حافظه mapping gap
     "trust.impact": 2,      # ORG_LEVELS و سطح‌های کارنامه
-    "trust.contracts": 1,
+    "trust.contracts": 2,   # KEYLESS_BY_DESIGN — trust.assess به آن تکیه دارد
+    "studio_core.grain": 2,  # case_rows — سنجه‌های سطح پرونده، متریال دوم سفارش را دوباره نمی‌شمارند
     "trust.anomaly": 1,     # detect/observe/Anomaly — s96 و دفتر پاسخ به آن تکیه دارند
     "trust.inquiry": 1,     # apply_repairs/InquiryRegister — s21 و صفحه اعتماد به آن تکیه دارند
 }
@@ -60,6 +61,7 @@ CONTRACT_NOTES: Dict[str, str] = {
     "rulebook.loader": "بارگذار کتابخانه قوانین YAML",
     "engines.criticality": "موتور مقاومت قطعه",
     "stages.base": "قرارداد مرحله‌های خط لوله",
+    "studio_core.grain": "case_rows — سنجه سطح پرونده (تعهد، رسوب، انطباق) هر پرونده را یک بار می‌شمارد",
     "trust.anomaly": "تشخیص ناهنجاری، فرضیه‌ها و پیشنهاد ترمیم",
     "trust.inquiry": "دفتر پاسخ به ناهنجاری‌ها و اعمال ترمیم‌های تأییدشده",
 }

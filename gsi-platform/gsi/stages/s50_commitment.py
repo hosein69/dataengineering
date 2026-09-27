@@ -60,8 +60,10 @@ class CommitmentStage(Stage):
 
     def kpis(self, df: pd.DataFrame, ctx: PipelineContext) -> Dict[str, tuple]:
         # سنجه‌های تعهد در سطح REG هستند و پس از join ممکن است fan-out شوند.
-        from ..studio_core.grain import safe_agg
+        from ..studio_core.grain import case_rows, safe_agg
         red = ctx.rb.status_label("red")
+        # هشدار تعهد واقعیت سطح پرونده است؛ متریال دوم سفارش تعهد دوم نیست.
+        cases = case_rows(df)
         has_fin_contract = (
             any(c in df.columns for c in ("KEY_REG", "CANONICAL_REG"))
             and any(c in df.columns for c in ("NTSW_CURRENCY", "CURRENCY", "ارز"))
@@ -79,7 +81,7 @@ class CommitmentStage(Stage):
             balance_note = "سورس NTSW — تجمیع دانه‌ای REG؛ ستون ارز در داده موجود نیست"
             penalty_note = "سناریوی داخلی — تجمیع دانه‌ای REG؛ ستون ارز در داده موجود نیست"
         return {
-            "تعهدات با هشدار قرمز": (int((df.get("وضعیت کلی هشدار") == red).sum()),
+            "تعهدات با هشدار قرمز": (int((cases.get("وضعیت کلی هشدار") == red).sum()),
                                       "عبور از آستانه کنترلی RuleBook؛ مبنای حقوقی در ستون مجزا"),
             "جمع مانده تعهد": (balance_value, balance_note),
             "جمع جریمه برآوردی": (penalty_value, penalty_note),

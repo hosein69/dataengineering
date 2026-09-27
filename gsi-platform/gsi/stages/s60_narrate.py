@@ -81,9 +81,12 @@ class NarrateStage(Stage):
         }
 
     def kpis(self, df: pd.DataFrame, ctx: PipelineContext) -> Dict[str, tuple]:
+        from ..studio_core.grain import case_rows
         num = lambda c: pd.to_numeric(df.get(c), errors="coerce")  # noqa: E731
+        # رسوب واقعیت بارنامه است؛ ردیف متریال افزوده بارنامه ندارد و «۰ روز» نیست.
+        stuck = pd.to_numeric(case_rows(df).get("روزهای رسوب"), errors="coerce")
         return {
-            "میانگین روزهای رسوب": (round(float(num("روزهای رسوب").mean() or 0), 1),
+            "میانگین روزهای رسوب": (round(float(stuck.mean() or 0), 1),
                                      "از تاریخ تخلیه"),
             "میانگین قطعیت داده (٪)": (round(float(num("درصد قطعیت").mean() or 0), 1),
                                         "شاخص کیفیت داده"),

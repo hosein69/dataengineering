@@ -13,7 +13,13 @@ description of a multi-material order were visible only in a side evidence
 table. Each test below failed on 29.15.9.
 
 The safety line of the older contract stays: expert data never sets position,
-owner or BL, and nothing here enters the mart, a KPI or a sum.
+owner or BL.
+
+29.15.11 (owner: «معیار فایل کارشناسان هست و نباید حذف یا از محاسبات خارج شود»):
+the second material and the order-less row are now rows of the mart itself and
+enter every calculation; the fixture below mirrors that. The view labels them
+«بدون مرجع Oracle» when Oracle lacks their code, and reserves the ⚠ root-cause
+label for a ledger material that is missing from the calculated data.
 """
 from __future__ import annotations
 
@@ -22,7 +28,9 @@ import pandas as pd
 from gsi.adapters.moghavemat import MoghavematAdapter
 from gsi.report.dashboard import ExcelDashboardBuilder
 from gsi.report.expert_material import build_expert_material_positions
-from gsi.report.supply_views import (SHEETS, SOURCE_COL, SOURCE_EXPERT_ONLY, GAPS_COL,
+from gsi.core.text import clean_part_no
+from gsi.report.supply_views import (SHEETS, SOURCE_COL, SOURCE_EXPERT_NO_ORACLE,
+                                     SOURCE_EXPERT_ONLY, GAPS_COL,
                                      append_expert_materials, build_material_html_view,
                                      build_material_view)
 from gsi.studio_core.html_export import build_dynamic_html
@@ -47,12 +55,13 @@ def _owner_case():
                             "ORC_STOCK_SAPCO": 10, "ORC_DAILY_NEED": 10,
                             "ORC_MATERIAL_DESC": "رینگ ABS"}])
     positions = build_expert_material_positions(t["lines"], t["inventory"], oracle)
-    # The flat mart: one row for the order, its first material, known to Oracle.
+    # The mart (29.15.11): one row per Order×Material; only 9654003280 is known to Oracle.
     main = t["main"].copy()
-    main["KEY_MATERIAL"] = main["MOGH_MATERIAL"].astype(str)
+    main["KEY_MATERIAL"] = main["MOGH_MATERIAL"].map(clean_part_no)
     main["CANONICAL_ORDER"] = main["KEY_ORDER"]
-    main["ORC_PART_NO"] = "9654003280"
-    main["ORC_MATERIAL_DESC"] = "رینگ ABS"
+    known = main["KEY_MATERIAL"].eq("9654003280")
+    main["ORC_PART_NO"] = main["KEY_MATERIAL"].where(known, "")
+    main["ORC_MATERIAL_DESC"] = pd.Series("رینگ ABS", index=main.index).where(known, "")
     return main, positions
 
 
@@ -69,7 +78,7 @@ def test_second_material_and_orderless_row_are_rows_of_the_main_html_view():
     view = _html_view(main, positions)
     assert {"9654003280", "B2", "IK88888888"} <= set(view["متریال"])
     b2 = view[view["متریال"] == "B2"].iloc[0]
-    assert b2[SOURCE_COL] == SOURCE_EXPERT_ONLY
+    assert b2[SOURCE_COL] == SOURCE_EXPERT_NO_ORACLE      # in the calculations, no Oracle code
     assert b2["سفارش"] == "823107D"
     orphan = view[view["متریال"] == "IK88888888"].iloc[0]
     assert "شماره سفارش" in orphan[GAPS_COL]
@@ -135,7 +144,7 @@ def test_excel_sheet_14_main_table_lists_every_expert_material(tmp_path):
 
 def test_a_filtered_report_does_not_grow_other_slices():
     main, positions = _owner_case()
-    other = main.assign(CANONICAL_ORDER="999999", KEY_ORDER="999999")
+    other = main.iloc[[0]].assign(CANONICAL_ORDER="999999", KEY_ORDER="999999")
     out = append_expert_materials(build_material_view(other), positions, df=other)
     # order 823107D is outside this slice; the order-less row belongs to none and stays
     assert "B2" not in set(out["متریال"])
@@ -146,3 +155,15 @@ def test_no_ledger_no_change():
     main, _ = _owner_case()
     view = build_material_html_view(main)
     pd.testing.assert_frame_equal(append_expert_materials(view, None, df=main), view)
+
+
+def test_a_ledger_material_missing_from_the_data_is_flagged_for_root_cause():
+    """29.15.11: nothing of the expert file may be missing from the calculations;
+    if one is, the row says so loudly instead of looking like a normal state."""
+    main, positions = _owner_case()
+    lost = main[main["KEY_MATERIAL"].ne("IK88888888")]
+    view = append_expert_materials(build_material_html_view(lost), positions, df=lost)
+    row = view.set_index("متریال").loc["IK88888888"]
+    assert row[SOURCE_COL] == SOURCE_EXPERT_ONLY
+    assert "علت‌یابی" in row[SOURCE_COL]
+    assert view.set_index("متریال").loc["B2", SOURCE_COL] == SOURCE_EXPERT_NO_ORACLE

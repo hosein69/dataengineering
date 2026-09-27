@@ -151,17 +151,21 @@ def assess(
         entity_rules = rules.get(entity)
         if not key_column or not entity_rules:
             continue
+        frame = df
+        by_design = contract_defs.KEYLESS_BY_DESIGN.get(entity)
+        if by_design and by_design[0] in df.columns:
+            frame = df[~df[by_design[0]].astype(str).isin(by_design[1])]
         profile = profile_frame(
-            df, list(entity_rules), entity_type=entity,
+            frame, list(entity_rules), entity_type=entity,
             key_column=key_column, ref_date=ref_date, source=entity,
             cross_source=contract_defs.cross_source_for(entity),
         )
         report.profiles[entity] = profile
 
         entity_contracts = [c for c in contracts if c.entity_type == entity]
-        report.verdicts.extend(evaluate_all(entity_contracts, profile, df, key_column))
+        report.verdicts.extend(evaluate_all(entity_contracts, profile, frame, key_column))
         report.opportunities.extend(
-            rank_opportunities(entity_contracts, profile, df, key_column)
+            rank_opportunities(entity_contracts, profile, frame, key_column)
         )
 
     report.opportunities.sort(
