@@ -475,11 +475,28 @@ def headline_fa(summary: Mapping[str, Any], applied: int = 0) -> str:
 #  Command line
 # ═══════════════════════════════════════════════════════════════════════════
 def _latest_anomalies() -> List[Anomaly]:
-    from .trend import load_payloads
-    payloads = load_payloads(limit=1)
-    if not payloads:
+    """The published run's anomalies, read from that run's own frame.
+
+    29.15.0 also copied them into every trust snapshot, where they were 97% of
+    the payload (1 KB → 125 KB per run, twice with report_metadata) and every
+    trend-page load decoded up to 60 of them. Found by A/B, 29.15.1.
+    """
+    from ..warehouse.store import Warehouse
+    wh = Warehouse(initialize=False)
+    if not wh.path.exists():
         return []
-    return [Anomaly.from_dict(a) for a in payloads[-1].get("anomalies") or ()]
+    try:
+        rid = wh.current_run("report")
+        with wh.read_db() as c:
+            row = c.execute("SELECT id FROM wh_frame WHERE run_id=? AND layer='mart' "
+                            "AND name='extras/anomaly_inquiries' ORDER BY created DESC LIMIT 1",
+                            (rid,)).fetchone()
+        frame = wh.read_frame(row[0]) if row else None
+    except Exception:
+        return []
+    if not isinstance(frame, pd.DataFrame) or "_payload" not in frame.columns:
+        return []
+    return [Anomaly.from_dict(json.loads(p)) for p in frame["_payload"]]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

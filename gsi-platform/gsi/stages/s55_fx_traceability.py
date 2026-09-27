@@ -457,14 +457,14 @@ class FxTraceabilityStage(Stage):
             # «صدور بارنامه» نبود: BL_DATE تولیدکننده ندارد و این رویداد هرگز
             # به تایم‌لاین نمی‌رسید. شاهدِ موجودِ حرکت، با نام درست خودش.
             add(reg, "SHIPMENT", "شاهد حرکت محموله", r.get("SHIPPED_EVIDENCE_DATE"),
-                r.get("INVOICE_VALUE"), r.get("CURRENCY"),
+                r.get("INVOICE_VALUE"), r.get("INVOICE_CURRENCY"),
                 _s(r.get("SHIPPED_EVIDENCE_BASIS")) or "BL", bl)
             add(reg, "CUSTOMS_DECLARATION", "ثبت کوتاژ", r.get("COT_DATE"),
-                r.get("INVOICE_VALUE"), r.get("CURRENCY"), "EPL/CUSTOMS", r.get("COTAGE_NO"))
+                r.get("INVOICE_VALUE"), r.get("INVOICE_CURRENCY"), "EPL/CUSTOMS", r.get("COTAGE_NO"))
             add(reg, "SATA", "صدور کد ساتا", r.get("SATA_DATE"),
-                r.get("INVOICE_VALUE"), r.get("CURRENCY"), "SATA", r.get("SATA_NO"))
+                r.get("INVOICE_VALUE"), r.get("INVOICE_CURRENCY"), "SATA", r.get("SATA_NO"))
             add(reg, "FULL_CLEAR", "ترخیص کامل", r.get("FULL_CLEAR_DATE"),
-                r.get("INVOICE_VALUE"), r.get("CURRENCY"), "EPL/CUSTOMS", r.get("COTAGE_NO"))
+                r.get("INVOICE_VALUE"), r.get("INVOICE_CURRENCY"), "EPL/CUSTOMS", r.get("COTAGE_NO"))
 
         if not rows:
             return pd.DataFrame(columns=["_CASE_KEY", "EVENT_TYPE", "EVENTTIME"])

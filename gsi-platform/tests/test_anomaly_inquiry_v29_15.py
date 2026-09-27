@@ -23,7 +23,6 @@ import pytest
 
 from gsi.trust import anomaly as A
 from gsi.trust import inquiry as Q
-from gsi.trust import trend
 
 TODAY = date(2026, 9, 26)
 
@@ -37,7 +36,7 @@ def _invoices(n=20, *, slip_key=None, factor=1000.0, seed=1, currency="یورو"
         if f"R{i}" == slip_key:
             value *= factor
         rows.append({"CANONICAL_REG": f"R{i}", "INVOICE_VALUE": value,
-                     "CURRENCY": currency, "EXPERT_CLEARANCE": "کارشناس ترخیص الف",
+                     "INVOICE_CURRENCY": currency, "EXPERT_CLEARANCE": "کارشناس ترخیص الف",
                      "_SOURCE_FILE": "SATA.xlsx", "_SOURCE_ROW": str(i + 2)})
     return pd.DataFrame(rows)
 
@@ -83,7 +82,7 @@ def test_unit_slip_on_a_large_but_normal_value_is_still_recognised():
     not in the middle — and a 10–90% band alone missed it."""
     values = [12_000 + i * (48_000 / 23) for i in range(24)]      # 12k … 60k evenly
     df = pd.DataFrame({"CANONICAL_REG": [f"R{i}" for i in range(24)],
-                       "INVOICE_VALUE": values, "CURRENCY": "EUR"})
+                       "INVOICE_VALUE": values, "INVOICE_CURRENCY": "EUR"})
     df.loc[23, "INVOICE_VALUE"] = values[23] * 1000                # the top one slips
     hit = _find(A.detect(df), A.VALUE_OUTLIER, "R23")[0]
     assert hit.leading.code == A.SCALE_SLIP
@@ -416,15 +415,26 @@ def test_stage_96_publishes_questions_and_enriches_the_snapshot():
     assert (frame["_status"] == Q.OPEN).all() and len(frame) >= 1
     ts = ctx.extras["trust_summary"]
     assert ts["observations"]["entities"]["REG"] == 20
-    assert ts["anomalies"][0]["id"] == frame["شناسه"].iloc[0]
-    dumps(ts)                                  # the snapshot must stay storable
+    # 29.15.1 (A/B): the per-case list lives only in the run's own frame; a
+    # copy in every snapshot was 97% of its size and decoded on each trend load
+    assert "anomalies" not in ts and ts["anomaly_counts"]["total"] == len(frame)
+    assert len(dumps(ts)) < 20_000             # storable, and small
     assert "حذف" in ctx.extras["anomaly_headline"]
 
 
-def test_cli_list_and_decide_through_the_stored_snapshot(slip, capsys):
+def test_cli_list_and_decide_through_the_published_frame(slip, capsys):
+    """Rewritten in 29.15.1: the CLI used to read a copy of the anomalies kept
+    in the trust snapshot; it now reads the published run's own frame."""
     from gsi.warehouse.store import Warehouse
-    Warehouse().audit("trust_snapshot", {"grades": {}, "anomalies": [slip.as_dict()]})
-    assert trend.load_payloads()[-1]["anomalies"][0]["id"] == slip.id
+    assert Q.main(["list"]) == 0               # no warehouse yet: says so, no crash
+    frame = Q.inquiries_frame([slip], Q.InquiryRegister(), TODAY)
+    wh = Warehouse()
+    with wh.run({"reference_date": TODAY.isoformat(), "version": "test"}) as rid:
+        wh.frame(pd.DataFrame({"a": [1]}), "mart", "df")
+        wh.frame(pd.DataFrame({"a": [1]}), "mart", "main")
+        wh.frame(frame, "mart", "extras/anomaly_inquiries")
+    wh.publish(rid, slots=("report",))
+    capsys.readouterr()
     assert Q.main(["list"]) == 0
     assert slip.id in capsys.readouterr().out
     assert Q.main(["decide", slip.id, "explain", "--note", "سفارش یک‌باره خط جدید است",

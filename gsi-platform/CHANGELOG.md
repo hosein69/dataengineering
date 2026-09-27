@@ -1,3 +1,53 @@
+# GSI 29.15.1 — A/B test 29.14.0 ↔ 29.15.0; six bugs, each with the smallest fix — 2026-09-27
+
+Both packages, each from its own release ZIP, ran on byte-identical inputs
+(demo, realistic-header synthetic, a 40× scaled copy, and a "treatment" copy
+with injected faults) with a fixed reference date and separate warehouses.
+Every frame, every extras frame, counts, scalar extras, every sheet of the
+official Excel report and an HTML export were compared cell by cell
+(`tools/ab/`, report: `docs/AB_TEST_29_15_1_FA.md`).
+
+**Baseline:** with no approvals, 29.15.0's business outputs were identical to
+29.14.0 in every frame and sheet on all datasets and runs; every Excel
+difference aligned to a declared addition. Run time identical (~52 s at 40×).
+
+**Six bugs**, each locked by a test that fails on 29.15.0
+(`tests/test_ab_findings_v29_15_1.py`):
+
+1. *Modes flagged as outliers* — ties collapsed the MAD and "10"/"411", each
+   shared by 41 materials, became 82 questions. An outlier must now be rare:
+   ≥ 5% of peers (min 3) within ±12% makes it a mode. (4 lines)
+2. *Currency-less amounts pooled* — invoices without a currency were compared
+   with each other, EUR next to IRR (32 questions). Without a group value there
+   are no peers when the grouping is by currency. (3 lines)
+3. *Unknown invoice value derived as 0* (since 29.12) — the trust layer counted
+   it as filled (coverage reported 100%, really 63.2%) and the FX timeline
+   showed numeric evidence «۰». `INVOICE_VALUE` joins `UNKNOWN_SENSITIVE`. (1 word)
+4. *Question floods* — 880 questions for one field on a 50k-row frame. Above
+   2% (min 10) outliers per field/group, one `MIXED_POPULATION` question
+   about the field replaces them — the VOCABULARY_SHIFT rule. (~30 lines)
+5. *Snapshot bloat* — the full anomaly list was copied into every trust
+   snapshot (97% of it; 1 KB → 125 KB per run, plus 128 KB report metadata,
+   decoded up to 60× per trend-page load). The copy is gone; the CLI reads the
+   published run's own frame. Now 4.4 KB / 7.7 KB. (−4 / +15 lines)
+6. *Invoice amount without its own currency* (since 29.12) — the amount came
+   from SATA, `CURRENCY` from NTSW/FX/expert, never SATA: an injected ×1000
+   invoice was invisible and 205 timeline events carried an amount with no
+   currency. New `INVOICE_CURRENCY` from the same source as the amount, used by
+   the four invoice-valued timeline events and the detector. Unknown stays
+   unknown — never borrowed. (1 line + 5 words)
+
+**Final A/B (29.14.0 ↔ 29.15.1):** the only business differences are exactly
+fixes 3 and 6. Questions on the 40× data: 118 → 4 (all genuine). Treatment:
+the ×1000 invoice found as a strong unit slip; after approval only that case
+changed (488,409,000 → 488,409, plus its two timeline events); a standing
+spelling fix re-applied on every later run; losing half of one source was
+reported as "not captured", strong evidence.
+
+Two tests rewritten, not deleted, with the reason in their docstrings (the
+snapshot no longer carries per-case anomalies; the CLI reads the published
+frame). The A/B harness itself is in `tools/ab/` for the next comparison.
+
 # GSI 29.15.0 — Anomalies are asked about, never silently cleaned; healing only with a human's name on it — 2026-09-26
 
 The brief, in the owner's words: before removing an outlier, find out what it is

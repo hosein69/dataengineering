@@ -27,9 +27,6 @@ from ..trust.inquiry import headline_fa, inquiries_frame, summarize
 from .base import PipelineContext, Stage, register
 from .s21_heal import register_for
 
-#: Anomalies kept in the stored snapshot (the command-line register reads them).
-_SNAPSHOT_ANOMALIES = 100
-
 
 @register
 class AnomalyInquiryStage(Stage):
@@ -59,7 +56,6 @@ class AnomalyInquiryStage(Stage):
         if isinstance(trust_summary, dict):
             trust_summary["observations"] = observations
             trust_summary["anomaly_counts"] = summary
-            trust_summary["anomalies"] = [a.as_dict() for a in anomalies[:_SNAPSHOT_ANOMALIES]]
 
         log.info(f"🕵️ [anomaly] {summary['total']} ناهنجاری | "
                  f"{summary['needs_answer']} منتظر پاسخ | {n_applied} ترمیم تأییدشده اعمال شد")

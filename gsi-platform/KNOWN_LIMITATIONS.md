@@ -1,4 +1,16 @@
-# Current release: GSI 29.15.0 — 2026-09-26
+# Current release: GSI 29.15.1 — 2026-09-27
+
+**A/B-driven fixes** (29.14.0 ↔ 29.15.0 on identical inputs; `docs/AB_TEST_29_15_1_FA.md`). Still open:
+- `EUR_VALUE`, `DUTY_AMOUNT` and `CREDIT_*` are still derived with a 0 default for unknown, the same
+  pattern fixed for `INVOICE_VALUE`. No trust-layer decision reads them today; each is a one-word
+  addition to `UNKNOWN_SENSITIVE` when one does.
+- A systematic error affecting ≥5% of one group is not asked about case by case (it is a mode, not an
+  outlier). Above 2% outliers per field it becomes one "two populations in one field" question, and a
+  jump in the total is caught by the "too good" detector.
+- The FX timeline shows SATA's own currency next to SATA's invoice amount; when SATA records no currency
+  the event currency is blank (unknown), never borrowed from NTSW.
+
+# GSI 29.15.0 — 2026-09-26
 
 **Added in this release:** anomaly inquiry and human-approved healing (`gsi/trust/anomaly.py`,
 `gsi/trust/inquiry.py`, stages 21 and 96). Limits worth knowing before relying on it:
@@ -6,7 +18,7 @@
   that were produced by 29.15.0 or later; before that only within-run checks (numeric outliers,
   spelling variants) can fire. Earlier snapshots carry no `observations` and are ignored, not guessed.
 - Numeric outliers need at least 8 peers per group (currency); small groups are not judged.
-- Repairs exist only for input columns present by stage 21 (INVOICE_VALUE, DAILY_NEED, STOCK_IKCO,
+- Repairs exist only for input columns present by stage 21 (INVOICE_VALUE grouped by INVOICE_CURRENCY, DAILY_NEED, STOCK_IKCO,
   STOCK_SAPCO and six category fields). Computed outputs such as «مانده تعهد» are asked about but
   never repaired; the question is routed to their inputs.
 - An unexplained outlier does **not** yet change a decision's grade. Whether it should cap additive

@@ -79,6 +79,7 @@ REAL_DECLINE = "REAL_DECLINE"            # activity really went down
 DOUBLE_COUNT = "DOUBLE_COUNT"            # the same fact counted twice
 PLACEHOLDER_FILL = "PLACEHOLDER_FILL"    # cells "filled" with a default value
 REAL_IMPROVEMENT = "REAL_IMPROVEMENT"    # a genuine clean-up or growth
+MIXED_POPULATION = "MIXED_POPULATION"    # one field carrying two units/populations
 
 STRONG, MEDIUM, WEAK = "strong", "medium", "weak"
 STRENGTH_FA: Dict[str, str] = {STRONG: "شاهد قوی", MEDIUM: "شاهد متوسط", WEAK: "شاهد ضعیف"}
@@ -99,6 +100,20 @@ MIN_FOLD = 3.0
 #: Log10 slack around the peers' 10–90% band when testing "would this value be
 #: ordinary after moving k digits?" — 0.3 ≈ a factor of two.
 SCALE_SLACK = 0.3
+#: An outlier is rare by definition. When at least this share of the peers
+#: (and at least RARE_MIN of them) sit within RARE_BAND (log10, ≈ ±12%) of a
+#: value, that value is a mode of the distribution, not an outlier — found by
+#: A/B on scaled data, where a MAD collapsed by ties flagged a third of all
+#: materials ("10" and "411" each shared by 41 of them).
+RARE_SHARE = 0.05
+RARE_MIN = 3
+RARE_BAND = 0.05
+#: More outliers than this in one field/group is not a list of odd cases — it
+#: is one question about the field (mixed units or populations, or a model that
+#: does not fit it). Same rule as VOCABULARY_SHIFT and FIELD_NEVER_POPULATED:
+#: one cause, one question. Found by A/B on a 50k-row frame (880 questions).
+FLOOD_SHARE = 0.02
+FLOOD_MIN = 10
 #: Runs of history needed before "unusual compared with before" means anything.
 MIN_HISTORY = 3
 #: Trailing window for the historical baseline.
@@ -152,7 +167,7 @@ class CategoryWatch:
 NUMERIC_WATCHES: Tuple[NumericWatch, ...] = (
     NumericWatch("INVOICE_VALUE", "ارزش فاکتور", REG,
                  "EXPERT_CLEARANCE", "کارشناس ترخیص",
-                 group_by="CURRENCY", heal_column="INVOICE_VALUE"),
+                 group_by="INVOICE_CURRENCY", heal_column="INVOICE_VALUE"),
     NumericWatch("مانده تعهد", "مانده تعهد ارزی", REG,
                  "EXPERT_SETTLEMENT", "کارشناس رفع تعهد ارزی",
                  group_by="FX_NTSW_CURRENCY",
@@ -410,16 +425,22 @@ def _numeric_outliers(df: pd.DataFrame, watch: NumericWatch) -> List[Anomaly]:
     # Zero and negative values are meaningful (zero stock stops the line) or
     # already a validity defect; neither has a place on a log scale.
     values = values[values["value"] > 0]
+    if watch.group_by:
+        # No currency, no peers: comparing an unknown-currency amount with
+        # others is the currency mix the trust layer refuses everywhere else.
+        values = values[values["group"] != ""]
     if values.empty:
         return []
     values = values.assign(log=values["value"].map(math.log10))
 
     stats: Dict[str, _GroupStats] = {}
+    peer_logs: Dict[str, pd.Series] = {}
     for group, part in values.groupby("group", sort=False):
         if len(part) >= MIN_PEERS:
             stats[group] = _group_stats(group, part["log"].tolist())
+            peer_logs[group] = part["log"]
 
-    out: List[Anomaly] = []
+    found: Dict[str, List[Anomaly]] = {}
     min_distance = math.log10(MIN_FOLD)
     for rec in values.itertuples(index=False):
         st = stats.get(rec.group)
@@ -431,7 +452,41 @@ def _numeric_outliers(df: pd.DataFrame, watch: NumericWatch) -> List[Anomaly]:
         z = abs(distance) / st.scale if st.scale else float("inf")
         if z < Z_LIMIT:
             continue
-        out.append(_outlier_anomaly(df, watch, key_col, rec, st, stats, distance))
+        near = int((peer_logs[rec.group] - rec.log).abs().le(RARE_BAND).sum())
+        if near >= max(RARE_MIN, RARE_SHARE * st.n):
+            continue
+        found.setdefault(rec.group, []).append(
+            _outlier_anomaly(df, watch, key_col, rec, st, stats, distance))
+    return _collapse_floods(found, watch, stats)
+
+
+def _collapse_floods(found: Dict[str, List[Anomaly]], watch: NumericWatch,
+                     stats: Dict[str, "_GroupStats"]) -> List[Anomaly]:
+    """Replace a flood of per-case outliers in one group by a single question."""
+    out: List[Anomaly] = []
+    for group, items in found.items():
+        n = stats[group].n
+        if len(items) <= max(FLOOD_MIN, FLOOD_SHARE * n):
+            out.extend(items)
+            continue
+        first = max(items, key=lambda a: a.severity)
+        sample = "، ".join(a.key for a in sorted(items, key=lambda a: -a.severity)[:5])
+        out.append(Anomaly(
+            kind=VALUE_OUTLIER, entity=watch.entity, field=watch.column,
+            field_fa=watch.title_fa, key=f"*{group}", signature=f"flood:{len(items)}/{n}",
+            headline_fa=(f"{len(items)} از {n} مقدار «{watch.title_fa}» دور از معمول‌اند — "
+                         "آن‌قدر زیاد که تک‌تک پرسیدنشان معنا ندارد."),
+            observed_fa=f"{len(items)} مورد، مثل {sample}", expected_fa=first.expected_fa,
+            hypotheses=[
+                Hypothesis(MIXED_POPULATION, "دو واحد یا دو جمعیت در یک فیلد",
+                           "وقتی ده‌ها مقدار هم‌زمان دور از معمول‌اند، معمولاً فیلد دو چیز را با "
+                           "هم نگه می‌دارد (عدد و هزارگان، قطعه کم‌مصرف و پرمصرف) یا یک سورس "
+                           "واحدش را عوض کرده است. چند نمونه بالا را در سورس ببینید.", MEDIUM),
+                Hypothesis(GENUINE_EXTREME, "توزیع واقعی این فیلد پهن است",
+                           "اگر این پراکندگی طبیعی است، در یک جمله بگویید تا از این به بعد "
+                           "پرسیده نشود.", WEAK)],
+            owner_name=first.owner_name, owner_role=first.owner_role,
+            owner_dept=first.owner_dept, severity=first.severity + 1.0))
     return out
 
 
