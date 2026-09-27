@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import pandas as pd
+from gsi.report.transition_context import annotate_transitions
 
 from . import templates as tpl
 from .excel_export import OfficialReportOverwrite, build_custom_excel
@@ -233,7 +234,7 @@ def _filtered_process_extras(extras: Dict, df: pd.DataFrame) -> Dict:
             x["WAIT"] = (x["_NEXT_TIME"] - x[time_col]).dt.total_seconds() / 86400
             x = x[x[act_col].astype(str) != x["_NEXT"].astype(str)]
             if not x.empty:
-                out["bottlenecks"] = (
+                out["bottlenecks"] = annotate_transitions((
                     x.groupby([act_col, "_NEXT"])
                      .agg(**{"میانه روز": ("WAIT", "median"),
                              "صدک ۹۰ روز": ("WAIT", lambda z: float(z.quantile(0.9))),
@@ -241,8 +242,9 @@ def _filtered_process_extras(extras: Dict, df: pd.DataFrame) -> Dict:
                              "تعداد پرونده": (case_col, "nunique")})
                      .reset_index()
                      .rename(columns={act_col: "از فعالیت", "_NEXT": "به فعالیت"})
-                     .sort_values("میانه روز", ascending=False)
-                     .reset_index(drop=True))
+                     .reset_index(drop=True))).sort_values(
+                         ["حوزه فرایندی", "میانه روز"], ascending=[True, False]
+                     ).reset_index(drop=True)
     return out
 
 def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
@@ -275,6 +277,12 @@ def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
 
     # ── HTML (پایه‌ی PDF هم هست، تا هر دو یک سند باشند) ──
     subtitle = f"{len(df):,} ردیف · {len(fields):,} فیلد"
+    _expert_material_positions = None
+    if not bool(scope.allowed_fields):
+        try:
+            _expert_material_positions = extras.get("expert_material_positions")
+        except Exception:
+            _expert_material_positions = None
 
     res.html = build_dynamic_html(
         df, spec.ref_date, title=spec.title, max_rows=max_rows,
@@ -291,7 +299,7 @@ def build(df: pd.DataFrame, extras: Dict, spec: ReportSpec,
         learning_lesson=(spec.learning_lesson if spec.learning_enabled else None),
         anythingllm_embed=(spec.anythingllm_embed if spec.learning_enabled else None),
         knowledge_chat=(spec.knowledge_chat if spec.learning_enabled else None),
-        material_supply_view=None, include_material_view=not bool(scope.allowed_fields))
+        material_supply_view=_expert_material_positions, include_material_view=not bool(scope.allowed_fields))
 
     html_bytes = len(res.html.encode("utf-8"))
     html_mb = html_bytes / (1024 * 1024)

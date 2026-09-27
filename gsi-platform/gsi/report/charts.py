@@ -19,7 +19,7 @@
 | ده قطعه کم‌مقاومت | کدام قطعات را همین امروز باید پیگیری کرد؟ |
 | مقاومت انبار در برابر کل | چقدر از نجاتمان به کالای در راه بند است؟ |
 | مانده تعهد بر حسب مهلت | چه مبلغی و تا چه تاریخی در معرض جریمه است؟ |
-| گلوگاه فرآیند | کدام گام بیشترین زمان را می‌خورد؟ |
+| زمان گذارها | زمان مشاهده‌شده در هر حوزه چقدر است؟ |
 | توزیع ریسک | ترکیب سبد ریسک چه شکلی است؟ |
 | بار کاری سازمانی | کار روی کدام واحد تلنبار شده؟ |
 """
@@ -290,24 +290,27 @@ def _build_charts(self, df: "pd.DataFrame", ctx_extras: Optional[Dict] = None) -
                            f"{diag['missing_key_or_currency']} ردیف با کلید/ارز ناقص؛ "
                            "در مبلغ نمودار وارد نشده‌اند.")).font = P.font_body(bold=True)
 
-    # ── ۵) گلوگاه فرآیند ──
+    # ── ۵) زمان گذارها فقط در حوزهٔ خودشان توصیف می‌شوند ──
     bott = (ctx_extras or {}).get("bottlenecks")
     if bott is not None and not getattr(bott, "empty", True):
-        b = bott.head(8)
-        val_col = next((c for c in b.columns if "میانگین" in c), None)
+        from .transition_context import annotate_transitions
+        val_col = next((c for c in ("میانه روز", "میانگین روز") if c in bott.columns), None)
+        b = annotate_transitions(bott)
+        if val_col:
+            b = b.sort_values(["حوزه فرایندی", val_col], ascending=[True, False]).head(8)
         has_pair = {"از فعالیت", "به فعالیت"} <= set(b.columns)
         if val_col and has_pair:
-            labels = [f"{a} ← {c}" for a, c in
-                      zip(b["از فعالیت"].astype(str), b["به فعالیت"].astype(str))]
+            labels = [f"{d} | {a} ← {c}" for d, a, c in
+                      zip(b["حوزه فرایندی"], b["از فعالیت"].astype(str), b["به فعالیت"].astype(str))]
             r1, c1, r2, c2 = data.write(
-                "گلوگاه‌های فرآیند", labels,
-                {"میانگین (روز)": list(pd.to_numeric(b[val_col], errors="coerce").fillna(0))})
+                "زمان گذارها (توصیفی، به تفکیک حوزه)", labels,
+                {"روز مشاهده‌شده": list(pd.to_numeric(b[val_col], errors="coerce"))})
             ch = BarChart()
             ch.type, ch.grouping = "bar", "clustered"
             ch.add_data(Reference(ws, min_col=c1 + 1, min_row=r1, max_row=r2),
                         titles_from_data=True)
             ch.set_categories(Reference(ws, min_col=c1, min_row=r1 + 1, max_row=r2))
-            _style_chart(ch, "گلوگاه فرآیند")
+            _style_chart(ch, "زمان مشاهده‌شدهٔ گذارها؛ بدون داوری گلوگاه")
             ch.dataLabels = DataLabelList(); ch.dataLabels.showVal = True
             ch.legend = None
             _color_series(ch, [dx.X(T.STATUS["warning"].fill)])

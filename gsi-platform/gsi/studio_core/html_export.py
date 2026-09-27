@@ -181,20 +181,22 @@ def _stage_aging_html(extras: Dict) -> str:
 def _bottleneck_html(extras: Dict) -> str:
     b = extras.get("bottlenecks")
     if not isinstance(b, pd.DataFrame) or b.empty:
-        return _panel("گلوگاه گذارها", '<div class="empty">گذار کامل‌شده کافی نیست.</div>')
-    x = b.copy().head(12)
+        return _panel("زمان گذارها", '<div class="empty">گذار کامل‌شده کافی نیست.</div>')
+    from gsi.report.transition_context import annotate_transitions
+    x = annotate_transitions(b).sort_values(["حوزه فرایندی", "میانه روز"],
+                                                ascending=[True, False]).head(12)
     med = pd.to_numeric(x.get("میانه روز"), errors="coerce")
     mx = max(float(med.max() or 0), 1.0)
     rows=[]
     for pos,r in enumerate(x.to_dict("records"),1):
         v=float(r.get("میانه روز") or 0); pct=min(100,max(3,v/mx*100))
-        label=f'{r.get("از فعالیت","")} ← {r.get("به فعالیت","")}'
-        rows.append(f'<article class="bn-card"><span class="bn-rank">{pos}</span><div class="bn-main">'
+        label=f'{r.get("حوزه فرایندی","")} | {r.get("از فعالیت","")} ← {r.get("به فعالیت","")}'
+        rows.append(f'<article class="bn-card"><span class="bn-rank">•</span><div class="bn-main">'
                     f'<strong>{html.escape(label)}</strong><div class="rank-track"><span style="width:{pct:.1f}%"></span></div>'
                     f'<small>میانه {_fmt_num(v,1)} روز · P90 {_fmt_num(r.get("صدک ۹۰ روز"),1)} · {_fmt_num(r.get("تعداد پرونده"))} پرونده</small>'
                     '</div></article>')
-    return _panel("رتبه‌بندی گلوگاه‌های فرآیند", '<div class="bn-list">'+''.join(rows)+'</div>',
-                  "گذارهای کامل‌شده؛ رتبه بر اساس میانه زمان.")
+    return _panel("زمان گذارها به تفکیک حوزه", '<div class="bn-list">'+''.join(rows)+'</div>',
+                  "زمان‌ها توصیفی‌اند؛ تشخیص گلوگاه نیازمند مهلت معتبر و شواهد همان حوزه است.")
 
 
 def _transition_heatmap_html(extras: Dict) -> str:
@@ -324,13 +326,13 @@ def _process_suite_html(extras: Optional[Dict], views: List[str], uid: str, size
             parts.append(f'<div class="gsi-process-item" data-gsi-process-view="{html.escape(v, quote=True)}" data-gsi-item-key="process:{html.escape(v, quote=True)}" data-gsi-size="{html.escape(str(sizes.get(v, "full")), quote=True)}">{piece}</div>')
     if not parts:
         return C.panel('<div class="empty">برای این تب Process View انتخاب نشده است.</div>',
-                       title='⛓ فرآیند و گلوگاه‌ها — Process Mining Studio')
+                       title='⛓ فرآیند و زمان گذارها — Process Mining Studio')
     factor_note = ''
     rc = extras.get("conformance_root_causes")
     if isinstance(rc, pd.DataFrame) and not rc.empty:
         factor_note = '<div class="alert" style="--tone-ink:var(--teal-ink);--tone-wash:var(--teal-wash)"><b>عوامل همراه با انحراف:</b> این بخش همبستگی نشان می‌دهد، نه علت؛ قبل از اقدام ترکیب پرونده‌ها بررسی شود.</div>'
     return ('<div class="process-suite-head"><div><span class="t-overline">PROCESS MINING STUDIO</span>'
-            '<h2 class="t-h2">⛓ فرآیند و گلوگاه‌ها</h2><p class="process-scope-note">دامنه این تحلیل = Scope همین خروجی و همین مخاطب؛ فیلتر مرورگر فقط جدول/نمودار تعاملی را تغییر می‌دهد.</p></div>'
+            '<h2 class="t-h2">⛓ فرآیند و زمان گذارها</h2><p class="process-scope-note">زمان خام، گلوگاه نیست؛ رفع تعهد و حمل و ترخیص هر کدام معیار و مهلت خود را دارند. دامنه این تحلیل = Scope همین خروجی و همین مخاطب.</p></div>'
             '<span class="badge badge--quiet">Event Log واقعی</span></div>'
             '<div class="process-suite">'+''.join(parts)+factor_note+'</div>')
 
@@ -529,6 +531,20 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
                 if "KEY_MATERIAL" not in _tab["fields"]:
                     _tab["fields"] = ["KEY_MATERIAL"] + list(_tab["fields"])
 
+    # At ORDER grain KEY_MATERIAL may be only the compatibility/representative
+    # material.  Keep the preserved lineage visible in authored HTML tabs too,
+    # so a multi-material order never looks like a single-material one.
+    if norm_tabs:
+        for _lineage_col in ("MOGH_MATERIALS_ALL", "MOGH_MATERIAL_DESCS_ALL"):
+            if _lineage_col not in df.columns:
+                continue
+            _v = df[_lineage_col].fillna("").astype(str).str.strip()
+            if not _v.ne("").any():
+                continue
+            for _tab in norm_tabs:
+                if _lineage_col not in _tab["fields"]:
+                    _tab["fields"].append(_lineage_col)
+
     pm = prefix_grain_map()
     band_col = "بحرانی (کوتاه)" if "بحرانی (کوتاه)" in df.columns else None
     all_needed: List[str] = []
@@ -578,8 +594,14 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
     # every authored Composer tab or changing their grain.
     # Enforce the contract even if an old caller supplies a precomputed view.
     # Do not hide failures: a missing advisory view must not look successful.
-    from ..report.supply_views import build_material_html_view
+    from ..report.supply_views import build_material_html_view, build_expert_material_evidence_view
     material_view = build_material_html_view(df, today=ref_date) if include_material_view else pd.DataFrame()
+    # ``material_supply_view`` is deliberately NOT trusted as an operational
+    # material view.  It is accepted only as the dedicated Order×Material expert
+    # ledger and sanitized to evidence-only columns.  This closes the long-standing
+    # output gap without allowing a caller to bypass source-authority boundaries.
+    expert_material_view = (build_expert_material_evidence_view(material_supply_view)
+                            if include_material_view else pd.DataFrame())
     if not material_view.empty:
         # Keep the complete material view in the searchable payload. max_rows is
         # a presentation cap applied by rows(t) *after* filters/search; truncating
@@ -738,6 +760,20 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
                       "process_sizes": dict(tab.get("process_sizes") or {}),
                       "kanban_mode": tab.get("kanban_mode", "due_window")})
 
+    # Complete source-grain expert ledger: visible, but never counted as or
+    # promoted into the operational material status table.  This is the exact
+    # place where sibling materials of a multi-material order used to disappear
+    # from HTML even though DWH had preserved them.
+    expert_material_html = ""
+    if not expert_material_view.empty:
+        expert_material_html = (
+            '<details open class="expert-material-evidence"><summary>'
+            f'دفتر کامل شواهد کارشناسان — {len(expert_material_view):,} Order×Material'
+            '</summary><div class="note">این جدول شاهد منبع است؛ موقعیت/مالک/بارنامه از آن استنتاج نمی‌شود.</div>'
+            '<div class="tablewrap">'
+            + expert_material_view.to_html(index=False, escape=True, classes="expert-material-ledger")
+            + '</div></details>')
+
     # Keep unsupported expert identities visible as warnings, outside the
     # operational material count. An empty operational view is never silent.
     material_gap_html = ""
@@ -750,13 +786,15 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
             na, nc = _ntsw_advisory(gaps)
             alerts = pd.DataFrame({
                 "متریال اعلامی (تأیید نشده)": _s(gaps, "KEY_MATERIAL"),
+                "همه شرح‌های ثبت‌شده کارشناسان": _s(gaps, "MOGH_MATERIAL_DESCS_ALL").where(
+                    _s(gaps, "MOGH_MATERIAL_DESCS_ALL").ne(""), _s(gaps, "MOGH_MATERIAL_DESC")),
                 "هشدار کارشناسان": ea + " ؛ ⚠ مرجع مستقل متریال موجود نیست",
                 "کامنت کارشناسان": ec, "هشدار NTSW": na, "کامنت NTSW": nc,
             }).drop_duplicates()
             material_gap_html = ('<details><summary>هشدارهای فاقد مرجع مستقل — خارج از شمارش عملیاتی</summary>'
                                  + '<div class="tablewrap">' + alerts.to_html(index=False, escape=True, classes="advisory-gaps") + '</div></details>')
     # ONE dedicated material tab, including its explicit empty state.
-    if not material_view.empty or material_gap_html:
+    if not material_view.empty or material_gap_html or expert_material_html:
         mi = len(metas)
         mid = "pane_supply_material"
         mcols = list(material_view.columns)
@@ -777,7 +815,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
             note="کارشناسان و NTSW فقط Advisory: هشدار و کامنت. اتصال متریال به سفارش/بارنامه بدون شاهد مستقل، تأیید نشده است. شمارش این نما مربوط به متریال‌های دارای مرجع مستقل در داده انتخاب‌شده است.",
             aside=f'<span class="note" id="cnt_{mi}" role="status" aria-live="polite"></span>',
             section="table")
-        panes.append(f'<section id="{mid}" class="pane stack stack-md" role="tabpanel" aria-labelledby="tab_{mi}" hidden>{mtoolbar}{material_gap_html}<section data-composer-block="table">{mtable}</section></section>')
+        panes.append(f'<section id="{mid}" class="pane stack stack-md" role="tabpanel" aria-labelledby="tab_{mi}" hidden>{mtoolbar}{expert_material_html}{material_gap_html}<section data-composer-block="table">{mtable}</section></section>')
         metas.append({"id": mid, "tab_id": "supply_material", "fields": mcols,
                       "max_rows": int(max_rows), "grain": {}, "agg": {},
                       "title": "دید تأمین — متریال محور", "blocks": ["table"],
@@ -823,7 +861,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
 
     runtime_columns = {
         "stage_queue": ["مرحله جاری", "تعداد پرونده", "میانه انتظار (روز)", "بیشترین انتظار (روز)"],
-        "bottlenecks": ["از فعالیت", "به فعالیت", "میانه روز", "صدک ۹۰ روز", "تعداد پرونده"],
+        "bottlenecks": ["از فعالیت", "به فعالیت", "میانه روز", "صدک ۹۰ روز", "تعداد پرونده", "حوزه فرایندی", "وضعیت گلوگاه", "مبنای قضاوت"],
         "fx_control_summary": ["KEY_REG", "FX_DEADLINE_STATUS", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
                                "FX_CONTROL_RISK_BAND", "FX_CONTROL_RISK_SCORE", "FX_CURRENT_STAGE",
                                "FX_DEADLINE_DATE", "FX_DAYS_REMAINING", "FX_CONVERSION_STATUS",
@@ -1038,7 +1076,7 @@ const DATA={records};
 const MATERIAL_SUPPLY_DATA={material_records};
 const COL_INDEX={_inline_json({c:i for i,c in enumerate(all_needed)})};
 const PAGE_SIZE=100; /* compatibility/default; audience profile may override at render time */
-const REPORT_META={_inline_json({**(lineage or {}), "payload_rows": len(df), "embedded_rows": len(data), "payload_encoding": "row_array_v1", "material_supply_embedded_rows": len(material_view), "ref_date": ref_date, "gsi_build": GSI_RUNTIME_VERSION, "source_columns": len(_source_columns), "payload_columns": len(_payload_columns), "excluded_columns": excluded_columns, "truncated_sections": coverage_truncations})};
+const REPORT_META={_inline_json({**(lineage or {}), "payload_rows": len(df), "embedded_rows": len(data), "payload_encoding": "row_array_v1", "material_supply_embedded_rows": len(material_view), "expert_material_evidence_rows": len(expert_material_view), "ref_date": ref_date, "gsi_build": GSI_RUNTIME_VERSION, "source_columns": len(_source_columns), "payload_columns": len(_payload_columns), "excluded_columns": excluded_columns, "truncated_sections": coverage_truncations})};
 const TAB_META={_inline_json(metas)};
 const LABELS={_inline_json({c: labels.get(c, c) for c in all_needed})};
 const AUDIENCES={aud_json};
@@ -1178,8 +1216,8 @@ function chartFor(k,a,i){
    else bins['بیش از ۶۰ روز']++});
   return barChart(Object.entries(bins).map(([k2,v])=>({k:k2,v})),title,o)}
  if(k==='bottlenecks'){const b=PROC.bottlenecks||[];
-  if(b.length)return barChart(b.slice(0,10).map(x=>({k:S(x,'از فعالیت')+' ← '+S(x,'به فعالیت'),
-   v:+x['میانه روز']||0})),title,Object.assign({fill:'var(--st-serious)',
+  if(b.length)return barChart(b.slice(0,10).map(x=>({k:S(x,'حوزه فرایندی')+' | '+S(x,'از فعالیت')+' ← '+S(x,'به فعالیت'),
+   v:+x['میانه روز']||0})),title+' — زمان توصیفی؛ بدون داوری گلوگاه',Object.assign({fill:'var(--st-serious)',
    ink:'var(--st-serious-ink)'},o));
   return barChart(stageRows(a),title+' — جایگزین: توزیع مرحله فعلی',o)}
  return frame(title,emptyBox('فیلد لازم برای این نمودار در برش فعلی وجود ندارد.'),'','',i)}
@@ -1210,7 +1248,7 @@ function processStats(a){
   for(let i=0;i<arr.length-1;i++){const x=arr[i],y=arr[i+1],f=S(x,'ACTIVITY_FA'),t=S(y,'ACTIVITY_FA');if(!f||!t||f===t)continue;
    const d=(Date.parse(y.EVENTTIME)-Date.parse(x.EVENTTIME))/86400000;if(!Number.isFinite(d)||d<0)continue;
    const k=f+'\u001f'+t;(waits[k]||(waits[k]=[])).push(d)}}
- const transitions=Object.entries(waits).map(([k,v])=>{v.sort((a,b)=>a-b);const q=p=>v[Math.min(v.length-1,Math.floor((v.length-1)*p))];const z=k.split('\u001f');return {'از فعالیت':z[0],'به فعالیت':z[1],'میانه روز':q(.5),'صدک ۹۰ روز':q(.9),'تعداد پرونده':v.length}}).sort((x,y)=>y['میانه روز']-x['میانه روز']);
+ const transitions=Object.entries(waits).map(([k,v])=>{v.sort((a,b)=>a-b);const q=p=>v[Math.min(v.length-1,Math.floor((v.length-1)*p))];const z=k.split('\u001f');const base=(PROC.bottlenecks||[]).find(r=>S(r,'از فعالیت')===z[0]&&S(r,'به فعالیت')===z[1]);return {'از فعالیت':z[0],'به فعالیت':z[1],'میانه روز':q(.5),'صدک ۹۰ روز':q(.9),'تعداد پرونده':v.length,'حوزه فرایندی':base?S(base,'حوزه فرایندی'):'حوزه نامشخص','وضعیت گلوگاه':'سنجش‌نشده'}}).sort((x,y)=>S(x,'حوزه فرایندی').localeCompare(S(y,'حوزه فرایندی')));
  return {events:scoped,transitions,cases:Object.keys(by).length};
 }
 function renderProcess(a){
@@ -1235,8 +1273,8 @@ function renderProcess(a){
    'صف جاری — چند پرونده در هر مرحله منتظرند',
    {q:'الان کجا پرونده جمع شده است؟'})+scoped)
   :(b.length?barChart(b.slice(0,10).map(x=>({
-    k:S(x,'از فعالیت')+' ← '+S(x,'به فعالیت'),v:+x['میانه روز']||0})),
-    'گذارهای مشاهده‌شده — میانه انتظار',{q:'کدام گذار بیشترین زمان را می‌خورد؟'})+scoped
+    k:S(x,'حوزه فرایندی')+' | '+S(x,'از فعالیت')+' ← '+S(x,'به فعالیت'),v:+x['میانه روز']||0})),
+    'گذارهای مشاهده‌شده — میانه انتظار (توصیفی)',{q:'زمان خام گلوگاه نیست؛ هر حوزه مهلت خود را دارد.'})+scoped
    :(stageRows(a).length?barChart(stageRows(a),'توزیع مرحله فعلی',
     {q:'پرونده‌ها اکنون در کدام مرحله‌اند؟'})
     :emptyBox('لاگ تاریخی برای اندازه‌گیری هنوز کافی نیست. با اجرای روزانه، Transition Log ساخته می‌شود.')));
@@ -1256,7 +1294,7 @@ function renderProcess(a){
    +'</tbody></table></div>';
   if(b.length&&cfg.depth>1)html_+='<div class="tablewrap" style="margin-top:12px"><table>'
    +'<caption class="note">گذارهای کامل‌شده. میانه و صدک ۹۰ گزارش می‌شوند چون '
-   +'توزیع دُم‌دار است و میانگین با یک پرونده طولانی جابه‌جا می‌شود.</caption>'
+   +'توزیع دُم‌دار است. زمان خام میان حوزه‌ها سنجهٔ گلوگاه نیست؛ رفع تعهد با مهلت خودش سنجیده می‌شود.</caption>'
    +'<thead><tr><th scope="col">از</th><th scope="col">به</th>'
    +'<th scope="col">میانه</th><th scope="col">صدک ۹۰</th>'
    +'<th scope="col">پرونده</th></tr></thead><tbody>'
@@ -1467,8 +1505,7 @@ function renderStory(a,i){
  if(depth>1){
   if(qs)resolution+=' بزرگ‌ترین صف فعلی «'+S(qs,'مرحله جاری')+'» با '
    +fmt(qs['تعداد پرونده'])+' پرونده و میانه انتظار '+fmt(qs['میانه انتظار (روز)'])+' روز است.';
-  else if(bn)resolution+=' طولانی‌ترین گذار «'+S(bn,'از فعالیت')+' ← '+S(bn,'به فعالیت')
-   +'» با میانه '+fmt(bn['میانه روز'])+' روز است.';
+  else if(bn)resolution+=' زمان گذارها ثبت شده است؛ برای داوری، مهلت معتبر و شاهد همان حوزه لازم است.';
  }
 
  const scr=document.getElementById('story_scr_'+i);

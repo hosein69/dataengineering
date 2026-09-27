@@ -482,7 +482,7 @@ SHEET_LINES = "۷. اقلام سفارش (سطح PR و PI)"
 SHEET_RULES = "۸. کتابخانه قوانین"
 
 
-def _build_order_lines(self, lines: "pd.DataFrame") -> None:
+def _build_order_lines(self, lines: "pd.DataFrame", material_positions: "pd.DataFrame" = None) -> None:
     """جدول سطح-قلم سورس مقاومت — drill-down زیر هر سفارش."""
     ws = self._new_sheet(SHEET_LINES)
     headers = [
@@ -493,10 +493,13 @@ def _build_order_lines(self, lines: "pd.DataFrame") -> None:
         "روش حمل", "حمل‌کننده", "شماره بارنامه (معتبر)", "مقدار مشکوک BL",
         "علت رد BL", "وضعیت بازرگانی", "وضعیت لجستیک", "مرحله", "پیشرفت (٪)",
         "تعرفه پیشنهادی", "کلیدواژه تعرفه", "کد پرسنلی",
+        "همه شرح‌های همین سفارش و متریال", "شکاف ثبت کارشناس",
+        "وضعیت موجودی قلم", "موجودی کل تأییدشده قلم",
+        "حداقل موجودی قابل اثبات قلم", "شکاف‌های موجودی قلم",
     ]
     widths = [16, 14, 14, 10, 14, 34, 20, 14, 18, 8,
               12, 14, 16, 16, 12, 12, 14, 12, 16, 20, 20,
-              24, 30, 26, 14, 12, 14, 16, 14]
+              24, 30, 26, 14, 12, 14, 16, 14, 48, 38, 20, 19, 22, 38]
     groups = {i: 1 for i in range(11, 18)}
     groups.update({i: 2 for i in range(20, 30)})
     self._write_header(ws, headers, widths=widths, groups=groups)
@@ -511,6 +514,14 @@ def _build_order_lines(self, lines: "pd.DataFrame") -> None:
         "BL_REJECT_REASON", "COMMERCIAL_NOTE", "LOGISTICS_NOTE", "STAGE_FA",
         "PROGRESS", "HS_SUGGESTED", "HS_KEYWORD", "KEY_EMP"]]
 
+    positions = {}
+    if isinstance(material_positions, pd.DataFrame) and not material_positions.empty:
+        for _, item in material_positions.iterrows():
+            positions[(str(item.get("KEY_ORDER", "")), str(item.get("KEY_MATERIAL", "")))] = item
+    extra_cols = ["MOGH_MATERIAL_DESCS_ALL", "EXPERT_RECORD_GAPS",
+                  "SUPPLY_POSITION_STATUS", "SUPPLY_TOTAL_CONFIRMED",
+                  "SUPPLY_TOTAL_LOWER_BOUND", "SUPPLY_POSITION_GAPS"]
+
     numeric = {11, 12, 13, 14, 15, 16, 17, 26}
     currency_cols = {12, 13, 14}
     r = 2
@@ -519,6 +530,10 @@ def _build_order_lines(self, lines: "pd.DataFrame") -> None:
         cancelled = bool(row.get(p + "EXCLUDED_FROM_KPI", False))
         for i, key in enumerate(cols, start=1):
             ws.cell(row=r, column=i, value=self._cell_value(row.get(key, "")))
+        position = positions.get((str(row.get("KEY_ORDER", "")), str(row.get("KEY_MATERIAL", ""))), {})
+        for i, key in enumerate(extra_cols, start=len(cols) + 1):
+            value = position.get(key, "")
+            ws.cell(row=r, column=i, value="" if pd.isna(value) else self._cell_value(value))
         fill = (P.CRITICAL_FILL if cancelled else
                 dx.SUSPECT_FILL if suspect else P.GREEN_L4)
         self._style_row(ws, r, len(headers), fill)
@@ -745,20 +760,20 @@ def _build_criticality(self, df: "pd.DataFrame") -> None:
 ExcelDashboardBuilder.build_criticality = _build_criticality
 
 
-SHEET_PROCESS = "۱۰. نقشه فرآیند و گلوگاه"
+SHEET_PROCESS = "۱۰. نقشه فرآیند و گلوگاه"  # شناسهٔ سازگار با فایل‌های قبلی؛ محتوای شیت توضیح زمان توصیفی است
 
 
 def _build_process(self, extras: dict, stage_map: "pd.DataFrame") -> None:
     """شیت فرآیندی — نگاه علّی به‌جای نگاه وضعیتی.
 
-    سه بخش: نقشه مرحله‌ها (ورودی/خروجی هر گام)، گلوگاه‌ها (طولانی‌ترین فاصله
+    سه بخش: نقشه مرحله‌ها (ورودی/خروجی هر گام)، زمان گذارها (فاصله
     میان دو فعالیت متوالی)، و مسیرهای فرآیند (variants) با سهم هرکدام.
     """
     ws = self._new_sheet(SHEET_PROCESS)
     for col, w in zip("ABCDEF", (34, 34, 18, 16, 16, 60)):
         ws.column_dimensions[col].width = w
 
-    ws["A1"] = "🔄 تحلیل فرآیندی — کجا زمان از دست می‌رود"
+    ws["A1"] = "🔄 تحلیل فرآیندی — زمان مشاهده‌شده و شواهد"
     ws["A1"].font = P.font_title(14)
     ws.merge_cells("A1:F1")
     r = 3
@@ -790,13 +805,18 @@ def _build_process(self, extras: dict, stage_map: "pd.DataFrame") -> None:
             rr += 1
         return rr + 2
 
-    # ── ۱) گلوگاه‌ها ──
-    r = section("۱) گلوگاه‌های فرآیند — میانگین فاصله میان دو فعالیت متوالی", r)
+    # ── ۱) فاصلهٔ زمانی، بدون داوری میان زیرسیستم‌ها ──
+    r = section("۱) زمان گذارها به تفکیک حوزه — صرفاً توصیفی؛ سنجش گلوگاه نیازمند مهلت همان حوزه است", r)
     bn = extras.get("bottlenecks")
-    r = table(bn, r, highlight_first=True)
+    if isinstance(bn, pd.DataFrame):
+        from .transition_context import annotate_transitions
+        bn = annotate_transitions(bn)
+        if not bn.empty and "میانه روز" in bn.columns:
+            bn = bn.sort_values(["حوزه فرایندی", "میانه روز"], ascending=[True, False])
+    r = table(bn, r)
 
     # ── ۲) مسیرهای فرآیند ──
-    r = section("۲) مسیرهای طی‌شده (Variants) — هرچه بیشتر، فرآیند بی‌انضباط‌تر", r)
+    r = section("۲) مسیرهای طی‌شده (Variants) — تنوع مسیر بدون داوری کیفیت", r)
     var = extras.get("variants")
     if var is not None and not var.empty:
         var = var.head(20)
@@ -995,7 +1015,7 @@ ExcelDashboardBuilder.build_insight = _insight_impl
 ExcelDashboardBuilder.build_material = _material_impl
 
 
-def _build_supply_views(self, df) -> None:
+def _build_supply_views(self, df, material_positions=None) -> None:
     """شیت‌های ۱۴ تا ۱۶ — «کجا / کِی / دست کیست».
 
     نسخه ۲۶٫۹ این کار را با وصله زدن به ``save()`` انجام می‌داد: یک کپی
@@ -1005,7 +1025,7 @@ def _build_supply_views(self, df) -> None:
     حالا مرحله‌ای صریح در خط لوله است و شکستش گزارش را زمین نمی‌زند.
     """
     try:
-        write_supply_sheets(self.wb, df)
+        write_supply_sheets(self.wb, df, material_positions)
         log.info(f"📄 شیت‌های «{'» و «'.join(SUPPLY_SHEETS)}» ساخته شد.")
     except Exception as ex:      # noqa: BLE001 — گزارش رسمی نباید قربانی شود
         log.warning(f"⚠️ نماهای تأمین ساخته نشد ({type(ex).__name__}: {ex}) — "

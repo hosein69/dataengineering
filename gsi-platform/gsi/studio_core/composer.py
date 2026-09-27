@@ -29,7 +29,7 @@ BLOCKS: Dict[str, str] = {
 PROCESS_VIEWS: Dict[str, str] = {
     "flow_map": "نقشه جریان فرآیند و WIP",
     "stage_aging": "Aging مراحل / زمان انتظار جاری",
-    "bottleneck": "رتبه‌بندی گلوگاه گذارها",
+    "bottleneck": "زمان گذارها به تفکیک حوزه",
     "transition_heatmap": "Heatmap گذارها",
     "variants": "Variant Explorer",
     "conformance": "Conformance / انحراف فرآیند",

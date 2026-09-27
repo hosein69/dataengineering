@@ -1,5 +1,5 @@
 {
-  "snapshot_date": "2026-09-24",
+  "snapshot_date": "2026-09-27",
   "sources": [
     {
       "id": "SRC-CBI-FX-INDEX",
@@ -48,6 +48,30 @@
       "url": "https://epl.ir/",
       "observed": "ACCESS_INCOMPLETE",
       "notes": "No unseen web text used as legal oracle."
+    },
+    {
+      "id": "SRC-ICC-INCOTERMS-2020",
+      "authority": "OFFICIAL_PRIMARY",
+      "title": "ICC Incoterms rules",
+      "url": "https://iccwbo.org/business-solutions/incoterms-rules/",
+      "observed": true,
+      "notes": "Buyer/seller task, cost and risk allocation; not a case-level ownership verdict."
+    },
+    {
+      "id": "SRC-IMO-FAL",
+      "authority": "OFFICIAL_PRIMARY",
+      "title": "IMO FAL Convention",
+      "url": "https://www.imo.org/en/about/conventions/pages/convention-on-facilitation-of-international-maritime-traffic-(fal).aspx",
+      "observed": true,
+      "notes": "International framework for electronic arrival data; no assertion about an EPL case."
+    },
+    {
+      "id": "SRC-UNCTAD-DD",
+      "authority": "INTERGOVERNMENTAL",
+      "title": "UNCTAD Demurrage and Detention Charges in Container Shipping",
+      "url": "https://unctad.org/news/demurrage-and-detention-charges-container-shipping",
+      "observed": "SEARCH_RESULT",
+      "notes": "Terminology only; contractual free time and charges require actual case documents."
     }
   ]
 }

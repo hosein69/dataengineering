@@ -44,6 +44,7 @@ class FxObligationTests(unittest.TestCase):
                 marts.stage(frame(alloc), "ntsw", "Allocation", fid)
             if commit is not None:
                 marts.stage(frame(commit), "ntsw", "Release Commitment", fid)
+        self.wh.publish(rid)
         return fid
 
     def test_matched_registration_closes_the_chain(self):

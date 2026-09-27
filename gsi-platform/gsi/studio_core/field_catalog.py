@@ -36,6 +36,11 @@ COMPUTED_LABELS: Dict[str, str] = {
     "CANONICAL_BL": "شماره بارنامه", "CANONICAL_ORDER": "شماره سفارش",
     "CANONICAL_PART_NO": "شماره فنی", "CANONICAL_GOODS_DESC": "شرح کالا",
     "CANONICAL_EXPERT": "کارشناس مالک مرحله فعلی", "CANONICAL_REG": "ثبت سفارش",
+    # preserved Commercial Expert material lineage at ORDER grain
+    "MOGH_MATERIALS_ALL": "همه کدهای متریال ثبت‌شده کارشناسان در سفارش",
+    "MOGH_KEY_MATERIAL_COUNT": "تعداد کدهای متریال کارشناسان در سفارش",
+    "MOGH_MATERIAL_DESCS_ALL": "همه شرح‌های ثبت‌شده کارشناسان در سفارش",
+    "MOGH_MATERIAL_DESC_COUNT": "تعداد شرح‌های کارشناسان در سفارش",
     # نقش‌های کارشناسی — هر نقش مستقل، بدون سرریز به نقش دیگر
     "EXPERT_ROLE": "نقش کارشناس مالک",
     "EXPERT_BUYER": "کارشناس خرید خارجی",

@@ -22,6 +22,8 @@ _DEFAULTS = {
     "dashboard_widgets": ["my_actions", "deadlines", "allocation_queue", "inventory_position"],
     "email_widgets": ["my_actions", "deadlines", "critical_cases", "inventory_position"],
 }
+_HR_AUDIENCE = {"expert": "expert", "head": "manager",
+                "manager": "manager", "vice": "executive"}
 
 
 def _valid(k, v):
@@ -58,6 +60,10 @@ class PersonalWorkspace:
         """
         saved = self.store.namespace("preferences")
         prefs = {**deepcopy(_DEFAULTS), **{k: v for k, v in saved.items() if _valid(k, v)}}
+        snapshot = self.store.current_snapshot()
+        hr_level = (snapshot.get("hr_scope") or {}).get("level") if isinstance(snapshot, dict) else None
+        if hr_level in _HR_AUDIENCE:
+            prefs["audience"] = _HR_AUDIENCE[hr_level]
         profile = _audience.get(str(prefs.get("audience") or ""))
         prefs["audience"] = profile.key
         prefs["max_findings"] = int(profile.max_findings)
@@ -68,7 +74,12 @@ class PersonalWorkspace:
         return prefs
 
     def save_preferences(self, values: Mapping[str, Any]) -> Dict[str, Any]:
+        # HR publication owns the organizational level; keep the legacy local
+        # profile selector only for snapshots without an HR scope.
+        current = self.store.current_snapshot()
         allowed = set(_DEFAULTS)
+        if isinstance(current, dict) and current.get("hr_scope"):
+            allowed.remove("audience")
         clean = {k: v for k, v in values.items() if k in allowed}
         if any(not _valid(k, v) for k, v in clean.items()):
             raise ValueError("تنظیمات انتخاب‌شده معتبر نیست.")

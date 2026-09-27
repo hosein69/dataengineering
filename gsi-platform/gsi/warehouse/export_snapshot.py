@@ -7,6 +7,7 @@ safe to use while Streamlit is open because it only hydrates the published mart.
 from __future__ import annotations
 from pathlib import Path
 from datetime import date
+import pandas as pd
 
 
 def export_published_snapshot(output_path=None, ref_date=None, max_rows=200000):
@@ -36,10 +37,51 @@ def export_published_snapshot(output_path=None, ref_date=None, max_rows=200000):
             process_tables[key] = value
     modules = ["criticality", "case_alerts", "resistance", "commitment",
                "org", "expert", "process", "table"]
-    return build_custom_excel(
+    built = build_custom_excel(
         data, output_path, modules, published_ref, max_rows=int(max_rows),
         selected_fields=list(data.columns), process_tables=process_tables,
         allow_official_overwrite=False)
+
+    # The published flat mart is ORDER/BL oriented.  Preserve the independently
+    # published Order×Material expert ledger as a separate sheet so the explicit
+    # snapshot export cannot silently lose sibling materials/descriptions.
+    try:
+        positions = extras.get("expert_material_positions")
+    except Exception:
+        positions = None
+    if positions is not None:
+        from ..report.supply_views import build_expert_material_evidence_view
+        evidence = build_expert_material_evidence_view(positions)
+        if not evidence.empty:
+            from openpyxl import load_workbook
+            from openpyxl.styles import Font, Alignment, PatternFill
+            from openpyxl.utils import get_column_letter
+            from openpyxl.worksheet.table import Table, TableStyleInfo
+            wb = load_workbook(built)
+            name = "Material Evidence"
+            if name in wb.sheetnames:
+                del wb[name]
+            ws = wb.create_sheet(name)
+            ws.sheet_view.rightToLeft = True
+            for j, h in enumerate(evidence.columns, 1):
+                c = ws.cell(1, j, h)
+                c.font = Font(name="IRANSans Light", size=10, bold=True, color="FFFFFF")
+                c.fill = PatternFill("solid", fgColor="0B1F33")
+                c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            for i, row in enumerate(evidence.itertuples(index=False, name=None), 2):
+                for j, v in enumerate(row, 1):
+                    ws.cell(i, j, None if pd.isna(v) else v).alignment = Alignment(vertical="center", wrap_text=True)
+            ws.freeze_panes = "A2"
+            end = len(evidence) + 1
+            ref = f"A1:{get_column_letter(len(evidence.columns))}{end}"
+            tab = Table(displayName="PublishedExpertMaterialEvidence", ref=ref)
+            tab.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+            ws.add_table(tab)
+            for j in range(1, len(evidence.columns) + 1):
+                sample = [str(ws.cell(r, j).value or "") for r in range(1, min(end, 40) + 1)]
+                ws.column_dimensions[get_column_letter(j)].width = min(max(max(map(len, sample)) + 2, 12), 42)
+            wb.save(built)
+    return built
 
 
 def main(argv=None):

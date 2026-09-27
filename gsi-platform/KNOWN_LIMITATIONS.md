@@ -1,4 +1,70 @@
-# Current release: GSI 29.15.1 — 2026-09-27
+# Current release: GSI 29.15.8 — 2026-09-27
+
+- The shipping tab is computed on the current published and filtered main mart;
+  it does not reconstruct omitted BLs or certify transport performance.
+  Booking, hub events, switch B/L audit, free time, actual charges and ETA
+  revision logs are absent. DO_DATE is receipt date, not request/issue/payment.
+  A dossier with conflicting dates suppresses that interval and exposes the gap.
+
+- Transition durations are observations, not proof of a bottleneck or an SLA
+  breach. No cross-domain bottleneck percentage or ranking is certified.
+  Settlement due status is case specific in the FX stage timeline; missing or
+  unverified deadlines require review under that subsystem's rules.
+
+- The feedback workbook compares a reconstructed old flat-material visibility
+  proxy against the new material ledger on the same published run. It is not a
+  byte-for-byte historical old-version run. Reviewer sufficiency is subjective;
+  observed success cohorts are descriptive and cannot establish causal uplift
+  without prospective comparable/randomized assignment and verified outcomes.
+- The shareable JSON contains aggregate counts only; the local Excel review
+  file contains order/material identifiers and must remain within the user's
+  authorized environment. No percentage is invented when outcomes are absent.
+
+- The main flat mart remains at order/BL grain and cannot carry every material
+  as a separate main row without multiplying unrelated financial amounts.
+  A separate expert ORDER×MATERIAL ledger is published and shown in Studio and
+  the official Excel line sheet. Missing expert fields do not suppress its
+  witnessed components; complete stock stays unknown until all five buckets
+  are witnessed. Oracle stock repeated across different orders is not additive.
+- Real Commercial Expert/Oracle workbook reconciliation and end-to-end Windows
+  acceptance are pending. Description variants in an order containing several
+  materials are shown at order level, never assigned to its first material.
+
+- Role mail has no real-HR/Classic-Outlook acceptance in this environment. Only
+  seven roles with explicit `EXPERT_*` owner columns are supported; transport
+  needs its own proven source and role mapping. It sends actionable cases for
+  the current owner only, never fabricates a task for every HR person.
+- A missing, inactive or ambiguous HR owner/CC, or a stale HR snapshot, blocks
+  the corresponding message. A partial batch cannot be sent. Sending requires
+  Windows Classic Outlook, a configured mailbox and an explicit action; a
+  scheduled command may be used after an operator validates it. Reserved but
+  uncertain deliveries need manual reconciliation before any retry.
+
+- HR scopes are exact and conservative: duplicated names/codes, inactive people,
+  or multiple vice holders for one vice unit cannot expand a team view. Real HR
+  roster reconciliation and SMB/Windows acceptance remain required. An absent
+  leader link can omit a subordinate until HR fixes the source.
+- The personal workspace now uses an HR-derived four-level presentation. The
+  Streamlit visual pass could not be measured in this environment (Streamlit and
+  a browser runtime were unavailable); a 9/10 usability score is a target,
+  not a tested claim.
+
+- Legacy FX obligation `chain()` and `coverage()` now use the published NTSW
+  file set, with an explicit `run_id` for historical inspection. They return
+  no archive-derived decision when nothing is published. Multiple distinct
+  commitment balances inside one published run still require a separate
+  business rule for selecting a current balance; do not interpret an arbitrary
+  row of the chain as an approved aggregate.
+- Eight further derived financial inputs retain missing evidence as missing,
+  with `*_IS_UNKNOWN` flags. Consumers of these fields must be checked on real
+  workbooks before operational sign-off. No official regulation was changed.
+- The historical F023 and F028 bullet points further below describe findings
+  from an earlier release. Current code scopes obligation totals by published
+  file set and reads every contracted clearance sheet; real workbook acceptance
+  remains outstanding.
+- Validation in this environment: 3 new financial tests, 8 legacy obligation
+  tests and 61 core validation checks passed. The full claimed suite could not
+  be rerun here because `pytest` is unavailable.
 
 **A/B-driven fixes** (29.14.0 ↔ 29.15.0 on identical inputs; `docs/AB_TEST_29_15_1_FA.md`). Still open:
 - `EUR_VALUE`, `DUTY_AMOUNT` and `CREDIT_*` are still derived with a 0 default for unknown, the same

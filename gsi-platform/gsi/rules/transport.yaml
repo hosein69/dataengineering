@@ -2,9 +2,51 @@
 #  حمل و نقل بین‌المللی: روش‌ها، اسناد و کانتینر
 # ═══════════════════════════════════════════════════════════════════════════
 pack: transport
-version: "1.0"
-status: verified
-updated_at: "2026-08-31"
+version: "1.1"
+status: internal
+updated_at: "2026-09-27"
+
+# قرارداد سنجش حمل با شواهد موجود؛ نه استاندارد قانونی یا SLA سازمانی.
+# typical_transit_days قدیمی صرفاً مقدار نمونهٔ تاریخی کاتالوگ است و
+# هیچ‌کدام برای نمره‌دهی، کشف مقصر یا هشدار خودکار استفاده نمی‌شوند.
+operational_analysis:
+  status: internal
+  evidence_grain: CANONICAL_BL
+  primary_population: Commercial Expert Data
+  secondary_logistics_evidence: BLs Tracking
+  measured_intervals:
+    - code: ARRIVAL_TO_DO_RECEIVED
+      start: ARRIVAL_DATE
+      end: DO_DATE
+      fa: "ورود تا دریافت ترخیصیه؛ فاصله مشترک، نه زمان عملکرد حمل"
+      attribution: unknown_without_notice_request_payment_timestamps
+    - code: DISCHARGE_TO_DO_RECEIVED
+      start: DISCHARGE_DATE
+      end: DO_DATE
+      fa: "تخلیه تا دریافت ترخیصیه؛ فاصله توصیفی"
+      attribution: unknown_without_notice_request_payment_timestamps
+    - code: DISCHARGE_TO_CUSTOMS_DECLARATION
+      start: DISCHARGE_DATE
+      end: COT_DATE
+      fa: "تخلیه تا ثبت کوتاژ؛ گذار مشترک گمرک/اسناد/حمل"
+      attribution: cross_domain
+  missing_for_performance_score:
+    - cargo_ready_at
+    - booking_confirmed_at
+    - hub_arrival_departure_and_switch_bl_audit
+    - arrival_notice_and_do_request_payment_issued_at
+    - contracted_free_time_and_container_return_at
+    - freight_quote_invoice_and_contract_currency
+    - eta_revision_and_notification_audit
+    - verified_owner_and_incoterm
+  assessment: "مدت خام و نبود سند، تقصیر حمل را ثابت نمی‌کند؛ برای علت و مسئول، شاهد پرونده و قرارداد لازم است."
+  source_refs:
+    - "https://iccwbo.org/business-solutions/incoterms-rules/"
+    - "https://www.imo.org/en/about/conventions/pages/convention-on-facilitation-of-international-maritime-traffic-(fal).aspx"
+    - "https://unctad.org/news/demurrage-and-detention-charges-container-shipping"
+  source_checked_on: "2026-09-27"
+  iran_local_rule_status: needs_verification
+  note: "منابع بین‌المللی مسئولیت و تعریف را توضیح می‌دهند؛ انطباق EPL/تعرفه/مهلت ایران از آنها استنتاج نمی‌شود."
 
 modes:
   - code: SEA

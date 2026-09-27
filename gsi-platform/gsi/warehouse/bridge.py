@@ -69,8 +69,11 @@ def run_pipeline(pipeline,build_report,version):
             wh.audit('report_run',{'rows':len(result.df),'report':result.dashboard_path})
 
             # SQLite checks run after DWH mutation; record the complete gate again.
+            _sqlite_t = time.perf_counter()
+            log.info("🔎 [sqlite-checks] START | foreign_key_check + integrity_check")
             with wh.db() as c:
                 checks.extend(sqlite_checks(c))
+            log.info(f"🔎 [sqlite-checks] DONE {time.perf_counter()-_sqlite_t:.2f}s")
             _t=time.perf_counter(); log.info("🛡️ [quality-gate] START")
             wh.record_quality(rid,checks)
             gate=evaluate(checks)

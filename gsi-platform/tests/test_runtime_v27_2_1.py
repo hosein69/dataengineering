@@ -7,7 +7,7 @@ from gsi.studio_core.runtime_data import bottleneck_view,resistance_diagnostic
 class RuntimeFixTests(unittest.TestCase):
  def test_new_median(self):
   b,m=bottleneck_view(pd.DataFrame({'از فعالیت':['A','B'],'به فعالیت':['B','C'],'میانه روز':[2,7]}))
-  self.assertEqual(m,'میانه روز');self.assertEqual(b[m].tolist(),[7,2])
+  self.assertEqual(m,'میانه روز');self.assertEqual(sorted(b[m].tolist()),[2,7])
  def test_legacy_mean(self):
   b,m=bottleneck_view(pd.DataFrame({'از فعالیت':['A'],'به فعالیت':['B'],'میانگین روز':[3]}))
   self.assertEqual(m,'میانگین روز');self.assertEqual(len(b),1)

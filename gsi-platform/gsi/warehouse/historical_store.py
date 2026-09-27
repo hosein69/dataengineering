@@ -868,6 +868,10 @@ class Warehouse:
         bn = pd.read_sql_query("""SELECT from_activity AS 'از فعالیت',to_activity AS 'به فعالیت',ROUND(AVG(wait_days),1) AS 'میانگین روز',
             ROUND(MAX(wait_days),1) AS 'بیشینه روز',COUNT(*) AS 'تعداد',COUNT(DISTINCT case_key) AS 'تعداد پرونده'
             FROM fact_transition_snapshot WHERE run_id=? GROUP BY from_activity,to_activity ORDER BY AVG(wait_days) DESC""", con, params=(rid,))
+        from gsi.report.transition_context import annotate_transitions
+        bn = annotate_transitions(bn)
+        if not bn.empty:
+            bn = bn.sort_values(["حوزه فرایندی", "میانگین روز"], ascending=[True, False])
         var = pd.read_sql_query("""SELECT variant AS VARIANT,COUNT(*) AS 'تعداد پرونده',ROUND(AVG(throughput_days),1) AS 'میانگین throughput'
             FROM fact_case_process_snapshot WHERE run_id=? GROUP BY variant ORDER BY COUNT(*) DESC""", con, params=(rid,))
         if not var.empty:
@@ -920,13 +924,15 @@ class Warehouse:
             clauses.append("org_unit=?"); params.append(org_unit)
         if resource:
             clauses.append("resource=?"); params.append(resource)
-        params.append(int(limit))
         sql=f"""SELECT from_activity AS 'از فعالیت',to_activity AS 'به فعالیت',ROUND(AVG(wait_days),2) AS 'میانگین روز',
                  ROUND(MAX(wait_days),2) AS 'بیشینه روز',COUNT(DISTINCT case_key) AS 'پرونده',COUNT(*) AS 'transition'
                  FROM fact_transition_snapshot WHERE {' AND '.join(clauses)} GROUP BY from_activity,to_activity
-                 ORDER BY AVG(wait_days) DESC LIMIT ?"""
+                 ORDER BY from_activity,to_activity"""
         with self.transaction() as con:
-            return pd.read_sql_query(sql,con,params=params)
+            from gsi.report.transition_context import annotate_transitions
+            measured = annotate_transitions(pd.read_sql_query(sql,con,params=params))
+            return measured.sort_values(["حوزه فرایندی", "میانگین روز"],
+                                        ascending=[True, False]).head(max(0, int(limit))).reset_index(drop=True)
 
     def source_lineage(self, run_id: str | None = None) -> pd.DataFrame:
         meta=self.latest_run() if not run_id else {"run_id":run_id}

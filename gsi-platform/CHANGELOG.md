@@ -1,3 +1,9 @@
+# GSI 29.15.9 — Material output propagation — 2026-09-27
+
+The dedicated Commercial Expert `Order×Material` ledger now reaches every intended output surface without being promoted to operational authority. The official matrix exposes all expert material codes/descriptions, Excel sheet 14 appends a separately labelled filterable evidence table, standalone HTML renders the same evidence ledger, and explicit Published Snapshot export appends `Material Evidence`. Operational position/owner/BL state remains derived only from operational/independent sources; financial and regulatory semantics are unchanged. Validation and the real-data limitation are documented in `docs/MATERIAL_OUTPUT_29_15_9_FA.md`.
+
+---
+
 # GSI 29.15.1 — A/B test 29.14.0 ↔ 29.15.0; six bugs, each with the smallest fix — 2026-09-27
 
 Both packages, each from its own release ZIP, ran on byte-identical inputs

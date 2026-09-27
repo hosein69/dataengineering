@@ -549,9 +549,9 @@ if _HAS_PLOTLY:
         from gsi.studio_core.runtime_data import bottleneck_view
         b, metric = bottleneck_view(bott, limit=10)
         if not b.empty:
-            b["گذار"] = b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str)
+            b["گذار"] = b["حوزه فرایندی"].astype(str) + " | " + b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str)
             fig = px.bar(b, x=metric, y="گذار", orientation="h",
-                         title="گلوگاه‌های فرآیند", color_discrete_sequence=[AQUA])
+                         title="زمان مشاهده‌شدهٔ گذارها به تفکیک حوزه (بدون داوری گلوگاه)", color_discrete_sequence=[AQUA])
             fig.update_layout(plot_bgcolor="rgba(0,0,0,0)",
                               paper_bgcolor="rgba(0,0,0,0)", height=480,
                               font=dict(family="IRANSans Light"))
@@ -608,6 +608,10 @@ e2.download_button("دانلود داده فیلترشده", buf.getvalue(),
 
 
 # HTML مستقل و تعاملی: همان فیلترها + نمودار + Process Explorer + Excel فیلترشده
+try:
+    _expert_material_positions = data["extras"].get("expert_material_positions")
+except Exception:
+    _expert_material_positions = None
 html = build_dynamic_html(
     df, ref_date, title="GSI — مغز شناختی لجستیک",
     selected_fields=show, max_rows=max(10000, len(df)),
@@ -615,7 +619,7 @@ html = build_dynamic_html(
     template_title="Executive Process Investigation",
     subtitle=f"{len(df):,} ردیف پس از فیلتر",
     charts=["criticality", "low_resistance", "stock_vs_total", "risk_mix", "org_workload"],
-    process_extras=data["extras"], audience=_aud_key)
+    process_extras=data["extras"], material_supply_view=_expert_material_positions, audience=_aud_key)
 e3.download_button(f"⬇ دانلود HTML — نمای {_aud_labels[_aud_key]}", html.encode("utf-8"),
                    file_name=f"GSI_{ref_date}_{_aud_key}.html", mime="text/html",
                    width="stretch")

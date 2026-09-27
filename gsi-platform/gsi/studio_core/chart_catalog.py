@@ -35,7 +35,7 @@ _SPECS = [
     ChartSpec("expert_workload", "بار کاری کارشناسان", "سازمان", "bar", "بار عملیاتی روی کدام کارشناسان است؟", ("CANONICAL_EXPERT",)),
     ChartSpec("transport_mix", "ترکیب شیوه حمل", "حمل و لجستیک", "donut", "سبد حمل چگونه توزیع شده است؟", ("TRANSPORT_MODE",)),
     ChartSpec("stage_distribution", "توزیع مرحله فعلی پرونده‌ها", "فرآیند", "bar", "پرونده‌ها اکنون در کدام مرحله متوقف‌اند؟", ("STAGE_FA","ORDER_STAGE_FA","LIFECYCLE_STAGE")),
-    ChartSpec("bottlenecks", "گلوگاه فرآیند / وضعیت جایگزین", "فرآیند", "bar", "کدام گذار بیشترین انتظار را دارد؟", ("STAGE_FA","ORDER_STAGE_FA")),
+    ChartSpec("bottlenecks", "زمان گذارها / وضعیت جایگزین", "فرآیند", "bar", "زمان ثبت‌شدهٔ گذارها در هر حوزه چقدر است؟", ("STAGE_FA","ORDER_STAGE_FA")),
     ChartSpec("top_orders", "سفارش‌های دارای بیشترین اقلام/پرونده", "تأمین", "bar", "تمرکز عملیات روی کدام سفارش‌هاست؟", ("CANONICAL_ORDER",)),
     ChartSpec("top_bl", "بارنامه‌های دارای بیشترین اقلام/پرونده", "حمل و لجستیک", "bar", "کدام بارنامه‌ها بیشترین درگیری عملیاتی دارند؟", ("CANONICAL_BL",)),
     ChartSpec("supplier_mix", "تمرکز تأمین‌کنندگان", "تأمین", "bar", "ریسک تمرکز تأمین روی کدام Vendor/Supplier است؟", ("SUPPLIER","VENDOR_CODE","MFR_VENDOR_CODE")),

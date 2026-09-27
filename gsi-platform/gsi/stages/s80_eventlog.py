@@ -61,6 +61,7 @@ from ..config.settings import SETTINGS
 from ..core.jalali import CalendarEngine
 from ..core.text import is_empty_val
 from ..dataio.logging_setup import log
+from ..report.transition_context import annotate_transitions
 from .base import (ColumnSpec, GROUP_ANALYTIC, PipelineContext, Stage, register)
 
 #: (ستون تاریخ, نام انگلیسی فعالیت, نام فارسی, عدد ترتیب, مرحله چرخه عمر)
@@ -349,7 +350,7 @@ class EventLogStage(Stage):
                 rows.append({"_CASE_KEY": case, "از فعالیت": a, "به فعالیت": b,
                              "روز": (g.loc[i + 1, "EVENTTIME"] - g.loc[i, "EVENTTIME"]).days})
         if not rows:
-            return pd.DataFrame(columns=cols)
+            return annotate_transitions(pd.DataFrame(columns=cols))
         t = pd.DataFrame(rows)
         out = (t.groupby(["از فعالیت", "به فعالیت"], as_index=False)
                  .agg(**{"میانه روز": ("روز", "median"),
@@ -358,7 +359,9 @@ class EventLogStage(Stage):
                          "تعداد پرونده": ("_CASE_KEY", "nunique")}))
         for c in ("میانه روز", "صدک ۹۰ روز"):
             out[c] = out[c].round(1)
-        return out.sort_values("میانه روز", ascending=False).reset_index(drop=True)
+        return annotate_transitions(out).sort_values(
+            ["حوزه فرایندی", "میانه روز"], ascending=[True, False]
+        ).reset_index(drop=True)
 
     @staticmethod
     def _variants(cases: pd.DataFrame) -> pd.DataFrame:

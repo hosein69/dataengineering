@@ -320,14 +320,14 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
 
     st.markdown("---")
 
-    # ── ۱) گلوگاه گذارها (تمام‌عرض — نام گذار طولانی است) ──
+    # ── ۱) زمان گذارها؛ داوری گلوگاه نیازمند مبنای همان حوزه است ──
     with st.container(border=True):
-        st.markdown("##### ⛓ گلوگاه گذارها")
-        st.caption("مدت بین دو فعالیت پیاپی، با شاخص اعلام‌شده روی نمودار. "
-                   "بلندترین میله، کندترین گذار فرآیند است.")
+        st.markdown("##### ⛓ زمان مشاهده‌شدهٔ گذارها")
+        st.caption("گروه‌بندی بر اساس حوزه است. بلندی میله به‌تنهایی گلوگاه یا نقض مهلت را ثابت نمی‌کند؛ "
+                   "رفع تعهد باید با مهلت و شواهد پروندهٔ خودش سنجیده شود.")
         b, metric = bottleneck_view(bott)
         if not b.empty and HAS_PLOTLY:
-            full = (b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str))
+            full = (b["حوزه فرایندی"].astype(str) + " | " + b["از فعالیت"].astype(str) + " ← " + b["به فعالیت"].astype(str))
             lbl = full.map(lambda t: short(t, 34))
             avg = b[metric]
             fig = _bar(lbl, avg, full, metric,
@@ -336,8 +336,8 @@ def render(extras: Dict, fdf: pd.DataFrame) -> None:
                 color=avg, colorscale=[[0, SEQUENTIAL[1]], [1, SEQUENTIAL[-1]]],
                 line=dict(color=SURFACE, width=2), showscale=False))
             st.plotly_chart(fig, width="stretch")
-            with st.expander("جدول گلوگاه‌ها"):
-                st.dataframe(bott, width="stretch", hide_index=True)
+            with st.expander("جدول زمان گذارها و مبنای قضاوت"):
+                st.dataframe(b, width="stretch", hide_index=True)
         else:
             _empty("گذار قابل اندازه‌گیری‌ای ثبت نشده است.")
 

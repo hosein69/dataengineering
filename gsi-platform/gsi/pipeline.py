@@ -370,6 +370,14 @@ class Pipeline:
                              part.counts, self.resolver.audit_df(),
                              extras=self.ctx.extras,
                              mogh_lines=lines if lines is not None else pd.DataFrame())
+        # Source-grain material calculations retain every expert order/material,
+        # including rows with missing PR/date/vendor/PI. The flat order mart
+        # cannot represent several materials without assigning the first one's
+        # numbers to its siblings.
+        from .report.expert_material import build_expert_material_positions
+        res.extras["expert_material_positions"] = build_expert_material_positions(
+            res.mogh_lines, self._sheet("moghavemat", "inventory"),
+            self._sheet("oracle", "main"))
         from .warehouse.bridge import persist_result,report_metadata
         persist_result(res)
 
@@ -438,7 +446,7 @@ class Pipeline:
         # قرارداد Workbook ثابت 17 شیت است. حتی اگر سورس اختیاری
         # Commercial Expert Data در دسترس نباشد، شیت 7 باید به‌صورت
         # empty-state باقی بماند تا شماره‌گذاری/قرارداد خروجی تغییر نکند.
-        b.build_order_lines(res.mogh_lines)
+        b.build_order_lines(res.mogh_lines, res.extras.get("expert_material_positions"))
         b.build_rulebook_sheet(self.rb)
         b.build_criticality(main)
         b.build_process(res.extras, describe(self.stages))
@@ -446,7 +454,7 @@ class Pipeline:
         b.build_charts(main, res.extras)
         b.build_insight(main)
         b.build_material(main)
-        b.build_supply_views(main)
+        b.build_supply_views(main, res.extras.get("expert_material_positions"))
         b.build_system_health()
         return b.save()
 

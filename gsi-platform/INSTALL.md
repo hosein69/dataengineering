@@ -1,4 +1,4 @@
-# نصب و راه‌اندازی GSI 29.15.1
+# نصب و راه‌اندازی GSI 29.15.8
 
 > راهنمای قدیمی (مهاجرت از نسخه ۲۰) در `docs/history/INSTALL_V29_8_2.md` حفظ شده است.
 
@@ -52,6 +52,14 @@ launcherها ابتدا به ریشه بسته `cd` می‌کنند. این فا
 | `GSI_TODAY` | تاریخ Snapshot منتشرشده | تاریخ مرجع؛ شمسی (`1405/06/09`) یا میلادی |
 | `GSI_RULES_DIR` | `gsi/rules` | کتابخانه قوانین بیرونی بدون نصب مجدد |
 | `GSI_FOREIGN`، `GSI_BLS`، … | مسیرهای شبکه IKCO | در `OPS\GSI_ENV.cmd` |
+
+## ایمیل اختصاصی بر اساس HR
+
+بعد از انتشار گزارش، `pywin32` و Classic Outlook را روی Windows آماده کنید و
+`python -m gsi role-mail-ui` را اجرا کنید. برای پیش‌نمایش بدون Outlook از
+`python -m gsi role-mail --preview` استفاده کنید؛ فرمان بدون `--send` Draft
+می‌سازد. راهنمای نگاشت To/CC، ارسال صریح و زمان‌بندی در
+`docs/ROLE_MAIL_29_15_4_FA.md` است.
 
 ## بررسی سلامت نصب
 

@@ -106,7 +106,7 @@ def render(warehouse, current_df: Optional[pd.DataFrame] = None, current_run_id:
         expert=c2.selectbox("کارشناس", [""]+experts, key="wh_expert")
         bn=warehouse.process_bottlenecks(run_id=current_run_id, org_unit=org or None, resource=expert or None, limit=100)
         st.dataframe(bn, width="stretch", hide_index=True)
-        st.caption("این جدول مستقیم از fact_transition_snapshot محاسبه می‌شود؛ هر سطر فاصله واقعی دو Event متوالی در یک CASE است.")
+        st.caption("زمان‌های گذار از fact_transition_snapshot و در حوزه‌های جدا گزارش می‌شوند؛ میانگین خام گلوگاه نیست. رفع تعهد با مهلت و شاهد پروندهٔ مالی سنجیده می‌شود.")
 
     with t5:
         logs=warehouse.audit_entries(300)

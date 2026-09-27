@@ -10,7 +10,10 @@ def bottleneck_view(frame, limit=12):
     result=frame.copy()
     result[label]=pd.to_numeric(result[label],errors='coerce')
     result=result.loc[np.isfinite(result[label]) & result[label].ge(0)]
-    return result.sort_values(label,ascending=False).head(limit),label
+    # Grouping is for navigation only: the bar lengths have no cross-domain rank.
+    from gsi.report.transition_context import annotate_transitions
+    result=annotate_transitions(result)
+    return result.sort_values(['حوزه فرایندی',label],ascending=[True,False]).head(limit),label
 
 
 def _numeric_from(frame, *candidates):

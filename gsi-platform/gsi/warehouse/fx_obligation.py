@@ -50,11 +50,16 @@ def _key(v: Any) -> str:
     return "" if t.lower() in _NOT_A_KEY else t
 
 
-def _records(wh: Warehouse) -> List[Dict[str, Any]]:
+def _records(wh: Warehouse, run_id: Optional[str] = None) -> List[Dict[str, Any]]:
     with wh.db() as c:
+        ids, _ = _scoped_file_ids(c, run_id)
+        if not ids:
+            return []
+        marks = ",".join("?" * len(ids))
         rows = c.execute(
             "SELECT sheet,row_no,file_id,registration_id,payload "
-            "FROM wh_business_record WHERE registration_id<>'' ").fetchall()
+            f"FROM wh_business_record WHERE source='ntsw' AND registration_id<>'' "
+            f"AND file_id IN ({marks})", ids).fetchall()
     out = []
     for sheet, row_no, fid, reg, payload in rows:
         if not _key(reg):
@@ -64,11 +69,15 @@ def _records(wh: Warehouse) -> List[Dict[str, Any]]:
     return out
 
 
-def _measures(wh: Warehouse) -> Dict[tuple, List[Dict[str, Any]]]:
+def _measures(wh: Warehouse, run_id: Optional[str] = None) -> Dict[tuple, List[Dict[str, Any]]]:
     with wh.db() as c:
+        ids, _ = _scoped_file_ids(c, run_id)
+        if not ids:
+            return {}
+        marks = ",".join("?" * len(ids))
         rows = c.execute(
             "SELECT file_id,sheet,row_no,measure,amount_decimal,currency,status "
-            "FROM wh_measure").fetchall()
+            f"FROM wh_measure WHERE file_id IN ({marks})", ids).fetchall()
     by = defaultdict(list)
     for fid, sheet, row_no, measure, amount, currency, status in rows:
         by[(fid, sheet, row_no)].append(
@@ -76,10 +85,10 @@ def _measures(wh: Warehouse) -> Dict[tuple, List[Dict[str, Any]]]:
     return by
 
 
-def coverage(wh: Optional[Warehouse] = None) -> Dict[str, Any]:
+def coverage(wh: Optional[Warehouse] = None, run_id: Optional[str] = None) -> Dict[str, Any]:
     """نرخ تطبیق بین گام‌ها — صادقانه، چه بسته باشد چه نباشد."""
     wh = wh or Warehouse()
-    recs = _records(wh)
+    recs = _records(wh, run_id)
     by_sheet: Dict[str, set] = defaultdict(set)
     for r in recs:
         by_sheet[r["sheet"]].add(r["registration"])
@@ -100,11 +109,11 @@ def coverage(wh: Optional[Warehouse] = None) -> Dict[str, Any]:
     }
 
 
-def chain(wh: Optional[Warehouse] = None) -> List[Dict[str, Any]]:
+def chain(wh: Optional[Warehouse] = None, run_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """یک سطر برای هر «ثبت سفارش»، با شاهد هر گام و مانده تعهد به تفکیک ارز."""
     wh = wh or Warehouse()
-    recs = _records(wh)
-    meas = _measures(wh)
+    recs = _records(wh, run_id)
+    meas = _measures(wh, run_id)
     stage_by_sheet: Dict[str, List[tuple]] = defaultdict(list)
     for key, label, sheet, date_col in STAGES:
         stage_by_sheet[sheet].append((key, label, date_col))

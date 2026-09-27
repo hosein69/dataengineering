@@ -89,7 +89,12 @@ def _bottleneck_stage(extras: Dict) -> tuple[str, str]:
     bott = extras.get("bottlenecks")
     if bott is None or not isinstance(bott, pd.DataFrame) or bott.empty:
         return "—", "داده کافی برای گلوگاه نیست"
-    b = bott.copy()
+    # A raw duration (including the long FX settlement cycle) is no verdict.
+    if "وضعیت گلوگاه" not in bott.columns:
+        return "—", "زمان گذارها ثبت شده؛ معیار معتبر هر حوزه لازم است"
+    b = bott.loc[bott["وضعیت گلوگاه"].eq("تأییدشده")].copy()
+    if b.empty:
+        return "—", "گلوگاه تأییدشده نداریم؛ زمان‌ها فقط توصیفی‌اند"
     metric = None
     for c in ["میانگین مدت (روز)", "میانه مدت (روز)", "P90 مدت (روز)", "AVG_DAYS", "MEDIAN_DAYS", "P90_DAYS"]:
         if c in b.columns and pd.to_numeric(b[c], errors="coerce").notna().any():
@@ -141,7 +146,8 @@ def _quality_coverage(df: pd.DataFrame) -> tuple[str, str]:
 def _stage_html(counts: pd.Series, extras: Dict) -> str:
     bott = extras.get("bottlenecks")
     bott_text = ""
-    if isinstance(bott, pd.DataFrame) and not bott.empty:
+    if isinstance(bott, pd.DataFrame) and not bott.empty and "وضعیت گلوگاه" in bott.columns:
+        bott = bott.loc[bott["وضعیت گلوگاه"].eq("تأییدشده")]
         cols = [c for c in ["از فعالیت", "به فعالیت"] if c in bott.columns]
         if cols:
             bott_text = " ".join(bott[cols].astype(str).head(5).stack().tolist())
@@ -310,7 +316,7 @@ def render(df: pd.DataFrame, extras: Dict, ref_date: str = "") -> None:
     st.markdown(
         '<div class="gsi-decision-grid">' +
         _metric_card("نیازمند اقدام", f"{need_action:,}", "توقف خط + بحرانی + درحال بحرانی شدن", "critical" if need_action else "good") +
-        _metric_card("گلوگاه اصلی", bott_name, bott_sub, "warning" if bott_name != "—" else "normal") +
+        _metric_card("گلوگاه تأییدشده", bott_name, bott_sub, "warning" if bott_name != "—" else "normal") +
         _metric_card("پوشش مالک", owner, owner_sub) +
         _metric_card("کیفیت ورودی مقاومت", quality, quality_sub) +
         '</div>', unsafe_allow_html=True)

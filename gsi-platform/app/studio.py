@@ -32,7 +32,7 @@ import streamlit as st
 st.set_page_config(page_title="GSI | Global Sourcing Intelligence", page_icon="◆",
                    layout="wide", initial_sidebar_state="expanded")
 
-from app import analytics, motion, process_view, process_cockpit
+from app import analytics, motion, process_view, process_cockpit, shipping_view
 from app.styles import band_chip, css, kpi_card
 from app.theme import (SURFACE, BAND_ORDER, BANDS, SEQUENTIAL, SERIES, STATUS, TEXT_SECONDARY,
                        band_of, plotly_template)
@@ -317,6 +317,18 @@ if search.strip():
             "این نتیجه مستقل از جدول پایه است و در KPIها تزریق نمی‌شود."
         )
         st.dataframe(_source_hits, width="stretch", hide_index=True)
+        try:
+            _positions = extras.get("expert_material_positions")
+        except Exception:
+            _positions = None
+        if isinstance(_positions, pd.DataFrame) and not _positions.empty and "KEY_MATERIAL" in _positions:
+            from gsi.core.text import clean_part_no as _clean_material_code
+            _material_code = _clean_material_code(search)
+            _matched = _positions[_positions["KEY_MATERIAL"].fillna("").map(_clean_material_code).eq(_material_code)]
+            if not _matched.empty:
+                st.subheader("محاسبهٔ هر سفارش × متریال از فایل کارشناسان")
+                st.caption("ردیف ناقص حفظ می‌شود؛ جمع قطعی فقط با همهٔ مؤلفه‌ها، وگرنه حداقل قابل اثبات و شکاف داده نمایش داده می‌شود.")
+                st.dataframe(_matched, width="stretch", hide_index=True)
         if "KEY_MATERIAL" in _source_hits.columns:
             _desc_cols=[c for c in ["MOGH_MATERIAL_DESC","MOGH_MATERIAL_SHORT"] if c in _source_hits.columns]
             if _desc_cols:
@@ -384,9 +396,9 @@ st.markdown(
     "".join(band_chip(*band_of(k)) for k in BAND_ORDER) +
     '</div>', unsafe_allow_html=True)
 
-(tab_cockpit, tab_over, tab_proc, tab_supply, tab_formula, tab_analytics, tab_fields, tab_data,
+(tab_cockpit, tab_over, tab_proc, tab_supply, tab_shipping, tab_formula, tab_analytics, tab_fields, tab_data,
  tab_quality, tab_export) = st.tabs(
-    ["◈ مرکز عملیات", "نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "🧮 فرمول مقاومت", "⊞ تحلیل", "🧩 سازنده گزارش",
+    ["◈ مرکز عملیات", "نمای اجرایی", "⛓ فرآیند", "🧭 دید تأمین", "🚢 حمل", "🧮 فرمول مقاومت", "⊞ تحلیل", "🧩 سازنده گزارش",
      "▦ داده", "◍ کیفیت داده", "📦 خروجی"])
 
 # Figma v1 — نمای Process-first. تمام اعداد از اجرای واقعی می‌آیند.
@@ -480,7 +492,7 @@ with tab_over:
             st.plotly_chart(fig, width="stretch")
 
     with c4, st.container(border=True):
-        panel_open("گلوگاه فرآیند", "از لاگ رویداد (استاندارد Celonis).")
+        panel_open("زمان گذارها", "لاگ رویداد؛ زمان خام نشانهٔ گلوگاه نیست و هر حوزه مبنای خود را دارد.")
         b = extras.get("bottlenecks")
         if b is not None and not b.empty:
             st.dataframe(b.head(12), width="stretch", hide_index=True)
@@ -510,6 +522,10 @@ def _supply_view(kind: str, frame: pd.DataFrame) -> pd.DataFrame:
     """نما را کش می‌کند تا با هر تعامل کوچک از نو ساخته نشود."""
     return {"material": build_material_view, "bl": build_bl_view,
             "dept": build_dept_view}[kind](frame)
+
+
+with tab_shipping:
+    shipping_view.render(fdf, ref_date)
 
 
 with tab_supply:

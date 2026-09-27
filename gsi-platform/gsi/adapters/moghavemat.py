@@ -126,7 +126,15 @@ class MoghavematAdapter(SourceAdapter):
 
         # ── عددی‌سازی ──
         for f in self.NUMERIC_FIELDS:
-            lines[p(f)] = lines[p(f)].map(num_safe)
+            raw = lines[p(f)]
+            converted = raw.map(num_safe)
+            if f == "PI_LINE_VALUE":
+                # A missing PI amount is unknown, not a witnessed zero. The
+                # order-level sum(min_count=len(g)) then stays unknown when any
+                # source line has no PI value, while explicit zero survives.
+                missing = raw.map(lambda v: is_empty_val(v, treat_zero_as_empty=False))
+                converted = converted.where(~missing, float("nan"))
+            lines[p(f)] = converted
         # در موجودی، blank و zero دو معنای کاملاً متفاوت دارند.
         for f in self.INVENTORY_NUMERIC_FIELDS:
             lines[p(f)] = lines[p(f)].map(
@@ -413,6 +421,12 @@ class MoghavematAdapter(SourceAdapter):
                 p("MULTI_PR"): bool(len(_uniq(g[p("KEY_PR")])) > 1),
                 p("MATERIAL"): first_valid(g[p("MATERIAL")]),
                 p("MATERIAL_DESC"): first_valid(g[p("MATERIAL_DESC")]),
+                # The order mart keeps one compatibility description, but all
+                # distinct expert descriptions remain visible and auditable.
+                # These are labels, never additive facts.
+                p("MATERIAL_DESCS_ALL"): " | ".join(_uniq(g[p("MATERIAL_DESC")])),
+                p("MATERIAL_DESC_COUNT"): len(_uniq(g[p("MATERIAL_DESC")])),
+                p("KEY_MATERIAL_COUNT"): len(_uniq(g[KEY_MATERIAL])),
                 p("MFR_PART_NO"): first_valid(g[p("MFR_PART_NO")]),
                 p("VENDOR_CODE"): first_valid(g[p("VENDOR_CODE")]),
                 p("VENDOR_PI_NO"): first_valid(g[p("VENDOR_PI_NO")]),
@@ -463,8 +477,8 @@ class MoghavematAdapter(SourceAdapter):
             log.warning(
                 f"⚠️ [{self.key}] {multi} سفارش چندمتریاله است. جدول اصلی در دانه "
                 f"«سفارش» خلاصه شده و ستون متریال فقط یکی از اقلام را نشان "
-                f"می‌دهد؛ فهرست کامل در «{p('MATERIALS_ALL')}» است. تحلیل "
-                f"مقاومت مستقلِ هر قلم نیازمند تحلیل در دانه «قلم سفارش» است.")
+                f"می‌دهد؛ فهرست کامل در «{p('MATERIALS_ALL')}» است. دفتر "
+                f"موقعیت هر سفارش×متریال جداگانه محاسبه می‌شود.")
             health.current().find(
                 "دانه‌بندی", health.WARN,
                 f"{multi} سفارش چندمتریاله در سورس خرید",

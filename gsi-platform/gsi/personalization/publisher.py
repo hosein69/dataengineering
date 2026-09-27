@@ -16,11 +16,13 @@ import pandas as pd
 
 from ..core.text import clean_employee_code
 from .store import EncryptedUserStore
+from .hr_scope import build_scopes, restrict_rows
 
 
 DEFAULT_FIELDS = (
     "KEY_EMP", "KEY_REG", "CANONICAL_ORDER", "CANONICAL_BL", "KEY_MATERIAL",
-    "CANONICAL_EXPERT", "ORG_DEPT", "مرحله جاری", "انتظار جاری (روز)",
+    "CANONICAL_EXPERT", "EXPERT_ROLE", "ORG_VICE", "ORG_DEPT",
+    "ORG_MANAGER", "ORG_HEAD", "مرحله جاری", "انتظار جاری (روز)",
     "بحرانی (کوتاه)", "مقاومت (روز)", "مانع فعلی", "مانده تعهد", "روزهای تأخیر",
     "FX_CURRENT_STAGE", "FX_TIME_DAYS_LEFT", "FX_EVIDENCE_COVERAGE",
     "SUPPLIER_OPEN_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY",
@@ -80,7 +82,8 @@ def frame_payload(df: pd.DataFrame, *, fields: Optional[Sequence[str]] = None,
 def publish_employee_snapshots(df: pd.DataFrame, *, employee_codes: Optional[Iterable[str]] = None,
                                fields: Optional[Sequence[str]] = None,
                                max_rows: int = 3000, source_run_id: str = "",
-                               ref_date: Optional[str] = None) -> Dict[str, Any]:
+                               ref_date: Optional[str] = None,
+                               hr_frame: Optional[pd.DataFrame] = None) -> Dict[str, Any]:
     if "KEY_EMP" not in df.columns:
         raise ValueError("KEY_EMP برای ساخت Snapshot شخصی لازم است.")
 
@@ -92,12 +95,27 @@ def publish_employee_snapshots(df: pd.DataFrame, *, employee_codes: Optional[Ite
         if isinstance(employee_codes, str):
             raise ValueError("employee_codes must be a sequence, not a string")
         wanted = {clean_employee_code(x) for x in employee_codes if clean_employee_code(x)}
-        work = work[work["KEY_EMP"].isin(wanted)]
+        if hr_frame is None:
+            work = work[work["KEY_EMP"].isin(wanted)]
 
+    scopes = build_scopes(hr_frame) if hr_frame is not None else None
+    if scopes is not None:
+        target_codes = sorted(wanted if wanted is not None else scopes)
+        invalid = set(target_codes) - set(scopes)
+        if invalid:
+            raise ValueError("هویت فعال و یکتای HR برای این کدها پیدا نشد: " + ", ".join(sorted(invalid)))
+        groups = [(emp, restrict_rows(work, scopes[emp])) for emp in target_codes]
+    else:
+        groups = list(work.groupby("KEY_EMP", sort=True))
     published: Dict[str, int] = {}
-    for emp, group in work.groupby("KEY_EMP", sort=True):
+    for emp, group in groups:
         store = EncryptedUserStore.from_master_env(emp)
         payload = frame_payload(group, fields=fields, max_rows=max_rows, ref_date=ref_date)
+        if scopes is not None:
+            s = scopes[emp]
+            payload["hr_scope"] = {"level": s.level, "label": {"expert": "کارشناس", "head": "رئیس", "manager": "مدیر", "vice": "معاون"}[s.level],
+                                   "name": s.name, "organization": s.organization,
+                                   "member_count": len(s.member_codes)}
         store.replace_snapshot(payload, source_run_id=source_run_id)
         published[emp] = int(len(group))
 

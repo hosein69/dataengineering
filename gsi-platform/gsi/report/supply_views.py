@@ -111,10 +111,29 @@ def _base(df: pd.DataFrame, group_col: str, kind: str) -> pd.DataFrame:
         # a stale/fanned-out description can never impersonate another material.
         title = keys
         group_desc = _group_mode(desc, keys).where(keys.ne(""), "")
+        # The flat order mart has one compatibility label, while its lineage
+        # field retains every expert description. Associate that lineage with a
+        # material only when the order has exactly one source material and its
+        # declared key agrees with this row's material identity.
+        declared_key = _first_col(work, ["MOGH_MATERIAL", "MOGH_MFR_PART_NO"], "")
+        source_count = _num(work, "MOGH_KEY_MATERIAL_COUNT")
+        single = source_count.eq(1) if "MOGH_KEY_MATERIAL_COUNT" in work else pd.Series(True, index=work.index)
+        source_desc = _first_col(work, ["MOGH_MATERIAL_DESCS_ALL", "MOGH_MATERIAL_DESC"], "")
+        variants = {}
+        for key, declared, ok, value in zip(keys, declared_key, single, source_desc):
+            if not ok or not key or key != declared or not value:
+                continue
+            bucket = variants.setdefault(key, [])
+            for item in value.split(" | "):
+                item = item.strip()
+                if item and item not in bucket:
+                    bucket.append(item)
+        group_variants = keys.map({k: " | ".join(v) for k, v in variants.items()}).fillna("")
         desc_n = (pd.DataFrame({"k": keys, "d": desc})
                   .loc[lambda x: x["d"].ne("")]
                   .groupby("k")["d"].nunique())
-        desc_conflict = keys.map(desc_n).fillna(0).gt(1)
+        desc_conflict = keys.map(desc_n).fillna(0).gt(1) | keys.map(
+            {k: len(v) for k, v in variants.items()}).fillna(0).gt(1)
         group_size = keys.map(keys.value_counts()).fillna(0).astype(int)
         order_n = keys.map(pd.DataFrame({"k": keys, "v": _s(work, "CANONICAL_ORDER")})
                            .loc[lambda x: x["v"].ne("")]
@@ -125,6 +144,7 @@ def _base(df: pd.DataFrame, group_col: str, kind: str) -> pd.DataFrame:
     else:
         title = keys
         group_desc = pd.Series("", index=work.index, dtype=object)
+        group_variants = pd.Series("", index=work.index, dtype=object)
         desc_conflict = pd.Series(False, index=work.index)
         group_size = pd.Series(1, index=work.index, dtype=int)
         order_n = pd.Series(0, index=work.index, dtype=int)
@@ -134,6 +154,7 @@ def _base(df: pd.DataFrame, group_col: str, kind: str) -> pd.DataFrame:
         "کلید گروه": keys,
         "عنوان گروه": title,
         "شرح متریال": group_desc if kind == "متریال" else "",
+        "شرح‌های ثبت‌شده کارشناسان": group_variants,
         "اختلاف شرح متریال": desc_conflict.map({True: "⚠ چند شرح برای یک متریال", False: ""}) if kind == "متریال" else "",
         "تعداد ردیف تفصیلی گروه": group_size if kind == "متریال" else 1,
         "تعداد سفارش یکتای گروه": order_n if kind == "متریال" else 0,
@@ -424,7 +445,7 @@ def build_material_html_view(df: pd.DataFrame, today=None) -> pd.DataFrame:
     out["تعداد ردیف تفصیلی گروه"] = out.groupby("متریال")["متریال"].transform("size")
     for target, source in ((counts[1], "سفارش"), (counts[2], "بارنامه")):
         out[target] = out.groupby("متریال")[source].transform(lambda x: x[~x.isin(["", "نامشخص"])].nunique())
-    leading = ["متریال", "شرح متریال", "هشدار کارشناسان", "کامنت کارشناسان",
+    leading = ["متریال", "شرح متریال", "شرح‌های ثبت‌شده کارشناسان", "هشدار کارشناسان", "کامنت کارشناسان",
                "هشدار NTSW", "کامنت NTSW", "موقعیت فعلی", "مرحله فعلی"]
     return out[leading + [c for c in out if c not in leading]]
 
@@ -494,6 +515,60 @@ def build_dept_view(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+
+
+def build_expert_material_evidence_view(material_positions: pd.DataFrame | None) -> pd.DataFrame:
+    """Safe, evidence-only Order×Material ledger for output surfaces.
+
+    The flat operational mart cannot represent every material of a multi-material
+    order without falsely attaching the order/BL state to all sibling materials.
+    This view therefore exposes only fields that are native to the dedicated
+    expert material ledger (plus exact-key Oracle inventory already merged into
+    that ledger).  It deliberately contains no operational position/owner fields.
+    """
+    if not isinstance(material_positions, pd.DataFrame) or material_positions.empty:
+        return pd.DataFrame()
+    if "KEY_MATERIAL" not in material_positions.columns:
+        return pd.DataFrame()
+    x = material_positions.copy()
+    material = _s(x, "KEY_MATERIAL")
+    x = x.loc[material.ne("")].copy()
+    if x.empty:
+        return pd.DataFrame()
+
+    def txt(c: str) -> pd.Series:
+        return _s(x, c)
+
+    def num(c: str) -> pd.Series:
+        return _num(x, c)
+
+    order = txt("KEY_ORDER") if "KEY_ORDER" in x.columns else txt("CANONICAL_ORDER")
+    desc = txt("MOGH_MATERIAL_DESCS_ALL")
+    if desc.eq("").all() and "MOGH_MATERIAL_DESC" in x.columns:
+        desc = txt("MOGH_MATERIAL_DESC")
+
+    out = pd.DataFrame({
+        "نوع شاهد": "Commercial Expert — Order×Material (شاهد، نه انتساب عملیاتی)",
+        "متریال اعلامی کارشناسان": txt("KEY_MATERIAL"),
+        "سفارش اعلامی کارشناسان": order,
+        "شرح‌های ثبت‌شده کارشناسان": desc,
+        "تعداد شرح‌های ثبت‌شده": num("MOGH_MATERIAL_DESC_COUNT"),
+        "تعداد ردیف منبع": num("EXPERT_SOURCE_ROWS"),
+        "شکاف ثبت کارشناس": txt("EXPERT_RECORD_GAPS"),
+        "وضعیت موجودی قلم": txt("SUPPLY_POSITION_STATUS"),
+        "موجودی کل تأییدشده قلم": num("SUPPLY_TOTAL_CONFIRMED"),
+        "حداقل موجودی قابل اثبات قلم": num("SUPPLY_TOTAL_LOWER_BOUND"),
+        "شکاف‌های موجودی قلم": txt("SUPPLY_POSITION_GAPS"),
+        "شرح مرجع Oracle": txt("ORC_MATERIAL_DESC"),
+        "موجودی ایران خودرو": num("STOCK_IKCO"),
+        "موجودی ساپکو": num("STOCK_SAPCO"),
+        "نیاز روزانه": num("DAILY_NEED"),
+    })
+    # Keep one row per preserved Order×Material relation.  No numeric aggregation
+    # is performed here; repeated rows would be a ledger construction defect.
+    return out.sort_values(["متریال اعلامی کارشناسان", "سفارش اعلامی کارشناسان"],
+                           kind="stable", ignore_index=True)
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  نوشتن در Excel
 # ═══════════════════════════════════════════════════════════════════════════
@@ -536,8 +611,10 @@ def _write_table(ws, t: pd.DataFrame) -> None:
 SHEETS = ("۱۴. متریال محور", "۱۵. بارنامه محور", "۱۶. اداره محور")
 
 
-def write_supply_sheets(wb, df: pd.DataFrame) -> dict:
-    specs = [(SHEETS[0], build_material_view(df)),
+def write_supply_sheets(wb, df: pd.DataFrame, material_positions: pd.DataFrame | None = None) -> dict:
+    material = build_material_view(df)
+    evidence = build_expert_material_evidence_view(material_positions)
+    specs = [(SHEETS[0], material),
              (SHEETS[1], build_bl_view(df)),
              (SHEETS[2], build_dept_view(df))]
     for name, t in specs:
@@ -547,7 +624,40 @@ def write_supply_sheets(wb, df: pd.DataFrame) -> dict:
         ws.sheet_view.rightToLeft = True
         ws.sheet_view.showGridLines = False
         if t.empty:
-            ws["A1"] = "داده کافی برای این نما وجود ندارد."
-            continue
-        _write_table(ws, t)
-    return {name: t for name, t in specs}
+            ws["A1"] = "داده کافی برای نمای عملیاتی این بخش وجود ندارد."
+        else:
+            _write_table(ws, t)
+
+        # Sheet 14 additionally carries the complete expert Order×Material ledger.
+        # This is intentionally a second, clearly labelled evidence table: it
+        # makes every expert material/description visible without pretending that
+        # a sibling material inherited an order/BL operational state.
+        if name == SHEETS[0] and not evidence.empty:
+            from openpyxl.worksheet.table import Table, TableStyleInfo
+            start = max(ws.max_row + 3, 4)
+            end_col = len(evidence.columns)
+            title = ws.cell(start, 1,
+                "دفتر کامل شواهد کارشناسان — Order×Material؛ خارج از انتساب عملیاتی سفارش/بارنامه")
+            title.font = P.font_title(11)
+            title.alignment = P.align("right", wrap=True)
+            if end_col > 1:
+                ws.merge_cells(start_row=start, start_column=1, end_row=start, end_column=end_col)
+            hr = start + 1
+            for j, h in enumerate(evidence.columns, 1):
+                c = ws.cell(hr, j, h)
+                c.font = P.font_header(1); c.fill = P.fill_header(); c.alignment = P.align("center", wrap=True)
+            for i, row in enumerate(evidence.itertuples(index=False, name=None), hr + 1):
+                for j, v in enumerate(row, 1):
+                    cell = ws.cell(i, j, None if pd.isna(v) else v)
+                    cell.font = P.font_body(); cell.alignment = P.align("right", wrap=True); cell.border = P.thin_border()
+            er = hr + len(evidence)
+            ref = f"A{hr}:{get_column_letter(end_col)}{er}"
+            table = Table(displayName="ExpertMaterialEvidence", ref=ref)
+            table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True, showFirstColumn=False, showLastColumn=False)
+            ws.add_table(table)
+            for j in range(1, end_col + 1):
+                sample = [str(ws.cell(r, j).value or "") for r in range(hr, min(er, hr + 25) + 1)]
+                ws.column_dimensions[get_column_letter(j)].width = min(max(ws.column_dimensions[get_column_letter(j)].width or 14, max(map(len, sample)) + 2), 48)
+    result = {name: t for name, t in specs}
+    result["expert_material_evidence"] = evidence
+    return result

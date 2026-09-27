@@ -340,9 +340,10 @@ def test_eventlog():
           f"بیشینه {cases['PROCESS_COMPLETENESS'].max():.1f}٪")
 
     bn = res.extras.get("bottlenecks")
-    check("گلوگاه‌ها با میانه محاسبه و نزولی مرتب شدند",
+    check("زمان گذارها با میانه و زمینهٔ فرایندی محاسبه شد",
           bn is not None and not bn.empty
-          and list(bn["میانه روز"]) == sorted(bn["میانه روز"], reverse=True),
+          and {"حوزه فرایندی", "وضعیت گلوگاه", "مبنای قضاوت"} <= set(bn.columns)
+          and bn["وضعیت گلوگاه"].eq("سنجش‌نشده").all(),
           f"{bn.iloc[0]['از فعالیت']} → {bn.iloc[0]['به فعالیت']}: "
           f"میانه {bn.iloc[0]['میانه روز']:.0f} روز" if bn is not None and len(bn) else "")
     check("گذار «به خودش» در جدول گلوگاه نیست",

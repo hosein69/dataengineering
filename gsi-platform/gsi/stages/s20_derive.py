@@ -188,6 +188,11 @@ UNKNOWN_SENSITIVE = (
     # مبنای تعهد (تصمیم مالک ۱۴۰۵/۰۷/۰۴) و مبلغ رویدادهای تایم‌لاین FX؛
     # فاکتورِ نامعلوم نباید «۰» شود — A/B نسخه 29.15.1 پیدایش کرد.
     "INVOICE_VALUE",
+    # A missing financial source amount is not a witnessed zero.  Keep the
+    # companion flags so report consumers can distinguish absence from a real 0.
+    "EUR_VALUE", "DUTY_AMOUNT", "FX_EUR_VALUE",
+    "CREDIT_PROFORMA", "CREDIT_RIAL_AMOUNT", "CREDIT_EUR_AMOUNT",
+    "CREDIT_PREPAYMENT", "CREDIT_REMAINING",
 )
 
 #: اهدافی که در این پکیج هیچ تولیدکننده‌ای ندارند و عمداً نامعلوم می‌مانند.

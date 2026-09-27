@@ -10,7 +10,7 @@ from ..adapters.base import KEY_BL, KEY_ORDER
 from ..dataio.logging_setup import log
 from ..resolve.expert_roles import (coverage as expert_coverage,
                                     current_owner, resolve_roles)
-from .base import ColumnSpec, GROUP_MAIN, PipelineContext, Stage, register
+from .base import ColumnSpec, GROUP_DETAIL, GROUP_MAIN, PipelineContext, Stage, register
 
 
 @register
@@ -85,4 +85,15 @@ class ResolveStage(Stage):
             ColumnSpec("CANONICAL_ORDER", "شماره سفارش (کانونی)", 18, GROUP_MAIN, order=20),
             ColumnSpec("CANONICAL_BL", "شماره بارنامه (کانونی)", 20, GROUP_MAIN, order=21),
             ColumnSpec("CANONICAL_PART_NO", "شماره فنی / متریال", 18, GROUP_MAIN, order=22),
+            # Order grain can legitimately contain several expert material lines.
+            # Never let the compatibility/first material impersonate the whole order:
+            # publish the preserved lineage next to it in every official matrix.
+            ColumnSpec("MOGH_MATERIALS_ALL", "همه کدهای متریال ثبت‌شده کارشناسان در سفارش", 44,
+                       GROUP_DETAIL, order=23, wrap=True),
+            ColumnSpec("MOGH_KEY_MATERIAL_COUNT", "تعداد کدهای متریال کارشناسان در سفارش", 17,
+                       GROUP_DETAIL, order=24),
+            ColumnSpec("MOGH_MATERIAL_DESCS_ALL", "همه شرح‌های ثبت‌شده کارشناسان در سفارش", 48,
+                       GROUP_DETAIL, order=25, wrap=True),
+            ColumnSpec("MOGH_MATERIAL_DESC_COUNT", "تعداد شرح‌های کارشناسان در سفارش", 17,
+                       GROUP_DETAIL, order=26),
         ]

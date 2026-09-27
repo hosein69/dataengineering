@@ -25,6 +25,12 @@ def main() -> int:
     if cmd in ("email", "mail", "daily-email"):
         from .integrations.daily_email import main as run
         return run(sys.argv[2:])
+    if cmd in ("role-mail", "expert-mail"):
+        from .integrations.role_mail import main as run
+        return run(sys.argv[2:])
+    if cmd in ("decision-feedback", "measure-success"):
+        from tools.decision_feedback import main as run
+        return run(sys.argv[2:])
     if cmd in ("historical-warehouse", "warehouse-history", "legacy-warehouse"):
         from .warehouse.historical_cli import main as run
         return run(sys.argv[2:])
@@ -47,17 +53,33 @@ def main() -> int:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         app = os.path.join(root, "app", "personal_workspace.py")
         return subprocess.call([sys.executable, "-m", "streamlit", "run", app, "--server.address=127.0.0.1"], cwd=root)
+    if cmd in ("role-mail-ui", "expert-mail-ui"):
+        import os, subprocess
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        app = os.path.join(root, "app", "role_mail.py")
+        return subprocess.call([sys.executable, "-m", "streamlit", "run", app,
+                                "--server.address=127.0.0.1"], cwd=root)
     if cmd in ("publish-personal", "personal-publish"):
-        from .pipeline import Pipeline
+        from .warehouse.service import last_report
+        from .warehouse.store import Warehouse
         from .personalization.publisher import publish_employee_snapshots
         import argparse
         ap = argparse.ArgumentParser(description="Publish scoped snapshots to shared folders")
         ap.add_argument("--employees", help="Comma-separated complete employee roster for this publication")
         ns = ap.parse_args(sys.argv[2:])
         employees = ns.employees.split(",") if ns.employees else None
-        pipe = Pipeline()
-        result = pipe.run(build_report=False)
-        out = publish_employee_snapshots(result.main, employee_codes=employees, source_run_id="pipeline", ref_date=pipe.today.isoformat())
+        report = last_report()
+        if report is None:
+            raise SystemExit("Snapshot گزارش منتشرشده وجود ندارد؛ ابتدا Refresh و Verify انجام دهید.")
+        wh = Warehouse(initialize=False)
+        hr_frames, _ = wh.published_frames("hr")
+        hr = hr_frames.get("main")
+        if hr is None or hr.empty:
+            raise SystemExit("فریم HR در همین اجرای منتشرشده وجود ندارد؛ انتشار شخصی متوقف شد.")
+        _, main, extras, _ = report
+        out = publish_employee_snapshots(main, hr_frame=hr, employee_codes=employees,
+                                         source_run_id=extras["warehouse_run_id"],
+                                         ref_date=extras.get("published_reference_date"))
         print(f"Personal snapshots: users={out['users']} rows={out['rows']} missing={len(out['missing'])}")
         return 0
     if cmd in ("personal-open", "live-personal"):
@@ -104,7 +126,7 @@ def main() -> int:
         from .pipeline import main as run
         run()
         return 0
-    print(f"دستور ناشناخته «{cmd}». گزینه‌ها: doctor | diagnose | rules | refresh | export-excel | email | historical-warehouse | studio | personal | publish-personal | personal-html | personal-key | personal-open | run")
+    print(f"دستور ناشناخته «{cmd}». گزینه‌ها: doctor | diagnose | rules | refresh | export-excel | email | role-mail | historical-warehouse | studio | personal | publish-personal | personal-html | personal-key | personal-open | run")
     return 2
 
 

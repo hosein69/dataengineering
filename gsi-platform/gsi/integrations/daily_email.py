@@ -597,7 +597,13 @@ def create_daily_email(*,day:Optional[date]=None,send:bool=False,display:bool=Tr
     body=build_email_html(d,main_df,charts,excel); paths["html"].write_text(body,encoding="utf-8")
     from ..studio_core.html_export import build_dynamic_html
     report = paths["html"].with_name(paths["html"].stem + "_Report.html")
-    report.write_text(build_dynamic_html(main_df, str(d), process_extras=extras), encoding="utf-8")
+    try:
+        _expert_material_positions = extras.get("expert_material_positions")
+    except Exception:
+        _expert_material_positions = None
+    report.write_text(build_dynamic_html(main_df, str(d), process_extras=extras,
+                                         material_supply_view=_expert_material_positions),
+                      encoding="utf-8")
     to=_recipients()
     result={"report":report,"excel":excel,"html":paths["html"],"charts":charts,"recipients":to,"sent":False,
             "stale_snapshot":stale}

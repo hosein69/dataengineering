@@ -1,4 +1,4 @@
-GSI 29.9.0 — 2026-09-26
+GSI 29.15.9 — 2026-09-27
 
 1) همین پوشه را روی یک دیسک محلی Extract کنید، مثلا:  D:\GSI_APP\
    (نه مسیر شبکه/UNC؛ فقط فایل‌های سورس از شبکه خوانده می‌شوند)
@@ -15,7 +15,7 @@ GSI 29.9.0 — 2026-09-26
 DWH پیش‌فرض:      D:\GSI_DATA\warehouse.sqlite
 تنظیم مسیرها فقط در: OPS\GSI_ENV.cmd
 
-چه چیزی در این نسخه عوض شد؟   GSI_REVIEW_REPORT_V29_9_0_FA.md
+چه چیزی در این نسخه عوض شد؟   docs\MATERIAL_OUTPUT_29_15_9_FA.md
 راهنمای نصب:                   INSTALL.md
 محدودیت‌های باز:               KNOWN_LIMITATIONS.md
 اسناد نسخه‌های قبل:            docs\history\
