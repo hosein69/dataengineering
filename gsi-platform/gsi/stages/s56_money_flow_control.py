@@ -22,6 +22,7 @@ from ..adapters.base import KEY_BL, KEY_ORDER, KEY_REG
 from ..core.jalali import CalendarEngine
 from ..core.text import is_empty_val, num_safe
 from ..dataio.logging_setup import log
+from ..finance.equivalents import _actual_purchase_rows
 from .base import (ColumnSpec, FMT_CURRENCY, FMT_DECIMAL, GROUP_ANALYTIC,
                    GROUP_DETAIL, PipelineContext, Stage, register)
 
@@ -132,6 +133,7 @@ class MoneyFlowControlStage(Stage):
         reconciliation = self._build_money_reconciliation(money_ledger)
         control = self._build_control(ledger, timeline, rate_bridge, realloc, ctx)
         control = self._attach_money_reconciliation(control, reconciliation)
+        decisions = self._build_financial_decisions(money_ledger, reconciliation, timeline, ledger, ctx)
 
         # ledger اصلی را غنی می‌کنیم تا همه exportهای قدیمی نیز داده جدید را ببینند.
         ledger = ledger.copy()
@@ -146,6 +148,7 @@ class MoneyFlowControlStage(Stage):
         ctx.extras["fx_money_ledger"] = money_ledger
         ctx.extras["fx_money_reconciliation"] = reconciliation
         ctx.extras["fx_control_summary"] = control
+        ctx.extras["fx_financial_decisions"] = decisions
 
         m = control.set_index("KEY_REG")
         regs = df.get("CANONICAL_REG", pd.Series("", index=df.index)).map(_s)
@@ -153,12 +156,11 @@ class MoneyFlowControlStage(Stage):
             if c in m.columns:
                 df[c] = regs.map(m[c].to_dict())
         numeric = {"FX_CONTROL_RISK_SCORE", "FX_STAGE_PROGRESS_PCT",
-                   "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
-                   "FX_CONVERSION_IMPACT_RIAL"}
+                   "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT"}
         for c in numeric:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
-        nullable = {"FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING"}
+        nullable = {"FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING", "FX_CONVERSION_IMPACT_RIAL"}
         for c in nullable:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -173,22 +175,23 @@ class MoneyFlowControlStage(Stage):
 
     def _empty_outputs(self, df: pd.DataFrame) -> None:
         numeric = {"FX_CONTROL_RISK_SCORE", "FX_STAGE_PROGRESS_PCT",
-                   "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT",
-                   "FX_CONVERSION_IMPACT_RIAL"}
+                   "FX_REALLOCATION_COUNT", "FX_UNAUTHORIZED_REALLOCATION_COUNT"}
         for c in self.provides:
-            if c in ("FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING"):
+            if c in ("FX_PURCHASE_WAVG_RATE", "FX_DAYS_REMAINING", "FX_CONVERSION_IMPACT_RIAL"):
                 df[c] = float("nan")
             else:
                 df[c] = 0.0 if c in numeric else ""
 
     # ───────────────────────── پل نرخ و تبدیل ارز ─────────────────────────
     def _build_rate_bridge(self, ctx: PipelineContext) -> pd.DataFrame:
-        fx = ctx.sheet("fx_transaction", "main")
+        fx = _actual_purchase_rows(ctx.sheet("fx_transaction", "main"))
         if fx is None or fx.empty:
             return pd.DataFrame(columns=["KEY_REG", "STATUS", "PURCHASE_CURRENCY",
                                          "PAID_CURRENCY", "IMPACT_RIAL"])
         rows: List[Dict[str, Any]] = []
         for idx, r in fx.reset_index(drop=True).iterrows():
+            if _s(r.get("FX_PURCHASE_STATE")) == "PLANNED":
+                continue
             reg = _s(r.get(KEY_REG))
             if not reg:
                 continue
@@ -201,7 +204,8 @@ class MoneyFlowControlStage(Stage):
             paid_amt = _num(r.get("FX_PAID_AMOUNT"))
             paid_rate = _num(r.get("FX_PAID_RATE_RIAL"))
             cross = _num(r.get("FX_CONVERSION_RATE"))
-            fee = _num(r.get("FX_CONVERSION_FEE_RIAL"))
+            fee_raw = r.get("FX_CONVERSION_FEE_RIAL")
+            fee = None if is_empty_val(fee_raw, treat_zero_as_empty=False) else _num(fee_raw)
 
             # مغایرت حسابی مبلغ ریالی با مبلغ×نرخ؛ این «زیان اقتصادی» نیست.
             rate_data_gap = 0.0
@@ -217,9 +221,10 @@ class MoneyFlowControlStage(Stage):
                 if paid_cur == src_cur:
                     status = "SAME_CURRENCY"
                     impact = fee
-                    note = "ارز خرید و پرداخت یکسان است؛ فقط کارمزد صریح تبدیل/پرداخت لحاظ شده."
+                    note = ("ارز خرید و پرداخت یکسان است؛ فقط کارمزد صریح لحاظ شده." if fee is not None
+                            else "ارز یکسان است؛ کارمزد گزارش نشده و اثر ریالی نامعلوم است.")
                 else:
-                    required = [paid_amt > EPS, paid_rate > EPS, cross > EPS, eff_buy_rate > EPS]
+                    required = [paid_amt > EPS, paid_rate > EPS, cross > EPS, eff_buy_rate > EPS, fee is not None]
                     if all(required):
                         # قرارداد داده V26.18: cross rate = واحد ارز مقصد به ازای ۱ واحد ارز مبدأ.
                         src_used = paid_amt / cross
@@ -235,9 +240,13 @@ class MoneyFlowControlStage(Stage):
                         if paid_rate <= EPS: missing.append("نرخ ریالی ارز مقصد")
                         if cross <= EPS: missing.append("Cross Rate")
                         if eff_buy_rate <= EPS: missing.append("نرخ خرید ارز مبدأ")
+                        if fee is None: missing.append("کارمزد تبدیل (صفر صریح نیز پذیرفته است)")
                         note = "برای محاسبه زیان/صرفه قطعی، شاهد لازم ناقص است: " + "، ".join(missing)
             rows.append({
                 "ROW_ID": idx + 1, "KEY_REG": reg, "FX_CASE_KEY": f"REG:{reg}",
+                "SOURCE_FILE_ID": _s(r.get("_SOURCE_FILE_ID")),
+                "SOURCE_SHEET": _s(r.get("_SOURCE_SHEET")),
+                "SOURCE_ROW": _s(r.get("_SOURCE_ROW")),
                 "PURCHASE_DATE": _s(r.get("FX_BUY_DATE")),
                 "PURCHASE_AMOUNT": src_amt, "PURCHASE_CURRENCY": src_cur,
                 "PURCHASE_RATE_RIAL": eff_buy_rate, "PURCHASE_RIAL": src_rial,
@@ -264,7 +273,7 @@ class MoneyFlowControlStage(Stage):
             if order: order_regs[order].add(reg)
             if bl: bl_regs[bl].add(reg)
 
-        fx = ctx.sheet("fx_transaction", "main")
+        fx = _actual_purchase_rows(ctx.sheet("fx_transaction", "main"))
         if fx is None or fx.empty:
             return pd.DataFrame(columns=["FROM_REG", "TO_REG", "STATUS", "SIGNAL_TYPE"])
 
@@ -323,7 +332,7 @@ class MoneyFlowControlStage(Stage):
     def _build_timeline(self, df: pd.DataFrame, ctx: PipelineContext,
                         ledger: pd.DataFrame, rate_bridge: pd.DataFrame) -> pd.DataFrame:
         gmain = _groups(df, "CANONICAL_REG")
-        gfx = _groups(ctx.sheet("fx_transaction", "main"))
+        gfx = _groups(_actual_purchase_rows(ctx.sheet("fx_transaction", "main")))
         gcr = _groups(ctx.sheet("credit", "main"))
         gal = _groups(ctx.sheet("ntsw", "allocation"))
         gar = _groups(ctx.sheet("ntsw", "allocation_rows"))
@@ -365,9 +374,11 @@ class MoneyFlowControlStage(Stage):
             # صفر می‌کرد و پرونده‌ی بدون شاهد مانده رفع‌تعهدشده نمایش داده می‌شد.
             balance_known = pd.notna(pd.to_numeric(pd.Series([lr.get("FX_NTSW_BALANCE")]),
                                                    errors="coerce").iloc[0])
-            settled = bool(initial > EPS and balance_known and balance <= EPS) or (
-                "رفع" in _s(lr.get("FX_NTSW_RELEASE_STATUS")) and
-                "نشده" not in _s(lr.get("FX_NTSW_RELEASE_STATUS")))
+            status_released = ("رفع" in _s(lr.get("FX_NTSW_RELEASE_STATUS")) and
+                               "نشده" not in _s(lr.get("FX_NTSW_RELEASE_STATUS")))
+            # A positive recorded balance contradicts a textual release flag.
+            settled = (balance_known and balance <= EPS and (initial > EPS or status_released)) or (
+                not balance_known and status_released)
 
             cross_currency = False
             conversion_measured = False
@@ -476,7 +487,9 @@ class MoneyFlowControlStage(Stage):
                 elif code == "BANK_DOCS":
                     evidence = (f"تاریخ ارائه/تطبیق سند={bank_docs_date.isoformat()}" if bank_docs_date else
                                 "تاریخ ارائه/تطبیق سند ترخیص با بانک در export موجود نیست")
-                elif code == "SETTLEMENT": evidence = _s(lr.get("FX_NTSW_RELEASE_STATUS")) or f"مانده={balance:,.2f}"
+                elif code == "SETTLEMENT":
+                    evidence = _s(lr.get("FX_NTSW_RELEASE_STATUS"))
+                    evidence += f"؛ مانده={balance:,.2f}" if balance_known else "؛ مانده=نامعلوم"
                 out.append({
                     "KEY_REG": reg, "FX_CASE_KEY": f"REG:{reg}", "STAGE_CODE": code,
                     "STAGE_ORDER": pos + 1, "STAGE_FA": fa, "STATUS": status,
@@ -497,7 +510,7 @@ class MoneyFlowControlStage(Stage):
         rows: List[Dict[str, Any]] = []
 
         def maybe_num(v: Any) -> Optional[float]:
-            if is_empty_val(v):
+            if is_empty_val(v, treat_zero_as_empty=False):
                 return None
             try:
                 x = num_safe(v)
@@ -516,19 +529,24 @@ class MoneyFlowControlStage(Stage):
                 "STATUS": _s(status), "NOTE": _s(note),
             })
 
+        def source_ref(r, prefix, fallback):
+            parts = [_s(r.get("_SOURCE_FILE_ID")), _s(r.get("_SOURCE_SHEET")),
+                     _s(r.get("_SOURCE_ROW"))]
+            return prefix + ":" + "/".join(parts) if all(parts) else f"{prefix}#{fallback}"
+
         cr = ctx.sheet("credit", "main")
         if cr is not None and not cr.empty:
             for i, r in cr.reset_index(drop=True).iterrows():
                 emit(r.get(KEY_REG), "REGISTRATION_VALUE", "ارزش ثبت سفارش/پروفرم",
                      r.get("CRD_PROFORMA_VALUE"), r.get("CRD_CURRENCY"), r.get("CRD_REG_DATE"),
-                     "credit", f"credit#{i+1}", r.get("CRD_LAST_STATUS"))
+                     "credit", source_ref(r, "credit", i+1), r.get("CRD_LAST_STATUS"))
                 emit(r.get(KEY_REG), "BANK_FUNDING_IRR", "تأمین وجه بانکی ریالی",
                      None, "IRR", r.get("CRD_FUND_DATE"),
-                     "credit", f"credit#{i+1}", r.get("CRD_LAST_STATUS"))
+                     "credit", source_ref(r, "credit", i+1), r.get("CRD_LAST_STATUS"))
                 # SWIFT amount is evidence of transfer instruction/receipt, not supplier receipt.
                 emit(r.get(KEY_REG), "SWIFT", "سوئیفت بانکی",
                      r.get("CRD_SWIFT_AMOUNT"), r.get("CRD_SWIFT_CURRENCY"), r.get("CRD_SWIFT_DATE"),
-                     "credit", f"credit#{i+1}", r.get("CRD_LC_NO"))
+                     "credit", source_ref(r, "credit", i+1), r.get("CRD_LC_NO"))
 
         ar = ctx.sheet("ntsw", "allocation_rows")
         if ar is None or ar.empty:
@@ -546,10 +564,10 @@ class MoneyFlowControlStage(Stage):
                          r.get("NTSW_REQ_CURRENCY"), r.get("NTSW_ALLOC_DATE"),
                          "ntsw/allocation", ref, state, r.get("NTSW_ALLOC_STATUS"))
 
-        fx = ctx.sheet("fx_transaction", "main")
+        fx = _actual_purchase_rows(ctx.sheet("fx_transaction", "main"))
         if fx is not None and not fx.empty:
             for i, r in fx.reset_index(drop=True).iterrows():
-                ref = f"fx#{i+1}"
+                ref = source_ref(r, "fx", i+1)
                 if _s(r.get("FX_PURCHASE_STATE")) != "PLANNED":
                     emit(r.get(KEY_REG), "FX_PURCHASE", "خرید ارز",
                          r.get("FX_AMOUNT"), r.get("FX_CURRENCY"), r.get("FX_BUY_DATE"),
@@ -635,6 +653,111 @@ class MoneyFlowControlStage(Stage):
                          "OBLIGATION_RECON_STATUS":obligation_status,
                          "EVIDENCE_GAPS":" | ".join(gaps),"RECON_STATUS":status})
         return pd.DataFrame(rows)
+
+    def _build_financial_decisions(self, money: pd.DataFrame, reconciliation: pd.DataFrame,
+                                   timeline: pd.DataFrame, ledger: pd.DataFrame,
+                                   ctx: PipelineContext) -> pd.DataFrame:
+        """Non-additive, same-currency review candidates, never a cash balance.
+
+        A positive gap proves only that two independently observed stage totals
+        differ. It does not prove the missing later event never occurred, nor that
+        the company still owns that exact amount. No FX conversion is inferred.
+        """
+        columns = ["KEY_REG", "CURRENCY", "STAGE_CODE", "OBSERVED_GAP_AMOUNT",
+                   "AMOUNT_MEANING", "WAIT_DAYS", "WAIT_BASIS_DATE", "POSSIBLE_CAUSE",
+                   "PROCESS_OWNER", "SUGGESTED_ACTION", "EVIDENCE", "EVIDENCE_GAP",
+                   "DECISION_STATUS", "ADDITIVITY"]
+        if money.empty and (ledger is None or ledger.empty):
+            return pd.DataFrame(columns=columns)
+        flow = (
+            ("REQUEST_MINUS_ALLOCATED", "ALLOCATION_QUEUE", "ALLOCATION_REQUEST", "ALLOCATION",
+             "اعتبارات / تخصیص ارز", "وضعیت درخواست‌های باز و تخصیص را با NTSW تطبیق دهید"),
+            ("ALLOCATED_MINUS_PURCHASED", "FX_PURCHASE", "ALLOCATION", "FX_PURCHASE",
+             "اعتبارات / خرید ارز", "سند خرید ارز یا اصلاح تخصیص را دریافت و تطبیق دهید"),
+            ("PURCHASED_MINUS_SUPPLIER_PAID", "SWIFT_CONVERSION", "FX_PURCHASE", "SUPPLIER_PAYMENT",
+             "اعتبارات / پرداخت", "تأیید وصول ذی‌نفع و ارتباط خرید با پرداخت را بررسی کنید"),
+        )
+        grouped = {(reg, cur, ev): g for (reg, cur, ev), g in
+                   money.groupby(["KEY_REG", "CURRENCY", "EVENT_CODE"], sort=False)} if not money.empty else {}
+        dates = {}
+        if timeline is not None and not timeline.empty:
+            for r in timeline.to_dict("records"):
+                dates[(_s(r.get("KEY_REG")), _s(r.get("STAGE_CODE")))] = _s(r.get("EVENT_DATE"))
+        rows = []
+        for rec in reconciliation.to_dict("records"):
+            reg, cur = _s(rec["KEY_REG"]), _s(rec["CURRENCY"])
+            for field, stage, before, after, owner, action in flow:
+                amount = pd.to_numeric(pd.Series([rec.get(field)]), errors="coerce").iloc[0]
+                if pd.isna(amount) or amount <= EPS:
+                    continue
+                evidence_rows = [r for ev in (before, after) for r in
+                                 grouped.get((reg, cur, ev), pd.DataFrame()).to_dict("records")
+                                 if pd.notna(r.get("AMOUNT"))]
+                refs = sorted({_s(r.get("SOURCE")) + ":" + _s(r.get("REFERENCE"))
+                               for r in evidence_rows if _s(r.get("REFERENCE"))})
+                if not refs:
+                    continue
+                basis = dates.get((reg, before), "")
+                parsed = _date(basis)
+                wait = (ctx.today - parsed).days if parsed and parsed <= ctx.today else None
+                rows.append({"KEY_REG": reg, "CURRENCY": cur, "STAGE_CODE": stage,
+                             "OBSERVED_GAP_AMOUNT": round(float(amount), 2),
+                             "AMOUNT_MEANING": f"اختلاف شاهد {before} با {after}؛ مانده نقدی اثبات‌شده نیست",
+                             "WAIT_DAYS": wait, "WAIT_BASIS_DATE": basis if wait is not None else "",
+                             "POSSIBLE_CAUSE": "رویداد مرحله بعد در شواهد هم‌ارز ثبت نشده یا رابطهٔ آن ناقص است",
+                             "PROCESS_OWNER": owner, "SUGGESTED_ACTION": action,
+                             "EVIDENCE": " | ".join(refs),
+                             "EVIDENCE_GAP": after + " / سند ارتباط و تأیید مستقل",
+                             "DECISION_STATUS": "INVESTIGATE_ONLY", "ADDITIVITY": "NON_ADDITIVE"})
+            bal = pd.to_numeric(pd.Series([rec.get("COMMITMENT_BALANCE")]), errors="coerce").iloc[0]
+            if pd.notna(bal) and bal > EPS:
+                g = grouped.get((reg, cur, "COMMITMENT_BALANCE"), pd.DataFrame())
+                refs = sorted({_s(r.get("SOURCE")) + ":" + _s(r.get("REFERENCE"))
+                               for r in g.to_dict("records") if _s(r.get("REFERENCE"))})
+                if refs:
+                    rows.append({"KEY_REG": reg, "CURRENCY": cur, "STAGE_CODE": "SETTLEMENT",
+                                 "OBSERVED_GAP_AMOUNT": round(float(bal), 2),
+                                 "AMOUNT_MEANING": "مانده تعهد گزارش‌شده؛ وجه نقد قفل‌شده نیست",
+                                 "WAIT_DAYS": None, "WAIT_BASIS_DATE": "",
+                                 "POSSIBLE_CAUSE": "علت باز بودن تعهد از مانده به‌تنهایی معلوم نیست",
+                                 "PROCESS_OWNER": "رفع تعهد ارزی",
+                                 "SUGGESTED_ACTION": "سند تطبیق بانک و وضعیت رفع تعهد را بررسی کنید",
+                                 "EVIDENCE": " | ".join(refs), "EVIDENCE_GAP": "علت و تاریخ شروع توقف",
+                                 "DECISION_STATUS": "REPORTED_SNAPSHOT", "ADDITIVITY": "NON_ADDITIVE"})
+        credit = ctx.sheet("credit", "main")
+        credit_groups = _groups(credit)
+        if ledger is not None and not ledger.empty:
+            for lr in ledger.to_dict("records"):
+                reg, cur = _s(lr.get("KEY_REG")), _s(lr.get("FX_CREDIT_CURRENCY"))
+                if not cur or " | " in cur:
+                    continue
+                sources = credit_groups.get(reg, pd.DataFrame())
+                if sources.empty:
+                    continue
+                refs = sorted({_s(r.get("_SOURCE_FILE_ID")) + "/" +
+                               _s(r.get("_SOURCE_SHEET")) + "/" + _s(r.get("_SOURCE_ROW"))
+                               for r in sources.to_dict("records")
+                               if all(_s(r.get(k)) for k in ("_SOURCE_FILE_ID", "_SOURCE_SHEET", "_SOURCE_ROW"))})
+                if not refs:
+                    continue
+                for col, stage, meaning, action in (
+                    ("FX_CREDIT_PREPAYMENT", "PREPAYMENT", "پیش‌پرداخت گزارش‌شده؛ وضعیت مصرف/وصول اثبات نشده",
+                     "سند پیش‌پرداخت و تخصیص آن به سفارش را تطبیق دهید"),
+                    ("FX_CREDIT_REMAINING", "CREDIT_REMAINING", "اعتبار باقیمانده گزارش‌شده؛ وجه نقد قفل‌شده نیست",
+                     "مانده اعتبار و شرایط آزادسازی را با بانک تطبیق دهید"),
+                ):
+                    amount = pd.to_numeric(pd.Series([lr.get(col)]), errors="coerce").iloc[0]
+                    if pd.isna(amount) or amount <= EPS:
+                        continue
+                    rows.append({"KEY_REG": reg, "CURRENCY": cur, "STAGE_CODE": stage,
+                                 "OBSERVED_GAP_AMOUNT": round(float(amount), 2),
+                                 "AMOUNT_MEANING": meaning, "WAIT_DAYS": None, "WAIT_BASIS_DATE": "",
+                                 "POSSIBLE_CAUSE": "علت/مدت توقف با این Snapshot معلوم نیست",
+                                 "PROCESS_OWNER": "اعتبارات", "SUGGESTED_ACTION": action,
+                                 "EVIDENCE": "credit:" + " | ".join(refs),
+                                 "EVIDENCE_GAP": "سند بانکی و ارتباط یکتای LC به سفارش",
+                                 "DECISION_STATUS": "REPORTED_SNAPSHOT", "ADDITIVITY": "NON_ADDITIVE"})
+        return pd.DataFrame(rows, columns=columns)
 
     def _attach_money_reconciliation(self, control: pd.DataFrame, reconciliation: pd.DataFrame) -> pd.DataFrame:
         out = control.copy()
@@ -735,7 +858,7 @@ class MoneyFlowControlStage(Stage):
                 supplier_curs = _set_join(r.get("PAID_CURRENCY") for r in recs)
                 measured = [r for r in recs if _s(r.get("STATUS")) == "CROSS_CURRENCY_MEASURED"]
                 gaps = [r for r in recs if _s(r.get("STATUS")) == "CROSS_CURRENCY_EVIDENCE_GAP"]
-                impact = sum(_num(r.get("IMPACT_RIAL")) for r in measured)
+                impact = sum(_num(r.get("IMPACT_RIAL")) for r in measured) if measured else None
                 if gaps: conv_status = "EVIDENCE_GAP"
                 elif measured: conv_status = "MEASURED"
                 elif supplier_curs: conv_status = "SAME_CURRENCY_OR_NO_CROSS"
@@ -762,7 +885,7 @@ class MoneyFlowControlStage(Stage):
                 rate_summary[reg] = {
                     "supplier_curs": supplier_curs,
                     "conv_status": conv_status,
-                    "impact": float(impact),
+                    "impact": float(impact) if impact is not None else None,
                     "wavg": rate_parts[0][1] if len(rate_parts) == 1 else None,
                     "rate_display": " | ".join(f"{cur}: {rate:,.4f}" for cur, rate in rate_parts),
                 }
@@ -799,7 +922,7 @@ class MoneyFlowControlStage(Stage):
             rs = rate_summary.get(reg, {})
             supplier_curs = rs.get("supplier_curs", "")
             conv_status = rs.get("conv_status", "NO_SUPPLIER_PAYMENT_DATA")
-            impact = float(rs.get("impact", 0.0) or 0.0)
+            impact = rs.get("impact")
             wavg = rs.get("wavg")
             rate_display = rs.get("rate_display", "")
 
@@ -822,7 +945,7 @@ class MoneyFlowControlStage(Stage):
             score += min(60.0, unauth * 35.0)
             if conv_status == "EVIDENCE_GAP": score += 20.0
             rial_out = _num(lr.get("FX_RIAL_OUTFLOW_REPORTED"))
-            if impact > EPS:
+            if impact is not None and impact > EPS:
                 score += 10.0 + (10.0 if rial_out > EPS and impact / rial_out > 0.01 else 0.0)
             if deadline_status == "OVERDUE": score += 30.0
             elif deadline_status == "CRITICAL": score += 20.0
@@ -847,7 +970,7 @@ class MoneyFlowControlStage(Stage):
                 "FX_REALLOCATION_STATUS": rel_status, "FX_REALLOCATION_COUNT": len(rel),
                 "FX_UNAUTHORIZED_REALLOCATION_COUNT": unauth,
                 "FX_CONVERSION_STATUS": conv_status,
-                "FX_CONVERSION_IMPACT_RIAL": round(impact, 2),
+                "FX_CONVERSION_IMPACT_RIAL": round(impact, 2) if impact is not None and conv_status != "EVIDENCE_GAP" else None,
                 "FX_PURCHASE_WAVG_RATE": (round(wavg, 4) if wavg is not None else None),
                 "FX_PURCHASE_RATE_DISPLAY": rate_display,
                 "FX_SUPPLIER_CURRENCIES": supplier_curs,

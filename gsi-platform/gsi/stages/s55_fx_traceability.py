@@ -26,7 +26,7 @@ from ..adapters.base import KEY_BL, KEY_REG
 from ..core.jalali import CalendarEngine
 from ..core.text import is_empty_val, num_safe
 from ..dataio.logging_setup import log
-from ..finance.equivalents import (commitment_equivalents, summarize_credit_equivalents,
+from ..finance.equivalents import (_actual_purchase_rows, commitment_equivalents, summarize_credit_equivalents,
                                    summarize_fx_purchases)
 from .base import (ColumnSpec, FMT_CURRENCY, FMT_DECIMAL, GROUP_ANALYTIC,
                    GROUP_DETAIL, PipelineContext, Stage, register)
@@ -78,7 +78,8 @@ def _credit_amounts(c: Optional[pd.DataFrame]) -> Dict[str, Any]:
     «نامعلوم» صفر می‌شد. اکنون: هر LC یک بار (تعارض مقدار در یک LC = نامعلوم)؛
     چند ارز = نامعلوم؛ بدون هیچ شاهد عددی = نامعلوم.
     """
-    out: Dict[str, Any] = {k: (0.0 if c is None or c.empty else None) for k in _CREDIT_AGG}
+    # Absence of a credit row is not evidence of a numeric zero.
+    out: Dict[str, Any] = {k: None for k in _CREDIT_AGG}
     out["currency"] = ""
     if c is None or c.empty:
         return out
@@ -98,7 +99,12 @@ def _credit_amounts(c: Optional[pd.DataFrame]) -> Dict[str, Any]:
         for key, g in values.groupby(lc, sort=False):
             vals = sorted({float(x) for x in g.dropna() if math.isfinite(float(x))})
             if not key:
-                per_lc.extend(vals)     # بدون شماره LC: هر مقدار یکتا یک شاهد
+                # Two unkeyed rows may be duplicate snapshots or separate LCs.
+                # Their distinct amounts cannot establish either identity or sum.
+                if len(g) != 1 or len(vals) != 1:
+                    conflict = True
+                else:
+                    per_lc.append(vals[0])
             elif len(vals) == 1:
                 per_lc.append(vals[0])
             elif len(vals) > 1:
@@ -238,7 +244,7 @@ class FxTraceabilityStage(Stage):
         if not regs:
             return pd.DataFrame()
 
-        fx = ctx.sheet("fx_transaction", "main")
+        fx = _actual_purchase_rows(ctx.sheet("fx_transaction", "main"))
         cr = ctx.sheet("credit", "main")
         cm = ctx.sheet("ntsw", "commitment")
         al = ctx.sheet("ntsw", "allocation")
@@ -434,7 +440,7 @@ class FxTraceabilityStage(Stage):
                     add(r.get(KEY_REG), "ALLOCATION", "تخصیص ارز", r.get("NTSW_ALLOC_DATE"),
                         r.get("NTSW_ALLOCATED_AMOUNT", r.get("NTSW_REQ_AMOUNT")),
                         r.get("NTSW_REQ_CURRENCY"), "NTSW", r.get("NTSW_ALLOC_STATUS"))
-        fx = ctx.sheet("fx_transaction", "main")
+        fx = _actual_purchase_rows(ctx.sheet("fx_transaction", "main"))
         if fx is not None:
             for r in fx.to_dict("records"):
                 if _s(r.get("FX_PURCHASE_STATE")) == "PLANNED":

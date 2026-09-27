@@ -135,7 +135,9 @@ class CaseActionStage(Stage):
                 source_class: str = "INTERNAL_ADVISORY") -> None:
             due_s = due.isoformat() if due else ""
             days = (due - ctx.today).days if due else None
-            raw = f"{reg}|{code}|{title}|{due_s}"
+            # Current queue grain is one proposal per REG and action code.
+            # Presentation text and internal SLA may change between refreshes.
+            raw = f"{reg}|{code}"
             aid = "ACT-" + sha1(raw.encode("utf-8")).hexdigest()[:12].upper()
             subject = f"GSI | اقدام پیشنهادی پرونده {reg} | {title}"
             body = (f"پرونده: {reg}\nاولویت: {priority}\nاقدام پیشنهادی: {title}\n"
@@ -229,8 +231,10 @@ class CaseActionStage(Stage):
                     basis="CBI obligation separation 1405/03/04 + case_actions.clearance_to_bank_docs [internal SLA]")
             if bank_docs is not None and _s(bank_docs.get("STATUS")) == "DONE" and sett is not None and _s(sett.get("STATUS")) != "DONE":
                 rule = ctx.rb.get("case_actions.bank_docs_to_settlement", {}) or {}; dt = _d(bank_docs.get("EVENT_DATE")); age=(ctx.today-dt).days if dt else None
+                balance = pd.to_numeric(pd.Series([lr.get("FX_NTSW_BALANCE")]), errors="coerce").iloc[0]
+                balance_text = f"{float(balance):,.2f}" if pd.notna(balance) else "نامعلوم"
                 add(reg, "BANK_DOCS_COMMITMENT_OPEN", _s(rule.get("action_fa")), _s(rule.get("owner_role")),
-                    _priority(age, rule), f"سند ترخیص ارائه شده ولی مانده تعهد={_num(lr.get('FX_NTSW_BALANCE')):,.2f}",
+                    _priority(age, rule), f"سند ترخیص ارائه شده ولی وضعیت رفع تعهد نیازمند بررسی است؛ مانده={balance_text}",
                     due=(dt + timedelta(days=int(rule.get("watch_days", 7))) if dt else None),
                     gaps="نتیجه تطبیق/مابه‌التفاوت نرخ/وثیقه/ثبت رفع تعهد",
                     basis="NTSW source record + CBI 1405/03/04 + case_actions.bank_docs_to_settlement [internal SLA]")

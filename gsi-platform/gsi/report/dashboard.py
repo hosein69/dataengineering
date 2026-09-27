@@ -971,6 +971,7 @@ def _build_fx_traceability(self, extras: dict) -> None:
     for title, key in (("مراحل جریان پول و Deadlineها", "fx_stage_timeline"),
                        ("دفتر کل صفر تا صد پول", "fx_money_ledger"),
                        ("تطبیق مبالغ و تعهد", "fx_money_reconciliation"),
+                       ("پیگیری مالی مستند ـ جمع‌ناپذیر", "fx_financial_decisions"),
                        ("پل نرخ و تبدیل ارز", "fx_rate_bridge"),
                        ("جابجایی بین پرونده‌ها", "fx_reallocations"),
                        ("Signalهای انتقال دانش و Root Cause", "legacy_case_signals"),

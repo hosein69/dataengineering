@@ -799,7 +799,7 @@ def build_dynamic_html(df: pd.DataFrame, ref_date: str, title: str = "GSI",
             material_gap_html = ('<details><summary>هشدارهای فاقد مرجع مستقل — خارج از شمارش عملیاتی</summary>'
                                  + '<div class="tablewrap">' + alerts.to_html(index=False, escape=True, classes="advisory-gaps") + '</div></details>')
     # ONE dedicated material tab, including its explicit empty state.
-    if not material_view.empty or material_gap_html or expert_material_html:
+    if False and (not material_view.empty or material_gap_html or expert_material_html):
         mi = len(metas)
         mid = "pane_supply_material"
         mcols = list(material_view.columns)

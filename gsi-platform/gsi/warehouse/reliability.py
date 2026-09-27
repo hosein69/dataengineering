@@ -250,16 +250,24 @@ def validate_frame(name: str, df: pd.DataFrame, contract: GrainContract | None =
 
     # Grain uniqueness is meaningful only for rows whose natural key is complete.
     # Blank evidence rows must not collapse into a fake duplicate key.
-    dup_base = (df.loc[~_blank(df[key_cols[0]])] if c.nullable_key else df.loc[complete_mask]) if len(df) else df
+    # IMPORTANT: duplicate detection only needs the natural-key columns. Filtering
+    # the full (often very wide) source frame here can copy hundreds of columns
+    # and dominate validation time/memory. Keep the exact semantics on a narrow
+    # key-only frame instead.
+    key_frame = df.loc[:, key_cols]
+    valid_key_mask = (~_blank(key_frame[key_cols[0]])) if c.nullable_key else complete_mask
+    dup_base = key_frame.loc[valid_key_mask] if len(df) else key_frame
     dup_mask_local = dup_base.duplicated(subset=key_cols, keep=False) if len(dup_base) else pd.Series([], dtype=bool)
-    dup_mask = pd.Series(False, index=df.index)
-    if len(dup_base):
-        dup_mask.loc[dup_base.index] = dup_mask_local
-    dup_rows = int(dup_mask.sum()) if len(df) else 0
-    dup_keys = int(df.loc[dup_mask, key_cols].drop_duplicates().shape[0]) if dup_rows else 0
+    dup_rows = int(dup_mask_local.sum()) if len(dup_base) else 0
+    if dup_rows:
+        duplicate_keys = dup_base.loc[dup_mask_local, key_cols].drop_duplicates()
+        dup_keys = int(len(duplicate_keys))
+        sample = duplicate_keys.head(10).to_dict("records")
+    else:
+        dup_keys = 0
+        sample = []
     sev = BLOCK if c.duplicate_policy == "forbid" else WARN if c.duplicate_policy == "warn" else INFO
     passed = dup_rows == 0 or c.duplicate_policy == "allow"
-    sample = df.loc[dup_mask, key_cols].drop_duplicates().head(10).to_dict("records") if dup_rows else []
     checks.append(Check(c.name, "GRAIN_UNIQUENESS", sev, passed, {
         "duplicate_rows": dup_rows,
         "duplicate_keys": dup_keys,

@@ -5,7 +5,7 @@ import pandas as pd
 from ..dataio.logging_setup import log
 from .store import Warehouse
 from .reliability import validate_sources, schema_drift_checks, source_runtime_checks, Check, BLOCK, DEGRADED
-from .quality_gate import sqlite_checks, evaluate
+from .quality_gate import sqlite_foreign_key_check, sqlite_integrity_check, evaluate
 from .business_dwh import build as build_business_dwh
 
 def run_pipeline(pipeline,build_report,version):
@@ -69,10 +69,22 @@ def run_pipeline(pipeline,build_report,version):
             wh.audit('report_run',{'rows':len(result.df),'report':result.dashboard_path})
 
             # SQLite checks run after DWH mutation; record the complete gate again.
+            # Normal production refreshes use quick_check; full integrity_check is
+            # opt-in via GSI_SQLITE_FULL_INTEGRITY_CHECK=1 for release/forensic QA.
             _sqlite_t = time.perf_counter()
-            log.info("🔎 [sqlite-checks] START | foreign_key_check + integrity_check")
+            log.info("🔎 [sqlite-checks] START")
             with wh.db() as c:
-                checks.extend(sqlite_checks(c))
+                _fk_t = time.perf_counter()
+                log.info("🔗 [sqlite-checks] foreign_key_check START")
+                checks.append(sqlite_foreign_key_check(c))
+                log.info(f"🔗 [sqlite-checks] foreign_key_check DONE {time.perf_counter()-_fk_t:.2f}s")
+
+                _integrity_t = time.perf_counter()
+                log.info("⚡ [sqlite-checks] integrity START")
+                integrity_check = sqlite_integrity_check(c)
+                checks.append(integrity_check)
+                mode = integrity_check.detail.get('mode', 'quick')
+                log.info(f"⚡ [sqlite-checks] integrity DONE {time.perf_counter()-_integrity_t:.2f}s | mode={mode}")
             log.info(f"🔎 [sqlite-checks] DONE {time.perf_counter()-_sqlite_t:.2f}s")
             _t=time.perf_counter(); log.info("🛡️ [quality-gate] START")
             wh.record_quality(rid,checks)
