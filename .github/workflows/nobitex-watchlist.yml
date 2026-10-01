@@ -22,6 +22,11 @@ jobs:
       - name: Build watchlist from live apiv2.nobitex.ir data
         working-directory: crypto-watchlist-nobitex
         run: python watchlist.py
+      - name: Deep analysis (4h, ADX, Supertrend, order book, setup backtest, trade plan)
+        working-directory: crypto-watchlist-nobitex
+        env:
+          DEEP_SYMBOLS: "AAVE ZEC"
+        run: python deep_analysis.py
       - uses: actions/upload-artifact@v4
         with:
           name: nobitex-watchlist
