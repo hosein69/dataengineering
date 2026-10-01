@@ -70,8 +70,19 @@ def nobitex_daily(symbol, days=220):
 
 def nobitex_stats(symbols):
     src = ",".join(s.lower() for s in symbols)
-    data = get_json(f"{NOBITEX}/market/stats?srcCurrency={src}&dstCurrency=usdt")
-    return data.get("stats", {})
+    try:
+        return get_json(f"{NOBITEX}/market/stats?srcCurrency={src}&dstCurrency=usdt").get("stats", {})
+    except Exception as error:
+        # One unknown symbol (e.g. a delisted ticker) fails the whole batch; go one by one.
+        print(f"[warn] batch stats failed ({error}); fetching per symbol", file=sys.stderr)
+    stats = {}
+    for sym in symbols:
+        try:
+            stats.update(get_json(
+                f"{NOBITEX}/market/stats?srcCurrency={sym.lower()}&dstCurrency=usdt").get("stats", {}))
+        except Exception as error:
+            print(f"[warn] stats {sym}: {error}", file=sys.stderr)
+    return stats
 
 
 def binance_price(symbol):
