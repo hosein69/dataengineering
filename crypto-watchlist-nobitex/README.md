@@ -55,6 +55,19 @@ trigger for the first zone (reclaim, bullish engulfing or RSI divergence) and
 backtests the Fibonacci 0.5 limit entry against chasing on the coin's own
 history.
 
+## Market scanner
+
+`python scanner.py 5` (the workflow runs it with `SCAN_TOP`) builds the watchlist automatically:
+
+1. Takes every USDT market from `/v3/orderbook/all` and drops stablecoins.
+2. Keeps markets with a spread of at most 0.6% and at least 1,500 USDT on each side within ±2%.
+3. Applies a daily trend gate: price above the Kumo, Tenkan ≥ Kijun, ADX above 20 with
+   +DI over −DI, Supertrend up, and not over-extended (less than 3 ATR above the Kijun, RSI below 75).
+4. Backtests all trend-long setups on each coin's own history (2R barrier, 20 days).
+5. Ranks coins by an empirical-Bayes win rate: each coin's record is shrunk toward the
+   market-wide average with 10 pseudo-trades, so coins with only a few trades are not overrated.
+6. Runs the top N through `entry_zones.py`.
+
 ## Snapshot — 2026-09-23 03:06 UTC
 
 | Asset | Nobitex (USDT) | 24h % | Binance | Kumo | Tenkan/Kijun | RSI14 | 20d range | P(up) prior→post | Score |
