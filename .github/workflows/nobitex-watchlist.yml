@@ -27,6 +27,11 @@ jobs:
         env:
           DEEP_SYMBOLS: "AAVE ZEC"
         run: python deep_analysis.py
+      - name: Entry zones (volume profile, AVWAP, Fibonacci, confluence ladder, 1h trigger)
+        working-directory: crypto-watchlist-nobitex
+        env:
+          ENTRY_SYMBOLS: "AAVE"
+        run: python entry_zones.py
       - uses: actions/upload-artifact@v4
         with:
           name: nobitex-watchlist
