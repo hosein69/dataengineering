@@ -35,6 +35,26 @@ folder, or by hand with workflow_dispatch. The table appears in the job summary.
   for 1% account risk, and the highest leverage that keeps liquidation at
   least twice the stop distance away
 
+## Entry zones
+
+`python entry_zones.py AAVE` (the workflow runs it for the symbols in
+`ENTRY_SYMBOLS`) looks for exact entry levels. It finds the support levels
+below price where several independent methods agree:
+
+- 1h volume profile: POC, value area and high-volume nodes
+- anchored VWAP from the impulse low and from the latest high
+- Fibonacci retracements of the daily and 4h impulses
+- 4h pivot lows, and old 4h resistances that price has since broken
+- Kijun, Tenkan, EMA20 and the 4h Supertrend
+- live bid walls in the order book
+
+Each method counts once per zone, and zones are ranked by a weighted score.
+The best three become a 30/40/30 limit-order ladder with a stop, extension
+targets, position size and a leverage cap. The script also reports a 1h entry
+trigger for the first zone (reclaim, bullish engulfing or RSI divergence) and
+backtests the Fibonacci 0.5 limit entry against chasing on the coin's own
+history.
+
 ## Snapshot — 2026-09-23 03:06 UTC
 
 | Asset | Nobitex (USDT) | 24h % | Binance | Kumo | Tenkan/Kijun | RSI14 | 20d range | P(up) prior→post | Score |
