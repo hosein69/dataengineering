@@ -31,6 +31,7 @@ WATCHLIST = [
     ("ARB", ["ARB"], None, "claimed ~+10% day"),
     ("WLD", ["WLD"], None, "needs resistance breakout"),
     ("TRX", ["TRX"], None, "added for comparison"),
+    ("ZEC", ["ZEC"], None, "added for analysis"),
 ]
 LEADERS = [("BTC", ["BTC"]), ("ETH", ["ETH"])]
 
@@ -315,7 +316,7 @@ def render(results, leaders):
             verdict = f"price {'ABOVE' if r['price'] > level else 'BELOW'} {level} ({(r['price'] / level - 1) * 100:+.1f}%)"
         elif name == "ARB":
             verdict = f"24h change is {r['dayChange']:+.2f}%"
-        elif name == "TRX":
+        elif name in ("TRX", "ZEC"):
             verdict = f"20d range {fmt(r['low20'])}–{fmt(r['high20'])}; {r['structure']}"
         elif name == "WLD":
             verdict = f"20d high (resistance) {fmt(r['high20'])}; {r['structure']}"
