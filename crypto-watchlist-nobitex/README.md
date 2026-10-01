@@ -20,6 +20,21 @@ python watchlist.py          # writes output/watchlist.md and output/watchlist.j
 On GitHub, the `Nobitex Live Watchlist` workflow runs it on every push to this
 folder, or by hand with workflow_dispatch. The table appears in the job summary.
 
+## Deep analysis
+
+`python deep_analysis.py AAVE ZEC` (the workflow runs it for the symbols in
+`DEEP_SYMBOLS`) adds:
+
+- a 4h timeframe next to the daily one, with ADX/DMI, Supertrend (10, 3) and Donchian 20/55
+- the last closed day's volume compared with its 20-day average
+- live order-book depth at ±1/2/5%, bid/ask imbalance and the largest walls
+- a backtest of each setup on the coin's own daily history: long entries with
+  a stop at 1.5 ATR and a target at 3 ATR (2R) over 20 days, reporting a Beta
+  posterior win rate with a 90% credible interval and the expectancy in R
+- a trade plan: entry zone, stop, invalidation, three targets, position size
+  for 1% account risk, and the highest leverage that keeps liquidation at
+  least twice the stop distance away
+
 ## Snapshot — 2026-09-23 03:06 UTC
 
 | Asset | Nobitex (USDT) | 24h % | Binance | Kumo | Tenkan/Kijun | RSI14 | 20d range | P(up) prior→post | Score |
