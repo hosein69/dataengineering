@@ -32,6 +32,11 @@ jobs:
         env:
           ENTRY_SYMBOLS: "AAVE"
         run: python entry_zones.py
+      - name: Scan all USDT markets for a high-probability top-5 watchlist
+        working-directory: crypto-watchlist-nobitex
+        env:
+          SCAN_TOP: "5"
+        run: python scanner.py
       - uses: actions/upload-artifact@v4
         with:
           name: nobitex-watchlist
