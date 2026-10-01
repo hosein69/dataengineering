@@ -182,16 +182,21 @@ def analyse(sym, stats):
         add("HVN", v)
     # impulses: major (daily 55D) and minor (4h ~10 days)
     imps = {}
-    for label, cs, lb in (("1D", d, 55), ("4H", h4, 60)):
-        lo_i, lo, hi_i, hi = impulse(cs, lb)
+    for label, cs, lb, unit in (("1D", d, 55, atr_d), ("4H", h4, 60, atr_4)):
+        for look in (lb, lb * 2, lb * 4):
+            lo_i, lo, hi_i, hi = impulse(cs, min(look, len(cs)))
+            if hi - lo >= 3 * unit:
+                break
         imps[label] = (lo, hi, cs[lo_i]["t"], cs[hi_i]["t"])
         for f in (0.382, 0.5, 0.618, 0.786):
             add(f"Fib{f}", hi - f * (hi - lo), WEIGHTS[f"Fib{f}"] * (1.0 if label == "1D" else 0.8))
     # anchored VWAPs on 1h data from the minor swing low and the latest swing high
     lo_t, hi_t = imps["4H"][2], imps["4H"][3]
-    idx_lo = next((i for i, c in enumerate(h1) if c["t"] >= lo_t), 0)
-    idx_hi = next((i for i, c in enumerate(h1) if c["t"] >= hi_t), len(h1) - 1)
-    avwap_lo, avwap_hi = anchored_vwap(h1, idx_lo), anchored_vwap(h1, idx_hi)
+    in_h1 = lambda t: t >= h1[0]["t"]
+    idx_lo = next((i for i, c in enumerate(h1) if c["t"] >= lo_t), None) if in_h1(lo_t) else None
+    idx_hi = next((i for i, c in enumerate(h1) if c["t"] >= hi_t), None) if in_h1(hi_t) else None
+    avwap_lo = anchored_vwap(h1, idx_lo) if idx_lo is not None else None
+    avwap_hi = anchored_vwap(h1, idx_hi) if idx_hi is not None else None
     add("AVWAP_low", avwap_lo)
     add("AVWAP_high", avwap_hi)
     r = rd[-1]
@@ -241,6 +246,9 @@ def analyse(sym, stats):
         z["lo"], z["hi"] = min(vs) - 0.1 * atr_4, max(vs) + 0.1 * atr_4
         z["kinds"] = len({m[0].split("_")[0].replace("Fib0.", "Fib") for m in z["members"]})
     strong = [z for z in zones if z["score"] >= 5 and z["kinds"] >= 2]
+    weak = len(strong) < 2
+    if weak:
+        strong = [z for z in zones if z["score"] >= 3]
     ladder = sorted(sorted(strong, key=lambda z: -z["score"])[:3], key=lambda z: -z["center"])
     plan = None
     if ladder:
@@ -261,7 +269,7 @@ def analyse(sym, stats):
     bt_fib = fib_pullback_backtest(rd)
     bt_pull = barrier_test(rd, "PULLBACK_TO_KIJUN")
     bt_mom = barrier_test(rd, "MOMENTUM")
-    return {"sym": sym, "price": price, "live": live, "atr_d": atr_d, "atr_4": atr_4, "vp": vp,
+    return {"weak": weak, "sym": sym, "price": price, "live": live, "atr_d": atr_d, "atr_4": atr_4, "vp": vp,
             "imps": imps, "avwap": (avwap_lo, avwap_hi), "zones": zones, "ladder": ladder,
             "plan": plan, "trigger": trig, "ob": ob, "bt": {"FIB_0.5_PULLBACK (limit)": bt_fib,
             "PULLBACK_TO_KIJUN (close)": bt_pull, "MOMENTUM / chase (close)": bt_mom},
@@ -280,7 +288,8 @@ def render(x):
     for k, (lo, hi, *_rest) in x["imps"].items():
         L.append(f"- Impulse {k}: {f(lo)} → {f(hi)} | 0.382 {f(hi - .382 * (hi - lo))} · 0.5 {f(hi - .5 * (hi - lo))} · "
                  f"0.618 {f(hi - .618 * (hi - lo))} · 0.786 {f(hi - .786 * (hi - lo))}")
-    L.append(f"- Anchored VWAP: from swing low {f(x['avwap'][0])}, from swing high {f(x['avwap'][1])}")
+    L.append(f"- Anchored VWAP (only when the anchor is inside the 1h history): from swing low {f(x['avwap'][0])}, "
+             f"from swing high {f(x['avwap'][1])}")
     L += ["", "**Confluence zones below price** (score = weighted count of agreeing methods)", "",
           "| Zone | Center | Score | Methods |", "|---|---|---|---|"]
     for z in sorted(x["zones"], key=lambda z: -z["center"])[:10]:
@@ -289,7 +298,7 @@ def render(x):
                  f"{', '.join(sorted({m[0] for m in z['members']}))} |")
     pl = x["plan"]
     if pl:
-        L += ["", "**Limit-order ladder**", ""]
+        L += ["", "**Limit-order ladder**" + (" (weak confluence: no zone has ≥2 strong agreeing methods)" if x["weak"] else ""), ""]
         for i, (z, a) in enumerate(zip(x["ladder"], pl["alloc"]), 1):
             L.append(f"{i}. {a * 100:.0f}% at {f(z['center'])} (zone {f(z['lo'])}–{f(z['hi'])}, "
                      f"{(z['center'] / p - 1) * 100:+.1f}% from price, score {z['score']:.1f})")
