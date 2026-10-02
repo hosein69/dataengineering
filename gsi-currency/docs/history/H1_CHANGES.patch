@@ -1,0 +1,133 @@
+--- a/gsi/finance/equivalents.py
++++ b/gsi/finance/equivalents.py
+@@ -235,11 +235,11 @@
+ 
+ 
+ def _latest_allocation_rate(frame: Optional[pd.DataFrame], currency: str) -> Optional[float]:
+-    if frame is None or frame.empty or "NTSW_FX_RATE_NUMERIC" not in frame.columns:
++    if (frame is None or frame.empty or "NTSW_FX_RATE_NUMERIC" not in frame.columns
++            or "NTSW_REQ_CURRENCY" not in frame.columns):
+         return None
+     z = frame.copy()
+-    if "NTSW_REQ_CURRENCY" in z.columns:
+-        z = z[z["NTSW_REQ_CURRENCY"].map(_currency).eq(currency)]
++    z = z[z["NTSW_REQ_CURRENCY"].map(_currency).eq(currency)]
+     if z.empty:
+         return None
+     z["__rate"] = pd.to_numeric(z["NTSW_FX_RATE_NUMERIC"], errors="coerce")
+@@ -292,12 +292,11 @@
+     if not reg_s or not cur or bal is None:
+         return result
+ 
+-    f = fx_rows.copy() if fx_rows is not None else pd.DataFrame()
++    # Without both identity fields a transaction cannot supply a case rate.
++    f = (fx_rows.copy() if fx_rows is not None and
++         {KEY_REG, "FX_CURRENCY"}.issubset(fx_rows.columns) else pd.DataFrame())
+     if not f.empty:
+-        if KEY_REG in f.columns:
+-            f = f[f[KEY_REG].map(clean_key).eq(reg_s)]
+-        if "FX_CURRENCY" in f.columns:
+-            f = f[f["FX_CURRENCY"].map(_currency).eq(cur)]
++        f = f[f[KEY_REG].map(clean_key).eq(reg_s) & f["FX_CURRENCY"].map(_currency).eq(cur)]
+ 
+     # EUR authority: identity for EUR, otherwise source-reported EUR equivalent
+     # on same-case purchase rows.
+@@ -328,8 +327,10 @@
+                 coverage = "COMPLETE" if eligible and usable == eligible else "PARTIAL"
+                 result["FX_NTSW_RIAL_EQ_BASIS"] = f"FX_SOURCE_RATE_{coverage}_SAME_REG_CURRENCY"
+             else:
+-                alloc = allocation_rows
+-                if alloc is not None and not alloc.empty and KEY_REG in alloc.columns:
++                alloc = (allocation_rows if allocation_rows is not None and
++                         {KEY_REG, "NTSW_REQ_CURRENCY"}.issubset(allocation_rows.columns)
++                         else None)
++                if alloc is not None and not alloc.empty:
+                     alloc = alloc[alloc[KEY_REG].map(clean_key).eq(reg_s)]
+                 rial_rate = _latest_allocation_rate(alloc, cur)
+                 if rial_rate is not None:
+--- a/gsi/report/financial_summary.py
++++ b/gsi/report/financial_summary.py
+@@ -244,6 +244,7 @@
+     # One FX-equivalent value per REG is expected. Conflicting fan-out values
+     # are excluded rather than arbitrarily selected.
+     rows = []
++    conflicts = 0
+     for key, g in z.groupby("__reg", sort=False):
+         row: dict[str, object] = {"reg": key}
+         conflict = False
+@@ -258,8 +259,13 @@
+             row[c] = float(vals[0]) if vals else None
+         if not conflict:
+             rows.append(row)
+-    result["total"] = len(rows)
++        else:
++            conflicts += 1
++    result["total"] = len(rows) + conflicts
++    result["conflicted"] = conflicts
+     if not rows:
++        if conflicts:
++            result["status"] = "CONFLICTED"
+         return result
+ 
+     eur_vals = [r["FX_NTSW_BALANCE_EUR_EQ"] for r in rows if r.get("FX_NTSW_BALANCE_EUR_EQ") is not None]
+@@ -269,9 +275,9 @@
+     result["covered"] = min(len(eur_vals), len(irr_vals))
+     result["eur"] = float(sum(eur_vals)) if eur_vals else None
+     result["irr"] = float(sum(irr_vals)) if irr_vals else None
+-    if len(eur_vals) == len(rows) and len(irr_vals) == len(rows):
++    if not conflicts and len(eur_vals) == len(rows) and len(irr_vals) == len(rows):
+         result["status"] = "COMPLETE"
+-    elif eur_vals or irr_vals:
++    elif eur_vals or irr_vals or conflicts:
+         result["status"] = "PARTIAL"
+     return result
+ 
+--- a/tests/test_fx_equivalent_authority_v29_8_2.py
++++ b/tests/test_fx_equivalent_authority_v29_8_2.py
+@@ -171,3 +171,32 @@
+     assert out["FX_CREDIT_EUR_REPORTED"].iloc[0] == 800
+     assert out["FX_CREDIT_RIAL_REPORTED"].iloc[0] == 480_000_000
+     assert out["FX_CREDIT_EQ_STATUS"].iloc[0] == "EUR_AND_IRR_REPORTED"
++
++
++@pytest.mark.parametrize("missing", ["KEY_REG", "FX_CURRENCY"])
++def test_purchase_rate_missing_identity_cannot_value_other_case(missing):
++    fx = pd.DataFrame([{"KEY_REG": "OTHER", "FX_CURRENCY": "USD", "FX_AMOUNT": 100,
++                        "FX_EUR_VALUE": 90, "FX_RIAL_VALUE": 60_000_000}])
++    out = commitment_equivalents(reg="TARGET", currency="USD", balance=10,
++                                 fx_rows=fx.drop(columns=missing))
++    assert out["FX_NTSW_BALANCE_EUR_EQ"] is None
++    assert out["FX_NTSW_BALANCE_RIAL_EQ"] is None
++
++@pytest.mark.parametrize("missing", ["KEY_REG", "NTSW_REQ_CURRENCY"])
++def test_allocation_rate_missing_identity_cannot_value_other_case(missing):
++    alloc = pd.DataFrame([{"KEY_REG": "OTHER", "NTSW_REQ_CURRENCY": "USD",
++                           "NTSW_FX_RATE_NUMERIC": 600_000}])
++    out = commitment_equivalents(reg="TARGET", currency="USD", balance=10,
++                                 allocation_rows=alloc.drop(columns=missing))
++    assert out["FX_NTSW_BALANCE_RIAL_EQ"] is None
++
++def test_conflicted_registration_remains_in_coverage_denominator():
++    df = pd.DataFrame([
++        {"KEY_REG": "R1", "FX_NTSW_BALANCE_EUR_EQ": 100, "FX_NTSW_BALANCE_RIAL_EQ": 10},
++        {"KEY_REG": "R2", "FX_NTSW_BALANCE_EUR_EQ": 200, "FX_NTSW_BALANCE_RIAL_EQ": 20},
++        {"KEY_REG": "R2", "FX_NTSW_BALANCE_EUR_EQ": 300, "FX_NTSW_BALANCE_RIAL_EQ": 20},
++    ])
++    s = commitment_equivalent_summary(df)
++    assert s["total"] == 2 and s["conflicted"] == 1
++    assert s["eur"] == 100 and s["eur_covered"] == 1
++    assert s["status"] == "PARTIAL"
+--- a/PACKAGE_INFO.json
++++ b/PACKAGE_INFO.json
+@@ -1,8 +1,8 @@
+ {
+   "version": "29.8.2",
+-  "release_channel": "rc4-opt2",
+-  "base": "29.8.1 RC4-OPT1",
+-  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening",
++  "release_channel": "rc4-opt2-h1-review",
++  "base": "29.8.2 RC4-OPT2",
++  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening; missing-identity FX guard and conflict coverage",
+   "business_logic_changed": true,
+   "source_authority_changed": false,
+   "key_changes": [

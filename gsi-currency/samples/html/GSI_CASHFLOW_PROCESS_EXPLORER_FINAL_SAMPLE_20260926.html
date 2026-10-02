@@ -1,0 +1,367 @@
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GSI Cash Flow Process Explorer</title><style>body{margin:0;background:#f4f7f8;padding:22px;font-family:Tahoma,Arial,sans-serif}.wrap{max-width:1600px;margin:auto;background:white;border-radius:18px;padding:20px}</style></head><body><div class="wrap"><h1>GSI — Cash Flow Process Explorer</h1><p>نمونه داده ساختگی برای نمایش طراحی؛ هیچ داده سازمانی واقعی در این فایل نیست.</p><section id="cashflow_process_final" class="cfp" data-gsi-cashflow-process="1">
+
+<style>
+#cashflow_process_final.cfp{font-family:'IRANSansWeb','IRANSansX','IRANSans','YekanBakh','Vazirmatn',Tahoma,'Segoe UI',Arial,sans-serif;color:#0b1f33;direction:rtl}
+#cashflow_process_final *{box-sizing:border-box} #cashflow_process_final .cfp-head{display:flex;gap:12px;align-items:end;justify-content:space-between;flex-wrap:wrap;margin:0 0 12px}
+#cashflow_process_final .cfp-title{font-size:18px;font-weight:800} #cashflow_process_final .cfp-sub{font-size:12px;color:#5a6b79;margin-top:4px;max-width:900px}
+#cashflow_process_final .cfp-modebar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px} #cashflow_process_final .cfp-modebar button{border:1px solid #cdd9de;background:#fff;color:#0b1f33;border-radius:999px;padding:7px 12px;font:inherit;font-size:11px;cursor:pointer} #cashflow_process_final .cfp-modebar button[aria-pressed="true"]{background:#e7f1f2;border-color:#0a7c86;color:#075e65;font-weight:800}
+#cashflow_process_final .cfp-pipeline-wrap{border:1px solid #dbe3e7;border-radius:14px;background:#f9fbfb;padding:8px;margin:8px 0 12px;overflow:auto}
+#cashflow_process_final .cfp-graph[hidden]{display:none!important}
+#cashflow_process_final label{font-size:11px;color:#5a6b79;display:grid;gap:5px} #cashflow_process_final select{min-width:220px;min-height:40px;border:1px solid #cdd9de;border-radius:10px;padding:8px;background:#fff;color:#0b1f33;font:inherit}
+#cashflow_process_final .cfp-flow{border:1px solid #dbe3e7;border-radius:14px;background:#fff;overflow-x:auto;padding:8px;scrollbar-width:thin}
+#cashflow_process_final .cfp-flow svg{min-width:2280px} #cashflow_process_final .cfp-flow .node{cursor:pointer} #cashflow_process_final .cfp-flow .node.is-selected rect:first-child{stroke:#0A7C86!important;stroke-width:3px!important;filter:drop-shadow(0 5px 10px rgba(10,124,134,.18))}
+#cashflow_process_final .cfp-flow .edge{transition:opacity .15s} #cashflow_process_final .cfp-grid{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(0,1.7fr);gap:12px;margin-top:12px}
+#cashflow_process_final .cfp-card{border:1px solid #dbe3e7;border-radius:14px;background:#fff;padding:14px;min-width:0} #cashflow_process_final .cfp-card h4{margin:0 0 10px;font-size:14px} #cashflow_process_final .cfp-kv{display:grid;grid-template-columns:110px 1fr;gap:7px 10px;font-size:12px}
+#cashflow_process_final .cfp-kv b{color:#5a6b79;font-weight:600} #cashflow_process_final .cfp-chip{display:inline-flex;padding:3px 8px;border-radius:999px;background:#eef2f4;font-size:11px;margin:2px}
+#cashflow_process_final .cfp-tablewrap{overflow:auto;border:1px solid #dbe3e7;border-radius:14px;margin-top:12px;background:#fff;max-height:520px}
+#cashflow_process_final table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:960px} #cashflow_process_final th{position:sticky;top:0;background:#f7f9fa;z-index:1;text-align:right;padding:9px;border-bottom:1px solid #dbe3e7;white-space:nowrap} #cashflow_process_final td{padding:8px 9px;border-bottom:1px solid #edf1f3;vertical-align:top} #cashflow_process_final tbody tr{cursor:pointer} #cashflow_process_final tbody tr:hover,#cashflow_process_final tbody tr.is-selected{background:#e7f1f2}
+#cashflow_process_final .cfp-empty{color:#5a6b79;font-size:12px;padding:12px} #cashflow_process_final .cfp-status{font-weight:700} #cashflow_process_final .cfp-evidence{margin-top:12px}
+#cashflow_process_final .cfp-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:10.5px;color:#5a6b79;margin:8px 0} #cashflow_process_final .cfp-legend span{background:#f7f9fa;border:1px solid #e5ecef;border-radius:999px;padding:4px 8px}
+@media(max-width:760px){#cashflow_process_final .cfp-grid{grid-template-columns:1fr} #cashflow_process_final select{min-width:0;width:100%}}
+</style>
+<div class="cfp-head"><div><div class="cfp-title">نقشه الگوریتمی مسیر پول و تعهد</div><div class="cfp-sub">گراف از Process Explorer خود GSI ساخته شده است. ضخامت مسیر = تعداد پرونده دارای شاهد در دو مرحله؛ برچسب یال = تعداد و میانه زمان گذار. نبود شاهد به معنی انجام‌نشدن مرحله نیست.</div></div><label>پرونده برای Drill-down<select data-role="case"><option value="">نمای کل فرآیند</option><option value="R1001">R1001</option><option value="R1002">R1002</option></select></label></div>
+<div class="cfp-legend"><span>کلیک روی هر مرحله = جزئیات</span><span>کلیک روی ردیف جدول = همان مرحله</span><span>ارزهای مختلف هرگز با هم جمع نمی‌شوند</span><span>خط‌چین = شکاف/استثنا در مسیر</span></div>
+<div class="cfp-pipeline-wrap" aria-label="خط لوله کلان مسیر پول">
+<div class="cfp-pipeline" dir="rtl">
+<style>
+  .cfp-pipeline{display:flex;align-items:stretch;gap:4px;overflow-x:auto;padding:6px 2px;font-family:'IRANSansWeb','IRANSansX','IRANSans','YekanBakh','Yekan Bakh','Vazirmatn',Tahoma,'Segoe UI',Arial,sans-serif}
+  .cfp-sys-stage{flex:0 0 auto;display:flex}
+  .cfp-sys-card{background:#FFFFFF;border:1px solid #DBE3E7;border-top:3px solid;
+    border-radius:14px;box-shadow:0 4px 20px rgba(11, 31, 51, 0.05);padding:14px 18px;
+    min-width:132px;text-align:center;transition:transform .2s, box-shadow .2s}
+  .cfp-sys-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(11, 31, 51, 0.10)}
+  .cfp-sys-icon{font-size:22px;color:#0A7C86}
+  .cfp-sys-label{font-size:12.5px;font-weight:700;color:#0B1F33;margin-top:6px}
+  .cfp-sys-sub{font-size:10.5px;color:#5A6B79;margin-top:3px}
+  .cfp-sys-arrow{align-self:center;color:#7D919E;font-size:20px;padding:0 4px}
+</style>
+<div style="display:flex;align-items:center">
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">1</div>
+    <div class="cfp-sys-label">ثبت سفارش</div>
+    <div class="cfp-sys-sub">تجاری · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">2</div>
+    <div class="cfp-sys-label">صف تخصیص</div>
+    <div class="cfp-sys-sub">ارزی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">3</div>
+    <div class="cfp-sys-label">تخصیص ارز</div>
+    <div class="cfp-sys-sub">ارزی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">4</div>
+    <div class="cfp-sys-label">ایجاد تعهد ارزی</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">5</div>
+    <div class="cfp-sys-label">خرید ارز</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">6</div>
+    <div class="cfp-sys-label">تأمین وجه</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">7</div>
+    <div class="cfp-sys-label">سوئیفت / تبدیل / وصول ذی‌نفع</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">8</div>
+    <div class="cfp-sys-label">حمل</div>
+    <div class="cfp-sys-sub">لجستیک · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">9</div>
+    <div class="cfp-sys-label">ورود / EPL</div>
+    <div class="cfp-sys-sub">گمرک · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">10</div>
+    <div class="cfp-sys-label">ترخیص</div>
+    <div class="cfp-sys-sub">گمرک · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#E0A52E">
+    <div class="cfp-sys-icon">11</div>
+    <div class="cfp-sys-label">ارائه/تطبیق سند ترخیص با بانک</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div><div class="cfp-sys-arrow">←</div>
+<div class="cfp-sys-stage">
+  <div class="cfp-sys-card" style="border-top-color:#1D8F4E">
+    <div class="cfp-sys-icon">12</div>
+    <div class="cfp-sys-label">رفع تعهد</div>
+    <div class="cfp-sys-sub">بانکی · 2/2 پرونده</div>
+  </div>
+</div></div>
+</div></div>
+<div class="cfp-modebar" role="group" aria-label="حالت نمایش گراف"><button type="button" data-mode="frequency" aria-pressed="true">شدت مسیر / تعداد پرونده</button><button type="button" data-mode="performance" aria-pressed="false">عملکرد / زمان گذار</button></div>
+<div class="cfp-flow cfp-graph" data-role="graph-frequency">
+<svg viewBox="0 0 2280 430" width="100%" height="430" role="img"
+     xmlns="http://www.w3.org/2000/svg" style="direction:ltr">
+  
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#5A6B79"></path>
+  </marker>
+  <marker id="arrow-crit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#D03B3B"></path>
+  </marker>
+</defs>
+  <g class="edges"><g class="edge" data-src="ORDER_REG" data-tgt="ALLOCATION_QUEUE"><path d="M2131.0,215.0 C2118.2,215.0 2118.2,215.0 2105.4,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="2118.2" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="ALLOCATION_QUEUE" data-tgt="ALLOCATION"><path d="M1935.4,215.0 C1922.5,215.0 1922.5,215.0 1909.7,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1922.5" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 4.0 روز</text></g><g class="edge" data-src="ALLOCATION" data-tgt="COMMITMENT"><path d="M1739.7,215.0 C1726.9,215.0 1726.9,215.0 1714.1,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1726.9" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="COMMITMENT" data-tgt="FX_PURCHASE"><path d="M1544.1,215.0 C1531.3,215.0 1531.3,215.0 1518.5,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1531.3" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 7.5 روز</text></g><g class="edge" data-src="FX_PURCHASE" data-tgt="FUNDING"><path d="M1348.5,215.0 C1335.6,215.0 1335.6,215.0 1322.8,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1335.6" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="FUNDING" data-tgt="SWIFT_CONVERSION"><path d="M1152.8,215.0 C1140.0,215.0 1140.0,215.0 1127.2,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1140.0" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 3.0 روز</text></g><g class="edge" data-src="SWIFT_CONVERSION" data-tgt="SHIPMENT"><path d="M957.2,215.0 C944.4,215.0 944.4,215.0 931.5,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="944.4" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 5.0 روز</text></g><g class="edge" data-src="SHIPMENT" data-tgt="CUSTOMS"><path d="M761.5,215.0 C748.7,215.0 748.7,215.0 735.9,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="748.7" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 9.0 روز</text></g><g class="edge" data-src="CUSTOMS" data-tgt="CLEARANCE"><path d="M565.9,215.0 C553.1,215.0 553.1,215.0 540.3,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="553.1" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 4.0 روز</text></g><g class="edge edge-crit" data-src="CLEARANCE" data-tgt="BANK_DOCS"><path d="M370.3,215.0 C357.5,215.0 357.5,215.0 344.6,215.0" fill="none" stroke="#D03B3B" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" stroke-dasharray="7,5" marker-end="url(#arrow-crit)"></path><text x="357.5" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 3.0 روز</text></g><g class="edge" data-src="BANK_DOCS" data-tgt="SETTLEMENT"><path d="M174.6,215.0 C161.8,215.0 161.8,215.0 149.0,215.0" fill="none" stroke="#0A7C86" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="161.8" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 8.0 روز</text></g></g>
+  <g class="nodes">
+<g class="node" data-id="ORDER_REG" transform="translate(2131.0,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ثبت سفارش</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="ALLOCATION_QUEUE" transform="translate(1935.4,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">صف تخصیص</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="ALLOCATION" transform="translate(1739.7,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">تخصیص ارز</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="COMMITMENT" transform="translate(1544.1,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ایجاد تعهد ارزی</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="FX_PURCHASE" transform="translate(1348.5,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">خرید ارز</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="FUNDING" transform="translate(1152.8,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">تأمین وجه</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SWIFT_CONVERSION" transform="translate(957.2,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">سوئیفت / تبدیل / وصول ذی‌نفع</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SHIPMENT" transform="translate(761.5,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">حمل</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="CUSTOMS" transform="translate(565.9,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ورود / EPL</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="CLEARANCE" transform="translate(370.3,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ترخیص</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="BANK_DOCS" transform="translate(174.6,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#7A5A15" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#E0A52E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ارائه/تطبیق سند ترخیص با بانک</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SETTLEMENT" transform="translate(-21.0,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">رفع تعهد</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g></g>
+</svg>
+</div>
+<div class="cfp-flow cfp-graph" data-role="graph-performance" hidden>
+<svg viewBox="0 0 2280 430" width="100%" height="430" role="img"
+     xmlns="http://www.w3.org/2000/svg" style="direction:ltr">
+  
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#5A6B79"></path>
+  </marker>
+  <marker id="arrow-crit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="#D03B3B"></path>
+  </marker>
+</defs>
+  <g class="edges"><g class="edge" data-src="ORDER_REG" data-tgt="ALLOCATION_QUEUE"><path d="M2131.0,215.0 C2118.2,215.0 2118.2,215.0 2105.4,215.0" fill="none" stroke="#D8E9EB" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="2118.2" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="ALLOCATION_QUEUE" data-tgt="ALLOCATION"><path d="M1935.4,215.0 C1922.5,215.0 1922.5,215.0 1909.7,215.0" fill="none" stroke="#A9D2D6" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1922.5" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 4.0 روز</text></g><g class="edge" data-src="ALLOCATION" data-tgt="COMMITMENT"><path d="M1739.7,215.0 C1726.9,215.0 1726.9,215.0 1714.1,215.0" fill="none" stroke="#D8E9EB" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1726.9" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="COMMITMENT" data-tgt="FX_PURCHASE"><path d="M1544.1,215.0 C1531.3,215.0 1531.3,215.0 1518.5,215.0" fill="none" stroke="#187E88" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1531.3" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 7.5 روز</text></g><g class="edge" data-src="FX_PURCHASE" data-tgt="FUNDING"><path d="M1348.5,215.0 C1335.6,215.0 1335.6,215.0 1322.8,215.0" fill="none" stroke="#D8E9EB" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1335.6" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 2.0 روز</text></g><g class="edge" data-src="FUNDING" data-tgt="SWIFT_CONVERSION"><path d="M1152.8,215.0 C1140.0,215.0 1140.0,215.0 1127.2,215.0" fill="none" stroke="#D8E9EB" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="1140.0" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 3.0 روز</text></g><g class="edge" data-src="SWIFT_CONVERSION" data-tgt="SHIPMENT"><path d="M957.2,215.0 C944.4,215.0 944.4,215.0 931.5,215.0" fill="none" stroke="#71B5BC" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="944.4" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 5.0 روز</text></g><g class="edge" data-src="SHIPMENT" data-tgt="CUSTOMS"><path d="M761.5,215.0 C748.7,215.0 748.7,215.0 735.9,215.0" fill="none" stroke="#0B5A63" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="748.7" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 9.0 روز</text></g><g class="edge" data-src="CUSTOMS" data-tgt="CLEARANCE"><path d="M565.9,215.0 C553.1,215.0 553.1,215.0 540.3,215.0" fill="none" stroke="#A9D2D6" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="553.1" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 4.0 روز</text></g><g class="edge edge-crit" data-src="CLEARANCE" data-tgt="BANK_DOCS"><path d="M370.3,215.0 C357.5,215.0 357.5,215.0 344.6,215.0" fill="none" stroke="#D03B3B" stroke-opacity="0.85" stroke-width="8.6" stroke-linecap="round" stroke-dasharray="7,5" marker-end="url(#arrow-crit)"></path><text x="357.5" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 3.0 روز</text></g><g class="edge" data-src="BANK_DOCS" data-tgt="SETTLEMENT"><path d="M174.6,215.0 C161.8,215.0 161.8,215.0 149.0,215.0" fill="none" stroke="#0B5A63" stroke-opacity="0.95" stroke-width="8.6" stroke-linecap="round" marker-end="url(#arrow)"></path><text x="161.8" y="207.0" text-anchor="middle" class="edge-label" unicode-bidi="plaintext">2 پرونده · میانه 8.0 روز</text></g></g>
+  <g class="nodes">
+<g class="node" data-id="ORDER_REG" transform="translate(2131.0,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ثبت سفارش</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="ALLOCATION_QUEUE" transform="translate(1935.4,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">صف تخصیص</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="ALLOCATION" transform="translate(1739.7,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">تخصیص ارز</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="COMMITMENT" transform="translate(1544.1,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ایجاد تعهد ارزی</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="FX_PURCHASE" transform="translate(1348.5,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">خرید ارز</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="FUNDING" transform="translate(1152.8,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">تأمین وجه</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SWIFT_CONVERSION" transform="translate(957.2,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">سوئیفت / تبدیل / وصول ذی‌نفع</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SHIPMENT" transform="translate(761.5,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">حمل</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="CUSTOMS" transform="translate(565.9,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ورود / EPL</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="CLEARANCE" transform="translate(370.3,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ترخیص</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="BANK_DOCS" transform="translate(174.6,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#7A5A15" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#E0A52E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">ارائه/تطبیق سند ترخیص با بانک</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g>
+<g class="node" data-id="SETTLEMENT" transform="translate(-21.0,181.0)" opacity="1.00">
+  <rect width="170" height="68" rx="10" ry="10"
+        fill="#FFFFFF" stroke="#136B13" stroke-width="1.4"></rect>
+  <rect width="6" height="68" rx="3" fill="#1D8F4E"></rect>
+  <text x="85.0" y="22" text-anchor="middle" class="node-label" unicode-bidi="plaintext">رفع تعهد</text>
+  <text x="85.0" y="40" text-anchor="middle" class="node-count" unicode-bidi="plaintext">2</text>
+  <text x="85.0" y="53" text-anchor="middle" class="node-hint" unicode-bidi="plaintext">پوشش 100.0٪</text>
+</g></g>
+</svg>
+</div>
+<div class="cfp-grid"><div class="cfp-card"><h4>جزئیات مرحله انتخاب‌شده</h4><div data-role="detail" class="cfp-empty">یک مرحله از نمودار یا جدول را انتخاب کنید.</div></div><div class="cfp-card"><h4>شواهد مالی / اسنادی مرحله</h4><div data-role="evidence" class="cfp-empty">در نمای کل، مرحله‌ای را انتخاب کنید؛ یا یک پرونده انتخاب کنید تا سند، مبلغ، منبع و وضعیت نمایش داده شود.</div></div></div>
+<div class="cfp-tablewrap"><table aria-label="مسیر پول"><thead><tr><th>#</th><th>مرحله</th><th>فاز</th><th>وضعیت</th><th>تاریخ شاهد</th><th>مبلغ‌ها برحسب ارز</th><th>سند / Evidence</th><th>شکاف / توضیح</th></tr></thead><tbody data-role="path"></tbody></table></div>
+<div class="cfp-tablewrap cfp-evidence"><table aria-label="ارتباط‌های مستند پول"><thead><tr><th>پرونده</th><th>از مرحله</th><th>به مرحله</th><th>مبلغ مبدأ</th><th>مبلغ مقصد</th><th>مجوز/وضعیت</th><th>شناسه رویدادها</th></tr></thead><tbody data-role="trace"></tbody></table></div>
+<script type="application/json" data-role="payload">{"stages":[{"code":"ORDER_REG","label":"ثبت سفارش","phase":"تجاری"},{"code":"ALLOCATION_QUEUE","label":"صف تخصیص","phase":"ارزی"},{"code":"ALLOCATION","label":"تخصیص ارز","phase":"ارزی"},{"code":"COMMITMENT","label":"ایجاد تعهد ارزی","phase":"بانکی"},{"code":"FX_PURCHASE","label":"خرید ارز","phase":"بانکی"},{"code":"FUNDING","label":"تأمین وجه","phase":"بانکی"},{"code":"SWIFT_CONVERSION","label":"سوئیفت / تبدیل / وصول ذی‌نفع","phase":"بانکی"},{"code":"SHIPMENT","label":"حمل","phase":"لجستیک"},{"code":"CUSTOMS","label":"ورود / EPL","phase":"گمرک"},{"code":"CLEARANCE","label":"ترخیص","phase":"گمرک"},{"code":"BANK_DOCS","label":"ارائه/تطبیق سند ترخیص با بانک","phase":"بانکی"},{"code":"SETTLEMENT","label":"رفع تعهد","phase":"بانکی"}],"stage_stats":[{"code":"ORDER_REG","label":"ثبت سفارش","phase":"تجاری","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"ALLOCATION_QUEUE","label":"صف تخصیص","phase":"ارزی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"ALLOCATION","label":"تخصیص ارز","phase":"ارزی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"COMMITMENT","label":"ایجاد تعهد ارزی","phase":"بانکی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"FX_PURCHASE","label":"خرید ارز","phase":"بانکی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"FUNDING","label":"تأمین وجه","phase":"بانکی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"SWIFT_CONVERSION","label":"سوئیفت / تبدیل / وصول ذی‌نفع","phase":"بانکی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"SHIPMENT","label":"حمل","phase":"لجستیک","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"CUSTOMS","label":"ورود / EPL","phase":"گمرک","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"CLEARANCE","label":"ترخیص","phase":"گمرک","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0},{"code":"BANK_DOCS","label":"ارائه/تطبیق سند ترخیص با بانک","phase":"بانکی","cases":2,"total_cases":2,"exceptions":1,"status":"EVIDENCE_GAP","status_label":"شکاف شاهد","coverage":100.0},{"code":"SETTLEMENT","label":"رفع تعهد","phase":"بانکی","cases":2,"total_cases":2,"exceptions":0,"status":"DONE","status_label":"دارای شاهد","coverage":100.0}],"nodes":[{"id":"ORDER_REG","label":"ثبت سفارش","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"ALLOCATION_QUEUE","label":"صف تخصیص","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"ALLOCATION","label":"تخصیص ارز","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"COMMITMENT","label":"ایجاد تعهد ارزی","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"FX_PURCHASE","label":"خرید ارز","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"FUNDING","label":"تأمین وجه","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"SWIFT_CONVERSION","label":"سوئیفت / تبدیل / وصول ذی‌نفع","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"SHIPMENT","label":"حمل","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"CUSTOMS","label":"ورود / EPL","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"CLEARANCE","label":"ترخیص","count":2,"status":"good","hint":"پوشش 100.0٪"},{"id":"BANK_DOCS","label":"ارائه/تطبیق سند ترخیص با بانک","count":2,"status":"warning","hint":"پوشش 100.0٪"},{"id":"SETTLEMENT","label":"رفع تعهد","count":2,"status":"good","hint":"پوشش 100.0٪"}],"edges":[{"source":"ORDER_REG","target":"ALLOCATION_QUEUE","count":2,"median_hours":48.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 2.0 روز"},{"source":"ALLOCATION_QUEUE","target":"ALLOCATION","count":2,"median_hours":96.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 4.0 روز"},{"source":"ALLOCATION","target":"COMMITMENT","count":2,"median_hours":48.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 2.0 روز"},{"source":"COMMITMENT","target":"FX_PURCHASE","count":2,"median_hours":180.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 7.5 روز"},{"source":"FX_PURCHASE","target":"FUNDING","count":2,"median_hours":48.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 2.0 روز"},{"source":"FUNDING","target":"SWIFT_CONVERSION","count":2,"median_hours":72.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 3.0 روز"},{"source":"SWIFT_CONVERSION","target":"SHIPMENT","count":2,"median_hours":120.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 5.0 روز"},{"source":"SHIPMENT","target":"CUSTOMS","count":2,"median_hours":216.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 9.0 روز"},{"source":"CUSTOMS","target":"CLEARANCE","count":2,"median_hours":96.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 4.0 روز"},{"source":"CLEARANCE","target":"BANK_DOCS","count":2,"median_hours":72.0,"deviating":true,"critical":false,"label":"2 پرونده · میانه 3.0 روز"},{"source":"BANK_DOCS","target":"SETTLEMENT","count":2,"median_hours":192.0,"deviating":false,"critical":false,"label":"2 پرونده · میانه 8.0 روز"}],"cases":["R1001","R1002"],"case_stage":{"R1001":{"ORDER_REG":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-01","dates":"2026-08-01","amounts":"100000.0 EUR","documents":"R1001-REG","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"ALLOCATION_QUEUE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-03","dates":"2026-08-03","amounts":"100000.0 EUR","documents":"R1001-AR","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"ALLOCATION":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-07","dates":"2026-08-07","amounts":"95000.0 EUR","documents":"R1001-AL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"FX_PURCHASE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-15","dates":"2026-08-15","amounts":"95000.0 EUR","documents":"R1001-FX","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"FUNDING":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-17","dates":"2026-08-17","amounts":"5500000000.0 IRR","documents":"R1001-FN","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SWIFT_CONVERSION":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-20","dates":"2026-08-20","amounts":"94000.0 EUR","documents":"R1001-SW","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SHIPMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-25","dates":"2026-08-25","amounts":"—","documents":"R1001-BL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"CUSTOMS":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-03","dates":"2026-09-03","amounts":"—","documents":"R1001-EPL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"CLEARANCE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-07","dates":"2026-09-07","amounts":"—","documents":"R1001-KOT","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"BANK_DOCS":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-10","dates":"2026-09-10","amounts":"—","documents":"R1001-BANK","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SETTLEMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-18","dates":"2026-09-18","amounts":"95000.0 EUR","documents":"R1001-BAL | R1001-REL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":2},"COMMITMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-09","dates":"2026-08-09","amounts":"95000.0 EUR","documents":"R1001-CM","gap":"","detail":"","event_count":1}},"R1002":{"ORDER_REG":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-04","dates":"2026-08-04","amounts":"120000.0 EUR","documents":"R1002-REG","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"ALLOCATION_QUEUE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-06","dates":"2026-08-06","amounts":"120000.0 EUR","documents":"R1002-AR","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"ALLOCATION":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-10","dates":"2026-08-10","amounts":"114000.0 EUR","documents":"R1002-AL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"FX_PURCHASE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-18","dates":"2026-08-18","amounts":"114000.0 EUR","documents":"R1002-FX","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"FUNDING":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-20","dates":"2026-08-20","amounts":"6600000000.0 IRR","documents":"R1002-FN","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SWIFT_CONVERSION":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-23","dates":"2026-08-23","amounts":"112800.0 EUR","documents":"R1002-SW","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SHIPMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-28","dates":"2026-08-28","amounts":"—","documents":"R1002-BL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"CUSTOMS":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-06","dates":"2026-09-06","amounts":"—","documents":"R1002-EPL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"CLEARANCE":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-10","dates":"2026-09-10","amounts":"—","documents":"R1002-KOT","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"BANK_DOCS":{"status":"EVIDENCE_GAP","status_label":"شکاف شاهد","date":"2026-09-13","dates":"2026-09-13","amounts":"—","documents":"R1002-BANK","gap":"EVIDENCE_GAP","detail":"مهلت: 2026-09-30 · نمونه","event_count":1},"SETTLEMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-09-21","dates":"2026-09-21","amounts":"114000.0 EUR","documents":"R1002-BAL | R1002-REL","gap":"","detail":"مهلت: 2026-09-30 · نمونه","event_count":2},"COMMITMENT":{"status":"DONE","status_label":"دارای شاهد","date":"2026-08-09","dates":"2026-08-09","amounts":"114000.0 EUR","documents":"R1002-CM","gap":"","detail":"","event_count":1}}},"evidence":{"R1001":[{"stage":"ORDER_REG","event":"ارزش ثبت سفارش","date":"2026-08-01","amount":100000.0,"currency":"EUR","source":"sample","document":"R1001-REG","reference":"R1001-REG","status":"DONE","note":""},{"stage":"ALLOCATION_QUEUE","event":"درخواست تخصیص","date":"2026-08-03","amount":100000.0,"currency":"EUR","source":"sample","document":"R1001-AR","reference":"R1001-AR","status":"DONE","note":""},{"stage":"ALLOCATION","event":"تخصیص ارز","date":"2026-08-07","amount":95000.0,"currency":"EUR","source":"sample","document":"R1001-AL","reference":"R1001-AL","status":"DONE","note":""},{"stage":"COMMITMENT","event":"تعهد اولیه ارزی","date":"2026-08-09","amount":95000.0,"currency":"EUR","source":"sample","document":"R1001-CM","reference":"R1001-CM","status":"DONE","note":""},{"stage":"FX_PURCHASE","event":"خرید ارز","date":"2026-08-15","amount":95000.0,"currency":"EUR","source":"sample","document":"R1001-FX","reference":"R1001-FX","status":"DONE","note":""},{"stage":"FUNDING","event":"تامین وجه ریالی","date":"2026-08-17","amount":5500000000.0,"currency":"IRR","source":"sample","document":"R1001-FN","reference":"R1001-FN","status":"DONE","note":""},{"stage":"SWIFT_CONVERSION","event":"پرداخت به ذی نفع","date":"2026-08-20","amount":94000.0,"currency":"EUR","source":"sample","document":"R1001-SW","reference":"R1001-SW","status":"DONE","note":""},{"stage":"SHIPMENT","event":"حمل","date":"2026-08-25","amount":null,"currency":"","source":"sample","document":"R1001-BL","reference":"R1001-BL","status":"DONE","note":""},{"stage":"CUSTOMS","event":"ورود گمرک","date":"2026-09-03","amount":null,"currency":"","source":"sample","document":"R1001-EPL","reference":"R1001-EPL","status":"DONE","note":""},{"stage":"CLEARANCE","event":"ترخیص","date":"2026-09-07","amount":null,"currency":"","source":"sample","document":"R1001-KOT","reference":"R1001-KOT","status":"DONE","note":""},{"stage":"BANK_DOCS","event":"ارائه سند بانک","date":"2026-09-10","amount":null,"currency":"","source":"sample","document":"R1001-BANK","reference":"R1001-BANK","status":"DONE","note":""},{"stage":"SETTLEMENT","event":"رفع تعهد","date":"2026-09-18","amount":90000.0,"currency":"EUR","source":"sample","document":"R1001-REL","reference":"R1001-REL","status":"DONE","note":""},{"stage":"SETTLEMENT","event":"مانده تعهد","date":"2026-09-30","amount":5000.0,"currency":"EUR","source":"sample","document":"R1001-BAL","reference":"R1001-BAL","status":"DONE","note":"تاریخ این ردیف مهلت است"}],"R1002":[{"stage":"ORDER_REG","event":"ارزش ثبت سفارش","date":"2026-08-01","amount":120000.0,"currency":"EUR","source":"sample","document":"R1002-REG","reference":"R1002-REG","status":"DONE","note":""},{"stage":"ALLOCATION_QUEUE","event":"درخواست تخصیص","date":"2026-08-03","amount":120000.0,"currency":"EUR","source":"sample","document":"R1002-AR","reference":"R1002-AR","status":"DONE","note":""},{"stage":"ALLOCATION","event":"تخصیص ارز","date":"2026-08-07","amount":114000.0,"currency":"EUR","source":"sample","document":"R1002-AL","reference":"R1002-AL","status":"DONE","note":""},{"stage":"COMMITMENT","event":"تعهد اولیه ارزی","date":"2026-08-09","amount":114000.0,"currency":"EUR","source":"sample","document":"R1002-CM","reference":"R1002-CM","status":"DONE","note":""},{"stage":"FX_PURCHASE","event":"خرید ارز","date":"2026-08-15","amount":114000.0,"currency":"EUR","source":"sample","document":"R1002-FX","reference":"R1002-FX","status":"DONE","note":""},{"stage":"FUNDING","event":"تامین وجه ریالی","date":"2026-08-17","amount":6600000000.0,"currency":"IRR","source":"sample","document":"R1002-FN","reference":"R1002-FN","status":"DONE","note":""},{"stage":"SWIFT_CONVERSION","event":"پرداخت به ذی نفع","date":"2026-08-20","amount":112800.0,"currency":"EUR","source":"sample","document":"R1002-SW","reference":"R1002-SW","status":"DONE","note":""},{"stage":"SHIPMENT","event":"حمل","date":"2026-08-25","amount":null,"currency":"","source":"sample","document":"R1002-BL","reference":"R1002-BL","status":"DONE","note":""},{"stage":"CUSTOMS","event":"ورود گمرک","date":"2026-09-03","amount":null,"currency":"","source":"sample","document":"R1002-EPL","reference":"R1002-EPL","status":"DONE","note":""},{"stage":"CLEARANCE","event":"ترخیص","date":"2026-09-07","amount":null,"currency":"","source":"sample","document":"R1002-KOT","reference":"R1002-KOT","status":"DONE","note":""},{"stage":"BANK_DOCS","event":"ارائه سند بانک","date":"2026-09-10","amount":null,"currency":"","source":"sample","document":"R1002-BANK","reference":"R1002-BANK","status":"DONE","note":""},{"stage":"SETTLEMENT","event":"رفع تعهد","date":"2026-09-18","amount":108000.0,"currency":"EUR","source":"sample","document":"R1002-REL","reference":"R1002-REL","status":"DONE","note":""},{"stage":"SETTLEMENT","event":"مانده تعهد","date":"2026-09-30","amount":6000.0,"currency":"EUR","source":"sample","document":"R1002-BAL","reference":"R1002-BAL","status":"DONE","note":"تاریخ این ردیف مهلت است"}]},"traced":[],"labels":{"ORDER_REG":"ثبت سفارش","ALLOCATION_QUEUE":"صف تخصیص","ALLOCATION":"تخصیص ارز","COMMITMENT":"ایجاد تعهد ارزی","FX_PURCHASE":"خرید ارز","FUNDING":"تأمین وجه","SWIFT_CONVERSION":"سوئیفت / تبدیل / وصول ذی‌نفع","SHIPMENT":"حمل","CUSTOMS":"ورود / EPL","CLEARANCE":"ترخیص","BANK_DOCS":"ارائه/تطبیق سند ترخیص با بانک","SETTLEMENT":"رفع تعهد"}}</script>
+<script>(function(){
+ const root=document.getElementById("cashflow_process_final"); if(!root||root.dataset.ready==='1')return;root.dataset.ready='1';
+ const D=JSON.parse(root.querySelector('[data-role=payload]').textContent),sel=root.querySelector('[data-role=case]'),path=root.querySelector('[data-role=path]'),detail=root.querySelector('[data-role=detail]'),evidence=root.querySelector('[data-role=evidence]'),trace=root.querySelector('[data-role=trace]');
+ let stage=''; const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ const statusLabel=s=>({"DONE": "دارای شاهد", "OBSERVED": "دارای شاهد", "MATCH": "تطبیق‌شده", "CURRENT": "مرحله جاری", "PARTIAL": "شاهد ناقص", "PENDING": "در انتظار شاهد", "NO_EVIDENCE": "بدون شاهد در منبع", "EVIDENCE_GAP": "شکاف شاهد", "WARNING": "نیازمند بررسی", "OVERDUE": "مهلت گذشته", "CRITICAL": "بحرانی", "MISMATCH": "مغایرت", "CONFLICT": "تعارض", "LEDGER_ONLY": "فقط دفتر", "NOT_APPLICABLE": "نامشمول/نامعلوم", "SOURCE_FACT": "شاهد منبع"}[s]||s||'—');
+ function rowData(code){const c=sel.value; if(c)return (D.case_stage[c]||{})[code]||{status:'NO_EVIDENCE',status_label:'بدون شاهد در منبع',amounts:'—'}; const z=D.stage_stats.find(x=>x.code===code)||{}; return {status:z.status,status_label:z.status_label,date:'',amounts:'—',documents:'',gap:z.exceptions?z.exceptions+' پرونده نیازمند بررسی':'',detail:'پوشش '+(z.coverage??0)+'٪ · '+(z.cases??0)+' از '+(z.total_cases??0)+' پرونده',event_count:z.cases||0};}
+ function renderPath(){path.innerHTML='';D.stages.forEach((s,i)=>{const r=rowData(s.code),tr=document.createElement('tr');tr.dataset.stage=s.code;if(s.code===stage)tr.classList.add('is-selected');tr.innerHTML='<td>'+(i+1)+'</td><td><b>'+esc(s.label)+'</b></td><td>'+esc(s.phase||'')+'</td><td class="cfp-status">'+esc(r.status_label||statusLabel(r.status))+'</td><td>'+esc(r.dates||r.date||'—')+'</td><td>'+esc(r.amounts||'—')+'</td><td>'+esc(r.documents||'—')+'</td><td>'+esc([r.gap,r.detail].filter(Boolean).join(' · ')||'—')+'</td>';tr.addEventListener('click',()=>selectStage(s.code));path.appendChild(tr)})}
+ function renderTrace(){const c=sel.value;const rows=(D.traced||[]).filter(x=>!c||x.case===c);trace.innerHTML='';if(!rows.length){trace.innerHTML='<tr><td colspan="7" class="cfp-empty">ارتباط صریح مبلغی در این محدوده ثبت نشده است؛ رابطه حدسی ساخته نمی‌شود.</td></tr>';return} rows.forEach(x=>{const tr=document.createElement('tr');tr.innerHTML='<td>'+esc(x.case)+'</td><td>'+esc(D.labels[x.source_stage]||x.source_stage||'—')+'</td><td>'+esc(D.labels[x.target_stage]||x.target_stage||'—')+'</td><td>'+esc((x.from_amount||'—')+' '+(x.from_currency||''))+'</td><td>'+esc((x.to_amount||'—')+' '+(x.to_currency||''))+'</td><td>'+esc([x.authorization,x.status].filter(Boolean).join(' · ')||'—')+'</td><td>'+esc((x.from_event||'')+' → '+(x.to_event||''))+'</td>';trace.appendChild(tr)})}
+ function selectStage(code){stage=code;root.querySelectorAll('.cfp-flow .node').forEach(n=>n.classList.toggle('is-selected',n.dataset.id===code));renderPath();renderDetail()}
+ function renderDetail(){if(!stage){detail.className='cfp-empty';detail.textContent='یک مرحله از نمودار یا جدول را انتخاب کنید.';evidence.className='cfp-empty';evidence.textContent='مرحله‌ای انتخاب نشده است.';return} const s=D.stages.find(x=>x.code===stage)||{code:stage,label:stage},r=rowData(stage),c=sel.value;detail.className='cfp-kv';detail.innerHTML='<b>مرحله</b><span>'+esc(s.label)+'</span><b>وضعیت</b><span>'+esc(r.status_label||statusLabel(r.status))+'</span><b>تاریخ</b><span>'+esc(r.dates||r.date||'—')+'</span><b>مبلغ‌ها</b><span>'+esc(r.amounts||'—')+'</span><b>اسناد</b><span>'+esc(r.documents||'—')+'</span><b>شکاف</b><span>'+esc(r.gap||'—')+'</span><b>توضیح</b><span>'+esc(r.detail||'—')+'</span>';
+   let rows=[]; if(c)rows=(D.evidence[c]||[]).filter(x=>x.stage===stage); else D.cases.forEach(k=>{(D.evidence[k]||[]).forEach(x=>{if(x.stage===stage)rows.push(Object.assign({case:k},x))})}); evidence.className=''; if(!rows.length){evidence.innerHTML='<div class="cfp-empty">شاهد ردیفی برای این مرحله در محدوده انتخابی موجود نیست.</div>';return} const cap=rows.slice(0,250);evidence.innerHTML='<div class="cfp-tablewrap" style="margin:0"><table><thead><tr><th>پرونده</th><th>رویداد</th><th>تاریخ</th><th>مبلغ</th><th>ارز</th><th>منبع</th><th>سند/مرجع</th><th>وضعیت/یادداشت</th></tr></thead><tbody>'+cap.map(x=>'<tr><td>'+esc(x.case||c||'')+'</td><td>'+esc(x.event||'')+'</td><td>'+esc(x.date||'—')+'</td><td>'+esc(x.amount??'—')+'</td><td>'+esc(x.currency||'')+'</td><td>'+esc(x.source||'—')+'</td><td>'+esc(x.document||x.reference||'—')+'</td><td>'+esc([x.status,x.note].filter(Boolean).join(' · ')||'—')+'</td></tr>').join('')+'</tbody></table></div>'+(rows.length>250?'<div class="cfp-empty">۲۵۰ ردیف اول نمایش داده شد؛ جدول اصلی گزارش همه شواهد را نگه می‌دارد.</div>':''); }
+ root.querySelectorAll('.cfp-modebar button').forEach(b=>b.addEventListener('click',()=>{const mode=b.dataset.mode;root.querySelectorAll('.cfp-modebar button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));root.querySelector('[data-role=graph-frequency]').hidden=mode!=='frequency';root.querySelector('[data-role=graph-performance]').hidden=mode!=='performance';if(stage)selectStage(stage);}));
+ sel.addEventListener('change',()=>{stage='';renderPath();renderTrace();renderDetail();}); root.querySelectorAll('.cfp-flow .node').forEach(n=>{n.setAttribute('tabindex','0');n.setAttribute('role','button');n.addEventListener('click',()=>selectStage(n.dataset.id));n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectStage(n.dataset.id)}})});renderPath();renderTrace();
+})();</script>
+</section></div></body></html>

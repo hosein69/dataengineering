@@ -1,0 +1,25 @@
+# AIBL Semantic Metric Registry — v26.17
+# kind: additive | ratio | identifier
+# grain: BL | ORDER | REG | MATERIAL | PR | EMP | ROW | AUTO
+# agg: sum | mean | nunique | min | max
+# واحد و توضیح برای lineage و گزارش صحت نگهداری می‌شود.
+exact:
+  "مانده تعهد": {kind: additive, agg: sum, grain: REG, unit: currency, description: "مانده تعهد ارزی در سطح ثبت سفارش"}
+  "جریمه برآوردی": {kind: additive, agg: sum, grain: REG, unit: currency, description: "جریمه برآوردی در سطح ثبت سفارش"}
+  "تعهد اولیه": {kind: additive, agg: sum, grain: REG, unit: currency}
+  "مقاومت (روز)": {kind: ratio, agg: mean, grain: MATERIAL, unit: day}
+  "مقاومت انبار (روز)": {kind: ratio, agg: mean, grain: MATERIAL, unit: day}
+  "نیاز روزانه": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity_per_day}
+  "موجودی کل قابل احتساب": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity}
+  "موجودی ایران خودرو": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity}
+  "موجودی ساپکو": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity}
+  "موجودی در راه": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity}
+  "موجودی در گمرک": {kind: additive, agg: sum, grain: MATERIAL, unit: quantity}
+  "روزهای رسوب": {kind: ratio, agg: mean, grain: BL, unit: day}
+  "روزهای تأخیر": {kind: ratio, agg: mean, grain: REG, unit: day}
+  "مهلت قانونی رفع تعهد": {kind: identifier, agg: nunique, grain: REG, unit: date}
+patterns:
+  - {regex: "(DATE|DATETIME|TIME|TIMESTAMP|_DT$|^DT_|تاریخ|زمان|مهلت)", kind: identifier, agg: nunique, unit: date}
+  - {regex: "(^KEY_|^CANONICAL_|(_NO|_CODE|_ID|_KEY)$|شماره|کد |^کد$|کلید|کوتاژ|تعرفه|بارنامه|پرونده|رهگیری)", kind: identifier, agg: nunique}
+  - {regex: "(درصد|نرخ|٪|%|مقاومت|امتیاز|ratio|pct|rate|score|share|سهم|میانگین|throughput|روز\\)|days?$)", kind: ratio, agg: mean}
+  - {regex: "(VALUE|AMOUNT|BALANCE|COMMIT|PENALTY|COST|PRICE|TOTAL|QTY|QUANTITY|WEIGHT|STOCK|INVENTORY|مبلغ|ارزش|مانده|تعهد|جریمه|موجودی|تعداد|وزن)", kind: additive, agg: sum}

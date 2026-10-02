@@ -1,0 +1,22 @@
+{
+  "version": "29.8.2",
+  "release_channel": "rc4-opt2",
+  "base": "29.8.1 RC4-OPT1",
+  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening",
+  "business_logic_changed": true,
+  "source_authority_changed": false,
+  "key_changes": [
+    "Expose source-reported FX purchase EUR/IRR equivalents and explicit coverage without cross-currency native aggregation",
+    "Expose source-reported Credit EUR/IRR equivalents with LC-level snapshot deduplication and conflict quarantine",
+    "Value NTSW commitment balance only from same-REG same-currency source evidence and expose the exact valuation basis",
+    "Never borrow an FX rate from another registration or another currency",
+    "Use NTSW Allocation rate only as a same-case same-currency IRR fallback when purchase evidence is unavailable",
+    "Keep mixed-currency purchase amounts and rates separated; no naked native total and no zero pseudo-rate",
+    "Add EUR/IRR equivalent decision views to Studio, dashboard, Excel, HTML/process views while preserving legacy column/card contracts",
+    "Retain 29.8.1 I/O and persistence optimizations"
+  ],
+  "production_certified": false,
+  "validation": "VALIDATION_V29_8_2_FX_EQUIVALENT_FA.md",
+  "regulatory_rulebook_changed": false,
+  "financial_semantics_changed": true
+}

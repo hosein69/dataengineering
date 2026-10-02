@@ -1,0 +1,249 @@
+[
+  {
+    "id": "IA01",
+    "severity": "CRITICAL",
+    "title": "خرید برنامه‌ریزی‌شده در مجموع خرید واقعی و مرجع نرخ",
+    "location": "gsi/finance/equivalents.py; gsi/stages/s55_fx_traceability.py",
+    "effect": "برای USD100 واقعی + USD200 برنامه‌ای، cashflow=100 ولی FX ledger=300؛ معادل و نرخ خرید برنامه‌ای نیز پذیرفته می‌شود.",
+    "recommended_minimal_change": "فیلتر وضعیت رویداد قبل از جمع و قبل از استخراج نرخ؛ یکسان‌سازی معنای خرید در مصرف‌کنندگان.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_planned_purchase_not_actual_purchase[PLANNED]",
+      "tests/test_fx_authority.py::test_planned_fx_cannot_supply_actual_commitment_valuation_rate",
+      "tests/test_graph_storage_outputs.py::test_purchase_semantic_paths_agree_on_planned_exclusion"
+    ],
+    "failure_count": 3
+  },
+  {
+    "id": "IA02",
+    "severity": "HIGH",
+    "title": "ورود Infinity به معادل مالی و پوشش",
+    "location": "gsi/finance/equivalents.py",
+    "effect": "مبلغ یا معادل نامتناهی به KPI می‌رسد و پوشش ۱۰۰٪ نشان داده می‌شود.",
+    "recommended_minimal_change": "کنترل finite در ورودی و محاسبه؛ حذف با دلیل و حفظ مخرج پوشش.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[inf]",
+      "tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[-inf]",
+      "tests/test_fx_authority.py::test_nonfinite_native_balance_cannot_enter_kpi[Infinity]",
+      "tests/test_fx_authority.py::test_nonfinite_source_equivalent_retains_coverage_gap[FX_EUR_VALUE]",
+      "tests/test_fx_authority.py::test_nonfinite_source_equivalent_retains_coverage_gap[FX_RIAL_VALUE]"
+    ],
+    "failure_count": 5
+  },
+  {
+    "id": "IA03",
+    "severity": "HIGH",
+    "title": "استفاده از نرخ درخواست تخصیص تأییدنشده",
+    "location": "gsi/finance/equivalents.py::_latest_allocation_rate",
+    "effect": "درخواست OPEN، REJECTED یا AMBIGUOUS نرخ مرجع IRR500 برای ماندهUSD50 تولید می‌کند.",
+    "recommended_minimal_change": "Authority نرخ را به وضعیت مجاز رویداد و شاهد مرتبط محدود کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[OPEN]",
+      "tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[REJECTED]",
+      "tests/test_fx_authority.py::test_nonapproved_allocation_cannot_supply_valuation_rate[AMBIGUOUS]"
+    ],
+    "failure_count": 3
+  },
+  {
+    "id": "IA04",
+    "severity": "HIGH",
+    "title": "انتخاب نرخ متعارض برحسب ترتیب ردیف",
+    "location": "gsi/finance/equivalents.py::_latest_allocation_rate",
+    "effect": "دو نرخ۱۰ و۲۰ با تاریخ برابر یا خالی: آخرین ردیف برنده می‌شود؛ Conflict ایجاد نمی‌شود.",
+    "recommended_minimal_change": "تعارض هم‌تاریخ/بی‌تاریخ را قرنطینه کنید؛ ترتیب فایل سیاست انتخاب نیست.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_allocation_rate_conflict_is_order_invariant[2026-01-01]",
+      "tests/test_fx_authority.py::test_allocation_rate_conflict_is_order_invariant[]"
+    ],
+    "failure_count": 2
+  },
+  {
+    "id": "IA05",
+    "severity": "HIGH",
+    "title": "پوشش ناقص معادل اعتبار آشکار نیست",
+    "location": "gsi/finance/equivalents.py::summarize_credit_equivalents",
+    "effect": "یک معادل موجود از دو LC، EUR_REPORTED می‌شود؛ نسبت۵۰٪ و وضعیت PARTIAL وجود ندارد.",
+    "recommended_minimal_change": "پوشش را در grain اعتبار گزارش کنید و تا خروجی منتقل کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_credit_partial_equivalent_is_disclosed"
+    ],
+    "failure_count": 1
+  },
+  {
+    "id": "IA06",
+    "severity": "CRITICAL",
+    "title": "مبلغ بدون REG معتبر وارد جمع می‌شود",
+    "location": "gsi/report/financial_summary.py::commitment_equivalent_summary",
+    "effect": "None/NaN/pd.NA با astype(str) هویت ظاهری می‌گیرند و EUR100 وارد جمع می‌شود؛ کلید رشتهٔ خالی حذف می‌شود ولی شمارش حذف ندارد.",
+    "recommended_minimal_change": "تهی‌بودن را پیش از تبدیل رشته بررسی و population accounting را ثبت کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[None]",
+      "tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[nan]",
+      "tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[key2]",
+      "tests/test_fx_authority.py::test_unidentified_equivalent_is_excluded_and_accounted[]"
+    ],
+    "failure_count": 4
+  },
+  {
+    "id": "IA07",
+    "severity": "HIGH",
+    "title": "پوشش مشترک EUR و IRR اشتباه",
+    "location": "gsi/report/financial_summary.py::commitment_equivalent_summary",
+    "effect": "A فقط EUR دارد و B فقط IRR؛ covered=1 در حالی که اشتراک واقعی صفر است.",
+    "recommended_minimal_change": "اشتراک مجموعهٔ کلیدهای پوشش‌دار را محاسبه کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_coverage_requires_joint_intersection"
+    ],
+    "failure_count": 1
+  },
+  {
+    "id": "IA08",
+    "severity": "CRITICAL",
+    "title": "Unknown به Zero تبدیل می‌شود",
+    "location": "gsi/report/financial_summary.py; gsi/stages/s55_fx_traceability.py; gsi/engines/commitment.py",
+    "effect": "ماندهٔ منبع نامعلوم در stage و موتور قدیمی صفر می‌شود؛ معادل صفر دارای پرچم unknown نیز پوشش‌دار شمرده می‌شود.",
+    "recommended_minimal_change": "حفظ nullable amount و پرچم unknown در تمام مسیر؛ منع استنباط تسویه از نبود مبلغ.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_unknown_zero_placeholder_not_covered",
+      "tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[None]",
+      "tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[]",
+      "tests/test_fx_authority.py::test_legacy_commitment_engine_preserves_unknown_balance[nan]",
+      "tests/test_graph_storage_outputs.py::test_stage_unknown_commitment_not_zero"
+    ],
+    "failure_count": 5
+  },
+  {
+    "id": "IA09",
+    "severity": "HIGH",
+    "title": "حذف تمایز ارز بومی در grain ثبت سفارش",
+    "location": "gsi/report/financial_summary.py::commitment_equivalent_summary",
+    "effect": "دو ردیف REG واحد با ارز بومی متفاوت و معادل برابر به یک مقدار۱۰۰ فروکاسته می‌شود.",
+    "recommended_minimal_change": "grain REG+currency را اثبات یا تعارض grain را آشکار کنید؛ بدون قاعده تجمیع نکنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_fx_authority.py::test_same_reg_multi_currency_needs_proven_grain"
+    ],
+    "failure_count": 1
+  },
+  {
+    "id": "IA10",
+    "severity": "CRITICAL",
+    "title": "ساخت هویت تجاری از مفهوم متفاوت",
+    "location": "gsi/adapters/base.py; gsi/core/columns.py",
+    "effect": "po no به KEY_ORDER و Material Document به KEY_MATERIAL تبدیل می‌شود.",
+    "recommended_minimal_change": "alias معنایی فقط در Source Contract مشخص؛ fuzzy صرفاً candidate باشد.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_identity_contracts.py::test_similar_header_cannot_create_business_identity[po no-add_order_key-KEY_ORDER]",
+      "tests/test_identity_contracts.py::test_similar_header_cannot_create_business_identity[Material Document-add_material_key-KEY_MATERIAL]"
+    ],
+    "failure_count": 2
+  },
+  {
+    "id": "IA11",
+    "severity": "CRITICAL",
+    "title": "ارز رویداد دیگر جای ارز اعتبار می‌نشیند",
+    "location": "gsi/adapters/a60_finance.py::CreditAdapter; gsi/adapters/base.py",
+    "effect": "نبود نوع ارز اصلی با نوع ارز۵/۶ مربوط به تخصیص/سوئیفت پر می‌شود.",
+    "recommended_minimal_change": "نگاشت دقیق و مستقل currency هر رویداد؛ جلوگیری از substring authoritative mapping.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_identity_contracts.py::test_event_currency_cannot_leak_into_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06326-CRD_SWIFT_CURRENCY]",
+      "tests/test_identity_contracts.py::test_event_currency_cannot_leak_into_lc_currency[\\u0646\\u0648\\u0639 \\u0627\\u0631\\u06325-CRD_ALLOC_CURRENCY]"
+    ],
+    "failure_count": 2
+  },
+  {
+    "id": "IA12",
+    "severity": "HIGH",
+    "title": "کلید مرکب ناقص معتبر جلوه می‌کند",
+    "location": "gsi/config/keys.py::_build_composite",
+    "effect": "BL000001| یا REG|None/REG|nan با جزء نامعلوم تولید می‌شود؛ نبود ستون نیز REG تنها می‌سازد.",
+    "recommended_minimal_change": "الزام همهٔ اجزای مرکب و ثبت دلیل نقص؛ رشتهٔ None/NaN هویت نیست.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_identity_contracts.py::test_partial_composite_is_not_a_valid_identity[]",
+      "tests/test_identity_contracts.py::test_partial_composite_is_not_a_valid_identity[none_column]",
+      "tests/test_identity_contracts.py::test_reg_currency_requires_currency[None]",
+      "tests/test_identity_contracts.py::test_reg_currency_requires_currency[]",
+      "tests/test_identity_contracts.py::test_reg_currency_requires_currency[nan]"
+    ],
+    "failure_count": 5
+  },
+  {
+    "id": "IA13",
+    "severity": "CRITICAL",
+    "title": "قطع ارجاع فیزیکی در Adapter اعتبار",
+    "location": "gsi/adapters/base.py::std; gsi/adapters/a60_finance.py::CreditAdapter",
+    "effect": "ستون‌های _SOURCE_FILE_ID، _SOURCE_SHEET و _SOURCE_ROW ورودی در خروجی canonical اعتبار حذف می‌شوند.",
+    "recommended_minimal_change": "حفظ ارجاع ردیف و فایل در canonical/DWH؛ مسیر بازسازی جایگزین، اگر وجود دارد، باید آزموده و مستند شود.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_ROW]",
+      "tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_FILE_ID]",
+      "tests/test_identity_contracts.py::test_credit_adapter_preserves_physical_lineage[_SOURCE_SHEET]"
+    ],
+    "failure_count": 3
+  },
+  {
+    "id": "IA14",
+    "severity": "HIGH",
+    "title": "ساخت فیلدهای PO و Package از دادهٔ PR",
+    "location": "gsi/adapters/a60_finance.py::SapAdapter; gsi/adapters/base.py",
+    "effect": "Material و Currency شیتPR فیلدهای SAP_PO_MATERIAL، SAP_PACK_MATERIAL و SAP_PO_CURRENCY را پر می‌کنند.",
+    "recommended_minimal_change": "محدودکردن نگاشت به context شیت و قرارداد منبع؛ نگه‌داشتن مقدار PR در فیلد خودش.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PO_MATERIAL]",
+      "tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PACK_MATERIAL]",
+      "tests/test_identity_contracts.py::test_pr_does_not_manufacture_other_sheet_fields[SAP_PO_CURRENCY]"
+    ],
+    "failure_count": 3
+  },
+  {
+    "id": "IA15",
+    "severity": "CRITICAL",
+    "title": "حذف رویداد واقعی هنگام dedupe ارزی",
+    "location": "gsi/stages/s55_fx_traceability.py::_build_events",
+    "effect": "دو خرید با مبلغ۱۰۰ و تاریخ برابر در USD و EUR به یک event تبدیل می‌شوند.",
+    "recommended_minimal_change": "شناسه/مرجع و ارز و منبع رویداد را وارد تمایز کنید؛ snapshot را از multiple event جدا کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_graph_storage_outputs.py::test_stage_event_dedupe_preserves_currency"
+    ],
+    "failure_count": 1
+  },
+  {
+    "id": "IA16",
+    "severity": "CRITICAL",
+    "title": "جمع خام چندارزی در نمای زنجیره",
+    "location": "gsi/cashflow/engine.py:chain_rows/SETTLEMENT_RETURN",
+    "effect": "linked_amount برای USD10 + EUR20 برابر رشتهٔ بدون واحد۳۰ است؛ این یافته مربوط به نمای chain است، نه جمع native summary که جداست.",
+    "recommended_minimal_change": "مبلغ متصل‌شده را نیز بر ارز گروه‌بندی و واحد را تا خروجی حفظ کنید.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_cashflow_process.py::test_chain_linked_amount_never_adds_unlike_currencies"
+    ],
+    "failure_count": 1
+  },
+  {
+    "id": "IA17",
+    "severity": "HIGH",
+    "title": "استنتاج Gap از زنجیرهٔ ثابت بدون قرارداد کاربرد",
+    "location": "gsi/cashflow/engine.py:chain_specs",
+    "effect": "PAYMENT تنها، هشدار نبود PI/تخصیص/خرید می‌سازد، بدون اینکه ضرورت این مراحل برای پرونده ثابت شده باشد.",
+    "recommended_minimal_change": "آشکارکردن نبود شاهد مجاز است؛ required-stage Gap فقط با graph و applicability rule اثبات‌شده ساخته شود.",
+    "status": "OPEN_REPRODUCED",
+    "failed_tests": [
+      "tests/test_cashflow_process.py::test_payment_only_does_not_prove_mandatory_upstream_stages"
+    ],
+    "failure_count": 1
+  }
+]

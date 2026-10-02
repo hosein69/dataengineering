@@ -1,0 +1,169 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ترم‌های حمل — Incoterms® 2020 (نشریه ICC شماره 723)
+#  نسخه جاری در تاریخ ۱۴۰۵/۰۶: Incoterms 2020 (لازم‌الاجرا از ۲۰۲۰-۰۱-۰۱).
+#  Incoterms 2010 هنوز در برخی قراردادهای قدیمی ارجاع می‌شود؛ در قرارداد باید
+#  نسخه صریحاً ذکر شود (مثلاً: "CIF Bandar Abbas, Incoterms 2020").
+# ═══════════════════════════════════════════════════════════════════════════
+pack: incoterms
+version: "1.0"
+edition: "Incoterms 2020"
+effective_from: "2020-01-01"
+publisher: "International Chamber of Commerce (ICC)"
+status: verified
+updated_at: "2026-08-31"
+
+groups:
+  E: "تحویل در محل فروشنده"
+  F: "کرایه حمل اصلی پرداخت‌نشده"
+  C: "کرایه حمل اصلی پرداخت‌شده"
+  D: "تحویل در مقصد"
+
+modes:
+  any: "همه روش‌های حمل (شامل چندوجهی)"
+  sea: "فقط حمل دریایی و آبراه داخلی"
+
+terms:
+  - code: EXW
+    group: E
+    mode: any
+    fa: "تحویل در محل کار فروشنده"
+    en: "Ex Works"
+    risk_transfer: "زمانی که کالا در محل فروشنده در اختیار خریدار قرار می‌گیرد"
+    seller_pays_main_carriage: false
+    seller_insurance_required: false
+    export_clearance_by: buyer
+    import_clearance_by: buyer
+    note: "حداقل تعهد فروشنده. برای واردات ایران معمولاً توصیه نمی‌شود چون ترخیص صادراتی بر عهده خریدار است."
+
+  - code: FCA
+    group: F
+    mode: any
+    fa: "تحویل به حمل‌کننده"
+    en: "Free Carrier"
+    risk_transfer: "هنگام تحویل به حمل‌کننده تعیین‌شده توسط خریدار"
+    seller_pays_main_carriage: false
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+    note: "در Incoterms 2020 امکان درج «بارنامه با درج On-Board» به نفع خریدار اضافه شد."
+
+  - code: FAS
+    group: F
+    mode: sea
+    fa: "تحویل در کنار کشتی"
+    en: "Free Alongside Ship"
+    risk_transfer: "هنگام قرار گرفتن کالا در کنار کشتی در بندر بارگیری"
+    seller_pays_main_carriage: false
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+
+  - code: FOB
+    group: F
+    mode: sea
+    fa: "تحویل روی عرشه کشتی"
+    en: "Free On Board"
+    risk_transfer: "هنگام بارگیری کالا روی عرشه کشتی"
+    seller_pays_main_carriage: false
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+
+  - code: CFR
+    group: C
+    mode: sea
+    fa: "هزینه و کرایه حمل"
+    en: "Cost and Freight"
+    risk_transfer: "هنگام بارگیری روی عرشه — ریسک و هزینه در نقاط متفاوت منتقل می‌شوند"
+    seller_pays_main_carriage: true
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+
+  - code: CIF
+    group: C
+    mode: sea
+    fa: "هزینه، بیمه و کرایه حمل"
+    en: "Cost, Insurance and Freight"
+    risk_transfer: "هنگام بارگیری روی عرشه"
+    seller_pays_main_carriage: true
+    seller_insurance_required: true
+    insurance_minimum: "Institute Cargo Clauses (C) — حداقل ۱۱۰٪ ارزش قرارداد"
+    export_clearance_by: seller
+    import_clearance_by: buyer
+    note: "در Incoterms 2020 حداقل پوشش CIF همچنان ICC(C) است، اما CIP به ICC(A) ارتقا یافت."
+
+  - code: CPT
+    group: C
+    mode: any
+    fa: "کرایه حمل پرداخت‌شده تا مقصد"
+    en: "Carriage Paid To"
+    risk_transfer: "هنگام تحویل به نخستین حمل‌کننده"
+    seller_pays_main_carriage: true
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+
+  - code: CIP
+    group: C
+    mode: any
+    fa: "کرایه حمل و بیمه پرداخت‌شده تا مقصد"
+    en: "Carriage and Insurance Paid To"
+    risk_transfer: "هنگام تحویل به نخستین حمل‌کننده"
+    seller_pays_main_carriage: true
+    seller_insurance_required: true
+    insurance_minimum: "Institute Cargo Clauses (A) — حداقل ۱۱۰٪ ارزش قرارداد"
+    export_clearance_by: seller
+    import_clearance_by: buyer
+    note: "تغییر کلیدی Incoterms 2020 نسبت به 2010: ارتقای پوشش بیمه از ICC(C) به ICC(A)."
+
+  - code: DAP
+    group: D
+    mode: any
+    fa: "تحویل در محل مقصد"
+    en: "Delivered at Place"
+    risk_transfer: "در مقصد تعیین‌شده، پیش از تخلیه"
+    seller_pays_main_carriage: true
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+
+  - code: DPU
+    group: D
+    mode: any
+    fa: "تحویل در مقصد پس از تخلیه"
+    en: "Delivered at Place Unloaded"
+    risk_transfer: "پس از تخلیه در مقصد تعیین‌شده"
+    seller_pays_main_carriage: true
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: buyer
+    note: "جایگزین DAT در Incoterms 2010؛ تنها ترمی که فروشنده موظف به تخلیه است."
+
+  - code: DDP
+    group: D
+    mode: any
+    fa: "تحویل با پرداخت حقوق و عوارض"
+    en: "Delivered Duty Paid"
+    risk_transfer: "در مقصد، پس از ترخیص وارداتی"
+    seller_pays_main_carriage: true
+    seller_insurance_required: false
+    export_clearance_by: seller
+    import_clearance_by: seller
+    note: "حداکثر تعهد فروشنده. برای واردات ایران به‌ندرت عملی است چون فروشنده باید ترخیص وارداتی و پرداخت حقوق ورودی را انجام دهد."
+
+# نگاشت متن آزاد فایل‌های ورودی به کد ترم
+aliases:
+  "سی آی اف": CIF
+  "فوب": FOB
+  "اکس ورک": EXW
+  "سی اند اف": CFR
+  "C&F": CFR
+  "C+F": CFR
+  "DAT": DPU        # نام قدیمی در Incoterms 2010
+
+# نکات مؤثر بر محاسبه ارزش گمرکی
+customs_value_notes:
+  - "ارزش گمرکی ایران بر مبنای CIF محاسبه می‌شود؛ اگر ترم FOB یا EXW باشد باید کرایه حمل و بیمه به ارزش اضافه شود."
+  - "PI Additional Costs در فایل مقاومت می‌تواند شامل همین اقلام قابل افزودن باشد."
+  - status: needs_verification

@@ -1,0 +1,18 @@
+{
+  "version": "29.8.1",
+  "release_channel": "rc4-opt1",
+  "base": "29.8.0 RC4",
+  "scope": "performance and decision-facing financial accuracy hardening",
+  "business_logic_changed": false,
+  "source_authority_changed": false,
+  "key_changes": [
+    "Chunk SQLite frame JSON persistence without changing transaction or round-trip semantics",
+    "Reuse content-addressed Excel physical archive for identical workbook captures",
+    "Avoid retaining legacy workbook physical-cell maps when downstream only needs archived bytes",
+    "Centralize REG-grain currency-aware commitment and penalty summaries",
+    "Prevent unknown commitment balance from being shown as zero/settled in reviewed decision surfaces",
+    "Remove cross-currency naked totals from Studio, Excel, email, insight and historical outputs"
+  ],
+  "production_certified": false,
+  "validation": "VALIDATION_V29_8_1_OPT.md"
+}

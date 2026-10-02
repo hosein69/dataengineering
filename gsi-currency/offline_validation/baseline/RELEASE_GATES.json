@@ -1,0 +1,67 @@
+[
+  {
+    "gate": "Source Contract",
+    "status": "FAIL",
+    "evidence": "IA10–14"
+  },
+  {
+    "gate": "Header Semantic",
+    "status": "FAIL",
+    "evidence": "IA10, IA11, IA14"
+  },
+  {
+    "gate": "Business Key",
+    "status": "FAIL",
+    "evidence": "IA06, IA10, IA12"
+  },
+  {
+    "gate": "Relation Graph",
+    "status": "CONDITIONAL",
+    "evidence": "typed/co-observed graph passed; IA17 applicability gap"
+  },
+  {
+    "gate": "Grain",
+    "status": "FAIL",
+    "evidence": "IA09, IA15"
+  },
+  {
+    "gate": "FX Authority",
+    "status": "FAIL",
+    "evidence": "IA01–04, IA11"
+  },
+  {
+    "gate": "Aggregation",
+    "status": "FAIL",
+    "evidence": "IA02, IA06–09, IA16"
+  },
+  {
+    "gate": "Reconciliation",
+    "status": "CONDITIONAL",
+    "evidence": "synthetic links/snapshots and 42 sample comparisons; full population missing"
+  },
+  {
+    "gate": "Lineage",
+    "status": "FAIL",
+    "evidence": "IA13; FX physical source path passed"
+  },
+  {
+    "gate": "Regression",
+    "status": "NOT RUN",
+    "evidence": "old tests intentionally excluded; no product changes"
+  },
+  {
+    "gate": "Performance",
+    "status": "CONDITIONAL",
+    "evidence": "sample timing recorded; no production volume/concurrency SLA proven"
+  },
+  {
+    "gate": "Export Parity",
+    "status": "FAIL",
+    "evidence": "cashflow100 vs FX ledger300; cashflow Excel + embedded XLSX HTML passed"
+  },
+  {
+    "gate": "Integrity",
+    "status": "PASS",
+    "evidence": "703/703 input hashes match; unchanged extraction; audit file hashes checked"
+  }
+]

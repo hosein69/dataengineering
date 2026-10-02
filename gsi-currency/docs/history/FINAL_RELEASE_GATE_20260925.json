@@ -1,0 +1,23 @@
+{
+  "package": "GSI_29_8_2_RC4_OPT2_H1_FINAL_PATTERN_DIAGRAMS_20260925.zip",
+  "build_gate": "PASS",
+  "operational_gate": "HOLD",
+  "production_certified": false,
+  "validated": {
+    "process_targeted": "13/13",
+    "frozen_independent": "173/173",
+    "extended_diagnostic": "77/77",
+    "design_checks": "93/93",
+    "compileall": "PASS",
+    "diagram_artifacts": "PASS",
+    "efd_2_1": "PASS (0 errors; 4 pending-fact warnings)"
+  },
+  "hold_reasons": [
+    "RuleBook successor/explicit non-extension decision required for two rules expired 2026-09-22",
+    "Windows + real source refresh/publish acceptance not executed in this build environment",
+    "SMB concurrency/disconnect and Outlook draft rendering acceptance not executed here"
+  ],
+  "regulatory_status_doc": "REGULATORY_STATUS_20260925_FA.md",
+  "validation": "release_evidence/final_20260925/VALIDATION.json",
+  "diagram_scope": "documentation/engineering model only; no runtime business logic change after prior validated pattern build"
+}

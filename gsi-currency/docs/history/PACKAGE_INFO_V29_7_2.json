@@ -1,0 +1,64 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "29.7.2",
+  "identity": "Data • Process • Decision",
+  "release": "SQLite Business DWH cash-flow source-first; Commercial Expert + NTSW tier 1, Abbasi + SATA tier 2",
+  "figma": "https://www.figma.com/design/Abh0S2zpkk25P7HTNdpipa",
+  "dwh": {
+    "engine": "SQLite",
+    "layers": [
+      "Raw/Bronze",
+      "Staging/Silver",
+      "Core",
+      "Mart/Gold",
+      "Reliability Gate",
+      "Publish"
+    ],
+    "publish_slots": [
+      "report",
+      "dwh"
+    ],
+    "atomic_publish": true,
+    "registration_file_separate_from_registration": true,
+    "direct_evidence_bridges_only": true,
+    "missing_not_zero": true
+  },
+  "reliability": {
+    "grain_contracts": true,
+    "schema_drift": true,
+    "row_preservation": true,
+    "foreign_key_check": true,
+    "integrity_check": true,
+    "atomic_pointer_publish": true,
+    "failed_run_keeps_diagnostics": true
+  },
+  "build": "DWH_CASHFLOW_SOURCE_PRIORITY",
+  "anythingllm_integration": {
+    "architecture": "sidecar_api_plus_public_embed",
+    "streamlit_surface": "آکادمی هوشمند",
+    "weekly_lessons": "config/weekly_lessons.json",
+    "html_qna": "AnythingLLM public embed; no API key serialized"
+  },
+  "base_version": "29.7.1",
+  "cashflow_source_policy": {
+    "tier_1": [
+      "moghavemat (Commercial Expert)",
+      "ntsw"
+    ],
+    "tier_2": [
+      "abbasi",
+      "sata"
+    ],
+    "fallback": [
+      "fx_transaction",
+      "credit",
+      "ilappend"
+    ],
+    "default_input": "published SQLite Business DWH"
+  },
+  "validation": {
+    "focused_tests_passed": 83,
+    "focused_tests_deselected": 1,
+    "deselected_reason": "Streamlit test dependency unavailable in validation runtime"
+  }
+}

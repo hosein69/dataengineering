@@ -1,0 +1,50 @@
+sources:
+  - name: SAP
+    path: "C:/GSI/data/SAP.xlsx"
+    sheets: all
+    domain: "Planning / Procurement"
+    authority: "Domain authority for SAP PR/PO/workflow evidence"
+    required: false
+    notes: "May contain PR item, package/workflow and PO item grains in one export."
+
+  - name: Commercial_Expert
+    path: "C:/GSI/data/experts.xlsx"
+    sheets: all
+    domain: "Commercial"
+    authority: "Tier 1 commercial source"
+    required: false
+
+  - name: NTSW
+    path: "C:/GSI/data/ntsw.xlsx"
+    sheets: all
+    domain: "Registration / FX allocation / commitment"
+    authority: "Tier 1 commercial/registration source"
+    required: false
+
+  - name: Abbasi
+    path: "C:/GSI/data/abbasi.xlsx"
+    sheets: all
+    domain: "Logistics / enrichment"
+    authority: "Tier 2 enrichment"
+    required: false
+
+  - name: SATA
+    path: "C:/GSI/data/sata.xlsx"
+    sheets: all
+    domain: "Registration / enrichment"
+    authority: "Tier 2 enrichment"
+    required: false
+
+  - name: FX_Transactions
+    path: "C:/GSI/data/fx_transactions.xlsx"
+    sheets: all
+    domain: "Treasury / FX / Payment"
+    authority: "Domain evidence"
+    required: false
+
+  - name: Customs
+    path: "C:/GSI/data/customs.xlsx"
+    sheets: all
+    domain: "Customs / Clearance"
+    authority: "Domain evidence"
+    required: false

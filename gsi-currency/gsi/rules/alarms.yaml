@@ -1,0 +1,58 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  آستانه‌های هشدار و وزن‌های موتور ریسک
+#  برای تغییر یک آستانه فقط عدد را عوض کنید؛ هیچ کدی تغییر نمی‌کند.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: alarms
+version: "1.0"
+updated_at: "2026-08-31"
+status: internal
+
+# ساختار هر هشدار: legal (سقف قانونی) | yellow [min,max] | red (آستانه قرمز)
+thresholds:
+  production:
+    alarm1_buy_to_docs:   { legal: 120, yellow: [90, 120],  red: 120, fa: "خرید ارز تا ارائه اسناد" }
+    alarm2_buy_to_fin:    { legal: 270, yellow: [210, 270], red: 270, fa: "خرید ارز تا رسید مالی" }
+    alarm3_clear_to_sata: { legal: 60,  yellow: [40, 60],   red: 60,  fa: "ترخیص تا ساتا" }
+    days_since_buy:       { legal: 365, yellow: [230, 270], red: 270, fa: "روزهای از خرید ارز" }
+    days_since_sata:      { legal: 60,  yellow: [30, 60],   red: 60,  fa: "روزهای از ساتا" }
+    days_since_doc:       { legal: 120, yellow: [150, 200], red: 200, fa: "روزهای از ارائه اسناد" }
+    bl_age:               { legal: 270, yellow: [180, 270], red: 270, fa: "عمر بارنامه" }
+    payment_age:          { legal: 365, yellow: [200, 270], red: 270, fa: "عمر پرداخت" }
+  commercial:
+    alarm1_buy_to_docs:   { legal: 90,  yellow: [60, 90],   red: 90,  fa: "خرید ارز تا ارائه اسناد" }
+    alarm2_buy_to_fin:    { legal: 180, yellow: [140, 180], red: 180, fa: "خرید ارز تا رسید مالی" }
+    alarm3_clear_to_sata: { legal: 60,  yellow: [40, 60],   red: 60,  fa: "ترخیص تا ساتا" }
+    days_since_buy:       { legal: 270, yellow: [120, 180], red: 180, fa: "روزهای از خرید ارز" }
+    days_since_sata:      { legal: 60,  yellow: [30, 60],   red: 60,  fa: "روزهای از ساتا" }
+    days_since_doc:       { legal: 90,  yellow: [90, 150],  red: 150, fa: "روزهای از ارائه اسناد" }
+    bl_age:               { legal: 180, yellow: [120, 180], red: 180, fa: "عمر بارنامه" }
+    payment_age:          { legal: 270, yellow: [120, 180], red: 180, fa: "عمر پرداخت" }
+
+statuses:
+  green:  { fa: "سبز",  rank: 0, color: "1E8449" }
+  yellow: { fa: "زرد",  rank: 1, color: "D4AC0D" }
+  red:    { fa: "قرمز", rank: 2, color: "922B21" }
+
+# موتور امتیاز ریسک ۰–۱۰۰ (مجموع وزن‌ها باید ۱٫۰ باشد — RuleBook بررسی می‌کند)
+risk_engine:
+  # ⚠️ مجموع وزن‌ها باید دقیقاً ۱٫۰ باشد — RuleBook قبل از اجرا بررسی می‌کند.
+  weights:
+    part_criticality:  0.25   # مقاومت قطعه (زیر ۱۰ روز = بحرانی) — بالاترین وزن
+    aging_pct:         0.20
+    value_at_risk:     0.15
+    doc_completion:    0.12
+    penalty_exposure:  0.12
+    allocation_status: 0.08
+    customs_risk:      0.05
+    budget_risk:       0.03
+  bands:
+    - { min: 76, code: critical, fa: "🔴 بحرانی" }
+    - { min: 51, code: high,     fa: "🟠 بالا" }
+    - { min: 26, code: medium,   fa: "🟡 متوسط" }
+    - { min: 0,  code: low,      fa: "🟢 پایین" }
+  budget_flags:
+    CRITICAL: 100
+    HIGH: 75
+    WARNING: 50
+  customs_risk_horizon_days: 180
+  penalty_exposure_base_ratio: 0.10

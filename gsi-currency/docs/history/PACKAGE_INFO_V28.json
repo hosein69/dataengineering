@@ -1,0 +1,23 @@
+{
+  "version": "28.0.0",
+  "full_suite_passed": 816,
+  "full_suite_failed": 0,
+  "real_input_files": 4,
+  "real_input_sheets": 17,
+  "real_input_nonempty_rows_including_headers": 1815,
+  "live_streamlit_tested": false,
+  "live_outlook_tested": false,
+  "live_smb_tested": false,
+  "python_tested": "3.12",
+  "start_here": "START_HERE_V28_FA.md",
+  "build": "FIGMA_PROCESS_COCKPIT_FINAL",
+  "manifest_tracked_files": 152,
+  "manifest_verify_issues": 0,
+  "targeted_regression_passed": 71,
+  "targeted_regression_failed": 0,
+  "figma_file": "https://www.figma.com/design/Abh0S2zpkk25P7HTNdpipa",
+  "figma_desktop_node": "5:4",
+  "figma_mobile_node": "6:54",
+  "network_dependent_tests_run": false,
+  "streamlit_runtime_tested": false
+}

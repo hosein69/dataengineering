@@ -1,0 +1,203 @@
+{
+  "version": "29.15.13",
+  "release_channel": "decision-brief-financial-safe-20260927",
+  "base": "GSI 29.15.12 FINANCIAL_ACTION_ALGORITHM_SAFE package as delivered (commit 4742e93), on 29.15.12 (commit 2af7471)",
+  "scope": "Owner's decision model (Adaptive Decision Twin) applied: scored review of code and UI/UX; decision brief (DONE/OWNER/DATE/RISK/NEXT/ASK + gated action queue) on top of every HTML; the package's financial fixes merged; HTML supply tab off by an explicit setting instead of `if False`.",
+  "business_logic_changed": false,
+  "business_logic_change_note": "This release adds presentation only (decision brief) and removes hidden, never-shown data from the HTML. The merged package changes financial semantics (unknown conversion fee / credit are not 0; a recorded zero commitment balance is evidence; positive balance blocks settlement; stable ACTION_ID) — see CHANGELOG A/B.",
+  "source_authority_changed": false,
+  "regulatory_rulebook_changed": false,
+  "financial_semantics_changed": true,
+  "production_certified": false,
+  "validation": {
+    "runner": "python run_all_tests.py",
+    "this_release_result": "1564 passed, 0 failed (working tree); re-verified from the clean ZIP extraction",
+    "ab_test": "tools/ab, 29.15.12 (2af7471) vs package (4742e93) vs 29.15.13 on 35-column repro, old-format and 40x data: package→29.15.13 zero differences in frames/extras/counts/Excel except stage run times; HTML gains the brief, loses 338 KB of hidden supply data (608→280 KB). 29.15.12→package differences each root-caused (a 29.15.12 zero-as-empty bug in s56 among them).",
+    "regression_tests": "tests/test_decision_brief_v29_15_13.py: 9 tests; 10 supply-tab suites re-enabled on the explicit setting"
+  },
+  "review_report": "docs/DECISION_TWIN_REVIEW_29_15_13_FA.md",
+  "previous_release": {
+    "version": "29.15.12",
+    "release_channel": "expert-file-exact-35-columns-20260927"
+  },
+  "extension": {
+    "name": "FX lifecycle, BL↔registration value link, critical board, minimal teal UI",
+    "date": "2026-09-28",
+    "base_choice": "GSI_29_15_13 (872 tests green) over GSI_29_15_13_AQUA_MINIMAL_HEADER (2 failed, 6 errors; same calculations)",
+    "new_stage": "gsi/stages/s59_bl_registration_link.py",
+    "new_view": "app/fx_lifecycle_view.py",
+    "new_report": "gsi/report/critical_board.py",
+    "doc": "docs/FX_LIFECYCLE_AND_MINIMAL_UI_FA.md",
+    "business_logic_changed": "additive only: new columns/marts; existing calculations untouched",
+    "round_2": {
+      "date": "2026-09-28",
+      "column_language": "sidebar toggle فارسی/English for every table title (gsi/i18n, app/col_lang.py)",
+      "minimal_icons": "line icon set, icon tiles, ring gauges, dotted stepper (gsi/design/icons.py)",
+      "accuracy_doc": "docs/ACCURACY_ASSESSMENT_FA.md",
+      "business_logic_changed": "none"
+    },
+    "round_3": {
+      "date": "2026-09-28",
+      "font": "Ravi first, IRANSans second: owner-supplied licensed files in assets/fonts (Ravi FaNum Regular, SemiBold, Bold, ExtraBlack; IRANSans web Regular) embedded as @font-face by gsi/design/fonts.py in Studio and sent HTML; Latin digits of regular-weight text come from IRANSans because Ravi Regular is FaNum-only; ExtraBlack not embedded (weight-800 headings would pick it); e-mail charts use Ravi-SemiBold.ttf; e-mail body and Excel keep the font name IRANSans Light; installed system fonts never embedded; GSI_EMBED_FONTS=0 turns embedding off in sent HTML",
+      "html_studio_parity": "gsi/report/fx_insight.py (model) + gsi/report/fx_html.py (components) render the Studio view, the standalone HTML report, the report-builder block fx_lifecycle and the e-mail summary",
+      "stage_hierarchy": "clickable stage rail -> registrations -> orders -> materials, B/Ls and money flow (CSS-only)",
+      "excel": "gsi/report/fx_excel.py: stage_workbook, registration_workbook, critical_workbook (per stage or per registration too)",
+      "english": "English mode covers the HTML report and Excel labels, stages and statuses; English pages, the Studio FX view and English workbooks are left-to-right; data values unchanged",
+      "layout_fixes": "stepper connector now joins each step to the previous one in both directions (the first link was missing and a line overhung the last step); the registration B/L table no longer overflows its box",
+      "streamlit_note": "st.html strips <svg>; icons and rings render as CSS masks/conic gradients in css_icons() mode",
+      "doc": "docs/FX_HTML_EXCEL_FONT_R3_FA.md",
+      "tests": "tests/test_fx_insight_html_excel_v29_18.py (32 tests); tests/test_design_system.py: the no-external-resource check now ignores base64 data, where the embedded font happened to contain 'cdn'",
+      "business_logic_changed": "none; s59 queue wait is unknown (with a note) instead of negative when queue entry is after the reference date",
+      "validation": "pytest tests: 928 passed; python run_all_tests.py: 1620 passed, 0 failed (working tree); both re-run from the clean ZIP extraction"
+    },
+    "round_4": {
+      "date": "2026-09-28",
+      "name": "review fixes: unknown currency, invoice conflict, published snapshot reads, ledger flags, Excel formulas",
+      "doc": "docs/REVIEW_FIXES_R4_FA.md",
+      "bl_link": "s59: a B/L value with unknown currency, or a registration with unknown currency, is never compared or summed (new status «ارز نامعلوم»); conflicting SATA invoice values are no longer replaced by the customs value",
+      "money_totals": "fx_insight.money_totals: the unknown-currency row keeps counts but has no totals",
+      "snapshots": "capture adds new columns to snap_* tables and inserts by column name; bind_published masks tables without a published snapshot and, on legacy databases, dwh_* views too; missing snapshot columns read as NULL",
+      "ledger_flags": "s56 ledger amounts and conversion fee: unparsable text is unknown, not 0; core.text.flag_true (contract 5) replaces bool() on source flags in s20, s55, s56, process_evidence, risk, criticality and the main dashboard",
+      "excel": "core.excel_text.keep_text (contract 1) keeps source text starting with '=' (or '#N/A'-like) as text in every Excel writer; only the report's own formulas written with write_formula stay formulas",
+      "english": "new messages and all B/L-link flags translate in English HTML and Excel (glossary + number/code patterns in i18n/columns.py); code lists use a Latin comma; the program's own text in English workbooks and the critical board (money-event names, financial-decision texts, stage evidence, next and suggested actions, critical reasons) now translates, including multi-part text; source values stay as in the source",
+      "tests": "tests/test_review_fixes_v29_19.py (41 tests; 22 of the first 35 failed on the round-3 fonts package; the 2 English program-text tests fail without this round's translation changes)",
+      "business_logic_changed": "corrections toward the stated rules (unknown ≠ 0, no cross-currency sums, published data only); no new calculation",
+      "validation": "pytest tests: 969 passed; python run_all_tests.py: 1661 passed, 0 failed (working tree and the extracted package)"
+    },
+    "round_5": {
+      "date": "2026-09-28",
+      "name": "every FX lifecycle section is its own report-builder element",
+      "doc": "docs/FX_REPORT_ELEMENTS_R5_FA.md",
+      "composer": "studio_core.composer: 8 new blocks fx_kpi, fx_stages, fx_money, fx_bl_link, fx_queue, fx_clearance, fx_critical, fx_downloads (FX_BLOCKS); each is added, removed, reordered and sized on its own; new tabs default to fx_kpi, fx_stages, fx_money, fx_downloads in place of the combined fx_lifecycle block, which stays for saved layouts",
+      "rendering": "report.fx_html.composer_part renders one section with its own title from the same components as the standalone report; html_export loads the FX model once per report and gives each stage rail its own id; report_workbooks/download_cards are shared with the standalone report",
+      "unchanged": "the standalone FX report (FA and EN), the combined block and a builder page with the combined block are identical to round 4 apart from one CSS rule (checked on the demo data with embedded Excel data left out)",
+      "studio": "the Studio composer lists the new blocks from BLOCKS; labels are all-Persian without a trailing parenthesis or Latin word because the Studio dropdown is left-to-right; a caption warns when the combined block and the separate elements are both chosen",
+      "tests": "tests/test_fx_composer_parts_v29_20.py (11 tests); test_report_builder_block_uses_the_same_components now expects the separate elements in the defaults",
+      "business_logic_changed": "no; presentation and report composition only",
+      "validation": "pytest tests: 980 passed; python run_all_tests.py: 1672 passed, 0 failed (working tree and the extracted package)"
+    },
+    "round_6": {
+      "date": "2026-09-28",
+      "name": "FX lifecycle downloads work on Streamlit 1.49 to 1.51 as well",
+      "issue": "StreamlitAPIException: Invalid binary data format: <class 'functools.partial'> in fx_lifecycle_view._dl on the owner's Streamlit 1.51.0 (Python 3.13). Callable download data exists only from Streamlit 1.52, while requirements.txt allows 1.49.",
+      "fix": "app/lazy_download.py: on Streamlit 1.52 or later the callable is passed as before (file built on click); below 1.52 a «آماده‌سازی …» button builds the file once and keeps it in session_state under a signature of its inputs (file name, language, critical levels, published run), then the real download button takes its place. A changed input shows the prepare button again, so a stale file is never offered. All 7 FX view downloads use it; the FX model cache key now includes the published warehouse run id.",
+      "tests": "tests/test_lazy_download_v29_21.py (9 tests): version gate, both paths with a fake container, stale-file protection, no callable handed to download_button anywhere else, and the real FX view in AppTest on both paths",
+      "checked": "all six Studio surfaces open without an exception on the demo warehouse under Streamlit 1.51.0 and 1.64.0; under 1.51.0 each of the 7 FX files is built (5 xlsx, 2 html) and offered for download",
+      "business_logic_changed": "no",
+      "validation": "pytest tests: 989 passed; python run_all_tests.py: 1681 passed, 0 failed (working tree and the extracted package)"
+    },
+    "round_7": {
+      "date": "2026-09-29",
+      "name": "Registration currency only from the import licence and IL Append; rejected or void allocation requests never define a currency; incremental warehouse v2, stage 1",
+      "issue": "Owner's case: the registration was shown in CNY with the same number as the EUR invoice. s59 took the registration value and currency from the credit proforma, else from the NTSW initial commitment, which carried the currency of the first (void) CNY request; the import licence and IL Append were never read. The NTSW classifier did not know «باطل شده» and treated a finished process as allocation, so the void CNY request counted as an allocation, and the rejected EUR request counted as demand.",
+      "fix": "gsi/finance/registration.py: one reference order (import licence, IL Append latest amendment, credit proforma, PI sum as an estimate only) with basis, source, date, status and per-source conflict flags; one strict currency coder shared by s56, s59 and s70. NTSW: void, cancelled and expired requests are REJECTED, a finished process alone is CLOSED, the allocated amount comes only from allocated requests in their own currency, commitments are kept per currency. s56: rejected requests have their own event and column and are not demand; one registration event from the reference; evidence amounts carry their currency; the queue is dated from the first live request. s59: allocation, purchase, commitment and rejected-request currencies side by side with a CURRENCY_CHECK list, never merged. s20: CB_CURRENCY paired with CB_VALUE. s70: value at risk within one currency. Cashflow skips rejected requests. The trust rule compares SATA and customs invoice currencies only. Studio, HTML and Excel show the new columns and notes in Persian and English.",
+      "tests": "tests/test_fx_currency_owner_case_v29_21.py (16 tests: the owner's case end to end on synthetic data, plus unit locks); tests/test_fx_rows_and_states_r7.py (10 tests: right row, not first or void row); tests/test_fx_currency_sums_r7.py (11 tests: no cross-currency sum); 2 new tests in tests/test_bl_registration_link_v29_16.py (unshipped upper bound, critical board row pairs); tests/test_warehouse_v2_history.py and tests/test_warehouse_v2_refresh.py for the warehouse. The second-sweep tests fail on the code before the fix and pass on this package. Two older tests that encoded the old behaviour were updated (NTSW commitment as registration value; open amount without currency).",
+      "doc": "docs/FX_CURRENCY_FIX_R7_FA.md",
+      "warehouse_v2": "Stage 1 of the incremental warehouse (owner decision 2026-09-28): WAL SQLite with a run sequence, content-addressed objects, a file ledger (unchanged files are not parsed again), source record history with a field-level change log, business tables versioned by content, no delete or edit (triggers), publish moves a pointer. A v1 file is archived untouched as *.v1-archive-<stamp>.sqlite.",
+      "business_logic_changed": "yes: source authority of the registration value and currency, request classification, demand and allocation sums",
+      "validation": "pytest tests: 1037 passed; python run_all_tests.py: 1729 passed, 0 failed (extracted package). The working tree gave the same results apart from the file manifest, which is refreshed when the package is built.",
+      "second_sweep": "21 more same-family fixes (table rows 17-37 in docs/FX_CURRENCY_FIX_R7_FA.md). Right row, not first or void row: «آماده براي تخصيص» with a finished process is an open request (a regression the first fix of this round made, caught before delivery); the case status comes from the live request, the latest request status is kept apart; commitment deadlines from open rows; a void LC is not a registration value unless no other LC exists (flagged); FX 1405 file: the proforma rate and currency are kept apart from the purchase, duplicate lines are quarantined (DUPLICATE_LINE_SAME_RECORD) and a shared rial total is counted once; a planned purchase never fills the flat purchase fields. No cross-currency sum: Studio cards, summary, integrity, pivot and histogram per currency; one strict currency coder (unknown text is not a currency) in anomaly groups (nearest group by median), equivalents, experts, trust fitness and impact, warehouse measure totals (rejected, void or closed requests counted, not summed); cashflow takes the registration value from the licence reference (PI only as an estimate) and never sums an amount without a currency; the unshipped balance is flagged as an upper bound when part of the shipment has no comparable value; the critical board takes each amount with the currency of its own row and gives a multi-registration B/L no per-registration share; the risk penalty exposure divides only by a value in the penalty currency, else by the NTSW initial commitment.",
+      "deliberately_unchanged": "licence status «رد…» is not treated as void (it is a substring of «مورد تایید»); LC «متوقف شده» is not void; ALLOC_REQUESTED_GROSS has no currency and stays history only; merged cells in the FX 1405 file are untested on real data; gsi/finance/fx_obligation.py is not used by the pipeline"
+    },
+    "round_8": {
+      "date": "2026-09-29",
+      "name": "Grain, business keys, primary keys and redundancy",
+      "issue": "Owner saw a wrong row-level relation from the experts' file and many pointless headers, and asked for an audit of grain, redundancy, business keys and primary keys across the warehouse.",
+      "fix": "See docs/GRAIN_KEYS_FIX_R8_FA.md: one ORDER normaliser in every adapter; canonical keys in the business DWH (REG 8 digits, REG_FILE placeholders dropped, SAP_PO_* cleaned, ORDER+EMP alias); unique open-version index; ambiguous allocation rows and SAP empty-item rows no longer collapse; no-order materials kept; unique-case counts in s50/s85/s38/s39/s70, daily email, insight, charts, Excel/HTML Studio, scorecard and a static critical-BL count; derived amounts inherit their source grain, ORDER_MATERIAL grain for expert quantities; BL criticality from the orders on the BL instead of the first material; expert extracts default to the matrix columns with unique Persian labels (GSI_EXTRACT_ALL_COLUMNS=1 for all); unique labels in Studio Excel and snapshot export; grain_audit/ script for the owner's real sources.",
+      "tests": "tests/test_r8_dwh_keys.py (11), tests/test_r8_grain_counts.py (15), tests/test_r8_relations_outputs.py (10). Updated: test_rc_integrity and test_review_fixes_v29_19 (placeholder keys now rejected), test_v26_20_runtime_and_grain (expert quantities at ORDER_MATERIAL grain).",
+      "open": "order with two genuine registrations; STATUS_WHERE per material; SAP workflow key from content; dwh_entity duplicates the dims; matrix sheet default columns"
+    },
+    "round_9": {
+      "date": "2026-09-29",
+      "name": "Owner candidate merge, shipping/clearance report, inventory/critical report, date scope",
+      "issue": "Owner sent GRAIN_REMEDIATION_CANDIDATE1 (based on round 7) for review, then asked for a separate shipping and clearance report, a separate inventory-control and criticality output focused on BL, order and material, and date ranges (request, registration, PO, IL) next to the max-rows limit.",
+      "fix": "See docs/OWNER_CANDIDATE1_MERGE_FA.md and docs/REPORTS_SHIPPING_INVENTORY_R9_FA.md: owner changes merged on round 8; baseline-file block limited to the two baseline sources; DWH fact grain conflicts become a DWH_FACT_GRAIN_CONFLICT gate block instead of an uncaught exception; Composer tables mirroring tab fields keep injected columns; SAP keys kept as round 8; new gsi/report/shipping_clearance_report.py and gsi/report/inventory_critical_report.py with Studio surfaces; gsi/studio_core/date_scope.py; COT_DATE derived in s20.",
+      "tests": [
+        "tests/test_r8_merge_date_scope.py",
+        "tests/test_shipping_clearance_report.py",
+        "tests/test_inventory_critical_report.py",
+        "tests/test_grain_remediation_unittest.py",
+        "tests/test_composer_tables_unittest.py"
+      ]
+    },
+    "round_10": {
+      "date": "2026-09-29",
+      "name": "Expert file vs report contradiction: part states, shipments, row-owned BL, item values once, audit probability and graph",
+      "issue": "Owner found the report contradicting the experts' rows: «ترخیص کامل» was not a part state (quantity unknown, other states blank); rows without Part No. collapsed to one shipment; BLs with inner spaces/dots and 11-digit air waybills rejected; the order row showed the first BL/status/mode; CANONICAL_BL and TRANSPORT_MODE took the expert's order-level first value over each row's own; Quantity In Order and PI Line Value repeated per part were summed (order qty and PI value multiplied, reaching CB_VALUE and cashflow); order clearance hint from the first part; sheet 7 summed PI Line Value across currencies.",
+      "fix": "See docs/EXPERT_REPORT_CONTRADICTION_R10_FA.md.",
+      "tests": [
+        "tests/test_r10_expert_shipments.py",
+        "tests/test_grain_audit_collapse.py"
+      ],
+      "audit": "grain_audit 1.1: sections 10 (collapse probability with Wilson 95% interval), 11 (lexicon coverage), 12 (independent reconciliation incl. item-once order qty and PI value), offline graph HTML, BY_DESIGN reductions.",
+      "column_tidy": {
+        "date": "2026-09-30",
+        "issue": "Owner: many similar-named columns in outputs. Raw source columns kept beside the canonical column built from them (s10/s20 lineage), legacy Persian-named copies, and empty columns.",
+        "fix": "Snapshot export, expert extracts and Studio 'select all' leave out parallel columns (no value beyond their canonical column) and empty columns, listed in sheet «ستون‌های کنار گذاشته»; Studio keeps them selectable in a last group. Data and warehouse unchanged. GSI_OUTPUT_ALL_COLUMNS=1 restores all. See docs/COLUMN_TIDY_R10_FA.md.",
+        "tests": [
+          "tests/test_r10_column_tidy.py"
+        ]
+      },
+      "clearance_publish_block": {
+        "date": "2026-09-30",
+        "issue": "Refresh stopped with QualityGateBlockedError on source/clearance:PARTIAL_CLEARANCE_SCHEMA_LOSS (owner's CANDIDATE1 rule; one discovered clearance workbook without a contracted sheet).",
+        "fix": "Clearance header found within the first 10 rows; BL header accepts the adapter's own aliases; gap text names file, sheet, missing column and seen headers; EARLY BLOCK logs each blocking check's detail; refresh ends with a message and exit code 3 instead of a traceback. The block itself is unchanged. See docs/CLEARANCE_PUBLISH_BLOCK_R10_FA.md.",
+        "tests": [
+          "tests/test_r10_clearance_header.py"
+        ]
+      },
+      "brand_header": {
+        "date": "2026-09-30",
+        "request": "Owner: systemic, minimal report header in the board motion-graphic palette, used in e-mail and report headers.",
+        "fix": "gsi/design/brand.py band (motion palette tokens BAND_* in tokens.py, shield mark, dot grid, orbit arcs, Data-Process-Decision flow) used by components.app_bar (Composer), fx/shipping/inventory/cashflow reports and Studio hero; e-mail header is an inline CID JPEG with live title. Standalone PNGs in assets/brand/. See docs/BRAND_HEADER_R10_FA.md.",
+        "tests": [
+          "tests/test_r10_brand_header.py"
+        ]
+      }
+    }
+  },
+  "round_10": {
+    "non_oracle_and_gr_delivery": {
+      "owner_rule": "Every experts' file row appears in every report; non-Oracle materials are 'unknown, may be critical' with a data gap naming the file.",
+      "stage": "gsi/stages/s41_sap_gr_delivery.py",
+      "reports": [
+        "gsi/report/inventory_critical_report.py (followup, KPI, check, GR and gap columns)",
+        "gsi/report/critical_board.py (watch section)"
+      ],
+      "gr_arithmetic": {
+        "delivered": "101-102+105-106-122+123",
+        "blocked_qc": "103-104-105+106"
+      },
+      "daily_need": "Not derived from GR (receipts only, no consumption movements); stays Oracle-only and flagged when missing.",
+      "doc": "docs/NON_ORACLE_AND_GR_DELIVERY_R10_FA.md",
+      "tests": "tests/test_r10_non_oracle_gr_delivery.py"
+    },
+    "brand_wordmark_gsi": {
+      "owner_request": "GSI → GSi everywhere; lowercase smaller i; rest of Intelligence very faint, barcode-like",
+      "code": "gsi/design/brand.py wordmark_html/wordmark_css/email_wordmark",
+      "assets": "assets/brand (re-rendered)",
+      "kept": "data column names and technical error messages keep GSI",
+      "tests": "tests/test_r10_brand_header.py"
+    },
+    "shipping_expert_parts_and_date_filter": {
+      "doc": "docs/SHIPPING_EXPERT_PARTS_AND_DATE_FILTER_R10_FA.md",
+      "summary": "Expert part rows (in customs, in transit, ready, at supplier, unrecognised status) shown in the shipping and clearance report even without a B/L; date range applies to the whole report with a selectable date basis; undated rows excluded by default. Needs one Refresh."
+    },
+    "shipping_evidence_route": {
+      "doc": "docs/SHIPPING_EVIDENCE_ROUTE_R10_FA.md",
+      "summary": "First tab of the shipping and clearance report: per-B/L evidence route across stations with file-level evidence, certain-only implications, conflicts, order reversals, directly-follows flow, Shapley share of each source file and evidence fingerprints; visual, no person names."
+    },
+    "data_storytelling": {
+      "doc": "docs/DATA_STORYTELLING_R10_FA.md",
+      "code": [
+        "gsi/report/data_story.py",
+        "app/data_story_view.py"
+      ],
+      "composer_block": "data_story (optional, not in defaults)",
+      "summary": "New Studio space 'Data storytelling': nine visual chapters (since 1404 vs before, FX purchases, money vs goods divergence, allocation queue, commitment settlement, part groups, critical parts cost, shipping times, data gaps). Per-currency only, unknown is never zero, period comparison shows coincidence not cause.",
+      "tests": "tests/test_r10_data_story.py",
+      "critical_history": "Chapter from published warehouse snapshots (one point per reference date, column-subset read via framecodec.decode_columns): level counts per snapshot, transitions, persistence, FX purchases by criticality at purchase time.",
+      "settlement_from_sata_tracking": "Owner rule: settlement = SATA tracking code (کد رهگیری); date = تاریخ اخذ کد رهگیری. A registration is settled when every SATA B/L has a code; date = latest tracking date. NTSW full release is only compared, never overrides."
+    }
+  }
+}

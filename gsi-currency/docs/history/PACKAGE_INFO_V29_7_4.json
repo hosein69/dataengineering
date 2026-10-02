@@ -1,0 +1,119 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "29.7.5",
+  "identity": "Data • Process • Decision",
+  "release": "Primary population from Commercial Expert + NTSW; full auditable Cash Flow evidence chain",
+  "figma": "https://www.figma.com/design/Abh0S2zpkk25P7HTNdpipa",
+  "dwh": {
+    "engine": "SQLite",
+    "layers": [
+      "Raw/Bronze",
+      "Staging/Silver",
+      "Core",
+      "Mart/Gold",
+      "Reliability Gate",
+      "Publish"
+    ],
+    "publish_slots": [
+      "report",
+      "dwh"
+    ],
+    "atomic_publish": true,
+    "registration_file_separate_from_registration": true,
+    "direct_evidence_bridges_only": true,
+    "missing_not_zero": true
+  },
+  "reliability": {
+    "grain_contracts": true,
+    "schema_drift": true,
+    "row_preservation": true,
+    "foreign_key_check": true,
+    "integrity_check": true,
+    "atomic_pointer_publish": true,
+    "failed_run_keeps_diagnostics": true
+  },
+  "build": "PRIMARY_POPULATION_CASHFLOW_CHAIN",
+  "anythingllm_integration": {
+    "architecture": "sidecar_api_plus_public_embed",
+    "streamlit_surface": "آکادمی هوشمند",
+    "weekly_lessons": "config/weekly_lessons.json",
+    "html_qna": "AnythingLLM public embed; no API key serialized"
+  },
+  "source_authority_policy": {
+    "scope": "full_report_population_and_field_authority",
+    "tier_1": [
+      "moghavemat (Commercial Expert)",
+      "ntsw"
+    ],
+    "tier_2": [
+      "abbasi",
+      "sata"
+    ],
+    "fallback_rule": "lower_tier_fills_blank_only",
+    "ntsw_registration_bridge": "direct ORDER+REG or exact REG_FILE hub; no fuzzy joins",
+    "population_builders": [
+      "moghavemat (Commercial Expert)",
+      "ntsw"
+    ],
+    "enrichment_only": [
+      "abbasi",
+      "sata"
+    ],
+    "population_rule": "tier_1_union; tier_2_cannot_create_cases"
+  },
+  "base_version": "29.7.3",
+  "validation": {
+    "clean_regression_tests_passed": 113,
+    "tests_deselected": 1,
+    "deselected_reason": "streamlit.testing unavailable in validation runtime",
+    "doctor_errors": 0,
+    "doctor_warnings": 11
+  },
+  "source_authority": {
+    "scope": "full_report",
+    "tier_1": [
+      "moghavemat",
+      "ntsw"
+    ],
+    "tier_2": [
+      "abbasi",
+      "sata"
+    ],
+    "fallback_rule": "lower_tier_fills_blank_only",
+    "conflict_rule": "higher_tier_wins_equal_field_semantics"
+  },
+  "population_policy": {
+    "primary_union": [
+      "moghavemat",
+      "ntsw"
+    ],
+    "ntsw_only_is_main": true,
+    "abbasi_only_creates_case": false,
+    "sata_only_creates_case": false,
+    "ambiguous_mapping": "diagnostic_only_no_fuzzy_guess"
+  },
+  "cashflow_chain": {
+    "origin": "published_sqlite_business_dwh",
+    "stages": [
+      "PI",
+      "ALLOCATION_REQUEST",
+      "ALLOCATION",
+      "COMMITMENT",
+      "FX_BUY",
+      "FUNDING",
+      "PAYMENT",
+      "SETTLEMENT_RETURN",
+      "REMAINING_COMMITMENT"
+    ],
+    "synthetic_settlement": false,
+    "snapshot_is_event": false,
+    "same_source_fx_payment_link": "SOURCE_RECORD_FLOW when same native record and same currency",
+    "gap_codes": [
+      "MISSING_SETTLEMENT_EVIDENCE",
+      "MISSING_COMMITMENT_BALANCE_SNAPSHOT",
+      "UNLINKED_SETTLEMENT",
+      "UNTRACED_PAYMENT",
+      "VALUATION_GAP"
+    ]
+  }
+}

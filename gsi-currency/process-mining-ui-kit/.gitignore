@@ -1,0 +1,20 @@
+# ── چیدمان شخصی‌سازی‌شده و دادهٔ محلی ──
+layout.local.json
+output/
+logs/
+
+# ── پایتون ──
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# ── فونت‌های محلی مجوزدار (IRANSansWeb/Yekan Bakh) — دارایی توزیع‌پذیر
+# نیستند، خودتان اضافه می‌کنید. Vazirmatn (OFL، متن‌باز) از این قاعده
+# مستثناست و در مخزن می‌ماند — به همین دلیل نام‌گذاری صریح، نه الگوی کلی.
+static/fonts/IRANSansWeb-*.woff2
+static/fonts/IRANSansX-*.woff2
+static/fonts/YekanBakh-*.woff2
+static/fonts/*.ttf
+static/fonts/*.otf

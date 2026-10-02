@@ -1,0 +1,13 @@
+# Local runtime and data: never commit
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.sqlite
+*.sqlite-*
+*.db
+*.log
+# Licensed font binaries stay on the owner's machine
+assets/fonts/*.woff
+assets/fonts/*.woff2
+assets/fonts/*.ttf

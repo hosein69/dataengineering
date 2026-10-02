@@ -1,0 +1,369 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# V26.19 — Legacy Knowledge Transfer
+# این بسته «قانون جاری» نیست. هدف: انتقال تجربه، mapping، علت‌های عملیاتی و
+# anti-patternهای نسل قدیم به اشیای versioned و قابل ممیزی.
+# ═══════════════════════════════════════════════════════════════════════════
+pack: legacy_knowledge
+version: "1.0"
+updated_at: "2026-09-17"
+
+source_class: legacy_reference
+binding_default: false
+
+promotion_policy:
+  fail_closed: true
+  rule: "هیچ historical_rule یا operational_practice از این بسته بدون منبع رسمی تأییدشده و effective date به Rule الزام‌آور تبدیل نمی‌شود."
+  required_for_binding:
+    - "اصل سند/ابلاغ رسمی"
+    - "مرجع صادرکننده"
+    - "شماره و تاریخ"
+    - "effective_from و در صورت لزوم expires_on"
+    - "دامنه شمول و استثناها"
+
+sources:
+  - id: legacy_of_workbook
+    file: "OF - 2026-05-02.xlsx"
+    source_class: legacy_internal
+    source_date: "2026-05-02"
+    use: "نمونه واقعی گزارش رفع تعهد؛ fan-out پرداخت روی BL و ردیف Payment without BL"
+  - id: legacy_bl_dates
+    file: "BL-Dates-OF.xlsx"
+    source_class: legacy_internal
+    use: "نقشه قدیمی lineage تاریخ اسناد/ساتا/مجوز بارگیری/ترخیص و اتصال سورس‌ها"
+  - id: legacy_rates
+    file: "Rates.xlsx"
+    source_class: legacy_internal
+    use: "جدول نرخ ثابت برای نرمال‌سازی گزارش قدیمی؛ فقط semantics تاریخی"
+  - id: legacy_ntsw_sample
+    file: "NTSW.xlsx"
+    source_class: legacy_internal
+    use: "ساختار نمونه CB / Release Commitment / Allocation"
+  - id: legacy_zmm58_sample
+    file: "ZMM58.xlsx"
+    source_class: legacy_internal
+    use: "نگاشت ثبت سفارش ↔ BL ↔ ارزش/ارز/Shipment/کارشناس"
+  - id: legacy_ets_sample
+    file: "ETS.xlsx"
+    source_class: legacy_internal
+    use: "نمونه نوع/مبلغ جریمه؛ نه نرخ یا حکم جاری"
+  - id: legacy_append_sample
+    file: "Append.xlsx"
+    source_class: legacy_internal
+    use: "نگاشت کارشناس و روابط BL/Order/REG"
+  - id: legacy_notebook
+    file: "OF-Final-Revision.ipynb"
+    source_class: legacy_code
+    use: "استخراج الگوریتم قدیمی FIFO پرداخت→BL، نرخ ثابت، network path و desktop automation"
+  - id: legacy_commitment_notes
+    file: "نکات رفع تعهد.pdf"
+    source_class: legacy_training
+    source_date: "2024-12-17"
+    use: "آموزش/تجربه قدیمی درباره ساعت‌های A/B/C، مدارک و موانع رفع تعهد"
+
+rate_semantics:
+  - code: LEGACY_REFERENCE_NORMALIZATION_RATE
+    fa: "نرخ مرجع ثابت گزارش قدیمی"
+    source: legacy_rates
+    permitted_use: "بازسازی گزارش تاریخی/مقایسه شکلی"
+    forbidden_use: "محاسبه P&L واقعی یا زیان تبدیل ارز در تاریخ تراکنش"
+  - code: FX_PURCHASE_RATE
+    fa: "نرخ خرید ارز از بانک/مرکز مبادله"
+    required_evidence: ["اعلامیه فروش ارز/سند بانکی", "تاریخ خرید"]
+  - code: SUPPLIER_SETTLEMENT_RATE
+    fa: "نرخ ریالی معادل ارز پرداختی به ذی‌نفع"
+    required_evidence: ["پیام/رسید پرداخت", "ارز و مبلغ مقصد", "تاریخ پرداخت"]
+  - code: CROSS_RATE
+    fa: "نرخ تبدیل ارز مبدأ به ارز مقصد"
+    required_evidence: ["رسید conversion/deal ticket", "ارز مبدأ و مقصد"]
+  - code: ACCOUNTING_RATE
+    fa: "نرخ حسابداری"
+    required_evidence: ["سند حسابداری/سیاست نرخ"]
+  - code: FEES
+    fa: "کارمزد بانکی/تبدیل/انتقال"
+    required_evidence: ["سند کارمزد/صورتحساب بانک یا صرافی"]
+
+items:
+  # ── Historical clocks: extracted from old training note; NEVER current law ──
+  - id: HIST_ABC_CLOCK_MODEL
+    kind: historical_rule
+    title: "مدل سه ساعت A/B/C در گزارش قدیمی"
+    description: "A: از ایجاد تعهد تا ارائه اسناد برای ظهرنویسی؛ B: از ایجاد تعهد تا مجوز بارگیری/رسید مالی؛ C: از کد رهگیری تا ترخیص کامل. این مدل برای توضیح سابقه و بازسازی گزارش قدیمی است."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_date: "2024-12-17"
+    source_location: "PDF pages 4-6"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [deadline, A, B, C, settlement]
+    evidence_requirements: ["تاریخ ایجاد تعهد", "تاریخ ارائه اسناد", "تاریخ مجوز بارگیری/رسید مالی", "تاریخ کد رهگیری", "تاریخ ترخیص کامل"]
+    historical_parameters:
+      commercial_cbu: {A_months: 6, B_months: 8, C_months: 1}
+      production: {A_months: 9, B_months: 11, C_months: 1}
+      machinery: {A_months: 16, B_months: 18, C_months: 1}
+
+  - id: HIST_COMMITMENT_ORIGIN_BANK_PRACTICE
+    kind: operational_practice
+    title: "اختلاف قدیمی در مبدأ ایجاد تعهد"
+    description: "در یادداشت قدیمی ذکر شده مبدأ ممکن بود خرید ارز یا تاریخ دریافت SWIFT/مختومه‌شدن پروسه خرید ارز در نظر گرفته شود. فقط برای تحلیل پرونده تاریخی؛ Rule جاری باید از سند رسمی پرونده/بانک بیاید."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_date: "2024-12-17"
+    source_location: "PDF page 3"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    tags: [commitment_origin, bank_practice]
+
+  # ── Data lineage / mapping ──
+  - id: MAP_BL_LIFECYCLE_DATES
+    kind: data_mapping
+    title: "Lineage تاریخ‌های BL در نسل قدیم"
+    description: "شماره BL، ارائه اسناد، کد رهگیری، مجوز بارگیری و ترخیص به‌عنوان نقاط جداگانه نگهداری می‌شدند."
+    source_id: legacy_bl_dates
+    source_class: legacy_internal
+    source_location: "Sheet1 rows 1-12"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [BL, documents, SATA, finance_receipt, clearance]
+
+  - id: MAP_CROSS_SYSTEM_NTSW_PAYMENT
+    kind: data_mapping
+    title: "نقشه اتصال NTSW / Payment / IKCO در فایل قدیمی"
+    description: "فایل BL-Dates-OF نشان می‌دهد وضعیت و ردیف تخصیص، تاریخ تخصیص، مبلغ درخواست، تاریخ خرید ارز، مبلغ خرید، SWIFT/تأیید ذی‌نفع و ردیف تعهد از چند منبع کنار هم قرار می‌گرفتند."
+    source_id: legacy_bl_dates
+    source_class: legacy_internal
+    source_location: "Sheet1 rows 11-12"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [lineage, NTSW, allocation, payment, SWIFT, commitment]
+
+  - id: MAP_REG_BL_VALUE
+    kind: data_mapping
+    title: "ثبت سفارش ↔ بارنامه ↔ مبلغ/ارز"
+    description: "ZMM58 نمونه نشان می‌دهد REG، BL، مبلغ BL، ارز BL و Shipment باید رابطه مستقل داشته باشند."
+    source_id: legacy_zmm58_sample
+    source_class: legacy_internal
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [REG, BL, amount, currency]
+
+  # ── Accounting/payment design lessons ──
+  - id: LEGACY_PAYMENT_WITHOUT_BL
+    kind: operational_practice
+    title: "مانده پرداخت بدون BL"
+    description: "در خروجی قدیمی، مانده یک Payment که هنوز به BL مصرف نشده بود به‌صورت ردیف بدون BL نمایش داده می‌شد. در مدل جدید باید Unallocated Fund Balance باشد، نه BL مصنوعی."
+    source_id: legacy_of_workbook
+    source_class: legacy_internal
+    source_date: "2026-05-02"
+    source_location: "Sheet1 column Payment without BL / rows without BL"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [payment, BL, unallocated_balance]
+    evidence_requirements: ["شناسه تراکنش/خرید ارز", "مبلغ اولیه", "Allocation Edgeهای مصرف‌شده", "مانده تخصیص‌نیافته"]
+
+  - id: LEGACY_FIFO_PAYMENT_TO_BL
+    kind: operational_practice
+    title: "FIFO تاریخی برای تخصیص Payment به BL"
+    description: "Notebook قدیمی BLها را به ترتیب تاریخ ارائه اسناد و Paymentها را به ترتیب تاریخ خرید ارز مصرف می‌کرد. این فقط الگوریتم تاریخی گزارش است؛ در سیستم جدید Allocation Edge واقعی/مجوزدار بر FIFO مقدم است."
+    source_id: legacy_notebook
+    source_class: legacy_code
+    source_location: "allocation loop: Allocated from Payment ($)"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [FIFO, allocation_edge, payment, BL]
+
+  # ── Root cause library extracted from old training note ──
+  - id: RC_VALUE_UNDERSTATEMENT
+    kind: root_cause
+    title: "نزول ارزش"
+    description: "ارزش اظهارشده کالا کمتر از ارزش واقعی/مورد انتظار گزارش شده است."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["نزول ارزش", "کمتر از ارزش", "کم اظهاری"]
+    evidence_requirements: ["پروفرما/فاکتور", "اظهارنامه گمرکی", "پروانه/کوتاژ", "مبنای ارزش‌گذاری گمرک"]
+
+  - id: RC_TARIFF_DIFFERENCE
+    kind: root_cause
+    title: "تفاوت تعرفه"
+    description: "اختلاف تعرفه/HS می‌تواند مانع تطبیق و رفع تعهد شود."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["تفاوت تعرفه", "مغایرت تعرفه", "hs"]
+    evidence_requirements: ["HS ثبت سفارش", "HS اظهارنامه/پروانه", "نامه اصلاح/نظر گمرک"]
+
+  - id: RC_VALUE_OVERSTATEMENT
+    kind: root_cause
+    title: "بیش‌بود ارزش"
+    description: "ارزش اظهارشده بیش از ارزش واقعی/مورد انتظار گزارش شده است."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["بیش بود ارزش", "بیش‌بود ارزش", "بیش اظهاری"]
+    evidence_requirements: ["پروفرما/فاکتور", "اظهارنامه گمرکی", "پروانه/کوتاژ", "اسناد ارزش‌گذاری"]
+
+  - id: RC_NO_BL_PRIORITY_EXIT
+    kind: root_cause
+    title: "خروج سیستمی بدون BL"
+    description: "در تجربه قدیمی، به علت فوریت ممکن بود کالا بدون تیک خروج سیستمی BL از گمرک خارج شود. این مورد فقط Investigation Lead است."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["عدم بیجک", "بدون بارنامه", "no bl"]
+    evidence_requirements: ["مجوز فوریت/خروج", "اسناد گمرک", "BL", "تأیید بانک/بازرگانی در صورت ارتباط"]
+
+  - id: RC_PAYMENT_INSTRUMENT_ID_TYPO
+    kind: root_cause
+    title: "اشتباه شماره ابزار پرداخت در EPL"
+    description: "شماره ابزار پرداخت ممکن است به اشتباه توسط بانک یا کاربر در EPL ثبت شده باشد."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["اصلاح شماره ابزار پرداخت", "اشتباه شماره ابزار", "ابزار پرداخت"]
+    evidence_requirements: ["اسکرین/خروجی EPL", "سند بانک عامل", "شماره ابزار صحیح", "درخواست اصلاح"]
+
+  - id: RC_PAYMENT_INSTRUMENT_ID_MISSING
+    kind: root_cause
+    title: "عدم درج شماره ابزار پرداخت"
+    description: "نبود شماره حواله/ابزار پرداخت در سامانه می‌تواند تطبیق را متوقف کند."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 8"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["عدم درج شماره ابزار", "شماره ابزار پرداخت نیست", "فاقد شماره ابزار"]
+    evidence_requirements: ["حواله/سوئیفت", "سند بانک عامل", "خروجی EPL/NTSW", "شناسه پرداخت"]
+
+  - id: RC_DISCHARGE_SHORTAGE
+    kind: root_cause
+    title: "کسر تخلیه"
+    description: "اختلاف وزن/مقدار بین کالای اظهارشده و کالای خارج‌شده از گمرک."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 9"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["کسر تخلیه", "اختلاف وزن", "کسری"]
+    evidence_requirements: ["مانیفست/BL", "قبض انبار", "گزارش توزین/تخلیه", "اظهارنامه و پروانه"]
+
+  - id: RC_GOODS_NOT_ENTERED
+    kind: root_cause
+    title: "عدم ورود کالا"
+    description: "در تجربه قدیمی ممکن بود سند در مرحله خروج دیده شود ولی ورود فیزیکی/سیستمی کالا قابل اثبات نباشد."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 9"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["عدم ورود کالا", "کالا وارد نشده"]
+    evidence_requirements: ["BL/AWB/CMR", "Arrival/Discharge", "قبض انبار", "EPL/گمرک"]
+
+  - id: RC_DECLARATION_MISMATCH
+    kind: root_cause
+    title: "مغایرت اظهارنامه"
+    description: "مغایرت مبلغ/ارز/مشخصات اظهارنامه با اسناد تجاری یا ثبت سفارش."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 9"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["مغایرت اظهارنامه", "اظهارنامه", "مغایرت مبلغ"]
+    evidence_requirements: ["ثبت سفارش", "فاکتور", "اظهارنامه", "پروانه/کوتاژ", "ارز و مبلغ هر سند"]
+
+  - id: RC_NON_TRANSFER_TRANSACTION_TYPE
+    kind: root_cause
+    title: "نوع تراکنش حواله ارزی/بدون انتقال ارز"
+    description: "در تجربه قدیمی، درج نوع تراکنش نامتناسب با ماهیت سند بانکی می‌توانست مانع تطبیق شود."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 9"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    patterns: ["بدون انتقال ارز", "نوع تراکنش", "حواله ارزی"]
+    evidence_requirements: ["نوع ثبت سفارش", "سند بانکی/حواله", "خروجی NTSW/EPL", "مجوز/اصلاحیه در صورت وجود"]
+
+  # ── Evidence package from old operational states ──
+  - id: EVIDENCE_BANK_DOCUMENT_PACKAGE
+    kind: evidence_requirement
+    title: "بسته شواهد بانکی/اسنادی قدیمی"
+    description: "یادداشت قدیمی برای برخی وضعیت‌ها ارسال برنامه کالای در راه، ایمیل/نامه سازنده، قبض انبار رسیده به گمرک، تصویر EPL و مکاتبه استاندارد را پیشنهاد می‌کرد."
+    source_id: legacy_commitment_notes
+    source_class: legacy_training
+    source_location: "PDF page 7"
+    status: legacy_reference
+    binding: false
+    confidence: medium
+    evidence_requirements: ["برنامه کالای در راه", "ایمیل/نامه سازنده", "قبض انبار گمرکی", "تصویر EPL", "نامه استاندارد/سازمان مرتبط در صورت نیاز"]
+
+  # ── Technical anti-patterns: knowledge transferred as code guardrails ──
+  - id: AP_PAYMENT_FANOUT
+    kind: technical_antipattern
+    title: "تکرار Payment روی چند BL و جمع دوباره"
+    description: "گزارش قدیمی مبلغ کامل Payment را در چند ردیف BL تکرار می‌کرد. جمع ردیفی باعث چندبرابرشدن جریان پول می‌شود."
+    source_id: legacy_of_workbook
+    source_class: legacy_internal
+    source_date: "2026-05-02"
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [fanout, grain, payment]
+
+  - id: AP_STATIC_RATE_FOR_PNL
+    kind: technical_antipattern
+    title: "استفاده از نرخ ثابت گزارش برای P&L"
+    description: "Rates.xlsx نرخ ثابت مرجع داشت و Notebook برای نرمال‌سازی استفاده می‌کرد. این نرخ برای محاسبه زیان واقعی تبدیل در تاریخ تراکنش معتبر نیست."
+    source_id: legacy_rates
+    source_class: legacy_internal
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [rate, pnl, cross_currency]
+
+  - id: AP_SYNTHETIC_PAYMENT_ID
+    kind: technical_antipattern
+    title: "شناسه Payment ساخته‌شده از REG+Amount+Date"
+    description: "Notebook شماره Payment را از الحاق کد ثبت سفارش، مبلغ و تاریخ می‌ساخت؛ برخورد/اصلاح مبلغ و تاریخ می‌تواند هویت تراکنش را بشکند."
+    source_id: legacy_notebook
+    source_class: legacy_code
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [identity, payment]
+
+  - id: AP_DESKTOP_AUTOMATION
+    kind: technical_antipattern
+    title: "وابستگی به pyautogui/Outlook COM و مسیر Share ثابت"
+    description: "Notebook قدیمی refresh/ارسال را به Desktop Automation و مسیرهای UNC ثابت گره می‌زد؛ در معماری جدید اتصال/خروجی باید قراردادی و قابل تست باشد."
+    source_id: legacy_notebook
+    source_class: legacy_code
+    status: legacy_reference
+    binding: false
+    confidence: high
+    tags: [deployment, automation, resilience]

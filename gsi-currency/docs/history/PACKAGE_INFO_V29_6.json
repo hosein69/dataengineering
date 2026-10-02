@@ -1,0 +1,89 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "29.6.0",
+  "identity": "Data • Process • Decision",
+  "release": "End-to-End Money Flow Reconciliation",
+  "figma": "https://www.figma.com/design/Abh0S2zpkk25P7HTNdpipa",
+  "dwh": {
+    "engine": "SQLite",
+    "layers": [
+      "Raw/Bronze",
+      "Staging/Silver",
+      "Core",
+      "Mart/Gold",
+      "Reliability Gate",
+      "Publish"
+    ],
+    "publish_slots": [
+      "report",
+      "dwh"
+    ],
+    "atomic_publish": true,
+    "registration_file_separate_from_registration": true,
+    "direct_evidence_bridges_only": true,
+    "missing_not_zero": true,
+    "order_material_pr_item_bridge": true,
+    "money_flow_event_ledger": true,
+    "same_currency_reconciliation": true,
+    "supplier_receipt_separate_from_swift": true,
+    "obligation_accounting_invariant": true
+  },
+  "reliability": {
+    "grain_contracts": true,
+    "schema_drift": true,
+    "row_preservation": true,
+    "foreign_key_check": true,
+    "integrity_check": true,
+    "atomic_pointer_publish": true,
+    "failed_run_keeps_diagnostics": true,
+    "fault_isolated_source_loading": true,
+    "last_published_source_fallback": true,
+    "stale_fallback_explicitly_flagged": true,
+    "join_cardinality_branch_quarantine": true,
+    "degraded_run_nonblocking_for_optional_sources": true,
+    "critical_spine_publish_block": true,
+    "relation_health_contract": true,
+    "source_match_separate_from_base_coverage": true,
+    "known_incomplete_source_policy": true,
+    "order_unmatched_forensics": true,
+    "multi_pr_relation_preserved": true
+  },
+  "tests_current_build": {
+    "passed": 12,
+    "failed": 0,
+    "scope": "targeted money-flow/FX regressions; full raw pytest also reached 279 passed with pre-existing unrelated harness issues"
+  },
+  "build": "V29_6_0_MONEY_FLOW_E2E",
+  "knowledge_desk": {
+    "architecture": "shared_folder_static_zero_server",
+    "streamlit_surface": "دستیار دانش بازرگانی",
+    "admin_selects_paths_in_streamlit": true,
+    "knowledge_folder_hidden_from_html": true,
+    "lessons_folder_separate": true,
+    "html_qna": "static shared-folder chatbot.html with prebuilt search index",
+    "internet_required": false,
+    "mandatory_vector_db": false,
+    "mandatory_llm": false,
+    "user_facing_name": "چت‌بات",
+    "chatbot_independent_from_optional_content": true,
+    "blank_optional_content_path_safe": true
+  },
+  "uiux": {
+    "design_language": "Iranian Editorial Data System",
+    "ratio": "80% enterprise / 15% data journalism / 5% cultural-handdrawn accents",
+    "surfaces": [
+      "white",
+      "aqua mist",
+      "warm paper"
+    ],
+    "chart_principle": "precise geometry + human editorial annotation",
+    "reduced_motion": true
+  },
+  "performance": {
+    "official_excel_lazy_download": true,
+    "warehouse_mart_lazy_extras": true,
+    "warehouse_no_immediate_roundtrip": true,
+    "local_disposable_frame_cache": true,
+    "sqlite_remains_source_of_truth": true
+  }
+}

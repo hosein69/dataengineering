@@ -1,0 +1,13 @@
+{
+  "validator": "local-equivalent-efd-2.1-contract",
+  "bundled_validator_resource": "not exposed by installed skill catalog",
+  "schemaVersion": "efd-2.1",
+  "errors": [],
+  "warnings": [
+    "TASK-GSI-SCOPE: accountable position not established",
+    "نام رسمی واحد بهره‌بردار GSI در منابع تثبیت نشده و به‌صورت pending نگه داشته شده است.",
+    "نام رسمی واحد حاکمیت/پذیرش و عنوان شغلی Accountable در استقرار باید تأیید شود.",
+    "EFD روند نرم‌افزار/انتشار را مدل می‌کند؛ آن را جایگزین مدل فرآیند بازرگانی واقعی سازمان نکنید."
+  ],
+  "status": "PASS"
+}

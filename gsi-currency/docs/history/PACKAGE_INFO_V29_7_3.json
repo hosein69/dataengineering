@@ -1,0 +1,76 @@
+{
+  "name": "GSI | Global Sourcing Intelligence",
+  "version": "29.7.3",
+  "identity": "Data • Process • Decision",
+  "release": "Full-report source authority: Commercial Expert + NTSW tier-1; Abbasi + SATA tier-2",
+  "figma": "https://www.figma.com/design/Abh0S2zpkk25P7HTNdpipa",
+  "dwh": {
+    "engine": "SQLite",
+    "layers": [
+      "Raw/Bronze",
+      "Staging/Silver",
+      "Core",
+      "Mart/Gold",
+      "Reliability Gate",
+      "Publish"
+    ],
+    "publish_slots": [
+      "report",
+      "dwh"
+    ],
+    "atomic_publish": true,
+    "registration_file_separate_from_registration": true,
+    "direct_evidence_bridges_only": true,
+    "missing_not_zero": true
+  },
+  "reliability": {
+    "grain_contracts": true,
+    "schema_drift": true,
+    "row_preservation": true,
+    "foreign_key_check": true,
+    "integrity_check": true,
+    "atomic_pointer_publish": true,
+    "failed_run_keeps_diagnostics": true
+  },
+  "build": "FULL_REPORT_SOURCE_AUTHORITY",
+  "anythingllm_integration": {
+    "architecture": "sidecar_api_plus_public_embed",
+    "streamlit_surface": "آکادمی هوشمند",
+    "weekly_lessons": "config/weekly_lessons.json",
+    "html_qna": "AnythingLLM public embed; no API key serialized"
+  },
+  "source_authority_policy": {
+    "scope": "full_report",
+    "tier_1": [
+      "moghavemat (Commercial Expert)",
+      "ntsw"
+    ],
+    "tier_2": [
+      "abbasi",
+      "sata"
+    ],
+    "fallback_rule": "lower_tier_fills_blank_only",
+    "ntsw_registration_bridge": "direct ORDER+REG or exact REG_FILE hub; no fuzzy joins"
+  },
+  "base_version": "29.7.2",
+  "validation": {
+    "authority_finance_tests_passed": 129,
+    "tests_deselected": 1,
+    "deselected_reason": "streamlit.testing unavailable in validation runtime",
+    "doctor_errors": 0,
+    "doctor_warnings": 11
+  },
+  "source_authority": {
+    "scope": "full_report",
+    "tier_1": [
+      "moghavemat",
+      "ntsw"
+    ],
+    "tier_2": [
+      "abbasi",
+      "sata"
+    ],
+    "fallback_rule": "lower_tier_fills_blank_only",
+    "conflict_rule": "higher_tier_wins_equal_field_semantics"
+  }
+}

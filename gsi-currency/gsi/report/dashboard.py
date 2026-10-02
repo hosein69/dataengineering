@@ -1,0 +1,1099 @@
+# -*- coding: utf-8 -*-
+"""سازنده داشبورد اکسل — با استفاده از تمام ظرفیت‌های اکسل (§۱۴).
+
+امکاناتی که در نسخه ۲۰.۱ اصلاً وجود نداشت و اینجا اضافه شده است:
+Freeze Panes، AutoFilter، Data Validation (لیست کشویی)، Conditional Formatting
+(مقیاس رنگی + قانون متنی)، Formula Injection (SUBTOTAL/COUNTIF زنده)،
+Number Formatting و گروه‌بندی سطر/ستون با outline_level.
+"""
+from __future__ import annotations
+
+__contract__ = 3   # ← gsi/contracts.py
+
+import os
+from copy import copy
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.formatting.rule import CellIsRule, ColorScaleRule, FormulaRule
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.datavalidation import DataValidation
+
+from ..core.excel_text import keep_text, write_formula
+from ..core.text import flag_true
+from ..design import excel as dx
+from ..dataio.logging_setup import log
+from ..rulebook import get_rulebook
+from .palette import (LuxuryPalette as P, NUM_FORMAT_CURRENCY, NUM_FORMAT_INT,
+                      NUM_FORMAT_PCT)
+from .financial_summary import commitment_display, penalty_display, commitment_equivalent_display
+from ..studio_core.grain import case_rows, unique_count
+
+SHEET_EXEC = "۱. خلاصه اجرایی"
+SHEET_MATRIX = "۲. کالبدشکافی ۳ لایه‌ای ماتریسی"
+SHEET_RESOLVE = "۳. تعیین تکلیف"
+SHEET_COMMIT = "۴. رفع تعهد ارزی"
+SHEET_SCORECARD = "۵. کارنامه سازمانی"
+SHEET_MATH = "۶. پشتیبان ریاضی"
+
+
+class ExcelDashboardBuilder:
+
+    def __init__(self, output_path: str) -> None:
+        self.output_path = output_path
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)  # FIX-B7
+        self.wb = Workbook()
+        self.wb.remove(self.wb.active)
+
+    # ═══════════ ابزارهای مشترک ═══════════
+    def _new_sheet(self, title: str) -> Any:
+        ws = self.wb.create_sheet(title)
+        ws.sheet_view.rightToLeft = True
+        return ws
+
+    def _write_header(self, ws, headers: List[str], row: int = 1,
+                      widths: Optional[List[int]] = None,
+                      groups: Optional[Dict[int, int]] = None) -> None:
+        for i, h in enumerate(headers, start=1):
+            c = ws.cell(row=row, column=i, value=h)
+            c.font = P.font_header(1)
+            c.fill = P.fill_header()
+            c.alignment = P.align("center", wrap=True)
+            c.border = P.thin_border()
+            letter = get_column_letter(i)
+            ws.column_dimensions[letter].width = (widths[i - 1] if widths and i <= len(widths) else 20)
+            if groups and i in groups:
+                ws.column_dimensions[letter].outline_level = groups[i]
+                ws.column_dimensions[letter].hidden = True
+        ws.row_dimensions[row].height = 34
+        ws.freeze_panes = ws.cell(row=row + 1, column=1)          # Freeze Panes
+        ws.auto_filter.ref = f"A{row}:{get_column_letter(len(headers))}{row}"  # AutoFilter
+        ws.sheet_properties.outlinePr.summaryRight = False
+
+    @staticmethod
+    def _style_row(ws, r: int, ncols: int, fill_color: Optional[str] = None) -> None:
+        for c in range(1, ncols + 1):
+            cell = ws.cell(row=r, column=c)
+            cell.font = P.font_body()
+            cell.border = P.thin_border()
+            cell.alignment = P.align("right", wrap=False)
+            if fill_color:
+                cell.fill = P.fill(fill_color)
+
+    # ═══════════ شیت ۱ — خلاصه اجرایی ═══════════
+    def build_executive(self, kpis: Dict[str, Any], narrative: str,
+                        matrix_rows: int, critical_bl: Optional[int] = None) -> None:
+        ws = self.wb.create_sheet(SHEET_EXEC, 0)
+        ws.sheet_view.rightToLeft = True
+        ws.column_dimensions["A"].width = 48
+        ws.column_dimensions["B"].width = 28
+        ws.column_dimensions["C"].width = 60
+
+        ws["A1"] = "🏛️ داشبورد مدیریتی هوش لجستیک و حاکمیت داده — ایران خودرو"
+        ws["A1"].font = P.font_title(16)
+        ws.merge_cells("A1:C1")
+        ws.row_dimensions[1].height = 30
+
+        ws["A3"] = narrative
+        ws["A3"].font = P.font_body()
+        ws["A3"].alignment = P.align("right", wrap=True)
+        ws.merge_cells("A3:C3")
+        ws.row_dimensions[3].height = 90
+
+        ws["A5"] = "شاخص"
+        ws["B5"] = "مقدار"
+        ws["C5"] = "توضیح"
+        for col in "ABC":
+            ws[f"{col}5"].font = P.font_header(1)
+            ws[f"{col}5"].fill = P.fill_header()
+            ws[f"{col}5"].alignment = P.align("center")
+
+        r = 6
+        for label, (value, note) in kpis.items():
+            ws.cell(row=r, column=1, value=label).font = P.font_body(bold=True)
+            v = ws.cell(row=r, column=2, value=value)
+            v.font = P.font_kpi()
+            v.alignment = P.align("center")
+            if isinstance(value, (int, float)):
+                v.number_format = NUM_FORMAT_INT if float(value).is_integer() else NUM_FORMAT_PCT
+            ws.cell(row=r, column=3, value=note).font = P.font_body()
+            for c in range(1, 4):
+                ws.cell(row=r, column=c).border = P.thin_border()
+                ws.cell(row=r, column=c).fill = P.fill_row_level(2)
+            r += 1
+
+        # Formula Injection — شمارنده‌های زنده از شیت ماتریس
+        if matrix_rows > 0:
+            # R8: فرمول قبلی COUNTIF روی ستون ثابت E ماتریس بود (که حالا ستون مقدار
+            # است) و ردیف می‌شمرد نه بارنامه. شمار بارنامه یکتای بحرانی ایستا نوشته
+            # می‌شود؛ مقدارش را build_matrix از ستون BL_CRITICAL حساب کرده است.
+            if critical_bl is None:
+                critical_bl = getattr(self, "_critical_bl_count", None)
+            ws.cell(row=r + 1, column=1, value="بارنامه‌های بحرانی (بارنامه یکتا)").font = P.font_body(bold=True)
+            ws.cell(row=r + 1, column=2,
+                    value=int(critical_bl) if critical_bl is not None else "—").font = P.font_kpi()
+            ws.cell(row=r + 2, column=1, value="ردیف‌های قابل مشاهده پس از فیلتر").font = P.font_body(bold=True)
+            write_formula(ws, r + 2, 2, f"=SUBTOTAL(103,'{SHEET_MATRIX}'!$B$2:$B${matrix_rows + 1})").font = P.font_kpi()
+
+    @staticmethod
+    def critical_bl_count(df: pd.DataFrame) -> Optional[int]:
+        """R8: شمار بارنامه یکتای بحرانی (پرچم BL_CRITICAL از مرحله ۴۰).
+
+        هر بارنامه یک بار، هر قدر متریال یا سفارش داشته باشد؛ ردیف بی‌بارنامه
+        بارنامه نیست. اگر پرچم نباشد، «وضعیت هوشمند» شامل «بحرانی» ملاک است.
+        """
+        if df is None or df.empty:
+            return None
+        if "BL_CRITICAL" in df.columns:
+            mask = df["BL_CRITICAL"].map(flag_true).astype(bool)
+        elif "وضعیت هوشمند" in df.columns:
+            mask = df["وضعیت هوشمند"].fillna("").astype(str).str.contains("بحرانی")
+        else:
+            return None
+        bl = "CANONICAL_BL" if "CANONICAL_BL" in df.columns else "KEY_BL"
+        if bl not in df.columns:
+            return int(mask.sum())
+        return unique_count(df[mask], bl, blank_counts=False)
+
+    # ═══════════ شیت ۲ — کالبدشکافی ماتریسی (ستون‌محور) ═══════════
+    def build_matrix(self, df: pd.DataFrame, specs: list) -> int:
+        """ستون‌ها را **مرحله‌ها** اعلام می‌کنند، نه این فایل.
+
+        افزودن ستون جدید به گزارش = افزودن یک ColumnSpec در همان مرحله‌ای که
+        ستون را می‌سازد. این متد هرگز برای قابلیت جدید تغییر نمی‌کند.
+        """
+        ws = self._new_sheet(SHEET_MATRIX)
+        self._critical_bl_count = self.critical_bl_count(df)   # R8
+        specs = [sp for sp in specs if sp.key in df.columns]
+        if not specs:
+            log.warning("⚠️ هیچ ستون گزارشی توسط مرحله‌ها اعلام نشد.")
+            return 0
+
+        headers = [sp.title for sp in specs]
+        widths = [sp.width for sp in specs]
+        groups = {i: sp.group for i, sp in enumerate(specs, start=1) if sp.group > 0}
+        self._write_header(ws, headers, widths=widths, groups=groups)
+
+        fmt_map = {"int": NUM_FORMAT_INT, "decimal": NUM_FORMAT_PCT,
+                   "currency": NUM_FORMAT_CURRENCY}
+        band_fills = {b["code"]: b.get("fill", "")
+                      for b in (get_rulebook().get("criticality.bands", []) or [])}
+        crit_col = next((i for i, sp in enumerate(specs, start=1)
+                         if sp.key == "طبقه بحرانی"), None)
+
+        r = 2
+        for _, row in df.iterrows():
+            critical = "بحرانی" in str(row.get("وضعیت هوشمند", ""))
+            for i, sp in enumerate(specs, start=1):
+                ws.cell(row=r, column=i, value=self._cell_value(row.get(sp.key, "")))
+            self._style_row(ws, r, len(specs),
+                            P.CRITICAL_FILL if critical else P.GREEN_L4)
+            for i, sp in enumerate(specs, start=1):
+                cell = ws.cell(row=r, column=i)
+                if sp.fmt in fmt_map:
+                    cell.number_format = fmt_map[sp.fmt]
+                if sp.wrap:
+                    cell.alignment = P.align("right", wrap=True)
+            if crit_col:
+                fill = band_fills.get(str(row.get("کد طبقه بحرانی", "")))
+                if fill:
+                    c = ws.cell(row=r, column=crit_col)
+                    c.fill = P.fill(fill)
+                    c.font = P.font_body(bold=True)
+            r += 1
+
+        last = r - 1
+        if last >= 2:
+            self._apply_rules(ws, specs, last)
+            self._add_decision_column(ws, len(specs), last)
+        log.info(f"📄 شیت «{SHEET_MATRIX}» ساخته شد — {last - 1} ردیف × {len(specs)} ستون.")
+        return last - 1
+
+    @staticmethod
+    def _apply_rules(ws, specs: list, last: int) -> None:
+        """قوانین رنگی که هر ستون در ColumnSpec خودش اعلام کرده است."""
+        for i, sp in enumerate(specs, start=1):
+            if not sp.color_rule:
+                continue
+            col = get_column_letter(i)
+            rng = f"{col}2:{col}{last}"
+            if sp.color_rule == "scale_low_bad":
+                ws.conditional_formatting.add(rng, ColorScaleRule(
+                    start_type="num", start_value=0, start_color=dx.SCALE_BAD,
+                    mid_type="num", mid_value=20, mid_color=dx.SCALE_MID,
+                    end_type="num", end_value=60, end_color=dx.SCALE_GOOD))
+            elif sp.color_rule == "scale_high_bad":
+                ws.conditional_formatting.add(rng, ColorScaleRule(
+                    start_type="num", start_value=0, start_color=dx.SCALE_GOOD,
+                    mid_type="num", mid_value=50, mid_color=dx.SCALE_MID,
+                    end_type="num", end_value=100, end_color=dx.SCALE_BAD))
+            elif sp.color_rule == "flag_nonempty":
+                ws.conditional_formatting.add(rng, FormulaRule(
+                    formula=[f"LEN(${col}2)>0"], fill=P.fill(dx.SCALE_BAD),
+                    font=P.font_body(bold=True)))
+
+    def _add_decision_column(self, ws, n_cols: int, last: int) -> None:
+        dv_col = n_cols + 1
+        ws.cell(row=1, column=dv_col, value="تصمیم کارشناس").font = P.font_header(1)
+        ws.cell(row=1, column=dv_col).fill = P.fill_header()
+        ws.column_dimensions[get_column_letter(dv_col)].width = 22
+        dv = DataValidation(
+            type="list",
+            formula1='"در دست اقدام,ارجاع به گمرک,ارجاع به بانک,مختومه,نیازمند استعلام"',
+            allow_blank=True, showDropDown=False)
+        dv.error = "لطفاً یکی از گزینه‌های تعریف‌شده را انتخاب کنید."
+        dv.errorTitle = "مقدار نامعتبر"
+        ws.add_data_validation(dv)
+        letter = get_column_letter(dv_col)
+        dv.add(f"{letter}2:{letter}{last}")
+
+    @staticmethod
+    def _cell_value(v: Any) -> Any:
+        if v is None:
+            return ""
+        if isinstance(v, (int, float, str)):
+            return v
+        return str(v)
+
+    # ═══════════ شیت ۳ — تعیین تکلیف ═══════════
+    def build_to_resolve(self, df: pd.DataFrame, main_df: Optional[pd.DataFrame] = None) -> None:
+        ws = self._new_sheet(SHEET_RESOLVE)
+        headers = ["شماره سفارش کانونی", "شماره بارنامه کانونی", "مسئولیت سازمانی",
+                   "شرح کالا", "افراز کلید", "شرح علت عدم تعیین تکلیف",
+                   "پیشنهاد عملیاتی سیستم"]
+        self._write_header(ws, headers, widths=[20, 22, 45, 30, 26, 60, 50])
+
+        r = 2
+        for _, row in df.iterrows():
+            bl = row.get("CANONICAL_BL") or "نامشخص"
+            expert = row.get("CANONICAL_EXPERT") or "نامشخص"
+            reason = (f"بارنامه {bl} در فایل مقاومت یافت نشد و همزمان فاقد کد ساتا و "
+                      f"کوتاژ گمرکی است؛ هیچ سند مالی/گمرکی معتبری در شبکه سورس‌ها ندارد.")
+            rec = (f"کارشناس {expert} موظف است فیزیک اسناد حمل را از شرکت حمل بین‌المللی "
+                   f"استعلام و ردیف را در فایل مقاومت درج نماید.")
+            vals = [row.get("CANONICAL_ORDER") or "نامشخص", bl,
+                    row.get("ORG_CHAIN", ""), row.get("CANONICAL_GOODS_DESC", ""),
+                    row.get("PARTITION_KEY", ""), reason, rec]
+            for i, v in enumerate(vals, start=1):
+                ws.cell(row=r, column=i, value=self._cell_value(v))
+            self._style_row(ws, r, len(headers), P.AMBER_FILL)
+            ws.cell(row=r, column=6).alignment = P.align("right", wrap=True)
+            ws.cell(row=r, column=7).alignment = P.align("right", wrap=True)
+            r += 1
+        # ── سفارش‌های خارج از Commercial Expert Data ──
+        # این بخش عمداً از «تعیین تکلیف» جداست: سفارش در جریان اصلی هست،
+        # اما در سورس کارشناسان خرید بازرگانی ثبت نشده است. هیچ کارشناس خریدی
+        # از روی این فقدان داده حدس زده نمی‌شود.
+        source_for_missing = main_df if main_df is not None else df
+        missing = source_for_missing[source_for_missing.get("ORDER_MISSING_COMMERCIAL_EXPERT", False).astype(bool)].copy() if "ORDER_MISSING_COMMERCIAL_EXPERT" in source_for_missing.columns else pd.DataFrame()
+        if not missing.empty:
+            r += 1
+            title_row = r
+            ws.cell(row=r, column=1, value="⚠️ سفارش‌های موجود در جریان اصلی ولی درج‌نشده در Commercial Expert Data")
+            ws.cell(row=r, column=1).font = P.font_title(12)
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=len(headers))
+            r += 1
+            miss_headers = ["شماره سفارش کانونی", "شماره بارنامه کانونی", "مسئولیت سازمانی",
+                            "شرح کالا", "افراز کلید", "علت عدم درج در Commercial Expert Data",
+                            "وضعیت انتساب کارشناس خرید"]
+            for i, h in enumerate(miss_headers, 1):
+                c = ws.cell(row=r, column=i, value=h); c.font=P.font_header(1); c.fill=P.fill(P.CRITICAL_FILL); c.alignment=P.align("center", wrap=True)
+            miss_start = r
+            r += 1
+            for _, row in missing.drop_duplicates(subset=["CANONICAL_ORDER"], keep="first").iterrows():
+                vals = [row.get("CANONICAL_ORDER", ""), row.get("CANONICAL_BL", ""),
+                        row.get("ORG_CHAIN", ""), row.get("CANONICAL_GOODS_DESC", ""),
+                        row.get("PARTITION_KEY", ""),
+                        row.get("ORDER_MISSING_COMMERCIAL_REASON", "این سفارش در Commercial Expert Data درج نشده است."),
+                        "کارشناس خرید قابل انتساب نیست — داده مبدأ وجود ندارد"]
+                for i,v in enumerate(vals,1):
+                    ws.cell(row=r,column=i,value=self._cell_value(v))
+                self._style_row(ws,r,len(miss_headers),P.CRITICAL_FILL)
+                ws.cell(row=r,column=6).alignment=P.align("right",wrap=True)
+                ws.cell(row=r,column=7).alignment=P.align("right",wrap=True)
+                r += 1
+            ws.auto_filter.ref = f"A{miss_start}:{get_column_letter(len(miss_headers))}{r-1}"
+        log.info(f"📄 شیت «{SHEET_RESOLVE}» ساخته شد — {r - 2} ردیف، سفارش خارج از Commercial Expert Data: {len(missing.drop_duplicates('CANONICAL_ORDER')) if not missing.empty else 0}.")
+
+    # ═══════════ شیت ۴ — رفع تعهد ارزی ═══════════
+    def build_commitment(self, df: pd.DataFrame) -> None:
+        ws = self._new_sheet(SHEET_COMMIT)
+        # تعهد واقعیت سطح پرونده است: متریال دوم سفارش همان تعهد را تکرار
+        # می‌کند و سطر دوم تعهد نیست (29.15.11).
+        df = case_rows(df)
+        headers = ["شماره ثبت سفارش", "شماره بارنامه", "نوع پرونده", "ارز",
+                   "تعهد اولیه", "مانده تعهد", "تاریخ ایجاد تعهد", "مهلت رفع تعهد",
+                   "مهلت قانونی محاسبه‌شده", "روزهای تأخیر", "جریمه برآوردی",
+                   "وضعیت رفع تعهد", "تخصیص ارز", "وضعیت کلی هشدار", "شرح هشدارها",
+                   "معادل یورویی مانده", "معادل ریالی مانده", "مبنای معادل EUR", "مبنای معادل IRR"]
+        self._write_header(ws, headers,
+                           widths=[18, 20, 14, 10, 18, 18, 16, 16, 20, 14, 18, 18, 14, 16, 70,
+                                   20, 22, 34, 34])
+
+        cols = ["CANONICAL_REG", "CANONICAL_BL", "نوع پرونده", "NTSW_CURRENCY",
+                "NTSW_INITIAL_COMMIT", "مانده تعهد", "NTSW_COMMIT_DATE", "NTSW_DEADLINE",
+                "مهلت قانونی رفع تعهد", "روزهای تأخیر", "جریمه برآوردی",
+                "NTSW_RELEASE_STATUS", "ALLOC_STATUS", "وضعیت کلی هشدار", "شرح هشدارها",
+                "FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
+                "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS"]
+        r = 2
+        for _, row in df.iterrows():
+            for i, key in enumerate(cols, start=1):
+                ws.cell(row=r, column=i, value=self._cell_value(row.get(key, "")))
+            status = str(row.get("وضعیت کلی هشدار", "سبز"))
+            color = {"قرمز": P.CRITICAL_FILL, "زرد": dx.SUSPECT_FILL}.get(status, P.GREEN_L3)
+            self._style_row(ws, r, len(headers), color)
+            for i in (5, 6, 11, 16, 17):
+                ws.cell(row=r, column=i).number_format = NUM_FORMAT_CURRENCY
+            for i in (15, 18, 19):
+                ws.cell(row=r, column=i).alignment = P.align("right", wrap=True)
+            r += 1
+
+        last = r - 1
+        if last >= 2:
+            # جمع تصمیم‌ساز باید در دانه ثبت سفارش و به تفکیک ارز باشد.
+            # SUBTOTAL روی ردیف‌های BL×Material هم fan-out را چندبرابر می‌کرد
+            # و هم ارزهای متفاوت را بدون واحد با هم جمع می‌زد.
+            ws.cell(row=last + 2, column=4, value="جمع Native قابل اتکا (REG/ارز):").font = P.font_body(bold=True)
+            ws.cell(row=last + 2, column=6, value=commitment_display(df)).font = P.font_body(bold=True)
+            ws.cell(row=last + 3, column=4, value="معادل منبع‌محور EUR / IRR:").font = P.font_body(bold=True)
+            ws.cell(row=last + 3, column=6, value=commitment_equivalent_display(df)).font = P.font_body(bold=True)
+            ws.cell(row=last + 2, column=11, value=penalty_display(df)).font = P.font_body(bold=True)
+            ws.conditional_formatting.add(
+                f"J2:J{last}",
+                CellIsRule(operator="greaterThan", formula=["0"], fill=P.fill(dx.SCALE_BAD)))
+        log.info(f"📄 شیت «{SHEET_COMMIT}» ساخته شد — {last - 1} ردیف.")
+
+    # ═══════════ شیت ۵ — کارنامه سازمانی ═══════════
+    def build_scorecard(self, df: pd.DataFrame) -> None:
+        ws = self._new_sheet(SHEET_SCORECARD)
+        headers = ["معاونت", "مدیریت", "مدیر", "رئیس", "کارشناس", "کد پرسنلی",
+                   "تعداد بارنامه یکتا", "بحرانی", "میانگین روز رسوب",
+                   "میانگین امتیاز ریسک", "جمع مانده تعهد", "جمع جریمه",
+                   "معادل مانده EUR/IRR"]
+        self._write_header(ws, headers, widths=[22, 24, 20, 20, 22, 14, 18, 12, 18, 18, 20, 20, 32])
+
+        # FIX-7 + FIX-8: تجمیع بر اساس بارنامه یکتا، اما وضعیت بحرانی از
+        # «پرونده بحرانی» خوانده می‌شود؛ نه از اولین ردیف بارنامه.
+        # یک BL می‌تواند چند متریال داشته باشد و متریال بحرانی ممکن است
+        # در ردیفی غیر از اولین ردیف قرار گرفته باشد.
+        #
+        # 29.15.11: ردیف بدون بارنامه، بارنامه نیست. قبلاً همه آن‌ها در یک
+        # «بارنامه خالی» ادغام می‌شدند و فقط اولین‌شان — هر کارشناسی که بود —
+        # در کارنامه می‌ماند و یک بارنامه خیالی می‌گرفت. طبق قرارداد
+        # grain._dedup هر ردیف بی‌کلید واحد مستقل خودش است. متریال دوم سفارش
+        # بارنامه‌اش عمداً خالی است و پرونده دوم نیست (case_rows).
+        df = case_rows(df)
+        org_cols = ["ORG_VICE", "ORG_DEPT", "ORG_MANAGER", "ORG_HEAD",
+                    "CANONICAL_EXPERT", "KEY_EMP"]
+        # R8: شناسه رشته‌ای گروه کارشناس — برای یافتن همه ردیف‌های همان کارشناس
+        _org = [c for c in org_cols if c in df.columns]
+        df = df.assign(_GRP=(df[_org].astype(object).where(df[_org].notna(), "\x00NA")
+                             .astype(str).agg("\x1f".join, axis=1)) if _org else "")
+        if "CANONICAL_BL" in df:
+            bl = df["CANONICAL_BL"].fillna("").astype(str).str.strip()
+            own = pd.Series([f"\x00ROW{i}" for i in range(len(df))], index=df.index)
+            df = df.assign(_BL_UNIT=bl.where(bl != "", own), _BL_REAL=bl)
+            # R8: یکتاسازی بر (کارشناس، بارنامه)، نه فقط بارنامه؛ بارنامه مشترک دو
+            # سفارش/دو کارشناس از کارنامه کارشناس دوم حذف می‌شد.
+            uniq = df.drop_duplicates(subset=["_GRP", "_BL_UNIT"], keep="first")
+        else:
+            uniq = df.copy()
+        # R8: مانده/جریمه در دانه ثبت سفارش است؛ روی همه ردیف‌های همان کارشناس
+        # حساب می‌شود (commitment_display خودش بر ثبت سفارش یکتا می‌کند) تا
+        # ثبت سفارشی که با یکتاسازی بارنامه کنار رفته، از جمع نیفتد.
+        full_by_grp = {k: sub for k, sub in df.groupby("_GRP", sort=False)}
+        if uniq.empty:
+            return
+        if {"CANONICAL_BL", "BL_CRITICAL"}.issubset(df.columns):
+            crit_by_bl = (df.assign(_BL_CRITICAL=df["BL_CRITICAL"].astype(bool))
+                            .groupby("_BL_UNIT", dropna=False)["_BL_CRITICAL"].any()
+                            .rename("_BL_CRITICAL_GROUP"))
+            uniq = uniq.merge(crit_by_bl, left_on="_BL_UNIT", right_index=True, how="left")
+        else:
+            base = uniq.get("وضعیت هوشمند", pd.Series(index=uniq.index, dtype=object)).astype(str)
+            uniq["_BL_CRITICAL_GROUP"] = base.str.contains("بحرانی")
+
+        grp = uniq.groupby(["ORG_VICE", "ORG_DEPT", "ORG_MANAGER", "ORG_HEAD",
+                            "CANONICAL_EXPERT", "KEY_EMP"], dropna=False)
+        r = 2
+        for keys, g in grp:
+            crit = int(g.get("_BL_CRITICAL_GROUP", pd.Series(False, index=g.index)).astype(bool).sum())
+            levels = []
+            if {"CANONICAL_BL", "BL_CRITICAL_LEVEL"}.issubset(df.columns):
+                level_rows = (df[df["_BL_UNIT"].isin(g["_BL_UNIT"])]
+                              [["_BL_UNIT", "BL_CRITICAL_LEVEL"]]
+                              .drop_duplicates("_BL_UNIT"))
+                levels = [str(x) for x in level_rows["BL_CRITICAL_LEVEL"].tolist()]
+            if crit:
+                row_fill, crit_color = P.STATUS_CRITICAL_FILL, P.STATUS_CRITICAL
+            elif "BECOMING_CRITICAL" in levels:
+                row_fill, crit_color = P.STATUS_WARNING_FILL, P.STATUS_WARNING
+            elif "WATCH" in levels:
+                row_fill, crit_color = P.STATUS_WATCH_FILL, P.STATUS_WATCH
+            elif any(x in {"NO_CONSUMPTION", "UNKNOWN"} for x in levels):
+                row_fill, crit_color = P.STATUS_INACTIVE_FILL, P.STATUS_INACTIVE
+            else:
+                row_fill, crit_color = P.STATUS_GOOD_FILL, P.STATUS_GOOD
+
+            gf = full_by_grp.get(g["_GRP"].iloc[0], g)   # R8: همه ردیف‌های کارشناس
+            vals = list(keys) + [
+                int(g["_BL_REAL"].replace("", pd.NA).nunique()) if "_BL_REAL" in g else 0, crit,
+                round(pd.to_numeric(g["روزهای رسوب"], errors="coerce").mean() or 0, 1),
+                round(pd.to_numeric(g.get("امتیاز ریسک", 0), errors="coerce").mean() or 0, 1),
+                commitment_display(gf),
+                penalty_display(gf),
+                commitment_equivalent_display(gf),
+            ]
+            for i, v in enumerate(vals, start=1):
+                ws.cell(row=r, column=i, value=self._cell_value(v))
+            self._style_row(ws, r, len(headers), row_fill)
+            crit_cell = ws.cell(row=r, column=8)
+            crit_cell.font = P.font_body(bold=True)
+            crit_font = copy(crit_cell.font)
+            crit_font.color = crit_color
+            crit_cell.font = crit_font
+            crit_cell.alignment = P.align("center")
+            # ستون‌های مالی عمداً رشته «مبلغ + ارز» هستند تا EUR/USD و ...
+            # هیچ‌گاه به شکل یک عدد بی‌واحد جمع نشوند.
+            r += 1
+        last = r - 1
+        if last >= 2:
+            ws.conditional_formatting.add(
+                f"J2:J{last}",
+                ColorScaleRule(start_type="num", start_value=0, start_color=dx.SCALE_GOOD,
+                               mid_type="num", mid_value=50, mid_color=dx.SCALE_MID,
+                               end_type="num", end_value=100, end_color=dx.SCALE_BAD))
+        log.info(f"📄 شیت «{SHEET_SCORECARD}» ساخته شد — {last - 1} ردیف.")
+
+    # ═══════════ شیت ۶ — پشتیبان ریاضی ═══════════
+    def build_math(self, layers: Dict[str, Dict[str, Any]]) -> None:
+        ws = self._new_sheet(SHEET_MATH)
+        for col, w in zip("ABC", (45, 55, 75)):
+            ws.column_dimensions[col].width = w
+        r = 1
+        for algo, params in layers.items():
+            t = ws.cell(row=r, column=1, value=algo)
+            t.font = P.font_title(12)
+            t.fill = P.fill_row_level(1)
+            r += 1
+            for name, val in params.items():
+                ws.cell(row=r, column=2, value=name).font = P.font_body(bold=True)
+                ws.cell(row=r, column=3, value=str(val)).font = P.font_body()
+                for c in (2, 3):
+                    ws.cell(row=r, column=c).border = P.thin_border()
+                r += 1
+            r += 1
+        log.info(f"📄 شیت «{SHEET_MATH}» ساخته شد.")
+
+    # ═══════════ ذخیره ═══════════
+    def save(self) -> str:
+        """ذخیره اتمیک و مقاوم در برابر فایل قفل‌شده توسط Excel/Outlook.
+
+        ابتدا Workbook در فایل موقتِ همان پوشه نوشته می‌شود؛ سپس جایگزینی
+        اتمیک انجام می‌گیرد. اگر فایل مقصد در Windows توسط Excel قفل باشد،
+        نسخه زمان‌دار ساخته می‌شود. خطای دوم دیگر در سکوت گم نمی‌شود.
+        """
+        import tempfile
+        from datetime import datetime
+        folder = os.path.dirname(self.output_path) or "."
+        base = os.path.basename(self.output_path)
+        tmp_path = ""
+        # متن منبع که با «=» شروع می‌شود فرمول نشود؛ فقط فرمول‌های write_formula فرمول می‌مانند
+        guarded = keep_text(self.wb)
+        if guarded:
+            log.info(f"🛡️ {guarded} خانه متن منبع با «=» یا «#» در Excel متن ماند (فرمول نشد).")
+        try:
+            fd, tmp_path = tempfile.mkstemp(prefix=".gsi_", suffix=".xlsx", dir=folder)
+            os.close(fd)
+            self.wb.save(tmp_path)
+            try:
+                os.replace(tmp_path, self.output_path)
+                tmp_path = ""
+                log.info(f"🏆 داشبورد ذخیره شد: {self.output_path}")
+                return self.output_path
+            except PermissionError as exc:
+                alt = os.path.join(folder, base.replace(".xlsx", f"_{datetime.now():%H%M%S}.xlsx"))
+                self.wb.save(alt)
+                log.warning(f"⚠️ فایل مقصد قفل بود؛ نسخه جایگزین ساخته شد: {alt} | {exc}")
+                return alt
+        except PermissionError as exc:
+            alt = os.path.join(folder, base.replace(".xlsx", f"_{datetime.now():%H%M%S}.xlsx"))
+            try:
+                self.wb.save(alt)
+                log.warning(f"⚠️ مسیر مقصد قابل جایگزینی نبود؛ نسخه جایگزین ساخته شد: {alt} | {exc}")
+                return alt
+            except Exception as exc2:
+                raise RuntimeError(f"ذخیره Excel شکست خورد. مقصد={self.output_path} | خطای اصلی={exc!r} | خطای جایگزین={exc2!r}") from exc2
+        except Exception as exc:
+            raise RuntimeError(f"ذخیره Workbook شکست خورد: {type(exc).__name__}: {exc}") from exc
+        finally:
+            if tmp_path:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  شیت‌های افزوده در نسخه ۲۲ (سورس مقاومت جدید + کتابخانه قوانین)
+# ═══════════════════════════════════════════════════════════════════════════
+SHEET_LINES = "۷. اقلام سفارش (سطح PR و PI)"
+SHEET_RULES = "۸. کتابخانه قوانین"
+
+
+def _build_order_lines(self, lines: "pd.DataFrame", material_positions: "pd.DataFrame" = None) -> None:
+    """فایل کارشناسان همان‌طور که هست: ۳۵ ستون با همان نام و ترتیب + چهار وضعیت پارت.
+
+    29.15.12 (مالک: «هدرهای کارشناسان در گزارش‌ها بیشتر از آنچه هست ... فقط
+    هرآنچه هست بیار»): این شیت دیگر ستون ساختگی ندارد (ریشه سفارش، مرحله،
+    پیشرفت، تعرفه پیشنهادی، وضعیت موجودی قلم، …). تنها افزوده، مقدار
+    «Quantity In Part» هر ردیف در ستون وضعیت خودش (از «Order Status») است.
+    ``material_positions`` برای سازگاری امضا پذیرفته می‌شود.
+    """
+    from ..adapters.moghavemat import EXPERT_HEADERS, PART_STATES
+    ws = self._new_sheet(SHEET_LINES)
+    source_headers = [h.strip() for _, h in EXPERT_HEADERS]
+    state_headers = [f"{fa} (Quantity In Part)" for _, fa, _ in PART_STATES]
+    headers = source_headers + state_headers
+    wide = {"MATERIAL_DESC": 34, "MATERIAL_SHORT": 24, "REF_LETTER_NO": 22, "PO_SENT_DATE": 22,
+            "PART_NO_PARTIAL": 18, "ADDITIONAL_DATA": 40, "ORDER_REF": 16, "MFR_PART_NO": 20}
+    widths = [wide.get(f, 14) for f, _ in EXPERT_HEADERS] + [15] * len(state_headers)
+    groups = {len(source_headers) + i: 1 for i in range(1, len(state_headers) + 1)}
+    self._write_header(ws, headers, widths=widths, groups=groups)
+
+    cols = [f"MOGH_{f}" for f, _ in EXPERT_HEADERS] + [f"MOGH_{c}" for _, _, c in PART_STATES]
+    position = {f: i for i, (f, _) in enumerate(EXPERT_HEADERS, start=1)}
+    numeric = {position[f] for f in ("PR_TOTAL_QTY", "QTY_IN_ORDER", "PI_QTY", "PI_UNIT_PRICE",
+                                     "PI_LINE_VALUE", "PI_ADDITIONAL", "QTY_IN_PART", "CLEARED_QTY")}
+    numeric |= {len(source_headers) + i for i in range(1, len(state_headers) + 1)}
+    currency_cols = {position[f] for f in ("PI_UNIT_PRICE", "PI_LINE_VALUE", "PI_ADDITIONAL")}
+    r = 2
+    for _, row in lines.iterrows():
+        cancelled = flag_true(row.get("MOGH_EXCLUDED_FROM_KPI"))
+        # quantity whose Order Status is blank or not one of the four states
+        state_unknown = (str(row.get("MOGH_PART_STATE", "")) in ("", "UNRECOGNIZED")
+                         and pd.notna(row.get("MOGH_QTY_IN_PART")))
+        suspect = str(row.get("MOGH_BL_SUSPECT", "")).strip() != ""
+        for i, key in enumerate(cols, start=1):
+            value = row.get(key, "")
+            ws.cell(row=r, column=i, value="" if value is None or (isinstance(value, float) and pd.isna(value))
+                    else self._cell_value(value))
+        fill = (P.CRITICAL_FILL if cancelled else
+                dx.SUSPECT_FILL if (state_unknown or suspect) else P.GREEN_L4)
+        self._style_row(ws, r, len(headers), fill)
+        for i in numeric:
+            ws.cell(row=r, column=i).number_format = (
+                NUM_FORMAT_CURRENCY if i in currency_cols else NUM_FORMAT_INT)
+        r += 1
+
+    last = r - 1
+    if last >= 2:
+        # R10: جمع ستون «PI Line Value» عمداً نیست. خط‌ها ارزهای متفاوت دارند و ارزش هر قلم
+        # روی هر پارت همان قلم تکرار شده است؛ جمع آن هم ارزها را قاطی و هم قلم‌ها را چندبار می‌شمرد.
+        ws.cell(row=last + 2, column=1,
+                value="جمع ارزش PI در این شیت عمداً نیست: ارز خط‌ها یکی نیست و ارزش هر قلم روی هر پارت تکرار "
+                      "شده است. ارزش هر سفارش (هر قلم یک بار، فقط با ارز واحد) در ستون «ارزش PI سفارش» است."
+                ).font = P.font_body(bold=True)
+    log.info(f"📄 شیت «{SHEET_LINES}» ساخته شد — {last - 1} ردیف فایل کارشناسان، "
+             f"{len(source_headers)} ستون منبع + {len(state_headers)} ستون وضعیت پارت.")
+
+
+def _build_rulebook_sheet(self, rb) -> None:
+    """شفافیت حاکمیتی: هر عددی که در محاسبات استفاده شد، با منبع و وضعیت."""
+    ws = self._new_sheet(SHEET_RULES)
+    headers = ["بسته", "کلید قاعده", "مقدار", "شرح", "وضعیت اعتبار", "منبع"]
+    self._write_header(ws, headers, widths=[18, 34, 16, 52, 20, 34])
+
+    rows = []
+    for key, node in (rb.get("fx_governance.deadlines", {}) or {}).items():
+        rows.append(("fx_governance", f"deadlines.{key}", node.get("days"),
+                     node.get("fa", ""), node.get("status", "internal"),
+                     node.get("source", "")))
+    for tier in rb.get("fx_governance.penalties.delay_tiers", []) or []:
+        rows.append(("fx_governance", "penalties.delay_tier",
+                     f"{tier['monthly_rate'] * 100:.0f}٪ ماهانه", tier.get("fa", ""),
+                     rb.get("fx_governance.penalties.status", "internal"), ""))
+    for seg in ("production", "commercial"):
+        for k, t in (rb.thresholds(seg) or {}).items():
+            rows.append(("alarms", f"{seg}.{k}",
+                         f"legal={t['legal']} / red={t['red']}",
+                         f"{t.get('fa', k)} — بازه زرد {t.get('yellow')}",
+                         "internal", ""))
+    for k, v in (rb.risk_weights() or {}).items():
+        rows.append(("alarms", f"risk.weights.{k}", v, "وزن مؤلفه ریسک", "internal", ""))
+    rows.append(("customs", "survival_model.beta", rb.get("customs.survival_model.beta"),
+                 "پارامتر شکل ویبول", "internal", ""))
+    rows.append(("customs", "survival_model.eta_days", rb.get("customs.survival_model.eta_days"),
+                 "پارامتر مقیاس ویبول (روز)", "internal", ""))
+    rows.append(("customs", "demurrage.critical_days", rb.demurrage_critical_days(),
+                 "آستانه رسوب شدید", "internal", ""))
+    rows.append(("hs_codes", "current_edition", rb.get("hs_codes.current_edition"),
+                 "ویرایش جاری نظام هماهنگ‌شده", "verified", "WCO"))
+    rows.append(("hs_codes", "next_edition", rb.get("hs_codes.next_edition"),
+                 f"لازم‌الاجرا از {rb.get('hs_codes.next_edition_effective')}", "verified", "WCO"))
+    rows.append(("incoterms", "edition", rb.get("incoterms.edition"),
+                 "ویرایش جاری ترم‌های حمل", "verified", "ICC"))
+
+    r = 2
+    for pack, key, value, desc, status, source in rows:
+        for i, v in enumerate((pack, key, value, desc, status, source), start=1):
+            ws.cell(row=r, column=i, value=self._cell_value(v))
+        color = {"needs_verification": dx.PENDING_FILL, "verified": P.GREEN_L2}.get(status, P.GREEN_L4)
+        self._style_row(ws, r, len(headers), color)
+        ws.cell(row=r, column=4).alignment = P.align("right", wrap=True)
+        r += 1
+
+    pending = rb.needs_verification()
+    if pending:
+        ws.cell(row=r + 1, column=1,
+                value=f"⚠️ {len(pending)} قاعده نیازمند تطبیق با آخرین بخشنامه:").font = P.font_title(11)
+        r += 2
+        for issue in pending:
+            ws.cell(row=r, column=1, value=issue.pack).font = P.font_body()
+            ws.cell(row=r, column=2, value=issue.path).font = P.font_body()
+            c = ws.cell(row=r, column=4, value=issue.message)
+            c.font = P.font_body()
+            c.alignment = P.align("right", wrap=True)
+            for i in range(1, 7):
+                ws.cell(row=r, column=i).fill = P.fill(dx.PENDING_FILL)
+                ws.cell(row=r, column=i).border = P.thin_border()
+            r += 1
+    log.info(f"📄 شیت «{SHEET_RULES}» ساخته شد — {len(rows)} قاعده.")
+
+
+ExcelDashboardBuilder.build_order_lines = _build_order_lines
+ExcelDashboardBuilder.build_rulebook_sheet = _build_rulebook_sheet
+
+
+SHEET_CRITICAL = "۹. قطعات بحرانی"
+
+
+def _build_criticality(self, df: "pd.DataFrame") -> None:
+    """شیت اختصاصی قطعات بحرانی — مرتب‌شده از توقف خط تا ایمن.
+
+    فقط طبقاتی نمایش داده می‌شوند که نیاز به اقدام دارند
+    (توقف خط / بحرانی / در حال بحرانی شدن)، به علاوه خلاصه آماری هر طبقه.
+    """
+    rb = get_rulebook()
+    ws = self._new_sheet(SHEET_CRITICAL)
+
+    bands = sorted(rb.get("criticality.bands", []) or [],
+                   key=lambda b: b.get("sort", 99))
+    fills = {b["code"]: b.get("fill", "") for b in bands}
+
+    # ── خلاصه آماری بالای شیت ──
+    ws["A1"] = "🔧 وضعیت مقاومت قطعات — مرتب‌شده بر اساس بحرانی بودن"
+    ws["A1"].font = P.font_title(14)
+    ws.merge_cells("A1:F1")
+    ws.row_dimensions[1].height = 28
+
+    ws["A3"] = "طبقه"
+    ws["B3"] = "تعداد قطعه یکتا"
+    ws["C3"] = "تعداد ردیف"
+    ws["D3"] = "اقدام پیشنهادی"
+    for col in "ABCD":
+        ws[f"{col}3"].font = P.font_header(1)
+        ws[f"{col}3"].fill = P.fill_header()
+        ws[f"{col}3"].alignment = P.align("center")
+    for col, w in zip("ABCDEF", (34, 18, 14, 62, 20, 20)):
+        ws.column_dimensions[col].width = w
+
+    r = 4
+    for b in bands:
+        sub = df[df.get("کد طبقه بحرانی", pd.Series(dtype=str)) == b["code"]]
+        n_parts = int(sub["KEY_MATERIAL"].replace("", pd.NA).nunique()) if "KEY_MATERIAL" in sub else 0
+        ws.cell(row=r, column=1, value=b.get("fa", b["code"])).font = P.font_body(bold=True)
+        ws.cell(row=r, column=2, value=n_parts).font = P.font_kpi()
+        ws.cell(row=r, column=3, value=int(len(sub))).font = P.font_body()
+        c = ws.cell(row=r, column=4, value=b.get("action", ""))
+        c.font = P.font_body()
+        c.alignment = P.align("right", wrap=True)
+        for i in range(1, 5):
+            ws.cell(row=r, column=i).border = P.thin_border()
+            if b.get("fill"):
+                ws.cell(row=r, column=i).fill = P.fill(b["fill"])
+        r += 1
+
+    # ── جدول تفصیلی قطعات نیازمند اقدام ──
+    action_bands = ["STOCKOUT", "CRITICAL", "BECOMING_CRITICAL"]
+    detail = df[df.get("کد طبقه بحرانی", pd.Series(dtype=str)).isin(action_bands)] \
+        if "کد طبقه بحرانی" in df.columns else df.iloc[0:0]
+
+    start = r + 2
+    ws.cell(row=start - 1, column=1,
+            value=f"قطعات نیازمند اقدام فوری ({len(detail)} ردیف)").font = P.font_title(12)
+
+    # ⚠️ این ستون‌ها باید دقیقاً کلیدهایی باشند که CriticalityResult تولید
+    # می‌کند. نسخه قبل «موجودی» و «مصرف روزانه» را می‌خواند که دیگر وجود
+    # نداشتند، پس خالی چاپ می‌شد و کاربر «مقاومت ۴ روز با موجودی صفر»
+    # می‌دید. tests/test_contracts_report.py حالا این تطابق را می‌سنجد.
+    #
+    # هر چهار جزء صورت کسر نمایش داده می‌شوند تا حساب مقاومت روی کاغذ
+    # قابل بازبینی باشد: (ایران‌خودرو + ساپکو + در راه + در گمرک) ÷ نیاز روزانه
+    headers = ["طبقه بحرانی", "کد متریال", "شرح کالا",
+               "مقاومت (روز)", "مقاومت انبار (روز)",
+               "موجودی ایران خودرو", "موجودی ساپکو", "در راه", "در گمرک",
+               "موجودی کل", "نیاز روزانه",
+               "انبار", "شماره سفارش", "شماره بارنامه",
+               "مرحله سفارش", "پیشرفت (٪)", "روزهای رسوب", "طبقه ریسک",
+               # ── دو ستون، عمداً جدا ────────────────────────────────────
+               # یک ستون به اسم «کارشناس» یعنی خواننده باید حدس بزند این
+               # نام مالک قطعه است یا کسی که اتفاقاً مرحله فعلی دستش است.
+               # در گزارش بحرانی این حدس گران تمام می‌شود، چون بر مبنایش
+               # به کسی تلفن می‌زنند. پس هر دو نوشته می‌شوند و هرکدام
+               # اسم خودش را دارد.
+               "مالک قطعه (کارشناس خرید)", "کارشناس مالک مرحله فعلی",
+               "هشدار ترکیبی", "اقدام لازم"]
+    widths = [26, 16, 30, 14, 16, 15, 13, 11, 11, 13, 12, 12, 16, 20, 20, 12, 14, 16, 24, 22, 46, 52]
+    for i, h in enumerate(headers, start=1):
+        c = ws.cell(row=start, column=i, value=h)
+        c.font = P.font_header(1)
+        c.fill = P.fill_header()
+        c.alignment = P.align("center", wrap=True)
+        ws.column_dimensions[get_column_letter(i)].width = widths[i - 1]
+    ws.row_dimensions[start].height = 32
+    ws.freeze_panes = ws.cell(row=start + 1, column=1)
+    ws.auto_filter.ref = f"A{start}:{get_column_letter(len(headers))}{start}"
+
+    cols = ["طبقه بحرانی", "KEY_MATERIAL", "CANONICAL_GOODS_DESC",
+            "مقاومت (روز)", "مقاومت انبار (روز)",
+            "موجودی ایران خودرو", "موجودی ساپکو", "موجودی در راه", "موجودی در گمرک",
+            "موجودی کل قابل احتساب", "نیاز روزانه",
+            "WAREHOUSE", "CANONICAL_ORDER", "CANONICAL_BL",
+            "ORDER_STAGE_FA", "ORDER_PROGRESS", "روزهای رسوب", "طبقه ریسک",
+            "PART_OWNER", "CANONICAL_EXPERT",
+            "هشدار ترکیبی بحرانی", "اقدام هشدار ترکیبی"]
+
+    rr = start + 1
+    for _, row in detail.iterrows():
+        for i, key in enumerate(cols, start=1):
+            value = row.get(key, "")
+            # مالک قطعه fail-safe است: اگر از سورس خرید قابل انتساب نباشد،
+            # هیچ نامی از HR/ترخیص/اعتبارات جایش گذاشته نمی‌شود.
+            if key == "PART_OWNER" and not str(value or "").strip():
+                state = str(row.get("COMMERCIAL_COVERAGE_STATE", "") or "")
+                value = ("— (سنجیده نشد: سورس خرید در دسترس نبود)"
+                         if state and state != "measured"
+                         else "— (در Commercial Expert Data درج نشده)")
+            ws.cell(row=rr, column=i, value=self._cell_value(value))
+        self._style_row(ws, rr, len(headers),
+                        fills.get(str(row.get("کد طبقه بحرانی", "")), P.GREEN_L4))
+        for i in (4, 5, 6, 7, 8, 9, 10, 11, 16, 17):
+            ws.cell(row=rr, column=i).number_format = NUM_FORMAT_PCT
+        for i in (20, 21):
+            ws.cell(row=rr, column=i).alignment = P.align("right", wrap=True)
+        rr += 1
+
+    if rr > start + 1:
+        ws.conditional_formatting.add(
+            f"D{start + 1}:D{rr - 1}",
+            ColorScaleRule(start_type="num", start_value=0, start_color=dx.SCALE_BAD,
+                           mid_type="num", mid_value=10, mid_color=dx.SCALE_MID,
+                           end_type="num", end_value=20, end_color=dx.SCALE_GOOD))
+        ws.cell(row=rr + 1, column=3, value="جمع قطعات نیازمند اقدام:").font = P.font_body(bold=True)
+        write_formula(ws, rr + 1, 4, f"=SUBTOTAL(103,B{start + 1}:B{rr - 1})").font = P.font_kpi()
+
+    log.info(f"📄 شیت «{SHEET_CRITICAL}» ساخته شد — {len(detail)} قطعه نیازمند اقدام.")
+
+
+ExcelDashboardBuilder.build_criticality = _build_criticality
+
+
+SHEET_PROCESS = "۱۰. نقشه فرآیند و گلوگاه"  # شناسهٔ سازگار با فایل‌های قبلی؛ محتوای شیت توضیح زمان توصیفی است
+
+
+def _build_process(self, extras: dict, stage_map: "pd.DataFrame") -> None:
+    """شیت فرآیندی — نگاه علّی به‌جای نگاه وضعیتی.
+
+    سه بخش: نقشه مرحله‌ها (ورودی/خروجی هر گام)، زمان گذارها (فاصله
+    میان دو فعالیت متوالی)، و مسیرهای فرآیند (variants) با سهم هرکدام.
+    """
+    ws = self._new_sheet(SHEET_PROCESS)
+    for col, w in zip("ABCDEF", (34, 34, 18, 16, 16, 60)):
+        ws.column_dimensions[col].width = w
+
+    ws["A1"] = "🔄 تحلیل فرآیندی — زمان مشاهده‌شده و شواهد"
+    ws["A1"].font = P.font_title(14)
+    ws.merge_cells("A1:F1")
+    r = 3
+
+    def section(title: str, nonlocal_r: int) -> int:
+        c = ws.cell(row=nonlocal_r, column=1, value=title)
+        c.font = P.font_title(12)
+        c.fill = P.fill_row_level(1)
+        return nonlocal_r + 1
+
+    def table(df: "pd.DataFrame", start: int, highlight_first: bool = False) -> int:
+        if df is None or df.empty:
+            ws.cell(row=start, column=1, value="داده‌ای موجود نیست.").font = P.font_body()
+            return start + 2
+        for i, h in enumerate(df.columns, start=1):
+            c = ws.cell(row=start, column=i, value=str(h))
+            c.font = P.font_header(1)
+            c.fill = P.fill_header()
+            c.alignment = P.align("center", wrap=True)
+        rr = start + 1
+        for _, row in df.iterrows():
+            for i, h in enumerate(df.columns, start=1):
+                cell = ws.cell(row=rr, column=i, value=self._cell_value(row[h]))
+                cell.font = P.font_body()
+                cell.border = P.thin_border()
+                cell.alignment = P.align("right", wrap=True)
+                cell.fill = P.fill(
+                    P.CRITICAL_FILL if (highlight_first and rr == start + 1) else P.GREEN_L4)
+            rr += 1
+        return rr + 2
+
+    # ── ۱) فاصلهٔ زمانی، بدون داوری میان زیرسیستم‌ها ──
+    r = section("۱) زمان گذارها به تفکیک حوزه — صرفاً توصیفی؛ سنجش گلوگاه نیازمند مهلت همان حوزه است", r)
+    bn = extras.get("bottlenecks")
+    if isinstance(bn, pd.DataFrame):
+        from .transition_context import annotate_transitions
+        bn = annotate_transitions(bn)
+        if not bn.empty and "میانه روز" in bn.columns:
+            bn = bn.sort_values(["حوزه فرایندی", "میانه روز"], ascending=[True, False])
+    r = table(bn, r)
+
+    # ── ۲) مسیرهای فرآیند ──
+    r = section("۲) مسیرهای طی‌شده (Variants) — تنوع مسیر بدون داوری کیفیت", r)
+    var = extras.get("variants")
+    if var is not None and not var.empty:
+        var = var.head(20)
+    r = table(var, r)
+
+    # ── ۳) نقشه مرحله‌ها ──
+    r = section("۳) نقشه علّی مرحله‌ها — ورودی و خروجی هر گام", r)
+    r = table(stage_map, r)
+
+    # ── ۴) زنجیره فرایندی evidence-preserving ──
+    pc = extras.get("process_cases")
+    if pc is not None and not pc.empty:
+        r = section("۴) پرونده‌های فرایندی — بدون حذف وضعیت‌های خوب/بد/میانی", r)
+        show = [c for c in ["PROCESS_CASE_ID","PROCESS_STATUS","CURRENT_FOCUS_STAGE_FA",
+                            "CURRENT_OWNER","EVIDENCE_GAPS","UNMEASURED_STAGES","EVIDENCE_COUNT",
+                            "NEGATIVE_EVIDENCE_COUNT","PR_KEYS","ORDER_KEYS","REG_KEYS","BL_KEYS"]
+                if c in pc.columns]
+        r = table(pc[show].head(100), r, highlight_first=False)
+        pm = extras.get("process_stage_matrix")
+        if pm is not None and not pm.empty:
+            r = section("۵) ماتریس مراحل — Later Evidence حذف نمی‌شود و Missing predecessor = EVIDENCE_GAP", r)
+            cols = [c for c in ["PROCESS_CASE_ID","STAGE_ORDER","STAGE_FA","OWNER_DOMAIN","STATUS",
+                                "OBSERVATION_COUNT","SOURCE_LIST","RAW_STATUS_LIST","EVENT_DATES"] if c in pm.columns]
+            r = table(pm[cols].head(300), r)
+        po = extras.get("process_orphan_evidence")
+        if po is not None and not po.empty:
+            r = section("۶) شواهد بدون کلید — حفظ‌شده برای اتصال بعدی، نه حذف‌شده", r)
+            cols = [c for c in ["SOURCE","FRAME","SOURCE_ROW_REF","EVIDENCE_STATE","DETAIL"] if c in po.columns]
+            r = table(po[cols].head(100), r, highlight_first=True)
+
+    # ── ۷) رهگیری مالی-ارزی در سطح ثبت سفارش ──
+    fx = extras.get("fx_ledger")
+    if fx is not None and not fx.empty:
+        r = section("۴) رهگیری مالی-ارزی — یک ردیف برای هر ثبت سفارش", r)
+        # مبلغ‌های تعهد به ارز تعهدند؛ ستون ارز کنارشان می‌آید تا عدد بی‌ارز خوانده نشود
+        show = [c for c in ["KEY_REG", "FX_MONEY_STAGE", "FX_NTSW_CURRENCY", "FX_NTSW_INITIAL",
+                            "FX_NTSW_RELEASED", "FX_NTSW_BALANCE", "FX_TRACE_SCORE"]
+                if c in fx.columns]
+        r = table(fx[show].head(25), r)
+        an = extras.get("fx_anomalies")
+        if an is not None and not an.empty:
+            r = section("۵) مغایرت‌های مهم مالی/ارزی", r)
+            ac = [c for c in ["KEY_REG", "کد مغایرت", "شدت", "شرح", "شاهد"]
+                  if c in an.columns]
+            r = table(an[ac].head(25), r, highlight_first=True)
+
+    ev = extras.get("eventlog")
+    if ev is not None and not ev.empty:
+        ws.cell(row=r, column=1,
+                value=f"جدول فعالیت: {len(ev)} رویداد — "
+                      f"فایل GSI_EventLog.csv برای بارگذاری در Celonis ذخیره شد "
+                      f"(_CASE_KEY / ACTIVITY_EN / EVENTTIME / _SORTING).").font = P.font_body(bold=True)
+    log.info(f"📄 شیت «{SHEET_PROCESS}» ساخته شد.")
+
+
+ExcelDashboardBuilder.build_process = _build_process
+
+
+SHEET_FX_TRACE = "FX. رهگیری مالی-ارزی"
+
+
+def _build_fx_traceability(self, extras: dict) -> None:
+    """شیت ممیزی FX در سطح ثبت سفارش؛ بدون fan-out بارنامه."""
+    ledger = extras.get("fx_ledger")
+    anomalies = extras.get("fx_anomalies")
+    events = extras.get("fx_eventlog")
+    if ledger is None or getattr(ledger, "empty", True):
+        return
+    ws = self._new_sheet(SHEET_FX_TRACE)
+    ws["A1"] = "💱 رهگیری End-to-End مالی/ارزی — سطح ثبت سفارش"
+    ws["A1"].font = P.font_title(14)
+    ws.merge_cells("A1:L1")
+    ws["A2"] = ("خرید ارز، تأمین وجه و سوئیفت سه شاهد مستقل‌اند. وضعیت سند ترخیص، "
+                "مابه‌التفاوت و وثیقه نیز مطابق Snapshot مقررات ۱۴۰۵ مستقل نمایش داده می‌شوند.")
+    ws["A2"].font = P.font_body()
+    ws.merge_cells("A2:L2")
+    ws["A2"].alignment = P.align("right", wrap=True)
+
+    cols = [
+        "KEY_REG", "BL_COUNT", "FX_CURRENT_STAGE", "FX_STAGE_PROGRESS_PCT",
+        "FX_CONTROL_RISK_SCORE", "FX_CONTROL_RISK_BAND", "FX_DEADLINE_DATE",
+        "FX_DAYS_REMAINING", "FX_DEADLINE_BASIS", "FX_MONEY_STAGE",
+        "FX_ALLOC_STATUS", "FX_ALLOCATION_ROUTE", "FX_PURCHASED_NATIVE_DISPLAY",
+        "FX_EUR_EQUIVALENT", "FX_EQ_EUR_COVERAGE_PCT",
+        "FX_RIAL_OUTFLOW_REPORTED", "FX_EQ_RIAL_COVERAGE_PCT",
+        "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED", "FX_CREDIT_EQ_STATUS",
+        "FX_PURCHASE_WAVG_RATE", "FX_PURCHASE_RATE_DISPLAY", "FX_SUPPLIER_CURRENCIES",
+        "FX_CONVERSION_IMPACT_RIAL", "FX_CONVERSION_STATUS", "FX_REALLOCATION_STATUS",
+        "FX_UNAUTHORIZED_REALLOCATION_COUNT", "FX_NTSW_INITIAL", "FX_NTSW_RELEASED",
+        "FX_NTSW_BALANCE", "FX_NTSW_CURRENCY", "FX_NTSW_BALANCE_EUR_EQ",
+        "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_EUR_EQ_BASIS", "FX_NTSW_RIAL_EQ_BASIS",
+        "FX_RELEASE_PCT", "FX_TRACE_SCORE",
+        "FX_CUSTOMS_DOC_OBLIGATION", "FX_DIFFERENTIAL_OBLIGATION", "FX_COLLATERAL_STATUS",
+        "FX_ANOMALY_COUNT", "FX_ANOMALIES", "FX_KNOWLEDGE_SIGNAL_COUNT",
+        "FX_ROOT_CAUSE_HINTS", "FX_EVIDENCE_REQUIREMENTS", "FX_RATE_SEMANTIC_GAPS",
+        "FX_PAYMENT_WITHOUT_BL_SIGNAL", "FX_LEGACY_RULE_GUARD",
+    ]
+    cols = [c for c in cols if c in ledger.columns]
+    labels = {
+        "KEY_REG":"ثبت سفارش", "BL_COUNT":"تعداد BL", "FX_CURRENT_STAGE":"مرحله جاری جریان پول",
+        "FX_STAGE_PROGRESS_PCT":"پیشرفت مراحل (%)", "FX_CONTROL_RISK_SCORE":"ریسک کنترل پول",
+        "FX_CONTROL_RISK_BAND":"سطح ریسک", "FX_DEADLINE_DATE":"نزدیک‌ترین مهلت",
+        "FX_DAYS_REMAINING":"روز باقی‌مانده", "FX_DEADLINE_BASIS":"مبنای مهلت",
+        "FX_MONEY_STAGE":"مرحله پول/ارز", "FX_ALLOC_STATUS":"وضعیت تخصیص",
+        "FX_ALLOCATION_ROUTE":"مسیر تخصیص", "FX_PURCHASED_NATIVE_DISPLAY":"خرید ارز Native",
+        "FX_EUR_EQUIVALENT":"معادل یورویی خرید (Source)",
+        "FX_EQ_EUR_COVERAGE_PCT":"پوشش معادل EUR (%)",
+        "FX_RIAL_OUTFLOW_REPORTED":"معادل ریالی خرید (Source)",
+        "FX_EQ_RIAL_COVERAGE_PCT":"پوشش معادل IRR (%)",
+        "FX_CREDIT_EUR_REPORTED":"معادل EUR اعتبار (Source)",
+        "FX_CREDIT_RIAL_REPORTED":"معادل IRR اعتبار (Source)",
+        "FX_CREDIT_EQ_STATUS":"وضعیت Equivalent اعتبار",
+        "FX_PURCHASE_WAVG_RATE":"نرخ موزون خرید (تک‌ارز)", "FX_PURCHASE_RATE_DISPLAY":"نرخ خرید به تفکیک ارز", "FX_SUPPLIER_CURRENCIES":"ارز پرداختی تامین‌کننده",
+        "FX_CONVERSION_IMPACT_RIAL":"اثر ریالی تبدیل",
+        "FX_CONVERSION_STATUS":"وضعیت تبدیل", "FX_REALLOCATION_STATUS":"وضعیت جابجایی",
+        "FX_UNAUTHORIZED_REALLOCATION_COUNT":"جابجایی بدون شاهد مجوز",
+        "FX_NTSW_INITIAL":"تعهد اولیه NTSW", "FX_NTSW_RELEASED":"رفع‌شده NTSW",
+        "FX_NTSW_BALANCE":"مانده NTSW", "FX_NTSW_CURRENCY":"ارز تعهد NTSW",
+        "FX_NTSW_BALANCE_EUR_EQ":"معادل EUR مانده NTSW",
+        "FX_NTSW_BALANCE_RIAL_EQ":"معادل IRR مانده NTSW",
+        "FX_NTSW_EUR_EQ_BASIS":"مبنای EUR مانده", "FX_NTSW_RIAL_EQ_BASIS":"مبنای IRR مانده",
+        "FX_RELEASE_PCT":"رفع تعهد (%)",
+        "FX_TRACE_SCORE":"پوشش رهگیری (%)", "FX_CUSTOMS_DOC_OBLIGATION":"تعهد سند ترخیص",
+        "FX_DIFFERENTIAL_OBLIGATION":"تعهد مابه‌التفاوت", "FX_COLLATERAL_STATUS":"وثیقه",
+        "FX_ANOMALY_COUNT":"مغایرت", "FX_ANOMALIES":"شرح مغایرت",
+        "FX_KNOWLEDGE_SIGNAL_COUNT":"سیگنال دانش تاریخی",
+        "FX_ROOT_CAUSE_HINTS":"کاندید علت ریشه‌ای",
+        "FX_EVIDENCE_REQUIREMENTS":"شواهد پیشنهادی بررسی",
+        "FX_RATE_SEMANTIC_GAPS":"شکاف معنایی نرخ/تبدیل",
+        "FX_PAYMENT_WITHOUT_BL_SIGNAL":"Payment بدون BL",
+        "FX_LEGACY_RULE_GUARD":"گارد دانش تاریخی",
+    }
+    r0=4
+    for i,c in enumerate(cols,1):
+        cell=ws.cell(r0,i,labels.get(c,c)); cell.font=P.font_header(1); cell.fill=P.fill_header(); cell.alignment=P.align("center",wrap=True)
+        ws.column_dimensions[get_column_letter(i)].width = 18 if c not in {"FX_CUSTOMS_DOC_OBLIGATION","FX_DIFFERENTIAL_OBLIGATION","FX_COLLATERAL_STATUS","FX_ANOMALIES","FX_DEADLINE_BASIS","FX_ROOT_CAUSE_HINTS","FX_EVIDENCE_REQUIREMENTS","FX_RATE_SEMANTIC_GAPS"} else 38
+    for rr,(_,row) in enumerate(ledger[cols].iterrows(),r0+1):
+        for cc,c in enumerate(cols,1):
+            cell=ws.cell(rr,cc,self._cell_value(row[c])); cell.font=P.font_body(); cell.border=P.thin_border(); cell.alignment=P.align("right",wrap=c in {"FX_CUSTOMS_DOC_OBLIGATION","FX_DIFFERENTIAL_OBLIGATION","FX_COLLATERAL_STATUS","FX_ANOMALIES","FX_DEADLINE_BASIS","FX_ROOT_CAUSE_HINTS","FX_EVIDENCE_REQUIREMENTS","FX_RATE_SEMANTIC_GAPS"})
+            if c in {"FX_EUR_EQUIVALENT","FX_RIAL_OUTFLOW_REPORTED","FX_CREDIT_EUR_REPORTED",
+                     "FX_CREDIT_RIAL_REPORTED","FX_CONVERSION_IMPACT_RIAL",
+                     "FX_NTSW_INITIAL","FX_NTSW_RELEASED","FX_NTSW_BALANCE",
+                     "FX_NTSW_BALANCE_EUR_EQ","FX_NTSW_BALANCE_RIAL_EQ"}:
+                cell.number_format=NUM_FORMAT_CURRENCY
+    ws.freeze_panes=f"A{r0+1}"; ws.auto_filter.ref=f"A{r0}:{get_column_letter(len(cols))}{r0+len(ledger)}"
+
+    r=r0+len(ledger)+3
+    ws.cell(r,1,"مغایرت‌ها و شکاف‌های داده").font=P.font_title(12); r+=1
+    if anomalies is not None and not anomalies.empty:
+        for i,c in enumerate(anomalies.columns,1):
+            ws.cell(r,i,str(c)).font=P.font_header(1); ws.cell(r,i).fill=P.fill_header()
+        r+=1
+        for _,row in anomalies.iterrows():
+            for i,c in enumerate(anomalies.columns,1):
+                ws.cell(r,i,self._cell_value(row[c])).font=P.font_body()
+            r+=1
+    for title, key in (("مراحل جریان پول و Deadlineها", "fx_stage_timeline"),
+                       ("دفتر کل صفر تا صد پول", "fx_money_ledger"),
+                       ("تطبیق مبالغ و تعهد", "fx_money_reconciliation"),
+                       ("پیگیری مالی مستند ـ جمع‌ناپذیر", "fx_financial_decisions"),
+                       ("پل نرخ و تبدیل ارز", "fx_rate_bridge"),
+                       ("جابجایی بین پرونده‌ها", "fx_reallocations"),
+                       ("Signalهای انتقال دانش و Root Cause", "legacy_case_signals"),
+                       ("کاتالوگ دانش تاریخی — non-binding", "legacy_knowledge_catalog"),
+                       ("معانی نرخ‌ها و شواهد لازم", "legacy_rate_semantics")):
+        t = extras.get(key)
+        if t is not None and not t.empty:
+            r += 2
+            ws.cell(r,1,title).font=P.font_title(12); r += 1
+            for i,c in enumerate(t.columns,1):
+                ws.cell(r,i,str(c)).font=P.font_header(1); ws.cell(r,i).fill=P.fill_header()
+            r += 1
+            for _,row in t.head(300).iterrows():
+                for i,c in enumerate(t.columns,1):
+                    ws.cell(r,i,self._cell_value(row[c])).font=P.font_body()
+                r += 1
+    if events is not None and not events.empty:
+        ws.cell(r+1,1,f"Event ledger مالی/ارزی: {len(events)} رویداد در {events['_CASE_KEY'].nunique()} پرونده.").font=P.font_body(bold=True)
+    log.info(f"📄 شیت «{SHEET_FX_TRACE}» ساخته شد.")
+
+
+ExcelDashboardBuilder.build_fx_traceability = _build_fx_traceability
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  شیت ۱۱ — نمودارهای تحلیلی (پیاده‌سازی در report/charts.py)
+# ═══════════════════════════════════════════════════════════════════════════
+from .charts import _build_charts as _charts_impl  # noqa: E402
+
+ExcelDashboardBuilder.build_charts = _charts_impl
+
+from .insight import _build_insight as _insight_impl  # noqa: E402
+from .insight import _build_material as _material_impl  # noqa: E402
+from .supply_views import SHEETS as SUPPLY_SHEETS  # noqa: E402
+from .supply_views import write_supply_sheets  # noqa: E402
+
+ExcelDashboardBuilder.build_insight = _insight_impl
+ExcelDashboardBuilder.build_material = _material_impl
+
+
+def _build_supply_views(self, df, material_positions=None) -> None:
+    """شیت‌های ۱۴ تا ۱۶ — «کجا / کِی / دست کیست».
+
+    نسخه ۲۶٫۹ این کار را با وصله زدن به ``save()`` انجام می‌داد: یک کپی
+    کامل از دیتافریم روی builder نگه می‌داشت و هنگام ذخیره نماها را
+    می‌ساخت. دو اشکال داشت — کپی کامل داده در حافظه، و مهم‌تر اینکه
+    **هر خطایی در این سه نما، ذخیره کل گزارش رسمی را از بین می‌برد**.
+    حالا مرحله‌ای صریح در خط لوله است و شکستش گزارش را زمین نمی‌زند.
+    """
+    try:
+        write_supply_sheets(self.wb, df, material_positions)
+        log.info(f"📄 شیت‌های «{'» و «'.join(SUPPLY_SHEETS)}» ساخته شد.")
+    except Exception as ex:      # noqa: BLE001 — گزارش رسمی نباید قربانی شود
+        log.warning(f"⚠️ نماهای تأمین ساخته نشد ({type(ex).__name__}: {ex}) — "
+                    f"بقیه گزارش دست‌نخورده ذخیره می‌شود.")
+
+
+ExcelDashboardBuilder.build_supply_views = _build_supply_views
+
+
+def _build_system_health(self) -> None:
+    """شیت ۱۷ — مبنای اعتماد به بقیه شیت‌ها.
+
+    مثل نماهای تأمین، شکستِ این شیت نباید گزارش رسمی را زمین بزند.
+    """
+    try:
+        from .. import health as _h
+        from .system_health import SHEET as _SH
+        from .system_health import build as _build
+        _build(self.wb)
+        # دفتر کنار گزارش هم نوشته می‌شود: ایمیل و داشبورد Streamlit در
+        # فرآیند دیگری اجرا می‌شوند و دفترِ درون‌حافظه‌ای را نمی‌بینند.
+        _h.save(os.path.dirname(self.output_path) or ".")
+        log.info(f"📄 شیت «{_SH}» ساخته شد.")
+    except Exception as ex:      # noqa: BLE001
+        log.warning(f"⚠️ شیت سلامت سیستم ساخته نشد ({type(ex).__name__}: {ex}).")
+
+
+ExcelDashboardBuilder.build_system_health = _build_system_health

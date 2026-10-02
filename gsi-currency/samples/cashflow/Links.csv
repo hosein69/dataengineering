@@ -1,0 +1,8 @@
+﻿link_id,from_event,to_event,from_amount,to_amount,document,authorization
+L1,fund,sell,100000000,100000000,DEMO-LINK-L1,
+L2,sell,buy,100000000,1000,DEMO-LINK-L2,
+L3,buy,payment,800,800,DEMO-LINK-L3,
+L4,payment,BL1,400,400,DEMO-LINK-L4,
+L5,payment,BL2,300,300,DEMO-LINK-L5,
+L6,payment,customs,400,450,DEMO-LINK-L6,
+L7,payment,settle,350,350,DEMO-LINK-L7,

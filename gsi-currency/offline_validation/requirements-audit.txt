@@ -1,0 +1,9 @@
+# Exact direct packages used by this independent campaign; Python 3.12.
+pytest==9.1.1
+pandas==2.2.3
+numpy==2.3.5
+openpyxl==3.1.5
+PyYAML==6.0.3
+plotly==7.1.0
+streamlit==1.64.0
+streamlit-sortables==0.3.1

@@ -1,0 +1,936 @@
+--- /mnt/data/gsi_diag_baseline/gsi/adapters/a60_finance.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/adapters/a60_finance.py	2026-09-24 12:48:19.107484418 +0000
+@@ -218,7 +218,20 @@
+             return {}
+         p = self.p
+         out = self.std(df, self.COLUMN_MAP, exclude=["توضیح"])
+-        out[p("CURRENCY")] = out[p("CURRENCY")].map(get_rulebook().normalize_currency)
++        # Currency fields are semantically distinct. Fuzzy header matching must
++        # never promote event-specific نوع ارز5/6 into the LC/native currency.
++        from ..warehouse.excel import header_normal
++        exact = {header_normal(c): c for c in df.columns}
++        native_col = exact.get(header_normal("نوع ارز"))
++        out[p("CURRENCY")] = (df[native_col] if native_col is not None else pd.Series("", index=df.index)).map(get_rulebook().normalize_currency)
++        for raw_name, target in (("نوع ارز5", "ALLOC_CURRENCY"), ("نوع ارز6", "SWIFT_CURRENCY")):
++            raw_col = exact.get(header_normal(raw_name))
++            if raw_col is not None:
++                out[p(target)] = df[raw_col]
++        # Preserve physical source lineage unchanged for replay/audit.
++        for lineage in ("_SOURCE_ROW", "_SOURCE_FILE_ID", "_SOURCE_SHEET"):
++            if lineage in df.columns:
++                out[lineage] = df[lineage].copy()
+         from ..warehouse.numeric import number
+         for f in ("PROFORMA_VALUE", "EUR_AMOUNT", "RIAL_AMOUNT", "PREPAYMENT", "REMAINING", "SWIFT_AMOUNT", "ALLOC_AMOUNT"):
+             out[p(f)] = out[p(f)].map(number)
+@@ -560,6 +573,11 @@
+         pr_sheet = found.get(self.PR_SHEET)
+         if pr_sheet is not None:
+             pr = self.std(pr_sheet, self.COLUMN_MAP)
++            # A native PR sheet has no authority to manufacture PO/package fields
++            # from similarly named unqualified headers such as Material/Currency.
++            for target in self.COLUMN_MAP:
++                if target.startswith(("PO_", "PACK_")):
++                    pr[p(target)] = ""
+             pr["SAP_SOURCE_ROW"] = range(1, len(pr) + 1)
+             pr["SAP_SOURCE_SHEET"] = self.PR_SHEET
+             self.add_pr_key(pr, pr_sheet, ["Purchase Requisition"])
+--- /mnt/data/gsi_diag_baseline/gsi/adapters/base.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/adapters/base.py	2026-09-24 12:47:51.037213380 +0000
+@@ -40,7 +40,7 @@
+ KEY_PO = "KEY_PO"               # شماره سند خرید / PO — موجودیت مستقل SAP
+ 
+ _BL_CANDIDATES = ["شماره بارنامه", "بارنامه", "b/l", "bl no", "bl", "bill of lading"]
+-_ORDER_CANDIDATES = ["شماره سفارش", "سفارش", "order no", "our reference", "po no"]
++_ORDER_CANDIDATES = ["شماره سفارش", "سفارش", "order no", "our reference"]
+ _REG_CANDIDATES = ["کد ثبت سفارش", "شماره ثبت سفارش", "ثبت سفارش", "registration no"]
+ _MATERIAL_CANDIDATES = ["material", "کد متریال", "کد کالا", "شماره فنی", "part no",
+                         "part number", "کد قطعه", "material code", "item code"]
+@@ -168,20 +168,20 @@
+     def add_order_key(self, out: pd.DataFrame, src: pd.DataFrame,
+                       candidates: Optional[List[str]] = None) -> pd.DataFrame:
+         col = find_col(src, candidates or _ORDER_CANDIDATES,
+-                       exclude=list(_KEY_EXCLUDE) + ["ثبت", "پرونده", "registration", "requisition"])
++                       exclude=list(_KEY_EXCLUDE) + ["ثبت", "پرونده", "registration", "requisition", "purchase order", "po no"])
+         out[KEY_ORDER] = src[col].map(clean_key) if col else ""
+         return out
+ 
+     def add_reg_key(self, out: pd.DataFrame, src: pd.DataFrame,
+                     candidates: Optional[List[str]] = None) -> pd.DataFrame:
+-        col = find_col(src, candidates or _REG_CANDIDATES, exclude=["توضیح", "تاریخ", "وضعیت"])
++        col = find_col(src, candidates or _REG_CANDIDATES, exclude=["توضیح", "تاریخ", "وضعیت", "پرونده", "ارزش", "کارمزد", "حالت"])
+         out[KEY_REG] = src[col].map(clean_key) if col else ""
+         return out
+ 
+     def add_material_key(self, out: pd.DataFrame, src: pd.DataFrame,
+                          candidates: Optional[List[str]] = None) -> pd.DataFrame:
+         """کلید متریال — با clean_part_no نرمال می‌شود تا 'PN-001' و 'pn 001' یکی شوند."""
+-        col = find_col(src, candidates or _MATERIAL_CANDIDATES, exclude=["description", "شرح"])
++        col = find_col(src, candidates or _MATERIAL_CANDIDATES, exclude=["description", "شرح", "document", "group", "order"])
+         out[KEY_MATERIAL] = src[col].map(clean_part_no) if col else ""
+         return out
+ 
+--- /mnt/data/gsi_diag_baseline/gsi/cashflow/engine.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/cashflow/engine.py	2026-09-24 12:49:28.718255846 +0000
+@@ -427,6 +427,18 @@
+         parts.extend(((cur+' ') if cur else '')+'?' for cur in sorted(unknown) if cur not in buckets)
+         return ' | '.join(parts)
+ 
++    def _linked_amount_text(rows):
++        """Currency-bearing display for links; never add unlike currencies."""
++        buckets=defaultdict(lambda:ZERO)
++        for cur,amount in rows:
++            buckets[cur or ''] += amount
++        if not buckets:
++            return ''
++        if len(buckets)==1:
++            cur,val=next(iter(buckets.items()))
++            return format(val,'f') if not cur else cur+' '+format(val,'f')
++        return ' | '.join(((cur+' ') if cur else '')+format(val,'f') for cur,val in sorted(buckets.items()))
++
+     for case in accepted_cases:
+         evs=[r for r in accepted if r['case_id']==case]
+         stage_events={}
+@@ -450,28 +462,35 @@
+                 status='EVIDENCED'
+                 linked=''
+                 if stage=='PAYMENT':
+-                    paid=sum((r['amount'] for r in rows if r['amount'] is not None),ZERO)
+-                    traced=sum((l['to_amount'] for l in valid_links if l['target_case']==case and l['target_kind']=='PAYMENT'),ZERO)
+-                    linked=format(traced,'f')
+-                    if paid and traced < paid:status='PARTIALLY_LINKED' if traced>0 else 'UNLINKED'
++                    paid_by_currency=defaultdict(lambda:ZERO)
++                    for r in rows:
++                        if r['amount'] is not None: paid_by_currency[r['currency']]+=r['amount']
++                    link_rows=[(l['to_currency'],l['to_amount']) for l in valid_links
++                               if l['target_case']==case and l['target_kind']=='PAYMENT']
++                    traced_by_currency=defaultdict(lambda:ZERO)
++                    for cur,amount in link_rows: traced_by_currency[cur]+=amount
++                    linked=_linked_amount_text(link_rows)
++                    if any(traced_by_currency[cur] < amount for cur,amount in paid_by_currency.items()):
++                        status='PARTIALLY_LINKED' if any(traced_by_currency.values()) else 'UNLINKED'
+                 elif stage=='SETTLEMENT_RETURN':
+-                    settled=sum((l['from_amount'] for l in valid_links if l['source_case']==case and by_id[l['from_event']]['kind']=='COMMITMENT' and l['target_kind'] in {'SETTLEMENT','COMMITMENT_RETURN'}),ZERO)
+-                    linked=format(settled,'f')
++                    link_rows=[(l['from_currency'],l['from_amount']) for l in valid_links
++                               if l['source_case']==case and by_id[l['from_event']]['kind']=='COMMITMENT'
++                               and l['target_kind'] in {'SETTLEMENT','COMMITMENT_RETURN'}]
++                    settled=sum((amount for _,amount in link_rows),ZERO)
++                    linked=_linked_amount_text(link_rows)
+                     if settled==0:status='UNLINKED'
+                 chain_rows.append(dict(case_id=case,stage_no=seq,stage=stage,status=status,event_count=len(rows),amounts=_amount_text(rows),
+                                        dates=' | '.join(sorted({r['date'] for r in rows if r['date']})),
+                                        documents=' | '.join(sorted({r['document'] for r in rows if r['document']})),
+                                        linked_amount=linked,gap_code='',detail=desc))
+                 continue
+-            downstream=any(x>seq for x in evidenced)
+-            # NTSW balance reduction means settlement evidence is expected even if no
+-            # explicit SETTLEMENT event was supplied to the ledger.
+-            if stage=='SETTLEMENT_RETURN' and reduced_balance:downstream=True
+-            status='GAP' if downstream else 'NOT_YET_EVIDENCED'
+-            code=gap_code if downstream else ''
++            # Absence is not a compliance/process gap without an explicit
++            # applicability contract proving this stage was mandatory for the case.
++            # Downstream evidence is informative, but it cannot create an upstream
++            # obligation by inference alone.
++            status='NOT_YET_EVIDENCED'
++            code=''
+             chain_rows.append(dict(case_id=case,stage_no=seq,stage=stage,status=status,event_count=0,amounts='',dates='',documents='',linked_amount='',gap_code=code,detail=desc))
+-            if downstream:
+-                issue(code,case,f'{desc} در زنجیره پرونده شاهد مستقیم ندارد، در حالی که مرحله پایین‌دستی ثبت شده است')
+ 
+         # Final stage: system snapshot versus event-ledger remaining commitment.
+         recs=case_recs
+--- /mnt/data/gsi_diag_baseline/gsi/config/keys.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/config/keys.py	2026-09-24 12:50:29.075814879 +0000
+@@ -163,27 +163,43 @@
+ 
+     def _build_composite(self, df: pd.DataFrame, spec: KeySpec) -> pd.DataFrame:
+         cols: List[str] = []
++        missing_part = False
+         for part in spec.parts:
+             if part in self.keys:
+                 pcol = self.get(part).column
+                 if pcol not in df.columns:
+                     df = self.build(df, part)
+-                cols.append(pcol)
++                if pcol not in df.columns:
++                    missing_part = True
++                else:
++                    cols.append(pcol)
+             elif part in df.columns:
+-                cols.append(part)       # ستون خام، نه کلید تعریف‌شده
++                cols.append(part)
+             else:
+-                log.warning(f"⚠️ [{spec.name}] جزء «{part}» در داده نیست؛ "
+-                            f"کلید مرکب ناقص ساخته می‌شود.")
+-        if not cols:
++                missing_part = True
++                log.warning(f"⚠️ [{spec.name}] جزء «{part}» در داده نیست؛ کلید مرکب ساخته نمی‌شود.")
++        if missing_part or len(cols) != len(spec.parts):
+             df[spec.column] = ""
+             return df
+-        joined = df[cols[0]].astype(str)
++
++        def component(v):
++            if v is None:
++                return ""
++            try:
++                missing = pd.isna(v)
++                if isinstance(missing, bool) and missing:
++                    return ""
++            except Exception:
++                pass
++            text = str(v).strip()
++            return "" if text.lower() in {"", "nan", "none", "<na>"} else text
++
++        norm = pd.DataFrame({c: df[c].map(component) for c in cols}, index=df.index)
++        complete = norm.ne("").all(axis=1)
++        joined = norm[cols[0]].copy()
+         for c in cols[1:]:
+-            joined = joined + spec.separator + df[c].astype(str)
+-        # اگر همه اجزا تهی باشند، کلید هم باید تهی باشد
+-        all_empty = df[cols].apply(
+-            lambda r: all(is_empty_val(x) for x in r), axis=1)
+-        df[spec.column] = joined.where(~all_empty, "")
++            joined = joined + spec.separator + norm[c]
++        df[spec.column] = joined.where(complete, "")
+         n = int(df[spec.column].astype(str).str.strip().ne("").sum())
+         log.info(f"   🔗 [{spec.name}] کلید مرکب {' + '.join(spec.parts)}: "
+                  f"{n} ردیف، {df[spec.column].nunique()} ترکیب یکتا")
+--- /mnt/data/gsi_diag_baseline/gsi/engines/commitment.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/engines/commitment.py	2026-09-24 12:47:34.114674583 +0000
+@@ -129,7 +129,8 @@
+     is_barat: bool = False
+     deadline: Optional[date] = None
+     overdue_days: int = 0
+-    outstanding: float = 0.0
++    outstanding: float = float("nan")
++    balance_is_unknown: bool = False
+     penalty: float = 0.0
+     alarms: Dict[str, Tuple[str, str]] = field(default_factory=dict)
+     worst_status: str = "سبز"
+@@ -146,6 +147,7 @@
+             "مهلت قانونی رفع تعهد": self.deadline.isoformat() if self.deadline else "",
+             "روزهای تأخیر": self.overdue_days,
+             "مانده تعهد": self.outstanding,
++            "BALANCE_IS_UNKNOWN": self.balance_is_unknown,
+             "جریمه برآوردی": self.penalty,
+             "وضعیت کلی هشدار": self.worst_status,
+             "شرح هشدارها": " ؛ ".join(d for _, d in self.alarms.values()),
+@@ -193,8 +195,25 @@
+             else f"RuleBook status={d_status}"
+         )
+ 
+-        res.outstanding = num_safe(row.get("BALANCE", row.get("CB_VALUE", 0)))
+-        res.penalty = delay_penalty(res.outstanding, res.overdue_days, rb)
++        raw_balance = row.get("BALANCE") if "BALANCE" in row else row.get("CB_VALUE")
++        if is_empty_val(raw_balance, treat_zero_as_empty=False):
++            res.outstanding = float("nan")
++            res.balance_is_unknown = True
++            res.penalty = 0.0
++        else:
++            parsed = num_safe(raw_balance)
++            try:
++                import math
++                valid = math.isfinite(float(parsed))
++            except Exception:
++                valid = False
++            if not valid:
++                res.outstanding = float("nan")
++                res.balance_is_unknown = True
++                res.penalty = 0.0
++            else:
++                res.outstanding = float(parsed)
++                res.penalty = delay_penalty(res.outstanding, res.overdue_days, rb)
+         p_status = rb.get("fx_governance.penalties.status", "unknown")
+         res.penalty_basis = (
+             "سناریوی داخلی — نرخ جریمه قانونی جاری تلقی نشود" if p_status == "internal"
+--- /mnt/data/gsi_diag_baseline/gsi/finance/equivalents.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/finance/equivalents.py	2026-09-24 12:47:19.860197853 +0000
+@@ -20,6 +20,7 @@
+ 
+ from dataclasses import dataclass
+ from typing import Any, Optional
++import math
+ 
+ import pandas as pd
+ 
+@@ -37,7 +38,10 @@
+ def _num(v: Any) -> Optional[float]:
+     try:
+         x = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
+-        return float(x) if pd.notna(x) else None
++        if pd.isna(x):
++            return None
++        value = float(x)
++        return value if math.isfinite(value) else None
+     except Exception:
+         return None
+ 
+@@ -85,6 +89,8 @@
+     source_rial_total: Optional[float]
+     status: str
+     logical_credit_count: int
++    eur_coverage_pct: float = 0.0
++    rial_coverage_pct: float = 0.0
+ 
+ 
+ def summarize_credit_equivalents(frame: Optional[pd.DataFrame]) -> CreditEquivalentResult:
+@@ -98,7 +104,7 @@
+     treated as ambiguous.
+     """
+     if frame is None or frame.empty:
+-        return CreditEquivalentResult(None, None, "NO_CREDIT_SOURCE", 0)
++        return CreditEquivalentResult(None, None, "NO_CREDIT_SOURCE", 0, 0.0, 0.0)
+     z = frame.copy()
+     for c in ("CRD_EUR_AMOUNT", "CRD_RIAL_AMOUNT"):
+         if c not in z.columns:
+@@ -146,10 +152,16 @@
+ 
+     eur_total = None if eur_conflict or ambiguous_unknown or not eur_values else float(sum(eur_values))
+     rial_total = None if rial_conflict or ambiguous_unknown or not rial_values else float(sum(rial_values))
++    logical_count = len(groups)
++    eur_cov = round(100.0 * len(eur_values) / logical_count, 1) if logical_count and not eur_conflict and not ambiguous_unknown else 0.0
++    rial_cov = round(100.0 * len(rial_values) / logical_count, 1) if logical_count and not rial_conflict and not ambiguous_unknown else 0.0
++    partial = logical_count > 0 and ((0 < len(eur_values) < logical_count) or (0 < len(rial_values) < logical_count))
+     if ambiguous_unknown:
+         status = "AMBIGUOUS_UNIDENTIFIED_CREDIT_ROWS"
+     elif eur_conflict or rial_conflict:
+         status = "CONFLICTING_SOURCE_EQUIVALENTS"
++    elif partial:
++        status = "PARTIAL_SOURCE_EQUIVALENTS"
+     elif eur_total is not None and rial_total is not None:
+         status = "EUR_AND_IRR_REPORTED"
+     elif eur_total is not None:
+@@ -158,7 +170,26 @@
+         status = "IRR_REPORTED"
+     else:
+         status = "NO_REPORTED_EQUIVALENT"
+-    return CreditEquivalentResult(eur_total, rial_total, status, len(groups))
++    return CreditEquivalentResult(eur_total, rial_total, status, logical_count, eur_cov, rial_cov)
++
++
++def _actual_purchase_rows(frame: Optional[pd.DataFrame]) -> pd.DataFrame:
++    """Return rows eligible as observed/actual FX purchases.
++
++    Explicit planning/forecast states are not transaction evidence. Missing state
++    remains eligible for backward-compatible source snapshots that predate the
++    state field.
++    """
++    if frame is None or frame.empty:
++        return pd.DataFrame()
++    out = frame.copy()
++    planned = pd.Series(False, index=out.index)
++    blocked = {"PLANNED", "PLAN", "FORECAST", "DRAFT", "در برنامه خرید", "برنامه خرید"}
++    for c in ("FX_PURCHASE_STATE", "FX_STATUS"):
++        if c in out.columns:
++            values = out[c].map(lambda v: _text(v).upper())
++            planned = planned | values.isin({x.upper() for x in blocked})
++    return out.loc[~planned].copy()
+ 
+ 
+ def summarize_fx_purchases(frame: Optional[pd.DataFrame]) -> EquivalentResult:
+@@ -173,11 +204,14 @@
+     if frame is None or frame.empty:
+         return EquivalentResult("—", "", None, None, None, 0.0, 0.0)
+ 
+-    f = frame.copy()
++    f = _actual_purchase_rows(frame)
++    if f.empty:
++        return EquivalentResult("—", "", None, None, None, 0.0, 0.0)
+     for c in ("FX_AMOUNT", "FX_EUR_VALUE", "FX_RIAL_VALUE"):
+         if c not in f.columns:
+             f[c] = pd.NA
+         f[c] = pd.to_numeric(f[c], errors="coerce")
++        f.loc[~f[c].map(lambda x: bool(pd.notna(x) and math.isfinite(float(x)))), c] = pd.NA
+     if "FX_CURRENCY" not in f.columns:
+         f["FX_CURRENCY"] = ""
+     f["FX_CURRENCY"] = f["FX_CURRENCY"].map(_currency)
+@@ -205,12 +239,15 @@
+ 
+ 
+ def _weighted_ratio(frame: pd.DataFrame, numerator: str) -> tuple[Optional[float], int, int]:
++    frame = _actual_purchase_rows(frame)
+     if frame is None or frame.empty or "FX_AMOUNT" not in frame.columns or numerator not in frame.columns:
+         return None, 0, 0
+     amount = pd.to_numeric(frame["FX_AMOUNT"], errors="coerce")
+     num = pd.to_numeric(frame[numerator], errors="coerce")
+-    eligible = amount.gt(EPS)
+-    usable = eligible & num.notna() & num.gt(EPS)
++    amount_finite = amount.map(lambda x: bool(pd.notna(x) and math.isfinite(float(x))))
++    num_finite = num.map(lambda x: bool(pd.notna(x) and math.isfinite(float(x))))
++    eligible = amount_finite & amount.gt(EPS)
++    usable = eligible & num_finite & num.gt(EPS)
+     if not usable.any():
+         return None, int(eligible.sum()), 0
+     den = float(amount.loc[usable].sum())
+@@ -220,12 +257,15 @@
+ 
+ 
+ def _weighted_rate(frame: pd.DataFrame) -> tuple[Optional[float], int, int]:
++    frame = _actual_purchase_rows(frame)
+     if frame is None or frame.empty or "FX_AMOUNT" not in frame.columns or "FX_RATE" not in frame.columns:
+         return None, 0, 0
+     amount = pd.to_numeric(frame["FX_AMOUNT"], errors="coerce")
+     rate = pd.to_numeric(frame["FX_RATE"], errors="coerce")
+-    eligible = amount.gt(EPS)
+-    usable = eligible & rate.notna() & rate.gt(EPS)
++    amount_finite = amount.map(lambda x: bool(pd.notna(x) and math.isfinite(float(x))))
++    rate_finite = rate.map(lambda x: bool(pd.notna(x) and math.isfinite(float(x))))
++    eligible = amount_finite & amount.gt(EPS)
++    usable = eligible & rate_finite & rate.gt(EPS)
+     if not usable.any():
+         return None, int(eligible.sum()), 0
+     den = float(amount.loc[usable].sum())
+@@ -234,18 +274,27 @@
+     return float((amount.loc[usable] * rate.loc[usable]).sum()) / den, int(eligible.sum()), int(usable.sum())
+ 
+ 
+-def _latest_allocation_rate(frame: Optional[pd.DataFrame], currency: str) -> Optional[float]:
++def _latest_allocation_rate(frame: Optional[pd.DataFrame], currency: str) -> tuple[Optional[float], str]:
+     if (frame is None or frame.empty or "NTSW_FX_RATE_NUMERIC" not in frame.columns
+             or "NTSW_REQ_CURRENCY" not in frame.columns):
+-        return None
++        return None, "NONE"
+     z = frame.copy()
+     z = z[z["NTSW_REQ_CURRENCY"].map(_currency).eq(currency)]
+     if z.empty:
+-        return None
++        return None, "NONE"
++    # When a request state is explicitly supplied, only an allocated request is
++    # authoritative rate evidence. Legacy rows without the field remain usable.
++    if "NTSW_REQUEST_STATE" in z.columns:
++        states = z["NTSW_REQUEST_STATE"].map(lambda v: _text(v).upper())
++        explicit = states.ne("")
++        z = z[(~explicit) | states.eq("ALLOCATED")]
++    if z.empty:
++        return None, "NONE"
+     z["__rate"] = pd.to_numeric(z["NTSW_FX_RATE_NUMERIC"], errors="coerce")
+-    z = z[z["__rate"].gt(EPS)]
++    finite = z["__rate"].map(lambda x: bool(pd.notna(x) and math.isfinite(float(x))))
++    z = z[finite & z["__rate"].gt(EPS)]
+     if z.empty:
+-        return None
++        return None, "NONE"
+ 
+     def dt_key(row: pd.Series) -> str:
+         for c in ("NTSW_ALLOC_DATE", "NTSW_APPROVE_DATE", "NTSW_REQ_DATE"):
+@@ -255,8 +304,12 @@
+         return ""
+ 
+     z["__date"] = z.apply(dt_key, axis=1)
+-    z = z.sort_values("__date", kind="mergesort")
+-    return float(z.iloc[-1]["__rate"])
++    latest = z["__date"].max()
++    top = z[z["__date"].eq(latest)]
++    rates = sorted({float(x) for x in top["__rate"]})
++    if len(rates) != 1:
++        return None, "CONFLICT"
++    return rates[0], "OK"
+ 
+ 
+ def commitment_equivalents(
+@@ -297,6 +350,7 @@
+          {KEY_REG, "FX_CURRENCY"}.issubset(fx_rows.columns) else pd.DataFrame())
+     if not f.empty:
+         f = f[f[KEY_REG].map(clean_key).eq(reg_s) & f["FX_CURRENCY"].map(_currency).eq(cur)]
++        f = _actual_purchase_rows(f)
+ 
+     # EUR authority: identity for EUR, otherwise source-reported EUR equivalent
+     # on same-case purchase rows.
+@@ -332,8 +386,10 @@
+                          else None)
+                 if alloc is not None and not alloc.empty:
+                     alloc = alloc[alloc[KEY_REG].map(clean_key).eq(reg_s)]
+-                rial_rate = _latest_allocation_rate(alloc, cur)
+-                if rial_rate is not None:
++                rial_rate, allocation_status = _latest_allocation_rate(alloc, cur)
++                if allocation_status == "CONFLICT":
++                    result["FX_NTSW_RIAL_EQ_BASIS"] = "NTSW_ALLOCATION_RATE_CONFLICT_SAME_REG_CURRENCY"
++                elif rial_rate is not None:
+                     result["FX_NTSW_RIAL_EQ_BASIS"] = "NTSW_ALLOCATION_LATEST_RATE_SAME_REG_CURRENCY"
+ 
+     if eur_rate is not None:
+--- /mnt/data/gsi_diag_baseline/gsi/personalization/identity.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/personalization/identity.py	2026-09-24 12:53:16.355045897 +0000
+@@ -50,11 +50,17 @@
+     if not emp:
+         identity_file = os.environ.get(IDENTITY_FILE_ENV, "").strip()
+         if not identity_file:
+-            if os.name == "nt":
++            # An explicit GSI_HOME is the operator-selected local configuration
++            # root on every OS. Only fall back to LOCALAPPDATA on Windows when
++            # GSI_HOME was not supplied.
++            gsi_home = os.environ.get("GSI_HOME", "").strip()
++            if gsi_home:
++                candidate = Path(gsi_home) / "identity.json"
++            elif os.name == "nt":
+                 base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+                 candidate = Path(base) / "GSI" / "identity.json"
+             else:
+-                candidate = Path(os.environ.get("GSI_HOME", os.path.join(os.path.expanduser("~"), ".gsi"))) / "identity.json"
++                candidate = Path(os.path.join(os.path.expanduser("~"), ".gsi")) / "identity.json"
+             identity_file = str(candidate) if candidate.is_file() else ""
+         if identity_file:
+             emp = _from_identity_file(identity_file)
+--- /mnt/data/gsi_diag_baseline/gsi/report/financial_summary.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/report/financial_summary.py	2026-09-24 12:47:19.860364139 +0000
+@@ -212,72 +212,121 @@
+ 
+ 
+ def commitment_equivalent_summary(df: pd.DataFrame) -> dict[str, object]:
+-    """Aggregate source-backed commitment equivalents at REG grain.
++    """Aggregate source-backed commitment equivalents at proven REG grain.
+ 
+-    ``FX_NTSW_BALANCE_EUR_EQ`` and ``FX_NTSW_BALANCE_RIAL_EQ`` are generated
+-    only from same-REG/same-currency source evidence by the FX traceability
+-    stage.  This helper deduplicates main-table fan-out and reports coverage so
+-    a partial equivalent can never masquerade as a complete portfolio total.
++    Missing identities, unknown native balances, non-finite equivalents and
++    multi-native-currency fan-out are never promoted into portfolio totals.
++    Conflicted/unknown REGs remain in the coverage denominator so uncertainty
++    cannot disappear from decision-facing KPIs.
+     """
+     result: dict[str, object] = {
+         "eur": None, "irr": None, "covered": 0, "total": 0,
+         "eur_covered": 0, "irr_covered": 0, "status": "UNAVAILABLE",
++        "conflicted": 0, "unknown": 0, "missing_key_rows": 0,
+     }
+     if df is None or df.empty:
+         return result
+     reg = _pick(df, _REGISTRATION_CANDIDATES)
+     if reg is None:
++        result["missing_key_rows"] = len(df)
+         return result
++
+     cols = [reg]
+-    for c in ("FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ", "FX_NTSW_EQ_STATUS"):
+-        if c in df.columns:
++    for c in ("FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ",
++              "FX_NTSW_EQ_STATUS", "FX_NTSW_CURRENCY", "NTSW_CURRENCY",
++              "BALANCE_IS_UNKNOWN", "FX_NTSW_BALANCE_UNKNOWN", "FX_NTSW_BALANCE"):
++        if c in df.columns and c not in cols:
+             cols.append(c)
+     if len(cols) == 1:
+         return result
+-
+     z = df[cols].copy()
+-    z["__reg"] = z[reg].astype(str).str.strip()
+-    z = z[z["__reg"].ne("")]
++
++    def clean_reg(v: object) -> str:
++        try:
++            if v is None or pd.isna(v):
++                return ""
++        except Exception:
++            pass
++        t = str(v).strip()
++        return "" if t.lower() in {"nan", "none", "<na>"} else t
++
++    z["__reg"] = z[reg].map(clean_reg)
++    missing = z["__reg"].eq("")
++    result["missing_key_rows"] = int(missing.sum())
++    z = z.loc[~missing].copy()
+     if z.empty:
+         return result
+ 
+-    # One FX-equivalent value per REG is expected. Conflicting fan-out values
+-    # are excluded rather than arbitrarily selected.
+-    rows = []
++    rows: list[dict[str, object]] = []
+     conflicts = 0
++    unknowns = 0
+     for key, g in z.groupby("__reg", sort=False):
+-        row: dict[str, object] = {"reg": key}
++        native_col = "FX_NTSW_CURRENCY" if "FX_NTSW_CURRENCY" in g.columns else ("NTSW_CURRENCY" if "NTSW_CURRENCY" in g.columns else None)
++        currencies = set()
++        if native_col:
++            for v in g[native_col]:
++                try:
++                    missing_v = v is None or pd.isna(v)
++                except Exception:
++                    missing_v = False
++                if not missing_v and str(v).strip():
++                    currencies.add(str(v).strip().upper())
++        if len(currencies) > 1:
++            conflicts += 1
++            continue
++
++        unknown = False
++        for flag in ("BALANCE_IS_UNKNOWN", "FX_NTSW_BALANCE_UNKNOWN"):
++            if flag in g.columns and any(_truthy(v) for v in g[flag]):
++                unknown = True
++        if unknown:
++            unknowns += 1
++            rows.append({"reg": key, "FX_NTSW_BALANCE_EUR_EQ": None,
++                         "FX_NTSW_BALANCE_RIAL_EQ": None, "unknown": True})
++            continue
++
++        row: dict[str, object] = {"reg": key, "unknown": False}
+         conflict = False
+         for c in ("FX_NTSW_BALANCE_EUR_EQ", "FX_NTSW_BALANCE_RIAL_EQ"):
+             if c not in g.columns:
+                 row[c] = None
+                 continue
+-            vals = pd.to_numeric(g[c], errors="coerce").dropna().unique().tolist()
+-            if len(vals) > 1:
++            vals: list[float] = []
++            for v in g[c]:
++                dec = _decimal(v)
++                if dec is not None:
++                    vals.append(float(dec))
++            uniq = sorted(set(vals))
++            if len(uniq) > 1:
+                 conflict = True
+                 break
+-            row[c] = float(vals[0]) if vals else None
+-        if not conflict:
+-            rows.append(row)
+-        else:
++            row[c] = uniq[0] if uniq else None
++        if conflict:
+             conflicts += 1
++        else:
++            rows.append(row)
++
+     result["total"] = len(rows) + conflicts
+     result["conflicted"] = conflicts
++    result["unknown"] = unknowns
+     if not rows:
+         if conflicts:
+             result["status"] = "CONFLICTED"
+         return result
+ 
+-    eur_vals = [r["FX_NTSW_BALANCE_EUR_EQ"] for r in rows if r.get("FX_NTSW_BALANCE_EUR_EQ") is not None]
+-    irr_vals = [r["FX_NTSW_BALANCE_RIAL_EQ"] for r in rows if r.get("FX_NTSW_BALANCE_RIAL_EQ") is not None]
+-    result["eur_covered"] = len(eur_vals)
+-    result["irr_covered"] = len(irr_vals)
+-    result["covered"] = min(len(eur_vals), len(irr_vals))
+-    result["eur"] = float(sum(eur_vals)) if eur_vals else None
+-    result["irr"] = float(sum(irr_vals)) if irr_vals else None
+-    if not conflicts and len(eur_vals) == len(rows) and len(irr_vals) == len(rows):
++    eur_rows = [r for r in rows if r.get("FX_NTSW_BALANCE_EUR_EQ") is not None]
++    irr_rows = [r for r in rows if r.get("FX_NTSW_BALANCE_RIAL_EQ") is not None]
++    joint_rows = [r for r in rows if r.get("FX_NTSW_BALANCE_EUR_EQ") is not None
++                  and r.get("FX_NTSW_BALANCE_RIAL_EQ") is not None]
++    result["eur_covered"] = len(eur_rows)
++    result["irr_covered"] = len(irr_rows)
++    result["covered"] = len(joint_rows)
++    result["eur"] = float(sum(float(r["FX_NTSW_BALANCE_EUR_EQ"]) for r in eur_rows)) if eur_rows else None
++    result["irr"] = float(sum(float(r["FX_NTSW_BALANCE_RIAL_EQ"]) for r in irr_rows)) if irr_rows else None
++    population = int(result["total"] or 0)
++    if not conflicts and not unknowns and population and len(joint_rows) == population:
+         result["status"] = "COMPLETE"
+-    elif eur_vals or irr_vals or conflicts:
++    elif eur_rows or irr_rows or conflicts or unknowns:
+         result["status"] = "PARTIAL"
+     return result
+ 
+--- /mnt/data/gsi_diag_baseline/gsi/stages/s55_fx_traceability.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/stages/s55_fx_traceability.py	2026-09-24 12:48:56.370436904 +0000
+@@ -18,6 +18,7 @@
+ 
+ from collections import defaultdict
+ from typing import Any, Dict, Iterable, List, Optional
++import math
+ 
+ import pandas as pd
+ 
+@@ -41,6 +42,17 @@
+     return float(num_safe(v) or 0.0)
+ 
+ 
++def _optional_num(v: Any) -> Optional[float]:
++    try:
++        x = pd.to_numeric(pd.Series([v]), errors="coerce").iloc[0]
++        if pd.isna(x):
++            return None
++        f = float(x)
++        return f if math.isfinite(f) else None
++    except Exception:
++        return None
++
++
+ def _date(v: Any):
+     return CalendarEngine.parse(v)
+ 
+@@ -113,9 +125,9 @@
+                 "FX_NTSW_INITIAL_EUR_EQ", "FX_NTSW_INITIAL_RIAL_EQ",
+                 "FX_NTSW_EUR_RATE_PER_UNIT", "FX_NTSW_RIAL_RATE_PER_UNIT",
+                 "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED",
++                "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
+             }
+             zero_numeric = {
+-                "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
+                 "FX_EQ_EUR_COVERAGE_PCT", "FX_EQ_RIAL_COVERAGE_PCT",
+                 "FX_TRACE_SCORE", "FX_ANOMALY_COUNT",
+             }
+@@ -138,9 +150,9 @@
+             "FX_NTSW_INITIAL_EUR_EQ", "FX_NTSW_INITIAL_RIAL_EQ",
+             "FX_NTSW_EUR_RATE_PER_UNIT", "FX_NTSW_RIAL_RATE_PER_UNIT",
+             "FX_CREDIT_EUR_REPORTED", "FX_CREDIT_RIAL_REPORTED",
++            "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
+         }
+         zero_numeric = {
+-            "FX_NTSW_INITIAL", "FX_NTSW_RELEASED", "FX_NTSW_BALANCE",
+             "FX_EQ_EUR_COVERAGE_PCT", "FX_EQ_RIAL_COVERAGE_PCT",
+             "FX_TRACE_SCORE", "FX_ANOMALY_COUNT",
+         }
+@@ -202,14 +214,14 @@
+             fx_eur = purchase.source_eur_total
+             has_fx_purchase = purchase.native_display != "—"
+ 
+-            initial = _num(n.iloc[0].get("NTSW_INITIAL_COMMIT")) if not n.empty else 0.0
+-            balance = _num(n.iloc[0].get("NTSW_BALANCE")) if not n.empty else 0.0
++            initial = _optional_num(n.iloc[0].get("NTSW_INITIAL_COMMIT")) if not n.empty else None
++            balance = _optional_num(n.iloc[0].get("NTSW_BALANCE")) if not n.empty else None
+             ntsw_currency = _first_nonempty(n, "NTSW_CURRENCY")
+             eq = commitment_equivalents(
+                 reg=reg, currency=ntsw_currency, balance=balance, initial=initial,
+                 fx_rows=f, allocation_rows=ar,
+             )
+-            released = max(0.0, initial - balance)
++            released = max(0.0, initial - balance) if initial is not None and balance is not None else None
+             alloc_amount = _num(a.iloc[0].get("NTSW_ALLOCATED_AMOUNT")) if not a.empty else 0.0
+             open_queue_amount = _num(a.iloc[0].get("NTSW_OPEN_QUEUE_AMOUNT")) if not a.empty else 0.0
+             requested_gross = _num(a.iloc[0].get("NTSW_REQUESTED_GROSS")) if not a.empty else 0.0
+@@ -285,10 +297,12 @@
+                 "FX_BENEFICIARIES": _set_text(f.get("FX_BENEFICIARY", pd.Series(dtype=str))) if not f.empty else "",
+                 "FX_BANKS": _set_text(f.get("FX_BANK", pd.Series(dtype=str))) if not f.empty else "",
+                 "FX_EXCHANGES": _set_text(f.get("FX_EXCHANGE", pd.Series(dtype=str))) if not f.empty else "",
+-                "FX_NTSW_INITIAL": round(initial, 2), "FX_NTSW_RELEASED": round(released, 2),
+-                "FX_NTSW_BALANCE": round(balance, 2),
++                "FX_NTSW_INITIAL": (round(initial, 2) if initial is not None else None),
++                "FX_NTSW_RELEASED": (round(released, 2) if released is not None else None),
++                "FX_NTSW_BALANCE": (round(balance, 2) if balance is not None else None),
+                 **eq,
+-                "FX_RELEASE_PCT": round(100 * released / initial, 1) if initial > EPS else 0.0,
++                "FX_RELEASE_PCT": (round(100 * released / initial, 1)
++                                   if initial is not None and released is not None and initial > EPS else 0.0),
+                 "FX_NTSW_RELEASE_STATUS": _first_nonempty(n, "NTSW_RELEASE_STATUS"),
+                 "FX_ALLOC_REQUEST_AMOUNT": round(alloc_amount + open_queue_amount, 2),
+                 "FX_ALLOCATED_AMOUNT": round(alloc_amount, 2),
+@@ -390,7 +404,7 @@
+         if not rows:
+             return pd.DataFrame(columns=["_CASE_KEY", "EVENT_TYPE", "EVENTTIME"])
+         ev = pd.DataFrame(rows)
+-        ev = ev.drop_duplicates(subset=["_CASE_KEY", "EVENT_TYPE", "EVENTTIME", "AMOUNT", "EVIDENCE"])
++        ev = ev.drop_duplicates(subset=["_CASE_KEY", "EVENT_TYPE", "EVENTTIME", "AMOUNT", "CURRENCY", "EVIDENCE"])
+         return ev.sort_values(["_CASE_KEY", "EVENTTIME", "EVENT_TYPE"], kind="mergesort").reset_index(drop=True)
+ 
+     # ═══════════ مغایرت‌ها ═══════════
+--- /mnt/data/gsi_diag_baseline/gsi/warehouse/store.py	2026-09-23 11:32:44.000000000 +0000
++++ gsi/warehouse/store.py	2026-09-24 12:53:16.354863528 +0000
+@@ -7,7 +7,7 @@
+ import shutil
+ import sqlite3
+ import uuid
+-from contextlib import contextmanager
++from contextlib import contextmanager, closing
+ from datetime import date, datetime, timezone
+ from pathlib import Path
+ 
+@@ -113,7 +113,7 @@
+         # no DDL and no transaction. This keeps repeated constructors harmless.
+         if self.path.exists() and self.path.stat().st_size:
+             try:
+-                with sqlite3.connect(f'file:{self.path.as_posix()}?mode=ro', uri=True, timeout=5) as c:
++                with closing(sqlite3.connect(f'file:{self.path.as_posix()}?mode=ro', uri=True, timeout=5)) as c:
+                     c.execute('PRAGMA query_only=ON')
+                     version=c.execute('PRAGMA user_version').fetchone()[0]
+                     existing={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+@@ -363,7 +363,7 @@
+         report={'path':str(self.path),'existed':self.path.exists(),'backup':None,'removed':[]}
+         if self.path.exists() and self.path.stat().st_size:
+             # نگذار یک فایل غیر-GSI با این دستور نابود شود.
+-            with sqlite3.connect(f'file:{self.path.as_posix()}?mode=ro',uri=True,timeout=5) as c:
++            with closing(sqlite3.connect(f'file:{self.path.as_posix()}?mode=ro',uri=True,timeout=5)) as c:
+                 c.execute('PRAGMA query_only=ON')
+                 tables={r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+             if tables and 'wh_meta' not in tables:
+--- /mnt/data/gsi_diag_baseline/offline_validation/run_offline_diagnostic.py	2026-09-24 10:53:53.000000000 +0000
++++ offline_validation/run_offline_diagnostic.py	2026-09-24 13:04:33.529811610 +0000
+@@ -121,18 +121,24 @@
+     if limit: files=files[:limit]
+     for i,f in enumerate(files,1):
+         log=res/(f.stem+'.log')
+-        cmd=[sys.executable,'-B','-m','pytest','-q',str(f)]
+-        r=run_cmd(cmd,ROOT,env,per_file_timeout,log); r['file']=str(f.relative_to(ROOT)); rows.append(r)
++        basetemp=res/'pytest_tmp'/f.stem
++        cmd=[sys.executable,'-B','-m','pytest','-q','--basetemp',str(basetemp),str(f)]
++        r=run_cmd(cmd,ROOT,env,per_file_timeout,log); r['file']=str(f.relative_to(ROOT))
++        r['classification']='PASS' if r['exit_code']==0 else ('NO_TESTS' if r['exit_code']==5 else ('TIMEOUT' if r['exit_code']==124 else 'FAIL'))
++        rows.append(r)
+     (res/'per_file_results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
+-    return {'files':len(rows),'passed_files':sum(r['exit_code']==0 for r in rows),'failed_files':sum(r['exit_code'] not in (0,124) for r in rows),'timed_out_files':sum(r['exit_code']==124 for r in rows),'results':'per_file_results.json'}
++    return {'files':len(rows),'passed_files':sum(r['classification']=='PASS' for r in rows),
++            'no_test_files':sum(r['classification']=='NO_TESTS' for r in rows),
++            'failed_files':sum(r['classification']=='FAIL' for r in rows),
++            'timed_out_files':sum(r['classification']=='TIMEOUT' for r in rows),'results':'per_file_results.json'}
+ 
+ 
+ def run_internal_order_smoke(out,env,timeout):
+     res=out/'internal_order'; res.mkdir(exist_ok=True)
+     files=sorted((ROOT/'tests').glob('test_*.py'))+sorted((ROOT/'tests').glob('legacy_test_*.py'))
+     rel=[str(f) for f in files]
+-    normal=run_cmd([sys.executable,'-B','-m','pytest','-q',*rel],ROOT,env,timeout,res/'normal_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
+-    reverse=run_cmd([sys.executable,'-B','-m','pytest','-q',*reversed(rel)],ROOT,env,timeout,res/'reverse_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
++    normal=run_cmd([sys.executable,'-B','-m','pytest','-q','--basetemp',str(res/'pytest_tmp_normal'),*rel],ROOT,env,timeout,res/'normal_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
++    reverse=run_cmd([sys.executable,'-B','-m','pytest','-q','--basetemp',str(res/'pytest_tmp_reverse'),*reversed(rel)],ROOT,env,timeout,res/'reverse_order.log') if rel else {'exit_code':0,'seconds':0,'timeout':False}
+     return {'normal':normal,'reverse':reverse,'file_count':len(rel)}
+ 
+ def summarize(out,steps,source_inventory,ntsw_probe):
+@@ -201,6 +207,14 @@
+     ts=time.strftime('%Y%m%d_%H%M%S'); base=Path(a.output).resolve() if a.output else ROOT/'offline_feedback'
+     out=base/f'GSI_FEEDBACK_{ts}'; out.mkdir(parents=True,exist_ok=False)
+     env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1',PYTEST_DISABLE_PLUGIN_AUTOLOAD='1',GSI_DWH_PATH=str(out/'diagnostic.sqlite'))
++    # Corporate proxy settings must never intercept the native offline service.
++    # urllib honors NO_PROXY/no_proxy, so explicitly protect loopback on Windows/Linux.
++    for _key in ('NO_PROXY','no_proxy'):
++        _cur=env.get(_key,'')
++        _parts=[x.strip() for x in _cur.split(',') if x.strip()]
++        for _host in ('127.0.0.1','localhost','::1'):
++            if _host not in _parts: _parts.append(_host)
++        env[_key]=','.join(_parts)
+     try:
+         import importlib.metadata as md
+         deps={n:(md.version(n) if True else '') for n in ['pandas','numpy','openpyxl','PyYAML','pytest','streamlit','plotly','streamlit-sortables','cryptography','matplotlib'] if _has_dist(n,md)}
+--- /mnt/data/gsi_diag_baseline/offline_validation/source_probe.py	2026-09-24 10:30:32.000000000 +0000
++++ offline_validation/source_probe.py	2026-09-24 12:57:42.120866217 +0000
+@@ -3,6 +3,8 @@
+ from pathlib import Path
+ from typing import Any
+ 
++DATA_SUFFIXES={".xlsx",".xlsm",".xls",".csv",".tsv",".parquet",".json",".sqlite",".db"}
++
+ 
+ def sha256_file(path: Path, max_bytes: int = 50*1024*1024) -> str | None:
+     try:
+@@ -107,7 +109,22 @@
+                     p=extra/n
+                     if p.exists(): candidates.append(p)
+         uniq=[]; seen=set()
++        expected_sheets=set(s.get('sheets') or [])
+         for p in candidates:
++            # Source inventory is a data-file probe, not a repository text/code
++            # search. Broad filename patterns must never promote .py/.md files
++            # into business sources. Sources with declared sheets must be actual
++            # Excel workbooks containing at least one declared sheet.
++            if p.suffix.lower() not in DATA_SUFFIXES:
++                continue
++            if expected_sheets:
++                if p.suffix.lower() not in {'.xlsx','.xlsm','.xls'}:
++                    continue
++                if p.suffix.lower() in {'.xlsx','.xlsm'}:
++                    schema=workbook_schema(p)
++                    names={x.get('name') for x in schema.get('sheets',[])}
++                    if not names.intersection(expected_sheets):
++                        continue
+             try: rp=p.resolve()
+             except Exception: rp=p
+             if rp not in seen and p.is_file(): seen.add(rp); uniq.append(p)
+--- /mnt/data/gsi_diag_baseline/tests/test_population_cashflow_v29_7_4.py	2026-09-23 11:32:44.000000000 +0000
++++ tests/test_population_cashflow_v29_7_4.py	2026-09-24 12:53:42.258590525 +0000
+@@ -84,11 +84,14 @@
+                           observed_at='2026-01-31',amount='40',currency='EUR',source='NTSW',document='NTSW-SNAPSHOT')])
+     r=build_cashflow(pd.DataFrame(rows),links=links,measurements=ms,as_of='2026-01-31')
+     chain=r['chain']
+-    assert chain.query("stage == 'FUNDING'").iloc[0]['status']=='GAP'
+-    assert chain.query("stage == 'SETTLEMENT_RETURN'").iloc[0]['status']=='GAP'
++    # Missing upstream stages are not declared mandatory without an explicit
++    # applicability contract. Downstream evidence remains visible but absence
++    # is not upgraded to a process violation by inference alone.
++    assert chain.query("stage == 'FUNDING'").iloc[0]['status']=='NOT_YET_EVIDENCED'
++    assert chain.query("stage == 'SETTLEMENT_RETURN'").iloc[0]['status']=='NOT_YET_EVIDENCED'
+     codes=set(r['issues']['code'])
+-    assert 'MISSING_FUNDING_EVIDENCE' in codes
+-    assert 'MISSING_SETTLEMENT_EVIDENCE' in codes
++    assert 'MISSING_FUNDING_EVIDENCE' not in codes
++    assert 'MISSING_SETTLEMENT_EVIDENCE' not in codes
+     assert 'SNAPSHOT_LEDGER_MISMATCH' in codes
+     assert chain.query("stage == 'PAYMENT'").iloc[0]['status']=='EVIDENCED'
+ 
+--- /mnt/data/gsi_diag_baseline/PACKAGE_INFO.json	2026-09-24 10:29:32.000000000 +0000
++++ PACKAGE_INFO.json	2026-09-24 13:12:52.422896587 +0000
+@@ -1,48 +1,53 @@
+ {
+   "version": "29.8.2",
+-  "release_channel": "rc4-opt2-h1-offline-diagnostic-20260924",
++  "release_channel": "rc4-opt2-h1-algo-knowledge-remediated-final-20260924",
+   "base": "29.8.2 RC4-OPT2 H1 NTSW Verified Final",
+-  "scope": "source-authority FX equivalents, currency-safe decision outputs, and compatibility-preserving financial hardening; missing-identity FX guard and conflict coverage; real NTSW reconciliation, business-key alias lock, Persian currency normalization, semantics-preserving process/money-flow performance hardening; offline knowledge snapshot + frozen independent audit + extended metamorphic/contract diagnostics + structured feedback runner",
++  "scope": "feedback-driven semantic and algorithm remediation; offline knowledge bundle; Windows/offline runner hardening; real NTSW semantic re-probe",
+   "business_logic_changed": true,
+   "source_authority_changed": false,
+   "key_changes": [
+-    "Expose source-reported FX purchase EUR/IRR equivalents and explicit coverage without cross-currency native aggregation",
+-    "Expose source-reported Credit EUR/IRR equivalents with LC-level snapshot deduplication and conflict quarantine",
+-    "Value NTSW commitment balance only from same-REG same-currency source evidence and expose the exact valuation basis",
+-    "Never borrow an FX rate from another registration or another currency",
+-    "Use NTSW Allocation rate only as a same-case same-currency IRR fallback when purchase evidence is unavailable",
+-    "Keep mixed-currency purchase amounts and rates separated; no naked native total and no zero pseudo-rate",
+-    "Add EUR/IRR equivalent decision views to Studio, dashboard, Excel, HTML/process views while preserving legacy column/card contracts",
+-    "Retain 29.8.1 I/O and persistence optimizations",
+-    "Lock REG aliases: registration / registration number / registration code are one identity; REG_FILE remains distinct",
+-    "Lock ORDER aliases: order number / Order No. / Our Reference are one identity",
+-    "Do not require KEY_MATERIAL for the NTSW-only registration/allocation/commitment gate",
+-    "Normalize Persian/Arabic glyphs and repeated whitespace before currency alias lookup; verified JPY on real NTSW data",
+-    "Pre-index process evidence and pre-aggregate money-flow reconciliation for real-snapshot performance without semantic changes"
++    "Exclude planned/forecast purchases from actual FX totals and rate authority",
++    "Reject non-finite financial evidence and preserve Unknown distinct from Zero",
++    "Make allocation-rate conflicts fail-closed and row-order invariant",
++    "Expose partial credit coverage and true joint EUR/IRR coverage",
++    "Require valid REG for registration-level financial aggregation",
++    "Protect REG/REG_FILE/ORDER/BL semantic identities and require complete composite keys",
++    "Preserve Credit physical lineage and prevent PR from fabricating PO/PACK authority",
++    "Make FX event dedupe currency-aware and prevent unitless mixed-currency chain sums",
++    "Do not infer mandatory process GAP without an explicit applicability contract",
++    "Close SQLite handles for Windows reset/cleanup, honor explicit GSI_HOME, and bypass corporate proxy for localhost offline service",
++    "Keep Material non-mandatory for the NTSW-only gate and never fabricate missing ORDER/BL"
+   ],
+   "production_certified": false,
+-  "validation": "review/ntsw_final/FINAL_STATUS_FA.md",
++  "validation": "FINAL_REMEDIATION_REPORT_20260924_FA.md",
+   "regulatory_rulebook_changed": false,
+   "financial_semantics_changed": true,
+   "real_ntsw_verified": true,
+   "real_ntsw_input_sha256": "380631a763bc5cc3b75d0d403c1da99dcbf89974470ab71a10e531c31878538d",
+   "material_required_for_ntsw_gate": false,
+   "order_bl_cross_source_gate": "OPEN_REQUIRES_REAL_BRIDGE_SOURCES",
+-  "diagnostic_release": true,
++  "diagnostic_release": false,
+   "offline_diagnostic": {
+     "knowledge_snapshot": "2026-09-24",
+     "frozen_independent_tests": 173,
+     "extended_diagnostic_tests": 77,
+     "independent_test_total": 250,
+-    "internal_tests": "all tests/test_*.py and legacy_test_*.py run file-by-file by runner",
+-    "known_baseline_on_latest_package": {
+-      "frozen_passed": 130,
+-      "frozen_failed": 43,
+-      "extended_passed": 44,
+-      "extended_failed": 33
++    "final_results": {
++      "frozen": "173/173 PASS",
++      "extended": "77/77 PASS",
++      "affected_internal": "100/100 PASS"
++    },
++    "internal_file_sweep": {
++      "files": 90,
++      "pass_files": 80,
++      "no_test_files": 8,
++      "local_ui_blocked_files": 2,
++      "local_ui_block_reason": "streamlit not installed in build environment"
+     },
+-    "feedback_contract": "send offline_feedback/GSI_FEEDBACK_*.zip only",
+     "internet_required": false,
+-    "raw_business_rows_copied_to_feedback": false
+-  }
+-}
+\ No newline at end of file
++    "raw_business_rows_copied_to_feedback": false,
++    "feedback_contract": "offline_feedback/GSI_FEEDBACK_*.zip"
++  },
++  "algorithm_knowledge_verified": true,
++  "semantic_remediation_gate": "PASS"
++}

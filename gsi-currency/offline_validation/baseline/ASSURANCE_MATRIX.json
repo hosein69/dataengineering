@@ -1,0 +1,87 @@
+[
+  {
+    "domain": "PR",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "PR+item distinctness passed; source context contamination IA14 remains."
+  },
+  {
+    "domain": "PO",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "Generic PO-to-ORDER identity leak IA10; full native PO lifecycle not certified."
+  },
+  {
+    "domain": "Order",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "IA10, IA12; typed graph namespace isolation passed."
+  },
+  {
+    "domain": "Registration",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "REG vs file/date/order negative mappings passed; missing identity aggregation IA06 remains."
+  },
+  {
+    "domain": "Allocation",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "Independent amounts passed; rate status/conflict IA03–04 remain."
+  },
+  {
+    "domain": "FX Purchase",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "Cross-REG/currency guards passed; IA01, IA02, IA15 and output mismatch remain."
+  },
+  {
+    "domain": "Credit",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "LC snapshot duplicates/conflicts and distinct credits passed; IA05, IA11, IA13 remain."
+  },
+  {
+    "domain": "Swift",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Credit SWIFT evidence does not manufacture PAYMENT in tested DWH path; currency mapping IA11 remains."
+  },
+  {
+    "domain": "Payment",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Decimal, replay, reversal, capacity and evidence tests passed; chain IA16–17 remain."
+  },
+  {
+    "domain": "Shipment",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Two BL partial links and capacity tested; no full shipping-source workbooks."
+  },
+  {
+    "domain": "BL",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Explicit graph edges and split shipment links passed; partial key IA12 remains."
+  },
+  {
+    "domain": "Customs",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "CUSTOMS event cannot settle commitment; substantive customs classification/valuation not validated."
+  },
+  {
+    "domain": "Clearance",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Nonmonetary clearance evidence retained without inferred settlement; real clearance records not end-to-end certified."
+  },
+  {
+    "domain": "Commitment",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "IA06–09; legacy unknown-zero reproduced."
+  },
+  {
+    "domain": "Discharge",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Explicit partial discharge, cross-case/currency rejection and capacity passed; chain aggregate IA16 remains."
+  },
+  {
+    "domain": "Cash Flow",
+    "status": "NOT VERIFIED",
+    "evidence_and_limit": "Core currency-separated ledger controls passed; IA16 raw mixed linked amount, IA17 unsupported process gaps."
+  },
+  {
+    "domain": "Chatbot",
+    "status": "CONDITIONALLY VERIFIED",
+    "evidence_and_limit": "Published-snapshot isolation and no-evidence refusal passed; all financial KPI parity and static/LLM modes not covered."
+  }
+]

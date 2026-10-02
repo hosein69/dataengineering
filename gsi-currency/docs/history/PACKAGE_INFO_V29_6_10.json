@@ -1,0 +1,32 @@
+{
+  "version": "29.6.10",
+  "base": "29.6.9",
+  "report": "FULLSTACK_DEBUG_V29_6_10_FA.md",
+  "full_suite": {
+    "passed": 945,
+    "failed": 1,
+    "log": "audit/FULLSTACK_TESTS_FINAL.log",
+    "remaining_failure": "history sheet hardcoded colors"
+  },
+  "targeted_recheck_after_fix": {
+    "passed": 93,
+    "failed": 0,
+    "log": "audit/DESIGN_RECHECK.log"
+  },
+  "consolidated_checks": {
+    "passed": 946,
+    "unresolved_failures": 0,
+    "note": "Full suite plus rerun of sole failing design suite; not a fresh full-suite run after the last color fix."
+  },
+  "browser": {
+    "passed": 9,
+    "failed": 0
+  },
+  "doctor": {
+    "errors": 0,
+    "warnings": 11
+  },
+  "real_company_data_tested": false,
+  "github_write": false,
+  "figma_write": false
+}

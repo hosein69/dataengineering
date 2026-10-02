@@ -1,0 +1,60 @@
+# کلید پایدار ردیف‌های هر فریم استاندارد، برای سوابق منبع و دفتر تغییرات انبار داده.
+#
+# با کلید، تغییر یک ردیف «تغییر فیلد» ثبت می‌شود (مقدار قبلی ← مقدار جدید). بدون کلید
+# (فریمی که اینجا نیامده یا ستون کلیدش در فایل نیست) هر ردیف با محتوایش شناخته می‌شود و
+# تغییرش به‌صورت «دیده نشد» + «ردیف تازه» ثبت می‌شود. کلید تکراری ایرادی ندارد: ردیف‌های
+# هم‌کلید اول با محتوای یکسان و بعد به ترتیب با هم جفت می‌شوند.
+#
+# location: ستون‌هایی که جای ردیف را می‌گویند نه محتوایش (شماره ردیف اکسل، نام و اثرانگشت
+# فایل). جابه‌جایی ردیف در فایل تغییر حساب نمی‌شود؛ جای هر نسخه جدا نگه داشته می‌شود.
+# location هر فریم به defaults.location اضافه می‌شود، جایگزینش نمی‌شود.
+#
+# role: rows = ردیف‌های خود منبع؛ summary = جمع‌بندی ساخته‌شده از ردیف‌ها (تغییرش از
+# تغییر ردیف‌ها می‌آید و در نمای تغییرات جدا نشان داده می‌شود).
+#
+# افزودن یا عوض کردن کلید یک فریم، سوابق آن فریم را از همان اجرا با کلید تازه ادامه می‌دهد
+# (یک ردیف «بازتعریف کلید» در دفتر تغییرات)؛ سوابق قبلی پاک نمی‌شوند.
+
+defaults:
+  location: [_SOURCE_ROW, _SOURCE_FILE, _SOURCE_FILE_ID]
+
+frames:
+  abbasi/main:                    {keys: [KEY_BL, KEY_ORDER], label: "BLs Tracking"}
+  sata/main:                      {keys: [KEY_BL, KEY_ORDER], label: "SATA Tracking"}
+  # R8: فریم ترخیص ستون شیت را با پیشوند (CL_SOURCE_SHEET) دارد، نه _SOURCE_SHEET؛ با نام قبلی
+  # کلید هرگز پیدا نمی‌شد و فریم همیشه با محتوا شناخته می‌شد.
+  clearance/main:                 {keys: [CL_SOURCE_SHEET, CL_FILE_NO, KEY_BL], label: "ترخیص"}
+  cotage/main:                    {keys: [KEY_BL, COT_NO], label: "کوتاژ"}
+  oracle/main:                    {keys: [KEY_MATERIAL], label: "Oracle"}
+  ntsw/import_license:            {keys: [KEY_REG_FILE, KEY_REG], label: "NTSW ثبت سفارش"}
+  ntsw/commitment_rows:           {keys: [KEY_REG, NTSW_COMMIT_ROW], label: "NTSW تعهد"}
+  ntsw/commitment_quarantine:     {keys: [KEY_REG, NTSW_COMMIT_ROW], label: "NTSW تعهد قرنطینه"}
+  ntsw/commitment:                {keys: [KEY_REG], role: summary, label: "NTSW تعهد (جمع)"}
+  ntsw/commitment_by_currency:    {keys: [KEY_REG, NTSW_CURRENCY], role: summary, label: "NTSW تعهد (جمع به تفکیک ارز)"}
+  ntsw/allocation_history:        {keys: [KEY_REG, NTSW_REQ_ROW], label: "NTSW سابقه تخصیص"}
+  # R8: درخواست مبهم (وضعیت‌های متناقض هم‌زمان) چند ردیف با یک NTSW_REQUEST_KEY دارد؛ کلید
+  # تکراری اینجا مجاز است (جفت شدن با محتوا). انبار داده به آن‌ها پسوند «#n» می‌دهد.
+  ntsw/allocation_rows:           {keys: [NTSW_REQUEST_KEY], label: "NTSW درخواست تخصیص"}
+  ntsw/allocation_quarantine:     {keys: [NTSW_REQUEST_KEY], label: "NTSW تخصیص قرنطینه"}
+  ntsw/allocation:                {keys: [KEY_REG], role: summary, label: "NTSW تخصیص (جمع)"}
+  credit/main:                    {keys: [KEY_REG, KEY_ORDER], label: "اعتبارات"}
+  ilappend/main:                  {keys: [KEY_REG_FILE, IL_AMENDMENT_NO], label: "IL Append"}
+  doccheck/main:                  {keys: [KEY_ORDER, DOC_DOC_TYPE], role: summary, label: "بررسی اسناد"}
+  doccheck/doc_rows:              {keys: [KEY_ORDER, DOC_DOC_TYPE], label: "بررسی اسناد (ردیف)"}
+  hr/main:                        {keys: [KEY_EMP], label: "منابع انسانی"}
+  moghavemat/main:                {keys: [KEY_ORDER, KEY_MATERIAL], role: summary, label: "Commercial Expert (سفارش × متریال)"}
+  moghavemat/inventory:           {keys: [KEY_ORDER, KEY_MATERIAL], role: summary, label: "Commercial Expert (موجودی)"}
+  moghavemat/order_material_pr_item: {keys: [MOGH_OMPI_KEY], role: summary, location: [MOGH_SOURCE_ROWS], label: "Commercial Expert (سفارش × متریال × PR)"}
+  moghavemat/lines:               {keys: [KEY_ORDER, KEY_MATERIAL, KEY_PR, MOGH_PR_ITEM], location: [MOGH_ROW_NO], label: "Commercial Expert (ردیف)"}
+  fx_transaction/main:            {keys: [], label: "خرید ارز"}
+  fx_transaction/rates:           {keys: [], label: "نرخ ارز"}
+  fx_transaction/quarantine:      {keys: [], label: "خرید ارز قرنطینه"}
+  # R8: شیت در خروجی SAP ستون SAP_SOURCE_SHEET است (فقط خروجی چندشیتی؛ تک‌شیتی ستون شیت ندارد
+  # و مثل قبل با محتوا شناخته می‌شود).
+  sap/raw_rows:                   {keys: [SAP_SOURCE_SHEET, KEY_PR, SAP_PR_ITEM, KEY_PO, SAP_PO_ITEM], location: [SAP_SOURCE_ROW], label: "SAP (ردیف خام)"}
+  sap/pr_items:                   {keys: [KEY_PR, SAP_PR_ITEM], role: summary, label: "SAP PR"}
+  sap/po_items:                   {keys: [KEY_PO, SAP_PO_ITEM], role: summary, label: "SAP PO"}
+  sap/main:                       {keys: [KEY_PR], role: summary, label: "SAP (آخرین وضعیت PR)"}
+  sap/workflow_rows:              {keys: [KEY_PR, SAP_PR_ITEM], location: [SAP_SOURCE_ROW], label: "SAP گردش کار"}
+  sap/inbound_deliveries:         {keys: [], location: [SAP_SOURCE_ROW], label: "SAP ورود کالا"}
+  sap/goods_receipts:             {keys: [], location: [SAP_SOURCE_ROW], label: "SAP رسید انبار"}

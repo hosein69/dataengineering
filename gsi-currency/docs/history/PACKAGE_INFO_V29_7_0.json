@@ -1,0 +1,21 @@
+{
+  "version": "29.7.1",
+  "base": "29.6.10",
+  "feature": "Evidence-led multicurrency cash flow",
+  "full_suite_before_final_adjustments": {
+    "passed": 979,
+    "failed": 0
+  },
+  "final_engine_and_panel_tests": {
+    "passed": 34,
+    "failed": 0
+  },
+  "browser_checks": 7,
+  "live_regulatory_verified": false,
+  "bank_journal_verified": false,
+  "report": "CASHFLOW_V29_7_0_FA.md",
+  "doctor": {
+    "errors": 0,
+    "warnings": 11
+  }
+}

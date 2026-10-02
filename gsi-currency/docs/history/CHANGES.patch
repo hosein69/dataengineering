@@ -1,0 +1,1001 @@
+--- original/NETWORK_OUTLOOK_RELEASE_FA.md
++++ updated/NETWORK_OUTLOOK_RELEASE_FA.md
+@@ -0,0 +1,61 @@
++# اصلاحیه V27.1.1 — پوشه شبکه و Outlook
++
++این نسخه بر مبنای فایل V27.1 ارسالی اصلاح شده است؛ وب‌سرور مشترک، API یا پایگاه داده سروری لازم ندارد. پردازش مرکزی روی یک رایانه سازمانی انجام می‌شود. کاربران HTML را از ایمیل یا پوشه مجاز می‌خوانند؛ برنامه شخصی در صورت نیاز فقط روی localhost اجرا می‌شود. هیچ ایمیلی طی بررسی ارسال نشده است.
++
++## تغییرات قابل بررسی
++
++- قفل قدیمی دیگر صرفاً بر اساس زمان حذف نمی‌شود؛ مالک قفل هنگام آزادسازی کنترل می‌شود.
++- جایگزینی اتمیک فایل با حفظ نسخه قبلی در خطای نوشتن و تلاش مجدد محدود برای خطای دسترسی انجام می‌شود. فایل اصلی Excel پیش از جایگزینی حذف نمی‌شود.
++- کلید شخصی اجازه انتشار Snapshot مرکزی از طریق برنامه را ندارد. schema، نوع فایل، هویت و سلامت SQLite هنگام خواندن بررسی می‌شوند.
++- قطع دسترسی ریشه شبکه به‌عنوان داده خالی گزارش نمی‌شود. Snapshot و زمان انتشار در یک خواندن دریافت می‌شوند.
++- کلیدهای UTF-8 BOM و UTF-16 تولیدشده در Windows قابل خواندن‌اند؛ Base64 نامعتبر رد می‌شود.
++- فایل‌های موقت HTML نام یکتا دارند. عنوان گزارش دیگر وعده داده لحظه‌ای نمی‌دهد.
++- فیلدهای واقعی NEXT_ACTION به خروجی منتقل می‌شوند؛ محدودیت ردیف و تنظیمات نامعتبر کنترل می‌شوند. fallback انتشار همه ستون‌های ناشناخته حذف شد.
++- فهرست صریح کاربران، برای کاربر بدون رکورد Snapshot خالی منتشر می‌کند تا اطلاعات قبلی باقی نماند.
++- نمای شخصی عنوان و حجم اقدام‌ها را با مخاطب تغییر می‌دهد؛ فیلتر بحرانی اعمال می‌شود. جزئیات فنی ذخیره‌سازی از متن مخاطب حذف شده‌اند. این تغییر نقش، سطح دسترسی را افزایش نمی‌دهد.
++- گزارش روزانه علاوه بر Excel، HTML خودبسنده مناسب بازشدن در مرورگر پیوست می‌کند. نمودار تعاملی در بدنه Outlook اجرا نمی‌شود.
++- انتخاب حساب فرستنده در ایمیل شخصی رعایت می‌شود؛ قبل از ارسال صریح، گیرندگان توسط Outlook Resolve می‌شوند.
++- کش کشف مراحل بعد از تغییر فایل‌ها تازه می‌شود؛ آزمون شکست‌خورده نسخه پایه به این مسیر مربوط بود.
++
++## استقرار پیشنهادی
++
++۱. نسخه قبلی برنامه، کلید اصلی و پوشه کاربران را جداگانه پشتیبان بگیرید. کلید اصلی را عوض نکنید؛ داده قبلی با کلید جدید باز نمی‌شود.
++۲. پوشه برنامه جدید را کامل جایگزین کنید؛ فایل‌های نسخه‌ها را با هم مخلوط نکنید. Python 3.11+ و وابستگی‌های requirements.txt لازم‌اند.
++۳. فقط رایانه ناشر، GSI_PROFILE_KEY_FILE را به کلید اصلی خارج از Share و GSI_PROFILE_ROOT را به مسیر UNC واقعی متصل کند. کاربران فقط کلید شخصی خود را داشته باشند.
++۴. دسترسی NTFS و Share: ناشر روی Snapshotها حق نوشتن؛ هر کاربر روی Snapshot خودش فقط خواندن و روی state خودش خواندن/نوشتن؛ کاربران دیگر هیچ دسترسی. این ACL را مدیر شبکه اعمال کند؛ رمزگذاری جای ACL نیست.
++۵. یک ناشر فعال داشته باشید؛ اجرای هم‌زمان دو انتشار مرکزی پشتیبانی نشده و ممکن است اجرای قدیمی‌تر دیرتر پایان یابد. Task Scheduler باید اجرای هم‌پوشان را منع کند.
++۶. برای پاک‌شدن پرونده‌های واگذارشده قبلی، فهرست کامل کاربران همین انتشار را صریح بدهید:
++
++```powershell
++python -m gsi publish-personal --employees 1001,1002,1003
++```
++
++بدون این فهرست، کاربران غایب در ورودی دست‌نخورده می‌مانند. فقط پس از تأیید کامل‌بودن ورودی، انتشار را انجام دهید؛ ورودی ناقص با «کاربر بدون پرونده» یکسان نیست.
++
++۷. نصب هر کاربر با فایل کلید امن خارج از Share:
++
++```powershell
++python tools\windows\install_gsi_personal_protocol.py --employee 1001 --root "\\server\share\GSI\Users" --user-key-file "C:\Secure\user1001.key"
++python -m gsi personal-open
++python -m gsi personal-html --employee 1001 --output "C:\Reports\Personal.html"
++```
++
++نصاب قبل از تغییرات کلید را اعتبارسنجی می‌کند. اگر محدودکردن ACL شکست بخورد نصب متوقف می‌شود؛ نصاب تراکنش کامل فایل‌ها و Registry ندارد. در نصب ناموفق اجرا را شروع نکنید؛ تنظیمات قبلی را بازیابی یا نصب را کامل کنید.
++
++برای گزارش روزانه ابتدا `python -m gsi email --help` را ببینید و پیش‌نویس را کنترل کنید. ارسال واقعی فقط با انتخاب صریح ارسال انجام شود. اتوماسیون COM نیازمند Classic Outlook روی Windows و حساب سازمانی پیکربندی‌شده است؛ دریافت موفق ایمیل با برگشت Send اثبات نمی‌شود.
++
++## بازیابی و آزمون سازمانی
++
++- قطع Share: کاربر باید پیام خطا بگیرد، نه گزارش خالی موفق. فایل قبلی HTML ممکن است هنوز روی دیسک باشد؛ تاریخ انتشار آن ملاک است.
++- قفل باقی‌مانده: ابتدا توقف همه نویسندگان را تأیید کنید؛ سپس مدیر فقط فایل `.lock` مربوط را حذف کند. حذف خودکار زمان‌محور عمداً وجود ندارد.
++- دو نشست از یک کاربر، ذخیره تنظیمات، قطع شبکه هنگام نوشتن و بازشدن مجدد گزارش را روی Share آزمایشی بسنجید.
++- گیرنده، حساب فرستنده، RTL، جدول‌ها، پیوست HTML و لینک gsi:// را در Outlook واقعی بررسی کنید. اگر سیاست سازمان لینک یا پیوست را مسدود کرد، اجرای `python -m gsi personal-open` یا فایل HTML از پوشه مجاز مسیر جایگزین است.
++- HTML و کش محلی آن رمزگذاری‌شده نیستند؛ آن‌ها را فقط در پروفایل و پوشه مجاز کاربر نگه دارید. بازکردن پیوست، ارتباط زنده با ناشر ایجاد نمی‌کند.
++
++## نتیجه و حدود اعتبار
++
++آزمون‌های جدید خطای ذخیره‌سازی، قفل، جداسازی کلید، خرابی ساختار، پاک‌شدن Scope خالی، داده غیرمتناهی و تنظیمات را با تزریق خطا روی فایل‌سیستم محلی می‌سنجند. لاگ کامل آزمون همراه بسته است. آزمون COM واقعی، SMB سازمانی، نصب Registry و بازبینی تصویری Outlook در این محیط انجام نشده است.
++
++نمای شخصی هنوز تبدیل تقویم شمسی برای موعدها ندارد؛ تاریخ با قالب منبع نمایش داده می‌شود و این موضوع در گزارش نوشته شده است. تنظیم انتخاب ویجت و نمودار در HTML شخصی هنوز کامل نیست. فرم Word، تحلیل کامل واریانت فرایند و بازطراحی بر مبنای Figma در این اصلاحیه انجام نشده‌اند. این بسته اصلاحیه دیباگ است، نه تأیید صفرخطابودن کل سامانه یا تأیید تطابق با Figma.
++
++نتیجه اجرای نهایی: **۷۶۷ آزمون موفق، صفر شکست**. بررسی نحوی کد و آزمون ادعاهای مستندات نیز انجام شد.
+--- original/README.md
++++ updated/README.md
+@@ -1,3 +1,7 @@
++# اصلاحیه شبکه و Outlook — V27.1.1
++
++راهنمای استقرار و محدودیت‌های آزمون: [NETWORK_OUTLOOK_RELEASE_FA.md](NETWORK_OUTLOOK_RELEASE_FA.md). Python 3.11+ لازم است.
++
+ # GSI | Global Sourcing Intelligence
+ ## V27.1 — فضای شخصی پایدار، رمزگذاری‌شده و بدون API/IP داده
+ 
+@@ -33,8 +37,8 @@
+ ### منبع حقیقت طراحی و اجرا
+ توکن‌های runtime و خروجی‌های تولیدی از `gsi/design/` می‌آیند؛ Figma مرجع visual/interaction specification است. اختلاف این دو نباید بی‌صدا با overwrite حل شود و باید در Release reconciliation شود.
+ 
+-# GSI V27.1.0 — Personal Shared Store + Audience-aware Intelligence
+-**749 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
++# GSI V27.1.1 — Personal Shared Store + Audience-aware Intelligence
++**767 تست صحت در بیست‌وپنج مجموعه — همه سبز در تست‌های Release؛ قواعد نیازمند تطبیق رسمی و دانش تاریخی جداگانه Fail-Closed می‌مانند.**
+ 
+ > **اول این را بزنید:** `python -m gsi.doctor`
+ > برای نصب و رفع خطای `attempted relative import`، فایل `INSTALL.md` را بخوانید.
+--- original/app/personal_workspace.py
++++ updated/app/personal_workspace.py
+@@ -3,6 +3,9 @@
+ from __future__ import annotations
+ 
+ import os
++import sys
++from pathlib import Path
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ import pandas as pd
+ import streamlit as st
+ 
+@@ -17,13 +20,13 @@
+ 
+ try:
+     ws = PersonalWorkspace.from_env()
+-except (IdentityError, ProfileStoreError) as ex:
++    ctx = ws.context()
++    prefs = ctx["preferences"]
++except (IdentityError, ProfileStoreError, OSError) as ex:
+     st.error(str(ex))
+-    st.code("GSI_EMP_CODE=00123456\nGSI_PROFILE_ROOT=\\\\server\\share\\GSI\\Users\nGSI_PROFILE_KEY_FILE=C:\\Secure\\gsi_profile.key")
++    st.code("GSI_EMP_CODE=00123456\nGSI_PROFILE_ROOT=\\\\server\\share\\GSI\\Users\nGSI_PROFILE_USER_KEY_FILE=C:\\Secure\\gsi_profile.key")
+     st.stop()
+ 
+-prefs = ws.preferences()
+-ctx = ws.context()
+ current = ctx.get("current") or {}
+ records = current.get("records", []) if isinstance(current, dict) else []
+ df = pd.DataFrame(records)
+@@ -36,9 +39,12 @@
+     critical = st.checkbox("فقط موارد بحرانی", value=bool(prefs.get("show_critical_only", False)))
+     calendar = st.selectbox("تقویم", ["jalali", "gregorian"], index=0 if prefs.get("calendar") == "jalali" else 1)
+     if st.button("ذخیره تنظیمات من", use_container_width=True):
+-        ws.save_preferences({"audience": audience, "compact_mode": compact,
+-                             "show_critical_only": critical, "calendar": calendar})
+-        st.success("تنظیمات در profile.gsi ذخیره شد.")
++        try:
++            ws.save_preferences({"audience": audience, "compact_mode": compact,
++                                 "show_critical_only": critical, "calendar": calendar})
++            st.success("تنظیمات ذخیره شد.")
++        except (ProfileStoreError, OSError, ValueError) as ex:
++            st.error(f"تنظیمات ذخیره نشد: {ex}")
+     st.caption("هیچ IP/API برای خواندن Profile یا Snapshot استفاده نمی‌شود.")
+ 
+ meta = ctx.get("snapshot_meta") or {}
+@@ -48,18 +54,22 @@
+ c3.metric("پوشش منتشرشده", "کامل" if not current.get("truncated") else "محدود")
+ 
+ if df.empty:
+-    st.info("current.gsi هنوز برای این کد پرسنلی منتشر نشده است.")
++    st.info("در آخرین گزارش شما ردیفی ثبت نشده است." if meta.get("refreshed_at") else "هنوز گزارشی برای شما منتشر نشده است.")
+     st.stop()
+ 
+ view = df.copy()
+-if critical and "بحرانی (کوتاه)" in view.columns:
+-    view = view[~view["بحرانی (کوتاه)"].astype(str).isin(["", "ایمن", "GOOD", "بدون مصرف"])]
++if critical:
++    codes = view.get("کد طبقه بحرانی", pd.Series("", index=view.index))
++    labels = view.get("بحرانی (کوتاه)", pd.Series("", index=view.index))
++    view = view[codes.isin(["STOCKOUT", "CRITICAL"]) | labels.isin(["بحرانی", "توقف"])]
+ 
+ st.subheader("اقدامات من")
+-action_cols = [c for c in ["KEY_REG", "مرحله جاری", "FX_CURRENT_STAGE", "FX_ACTION_TITLE", "FX_ACTION_PRIORITY", "FX_ACTION_DUE_DATE", "مانع فعلی"] if c in view.columns]
++action_cols = [c for c in ["KEY_REG", "مرحله جاری", "FX_CURRENT_STAGE", "NEXT_ACTION_TITLE", "NEXT_ACTION_PRIORITY", "NEXT_ACTION_DUE_DATE", "NEXT_ACTION_OWNER", "FX_ACTION_TITLE", "FX_ACTION_PRIORITY", "FX_ACTION_DUE_DATE", "مانع فعلی"] if c in view.columns]
+ if action_cols:
+     act = view[action_cols].copy()
+-    if "FX_ACTION_TITLE" in act.columns:
++    if "NEXT_ACTION_TITLE" in act.columns:
++        act = act[act["NEXT_ACTION_TITLE"].fillna("").astype(str).str.strip().ne("")]
++    elif "FX_ACTION_TITLE" in act.columns:
+         act = act[act["FX_ACTION_TITLE"].fillna("").astype(str).str.strip().ne("")]
+     st.dataframe(act.head(50), use_container_width=True, hide_index=True)
+ else:
+--- original/gsi/__main__.py
++++ updated/gsi/__main__.py
+@@ -29,18 +29,23 @@
+         import os, subprocess
+         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+         app = os.path.join(root, "app", "studio.py")
+-        return subprocess.call([sys.executable, "-m", "streamlit", "run", app], cwd=root)
++        return subprocess.call([sys.executable, "-m", "streamlit", "run", app, "--server.address=127.0.0.1"], cwd=root)
+     if cmd in ("personal", "my-workspace"):
+         import os, subprocess
+         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+         app = os.path.join(root, "app", "personal_workspace.py")
+-        return subprocess.call([sys.executable, "-m", "streamlit", "run", app], cwd=root)
++        return subprocess.call([sys.executable, "-m", "streamlit", "run", app, "--server.address=127.0.0.1"], cwd=root)
+     if cmd in ("publish-personal", "personal-publish"):
+         from .pipeline import Pipeline
+         from .personalization.publisher import publish_employee_snapshots
++        import argparse
++        ap = argparse.ArgumentParser(description="Publish scoped snapshots to shared folders")
++        ap.add_argument("--employees", help="Comma-separated complete employee roster for this publication")
++        ns = ap.parse_args(sys.argv[2:])
++        employees = ns.employees.split(",") if ns.employees else None
+         pipe = Pipeline()
+         result = pipe.run(build_report=False)
+-        out = publish_employee_snapshots(result.main, source_run_id="pipeline", ref_date=pipe.today.isoformat())
++        out = publish_employee_snapshots(result.main, employee_codes=employees, source_run_id="pipeline", ref_date=pipe.today.isoformat())
+         print(f"Personal snapshots: users={out['users']} rows={out['rows']} missing={len(out['missing'])}")
+         return 0
+     if cmd in ("personal-open", "live-personal"):
+@@ -57,7 +62,9 @@
+         if not master:
+             key_file = os.environ.get("GSI_PROFILE_KEY_FILE", "").strip()
+             if key_file:
+-                master = open(key_file, encoding="utf-8").read().strip()
++                from pathlib import Path
++                from .personalization.store import _read_key_text
++                master = _read_key_text(Path(key_file))
+         if not master:
+             raise ProfileConfigurationError("Master Key مرکزی برای استخراج User Key تنظیم نشده است.")
+         print(derive_user_key_text(master, emp))
+@@ -73,7 +80,8 @@
+         ns = ap.parse_args(sys.argv[2:])
+         emp = resolve_employee_code(ns.employee)
+         out = Path(ns.output)
+-        out.write_text(build_personal_html(emp), encoding="utf-8")
++        from .personalization.launcher import render_live
++        render_live(emp, output=out)
+         print(out.resolve())
+         return 0
+     if cmd == "run":
+--- original/gsi/factsheet.py
++++ updated/gsi/factsheet.py
+@@ -36,7 +36,7 @@
+ _ROOT = os.path.dirname(_PKG)
+ 
+ #: تنها جایی که نسخه تعریف می‌شود. بقیه از اینجا می‌خوانند.
+-VERSION = "27.1.0"
++VERSION = "27.1.1"
+ 
+ #: تعداد شیت‌های داشبورد — با ساخت واقعی گزارش سنجیده می‌شود
+ DASHBOARD_SHEETS = 17
+--- original/gsi/integrations/daily_email.py
++++ updated/gsi/integrations/daily_email.py
+@@ -453,16 +453,28 @@
+     d=day or SETTINGS.today; res=Pipeline(today=d).run(build_report=True); paths=daily_paths(d)
+     excel=Path(res.dashboard_path); official=paths["excel"]
+     if excel.resolve()!=official.resolve():
++        import tempfile
++        import shutil
++        official.parent.mkdir(parents=True, exist_ok=True)
++        fd, temporary = tempfile.mkstemp(dir=official.parent, suffix=".tmp")
+         try:
+-            if official.exists(): official.unlink()
+-            excel.replace(official); excel=official
+-        except Exception: pass
++            with os.fdopen(fd, "wb") as target, excel.open("rb") as source:
++                shutil.copyfileobj(source, target)
++                target.flush()
++                os.fsync(target.fileno())
++            os.replace(temporary, official)
++            excel = official
++        finally:
++            Path(temporary).unlink(missing_ok=True)
+     raw_charts = os.environ.get("GSI_EMAIL_CHARTS", "").strip()
+     selected_charts = [x.strip() for x in raw_charts.split(",") if x.strip()] if raw_charts else None
+     charts=make_email_charts(res.main,paths["assets"],selected=selected_charts,extras=res.extras)
+     body=build_email_html(d,res.main,charts,excel); paths["html"].write_text(body,encoding="utf-8")
++    from ..studio_core.html_export import build_dynamic_html
++    report = paths["html"].with_name(paths["html"].stem + "_Report.html")
++    report.write_text(build_dynamic_html(res.main, str(d), process_extras=res.extras), encoding="utf-8")
+     to=_recipients()
+-    result={"excel":excel,"html":paths["html"],"charts":charts,"recipients":to,"sent":False}
++    result={"report":report,"excel":excel,"html":paths["html"],"charts":charts,"recipients":to,"sent":False}
+     if not(send or display): return result
+     if not to:
+         # بی‌صدا به فهرست قدیمی نمی‌رویم — فهرست گیرندگان پیکربندی محرمانه است.
+@@ -494,6 +506,7 @@
+                 raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
+         for i,ch in enumerate(charts,1): _add_inline(mail,ch,f"chart_{i}")
+         if Path(excel).exists(): mail.Attachments.Add(str(excel.resolve()))
++        mail.Attachments.Add(str(report.resolve()))
+         mail.HTMLBody=body
+         mail.Save()  # قبل از Display/Send تا بدنه و CIDها پایدار شوند
+         if send:
+@@ -599,6 +612,14 @@
+                     break
+             if not matched:
+                 raise RuntimeError(f"حساب Outlook با نشانی فرستنده «{sender}» پیدا نشد.")
++        sender = os.environ.get("GSI_EMAIL_SENDER", "").strip().lower()
++        if sender:
++            account = next((a for a in outlook.Session.Accounts if str(getattr(a, "SmtpAddress", "")).strip().lower() == sender), None)
++            if account is None:
++                raise RuntimeError("حساب فرستنده در Outlook پیدا نشد.")
++            mail.SendUsingAccount = account
++        if send and not mail.Recipients.ResolveAll():
++            raise NoRecipients("Outlook نتوانست گیرندگان را تأیید کند؛ ارسال انجام نشد.")
+         mail.HTMLBody = body
+         mail.Save()
+         if send:
+@@ -640,6 +661,14 @@
+         mail.BodyFormat = 2
+         mail.Subject = subject or f"GSI | گزارش شخصی {employee_code}"
+         mail.To = "; ".join(recipients)
++        sender = os.environ.get("GSI_EMAIL_SENDER", "").strip().lower()
++        if sender:
++            account = next((a for a in outlook.Session.Accounts if str(getattr(a, "SmtpAddress", "")).strip().lower() == sender), None)
++            if account is None:
++                raise RuntimeError("حساب فرستنده در Outlook پیدا نشد.")
++            mail.SendUsingAccount = account
++        if send and not mail.Recipients.ResolveAll():
++            raise NoRecipients("Outlook نتوانست گیرندگان را تأیید کند؛ ارسال انجام نشد.")
+         mail.HTMLBody = body
+         mail.Save()
+         if send:
+--- original/gsi/personalization/identity.py
++++ updated/gsi/personalization/identity.py
+@@ -27,9 +27,11 @@
+     if not p.is_file():
+         raise IdentityError(f"فایل هویت GSI پیدا نشد: {p}")
+     try:
+-        data = json.loads(p.read_text(encoding="utf-8"))
++        data = json.loads(p.read_text(encoding="utf-8-sig"))
+     except Exception as ex:
+         raise IdentityError(f"فایل هویت GSI قابل خواندن نیست: {ex}") from ex
++    if not isinstance(data, dict):
++        raise IdentityError("ساختار فایل هویت معتبر نیست.")
+     return clean_employee_code(data.get("employee_code", ""))
+ 
+ 
+@@ -41,6 +43,8 @@
+     profile root. The shared root is data storage, not an authentication source.
+     """
+     emp = clean_employee_code(explicit or "")
++    if explicit is not None and not emp:
++        raise IdentityError("کد پرسنلی صریح معتبر نیست.")
+     if not emp:
+         emp = clean_employee_code(os.environ.get(EMP_ENV, ""))
+     if not emp:
+--- original/gsi/personalization/launcher.py
++++ updated/gsi/personalization/launcher.py
+@@ -9,6 +9,7 @@
+ 
+ import os
+ import sys
++import secrets
+ import webbrowser
+ from pathlib import Path
+ from typing import Optional
+@@ -28,9 +29,13 @@
+     emp = resolve_employee_code(employee_code)
+     out = Path(output) if output else local_cache_dir() / f"GSI_{emp}_Live.html"
+     out.parent.mkdir(parents=True, exist_ok=True)
+-    tmp = out.with_suffix(out.suffix + ".tmp")
+-    tmp.write_text(build_personal_html(emp, title="GSI · وضعیت زنده من"), encoding="utf-8")
+-    os.replace(tmp, out)
++    tmp = out.with_name(out.name + "." + secrets.token_hex(8) + ".tmp")
++    try:
++        tmp.write_text(build_personal_html(emp, title="GSI · آخرین وضعیت منتشرشده"), encoding="utf-8")
++        os.chmod(tmp, 0o600)
++        os.replace(tmp, out)
++    finally:
++        tmp.unlink(missing_ok=True)
+     return out
+ 
+ 
+--- original/gsi/personalization/personal_html.py
++++ updated/gsi/personalization/personal_html.py
+@@ -29,23 +29,29 @@
+     prefs = ctx["preferences"]
+     current = ctx.get("current") or {}
+     records = _records(ctx)
++    if prefs.get("show_critical_only"):
++        records = [x for x in records if x.get("کد طبقه بحرانی") in {"STOCKOUT", "CRITICAL"} or x.get("بحرانی (کوتاه)") in {"بحرانی", "توقف"}]
++    audience = prefs.get("audience", "expert")
++    heading = {"expert": "اقدامات من", "manager": "اقدامات نیازمند هماهنگی", "executive": "موارد نیازمند تصمیم", "analyst": "اقدامات ثبت‌شده"}[audience]
++    action_limit = 5 if audience == "executive" else 12
++    table_limit = min(prefs.get("table_rows", 40), 10 if audience == "executive" else 80)
+     meta = ctx.get("snapshot_meta") or {}
+     refreshed = meta.get("refreshed_at") or current.get("ref_date") or "—"
+ 
+     action_rows = []
+     for r in records:
+-        act = r.get("FX_ACTION_TITLE") or r.get("مانع فعلی")
++        act = r.get("NEXT_ACTION_TITLE") or r.get("FX_ACTION_TITLE") or (r.get("مانع فعلی") if prefs.get("show_causes") else None)
+         if not act:
+             continue
+         action_rows.append(
+             f"<tr><td>{_e(r.get('KEY_REG'))}</td><td>{_e(r.get('مرحله جاری') or r.get('FX_CURRENT_STAGE'))}</td>"
+-            f"<td>{_e(act)}</td><td>{_e(r.get('FX_ACTION_DUE_DATE'))}</td></tr>"
++            f"<td>{_e(act)}</td><td>{_e(r.get('NEXT_ACTION_DUE_DATE') or r.get('FX_ACTION_DUE_DATE'))}</td></tr>"
+         )
+-        if len(action_rows) >= 12:
++        if len(action_rows) >= action_limit:
+             break
+ 
+     case_rows = []
+-    for r in records[: min(80, int(prefs.get("table_rows", 80) or 80))]:
++    for r in records[:table_limit]:
+         case_rows.append(
+             f"<tr><td>{_e(r.get('KEY_REG'))}</td><td>{_e(r.get('CANONICAL_ORDER'))}</td>"
+             f"<td>{_e(r.get('CANONICAL_BL'))}</td><td>{_e(r.get('مرحله جاری') or r.get('FX_CURRENT_STAGE'))}</td>"
+@@ -55,9 +61,9 @@
+     return f'''<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1"><title>{_e(title)}</title>
+ <style>body{{margin:0;background:#f6f8f9;color:#0b1f33;font-family:Tahoma,Arial,sans-serif}}.w{{max-width:980px;margin:24px auto;padding:0 12px}}.h{{background:#0b1f33;color:#fff;padding:22px;border-radius:16px}}.h small{{color:#c5d2db}}.card{{background:#fff;border:1px solid #dbe3e7;border-radius:14px;padding:16px;margin-top:14px}}.meta{{color:#5a6b79;font-size:12px}}table{{border-collapse:collapse;width:100%;font-size:12px}}th,td{{padding:9px;border-bottom:1px solid #edf1f3;text-align:right}}th{{background:#eef2f4}}.pill{{display:inline-block;background:#e7f1f2;color:#076670;padding:6px 10px;border-radius:999px;font-size:11px}}.live{{display:inline-block;background:#0a7c86;color:#fff!important;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:bold;margin-right:8px}}.warn{{background:#faf3e4;color:#7a5a15;padding:10px 12px;border-radius:10px}}@media(max-width:650px){{.w{{margin:10px auto}}table{{min-width:720px}}.scroll{{overflow:auto}}}}</style></head>
+-<body><div class="w"><div class="h"><b style="font-size:22px">{_e(title)}</b><br><small>EMP {_e(employee_code)} · Data • Process • Decision</small></div>
+-<div class="card"><span class="pill">داده از Shared Folder رمزگذاری‌شده</span><a class="live" href="gsi://personal">مشاهده وضعیت زنده</a><p class="meta">آخرین Snapshot: {_e(refreshed)} · ردیف: {_e(current.get('row_count', len(records)))} · Calendar: {_e(prefs.get('calendar'))}</p>
+-<div class="warn">این فایل Snapshot داده‌ای است که هنگام ساخت HTML از <b>current.gsi</b> خوانده شده. بدنه ایمیل Outlook JavaScript فعال اجرا نمی‌کند؛ دکمه «مشاهده وضعیت زنده» Helper محلی GSI را باز می‌کند تا همین لحظه profile.gsi + current.gsi را دوباره از Shared Folder بخواند. اگر Policy سازمانی custom protocol را مسدود کند، GSI Personal Workspace را از Shortcut محلی باز کنید.</div></div>
+-<div class="card"><h3>اقدامات من</h3><div class="scroll"><table><tr><th>REG</th><th>مرحله</th><th>اقدام</th><th>موعد</th></tr>{''.join(action_rows) or '<tr><td colspan="4">اقدام بازی در Snapshot نیست.</td></tr>'}</table></div></div>
+-<div class="card"><h3>پرونده‌های من</h3><div class="scroll"><table><tr><th>REG</th><th>Order</th><th>BL</th><th>مرحله</th><th>وضعیت</th><th>مقاومت</th></tr>{''.join(case_rows) or '<tr><td colspan="6">داده‌ای منتشر نشده است.</td></tr>'}</table></div></div>
+-<div class="meta" style="padding:14px 4px">GSI Personal Workspace · profile.gsi + current.gsi · بدون API/IP برای Data Access</div></div></body></html>'''
++<body style="margin:0;background:#f6f8f9;color:#0b1f33;font-family:Tahoma,Arial,sans-serif" data-calendar="{_e(prefs.get("calendar"))}"><!-- Shared Folder snapshot --><div class="w"><div class="h"><b style="font-size:22px">{_e(title)}</b><br><small>EMP {_e(employee_code)} · Data • Process • Decision</small></div>
++<div class="card"><span class="pill">آخرین گزارش منتشرشده</span><a class="live" href="gsi://personal">بازکردن آخرین گزارش</a><p class="meta">زمان انتشار: {_e(refreshed)} · ردیف: {_e(current.get('row_count', len(records)))} · تاریخ موعدها با قالب منبع نمایش داده می‌شود</p>
++<div class="warn">این گزارش اطلاعات منتشرشده تا زمان بالا را نشان می‌دهد. برای دریافت نسخه جدید، «بازکردن آخرین گزارش» را انتخاب کنید. اگر لینک باز نشد، برنامه GSI را روی رایانه خود باز کنید.</div></div>
++<div class="card"><h3>{heading}</h3><div class="scroll"><table role="table" width="100%" cellpadding="9" cellspacing="0" style="border-collapse:collapse;text-align:right;font-size:12px"><tr><th scope="col" style="background:#eef2f4;text-align:right">REG</th><th scope="col" style="background:#eef2f4;text-align:right">مرحله</th><th scope="col" style="background:#eef2f4;text-align:right">اقدام</th><th scope="col" style="background:#eef2f4;text-align:right">موعد</th></tr>{''.join(action_rows) or '<tr><td colspan="4">اقدامی در این برش ثبت نشده است.</td></tr>'}</table></div></div>
++<div class="card"><h3>پرونده‌های من</h3><div class="scroll"><table role="table" width="100%" cellpadding="9" cellspacing="0" style="border-collapse:collapse;text-align:right;font-size:12px"><tr><th scope="col" style="background:#eef2f4;text-align:right">REG</th><th scope="col" style="background:#eef2f4;text-align:right">Order</th><th scope="col" style="background:#eef2f4;text-align:right">BL</th><th scope="col" style="background:#eef2f4;text-align:right">مرحله</th><th scope="col" style="background:#eef2f4;text-align:right">وضعیت</th><th scope="col" style="background:#eef2f4;text-align:right">مقاومت</th></tr>{''.join(case_rows) or '<tr><td colspan="6">داده‌ای منتشر نشده است.</td></tr>'}</table></div></div>
++<div class="meta" style="padding:14px 4px">نمایش {_e(min(len(records), table_limit))} ردیف از {_e(current.get("row_count", len(records)))} ردیف محدوده شما</div></div></body></html>'''
+--- original/gsi/personalization/publisher.py
++++ updated/gsi/personalization/publisher.py
+@@ -10,6 +10,7 @@
+ from datetime import date, datetime
+ from typing import Any, Dict, Iterable, Optional, Sequence
+ 
++import math
+ import numpy as np
+ import pandas as pd
+ 
+@@ -24,17 +25,18 @@
+     "FX_CURRENT_STAGE", "FX_TIME_DAYS_LEFT", "FX_EVIDENCE_COVERAGE",
+     "SUPPLIER_OPEN_QTY", "IN_TRANSIT_QTY", "IN_CUSTOMS_QTY",
+     "ORACLE_IKCO_QTY", "ORACLE_SAPCO_QTY", "SUPPLY_POSITION_COVERAGE",
++    "NEXT_ACTION_TITLE", "NEXT_ACTION_PRIORITY", "NEXT_ACTION_DUE_DATE", "NEXT_ACTION_OWNER", "NEXT_ACTION_ID", "کد طبقه بحرانی",
+     "FX_ACTION_TITLE", "FX_ACTION_PRIORITY", "FX_ACTION_DUE_DATE",
+ )
+ 
+ 
+ def _jsonable(v: Any) -> Any:
+-    if v is None:
++    if v is None or v is pd.NaT or v is pd.NA:
+         return None
+     if isinstance(v, (str, bool, int)):
+         return v
+     if isinstance(v, (float, np.floating)):
+-        return None if pd.isna(v) else float(v)
++        return None if not math.isfinite(float(v)) else float(v)
+     if isinstance(v, (np.integer,)):
+         return int(v)
+     if isinstance(v, (date, datetime, pd.Timestamp)):
+@@ -49,10 +51,14 @@
+ 
+ def frame_payload(df: pd.DataFrame, *, fields: Optional[Sequence[str]] = None,
+                   max_rows: int = 3000, ref_date: Optional[str] = None) -> Dict[str, Any]:
+-    selected = [c for c in (fields or DEFAULT_FIELDS) if c in df.columns]
++    if isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows < 1:
++        raise ValueError("max_rows must be a positive integer")
++    if fields is not None and (not fields or isinstance(fields, str)):
++        raise ValueError("fields must be a nonempty sequence")
++    selected = [c for c in (DEFAULT_FIELDS if fields is None else fields) if c in df.columns]
+     if "KEY_EMP" in df.columns and "KEY_EMP" not in selected:
+         selected.insert(0, "KEY_EMP")
+-    view = df[selected].head(max_rows).copy() if selected else df.head(max_rows).copy()
++    view = df[selected].head(max_rows).copy()
+     records = [
+         {str(k): _jsonable(v) for k, v in row.items()}
+         for row in view.to_dict(orient="records")
+@@ -79,6 +85,8 @@
+     work = work[work["KEY_EMP"].astype(str).str.strip().ne("")]
+     wanted = None
+     if employee_codes is not None:
++        if isinstance(employee_codes, str):
++            raise ValueError("employee_codes must be a sequence, not a string")
+         wanted = {clean_employee_code(x) for x in employee_codes if clean_employee_code(x)}
+         work = work[work["KEY_EMP"].isin(wanted)]
+ 
+@@ -90,6 +98,10 @@
+         published[emp] = int(len(group))
+ 
+     missing = sorted(wanted - set(published)) if wanted is not None else []
++    for emp in missing:
++        store = EncryptedUserStore.from_master_env(emp)
++        store.replace_snapshot(frame_payload(work.iloc[:0], fields=fields, max_rows=max_rows, ref_date=ref_date), source_run_id=source_run_id)
++        published[emp] = 0
+     return {"published": published, "missing": missing, "users": len(published), "rows": sum(published.values())}
+ 
+ 
+--- original/gsi/personalization/service.py
++++ updated/gsi/personalization/service.py
+@@ -3,12 +3,14 @@
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass
++from copy import deepcopy
+ from typing import Any, Dict, Mapping, Optional
+ 
+ from .identity import resolve_employee_code
+ from .store import EncryptedUserStore
+ 
+ _DEFAULTS = {
++    "table_rows": 40,
+     "audience": "expert",
+     "email_density": "compact",
+     "calendar": "jalali",
+@@ -19,6 +21,19 @@
+     "dashboard_widgets": ["my_actions", "deadlines", "allocation_queue", "inventory_position"],
+     "email_widgets": ["my_actions", "deadlines", "critical_cases", "inventory_position"],
+ }
++
++
++def _valid(k, v):
++    enums = {"audience": {"expert", "manager", "executive", "analyst"}, "calendar": {"jalali", "gregorian"}, "email_density": {"compact", "comfortable", "detailed"}}
++    if k in enums:
++        return isinstance(v, str) and v in enums[k]
++    if k == "table_rows":
++        return type(v) is int and 1 <= v <= 80
++    if k not in _DEFAULTS:
++        return False
++    if isinstance(_DEFAULTS[k], bool):
++        return type(v) is bool
++    return isinstance(v, list) and len(v) <= 40 and all(isinstance(x, str) and len(x) < 100 for x in v)
+ 
+ 
+ @dataclass
+@@ -33,11 +48,13 @@
+ 
+     def preferences(self) -> Dict[str, Any]:
+         saved = self.store.namespace("preferences")
+-        return {**_DEFAULTS, **saved}
++        return {**deepcopy(_DEFAULTS), **{k: v for k, v in saved.items() if _valid(k, v)}}
+ 
+     def save_preferences(self, values: Mapping[str, Any]) -> Dict[str, Any]:
+         allowed = set(_DEFAULTS)
+         clean = {k: v for k, v in values.items() if k in allowed}
++        if any(not _valid(k, v) for k, v in clean.items()):
++            raise ValueError("تنظیمات انتخاب‌شده معتبر نیست.")
+         self.store.merge("preferences", clean, audit_event="preferences_saved")
+         return self.preferences()
+ 
+@@ -54,10 +71,11 @@
+         self.store.replace_snapshot(payload, source_run_id=source_run_id)
+ 
+     def context(self) -> Dict[str, Any]:
++        current, meta = self.store.snapshot_context()
+         return {
+             "employee_code": self.employee_code,
+             "preferences": self.preferences(),
+             "ui_state": self.ui_state(),
+-            "current": self.current_data(),
+-            "snapshot_meta": self.store.metadata(kind="snapshot") if self.store.paths.snapshot.exists() else {},
++            "current": current,
++            "snapshot_meta": meta,
+         }
+--- original/gsi/personalization/store.py
++++ updated/gsi/personalization/store.py
+@@ -16,6 +16,7 @@
+ import base64
+ import contextlib
+ import json
++import math
+ import os
+ import secrets
+ import sqlite3
+@@ -67,7 +68,7 @@
+         raise ProfileConfigurationError("کلید رمزگذاری GSI تنظیم نشده است.")
+     try:
+         padded = value + "=" * (-len(value) % 4)
+-        key = base64.urlsafe_b64decode(padded.encode("ascii"))
++        key = base64.b64decode(padded.encode("ascii"), altchars=b"-_", validate=True)
+     except Exception as ex:
+         raise ProfileConfigurationError("GSI_PROFILE_MASTER_KEY باید Base64 معتبر باشد.") from ex
+     if len(key) != 32:
+@@ -77,11 +78,16 @@
+ 
+ def _path_is_under(path: Path, root: Path) -> bool:
+     try:
+-        p = os.path.normcase(os.path.abspath(str(path)))
+-        r = os.path.normcase(os.path.abspath(str(root)))
++        p = os.path.normcase(str(path.resolve()))
++        r = os.path.normcase(str(root.resolve()))
+         return os.path.commonpath([p, r]) == r
+     except Exception:
+         return False
++
++
++def _read_key_text(path: Path) -> str:
++    raw = path.read_bytes()
++    return raw.decode("utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig").strip()
+ 
+ 
+ def _read_master_key(root: Path) -> bytes:
+@@ -98,7 +104,7 @@
+         raise ProfileConfigurationError("فایل کلید نباید داخل GSI_PROFILE_ROOT یا زیرشاخه‌های آن باشد.")
+     if not p.is_file():
+         raise ProfileConfigurationError(f"فایل کلید پیدا نشد: {p}")
+-    return _decode_master_key(p.read_text(encoding="utf-8"))
++    return _decode_master_key(_read_key_text(p))
+ 
+ 
+ def derive_user_key(master_key: bytes, employee_code: str) -> bytes:
+@@ -136,7 +142,7 @@
+         raise ProfileConfigurationError("فایل User Key نباید داخل GSI_PROFILE_ROOT باشد.")
+     if not p.is_file():
+         raise ProfileConfigurationError(f"فایل User Key پیدا نشد: {p}")
+-    return _decode_master_key(p.read_text(encoding="utf-8"))
++    return _decode_master_key(_read_key_text(p))
+ 
+ 
+ def _emp(value: str) -> str:
+@@ -168,8 +174,8 @@
+         try:
+             data = json.loads(cfg.read_text(encoding="utf-8"))
+             return str(data.get("profile_root", "")).strip()
+-        except Exception:
+-            return ""
++        except Exception as ex:
++            raise ProfileConfigurationError("تنظیمات محلی قابل خواندن نیست.") from ex
+     return ""
+ 
+ 
+@@ -203,37 +209,43 @@
+ 
+ 
+ class _FileLock:
++    """Never steal an old lock: timestamps cannot prove a network writer is dead."""
+     def __init__(self, path: Path, timeout: float = 10.0, stale_after: float = 120.0):
+         self.path = path
+-        self.timeout = max(0.1, timeout)
+-        self.stale_after = max(self.timeout, stale_after)
+-        self.fd: Optional[int] = None
++        if not math.isfinite(timeout) or timeout <= 0:
++            raise ProfileConfigurationError("مهلت قفل باید عدد مثبت و محدود باشد.")
++        self.timeout = timeout
++        self.token = secrets.token_hex(24).encode("ascii")
++        self.fd = None
+ 
+     def __enter__(self):
+         start = time.monotonic()
+         while True:
+             try:
+-                self.fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+-                os.write(self.fd, _utc().encode("ascii"))
+-                return self
++                self.fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+             except FileExistsError:
+-                try:
+-                    age = time.time() - self.path.stat().st_mtime
+-                    if age > self.stale_after:
+-                        self.path.unlink(missing_ok=True)
+-                        continue
+-                except OSError:
+-                    pass
+                 if time.monotonic() - start >= self.timeout:
+-                    raise ProfileStoreError(f"قفل فایل آزاد نشد: {self.path.name}")
+-                time.sleep(0.08)
++                    raise ProfileStoreError(f"قفل فایل آزاد نشد: {self.path.name}؛ پس از اطمینان از توقف نویسنده، مدیر قفل را بررسی کند.")
++                time.sleep(min(0.08, self.timeout))
++                continue
++            try:
++                os.write(self.fd, self.token)
++                os.fsync(self.fd)
++            except OSError:
++                os.close(self.fd)
++                self.fd = None
++                with contextlib.suppress(OSError):
++                    self.path.unlink()
++                raise
++            return self
+ 
+     def __exit__(self, exc_type, exc, tb):
+         if self.fd is not None:
+-            with contextlib.suppress(OSError):
+-                os.close(self.fd)
++            os.close(self.fd)
++            self.fd = None
+         with contextlib.suppress(OSError):
+-            self.path.unlink()
++            if self.path.read_bytes() == self.token:
++                self.path.unlink()
+ 
+ 
+ class EncryptedUserStore:
+@@ -244,14 +256,20 @@
+         raw_key = bytes(master_key)
+         if len(raw_key) != 32:
+             raise ProfileConfigurationError("کلید GSI باید ۳۲ بایت باشد.")
++        self.key_is_user = key_is_user
++        if not hasattr(sqlite3.Connection, "serialize"):
++            raise ProfileConfigurationError("Python 3.11+ با پشتیبانی SQLite serialize لازم است.")
+         self._user_key = raw_key if key_is_user else derive_user_key(raw_key, self.paths.employee_code)
+         self.paths.state_dir.mkdir(parents=True, exist_ok=True)
+-        self.paths.snapshot_dir.mkdir(parents=True, exist_ok=True)
++        if not key_is_user:
++            self.paths.snapshot_dir.mkdir(parents=True, exist_ok=True)
+         raw_timeout = os.environ.get(LOCK_TIMEOUT_ENV, "10").strip()
+         try:
+             self.lock_timeout = float(raw_timeout)
+         except ValueError:
+-            self.lock_timeout = 10.0
++            raise ProfileConfigurationError("مهلت قفل نامعتبر است.")
++        if not math.isfinite(self.lock_timeout) or self.lock_timeout <= 0:
++            raise ProfileConfigurationError("مهلت قفل باید مثبت و محدود باشد.")
+ 
+     @classmethod
+     def from_env(cls, employee_code: str) -> "EncryptedUserStore":
+@@ -261,7 +279,8 @@
+                 f"{ROOT_ENV} تنظیم نشده و personal_config.json هم مسیر Share ندارد."
+             )
+         root = Path(raw_root).expanduser()
+-        root.mkdir(parents=True, exist_ok=True)
++        if not root.is_dir():
++            raise ProfileConfigurationError("پوشه شبکه در دسترس نیست؛ مسیر و اتصال را بررسی کنید.")
+         user_key = _read_user_key(root)
+         if user_key is not None:
+             return cls(root, user_key, employee_code, key_is_user=True)
+@@ -292,9 +311,12 @@
+         return _MAGIC + b"|" + kind.encode("ascii") + b"|" + self.employee_code.encode("ascii")
+ 
+     def _decrypt(self, path: Path, kind: str) -> Optional[bytes]:
+-        if not path.exists():
++        try:
++            blob = path.read_bytes()
++        except FileNotFoundError:
++            if not self.paths.root.is_dir() or not self.paths.folder.is_dir():
++                raise ProfileStoreError("پوشه شبکه در دسترس نیست؛ داده خالی تلقی نشد.")
+             return None
+-        blob = path.read_bytes()
+         if len(blob) < len(_MAGIC) + _NONCE_BYTES + 16 or not blob.startswith(_MAGIC):
+             raise ProfileIntegrityError(f"فرمت فایل رمزگذاری‌شده معتبر نیست: {path.name}")
+         nonce = blob[len(_MAGIC):len(_MAGIC) + _NONCE_BYTES]
+@@ -318,7 +340,14 @@
+                 fh.write(blob)
+                 fh.flush()
+                 os.fsync(fh.fileno())
+-            os.replace(tmp, path)
++            for attempt in range(4):
++                try:
++                    os.replace(tmp, path)
++                    break
++                except PermissionError:
++                    if attempt == 3:
++                        raise
++                    time.sleep(0.05 * (attempt + 1))
+         finally:
+             with contextlib.suppress(OSError):
+                 tmp.unlink()
+@@ -361,13 +390,16 @@
+         con = sqlite3.connect(":memory:")
+         try:
+             con.deserialize(plain)
++            con.execute("PRAGMA trusted_schema=OFF")
++            con.execute("PRAGMA temp_store=MEMORY")
++            meta = dict(con.execute("SELECT key,value FROM meta"))
++            if meta.get("employee_code") != self.employee_code or meta.get("kind") != kind or meta.get("schema_version") != str(_SCHEMA_VERSION):
++                raise ValueError("Store metadata mismatch")
++            if con.execute("PRAGMA quick_check").fetchone()[0] != "ok":
++                raise ValueError("Store integrity check failed")
+         except Exception as ex:
+             con.close()
+-            raise ProfileIntegrityError(f"SQLite رمزگشایی‌شده خراب است: {path.name}") from ex
+-        row = con.execute("SELECT value FROM meta WHERE key='employee_code'").fetchone()
+-        if not row or row[0] != self.employee_code:
+-            con.close()
+-            raise ProfileIntegrityError("کد پرسنلی داخل Store با فولدر کاربر تطبیق ندارد.")
++            raise ProfileIntegrityError(f"ساختار فایل معتبر نیست: {path.name}") from ex
+         return con
+ 
+     def _save_db(self, con: sqlite3.Connection, path: Path, kind: str) -> None:
+@@ -378,6 +410,10 @@
+ 
+     @contextlib.contextmanager
+     def _db(self, kind: str, *, write: bool = False) -> Iterator[sqlite3.Connection]:
++        if kind not in {"profile", "snapshot"}:
++            raise ValueError("Unknown store kind")
++        if write and kind == "snapshot" and self.key_is_user:
++            raise ProfileStoreError("انتشار داده فقط با اجرای مرکزی مجاز است.")
+         path = self.paths.profile if kind == "profile" else self.paths.snapshot
+         lock_path = self.paths.lock_for(path)
+         lock_ctx = _FileLock(lock_path, self.lock_timeout) if write else contextlib.nullcontext()
+@@ -411,7 +447,7 @@
+ 
+     def set(self, namespace: str, key: str, value: Any, *, kind: str = "profile",
+             audit_event: Optional[str] = None) -> None:
+-        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
++        encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False)
+         with self._db(kind, write=True) as con:
+             con.execute(
+                 "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
+@@ -430,7 +466,7 @@
+             for key, value in values.items():
+                 con.execute(
+                     "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES(?,?,?,?)",
+-                    (namespace, str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True), now),
++                    (namespace, str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False), now),
+                 )
+             con.execute(
+                 "INSERT INTO audit(ts,event,detail_json) VALUES(?,?,?)",
+@@ -443,6 +479,8 @@
+         Snapshot is fresh data, not preference state. The previous snapshot is not
+         merged silently, preventing stale fields from surviving a new pipeline run.
+         """
++        if self.key_is_user:
++            raise ProfileStoreError("انتشار داده فقط با اجرای مرکزی مجاز است.")
+         path = self.paths.snapshot
+         with _FileLock(self.paths.lock_for(path), self.lock_timeout):
+             con = self._new_db(self.employee_code, "snapshot")
+@@ -451,7 +489,7 @@
+                 for key, value in payload.items():
+                     con.execute(
+                         "INSERT OR REPLACE INTO kv(namespace,key,value_json,updated_at) VALUES('current',?,?,?)",
+-                        (str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True), now),
++                        (str(key), json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True, allow_nan=False), now),
+                     )
+                 con.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('source_run_id',?)", (source_run_id,))
+                 con.execute("INSERT OR REPLACE INTO meta(key,value) VALUES('refreshed_at',?)", (now,))
+@@ -459,6 +497,12 @@
+             finally:
+                 con.close()
+ 
++    def snapshot_context(self):
++        with self._db("snapshot") as con:
++            data = {k: json.loads(v) for k, v in con.execute("SELECT key,value_json FROM kv WHERE namespace='current'")}
++            meta = dict(con.execute("SELECT key,value FROM meta"))
++        return data, meta
++
+     def current_snapshot(self) -> Dict[str, Any]:
+         return self.namespace("current", kind="snapshot")
+ 
+--- original/gsi/stages/base.py
++++ updated/gsi/stages/base.py
+@@ -140,6 +140,7 @@
+ 
+ def discover(package: str = "gsi.stages") -> List[Stage]:
+     """کشف خودکار همه مرحله‌ها و برگرداندن نمونه‌های مرتب‌شده."""
++    importlib.invalidate_caches()
+     pkg = importlib.import_module(package)
+     for mod in pkgutil.iter_modules(pkg.__path__):
+         if mod.name.startswith("_") or mod.name == "base":
+--- original/requirements.txt
++++ updated/requirements.txt
+@@ -1,5 +1,5 @@
+ # GSI — وابستگی‌های اجرا
+-# پایتون ۳٫۹ یا بالاتر (روی ۳٫۱۱ و ۳٫۱۲ تست شده)
++# پایتون ۳٫۱۱ یا بالاتر؛ SQLite باید serialize/deserialize را پشتیبانی کند
+ 
+ # ── هسته خط لوله ──
+ pandas>=2.0
+--- original/run_all_tests.py
++++ updated/run_all_tests.py
+@@ -17,6 +17,7 @@
+ 
+ ROOT = os.path.dirname(os.path.abspath(__file__))
+ SUITES = [
++    ("۲۶) خطاهای شبکه و ذخیره‌سازی", "tests/test_network_outlook_debugged.py"),
+     ("۱) الگوریتمی و بیزینسی", "tests/test_validation.py"),
+     ("۲) کتابخانه قوانین و سورس مقاومت", "tests/test_rules_and_moghavemat.py"),
+     ("۳) مقاومت قطعه و بحرانی بودن", "tests/test_criticality.py"),
+--- original/tests/test_network_outlook_debugged.py
++++ updated/tests/test_network_outlook_debugged.py
+@@ -0,0 +1,98 @@
++"""Failure-injection regression tests; no live SMB or Outlook connection."""
++import sys
++from pathlib import Path
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++import os, time, tempfile, unittest
++from unittest.mock import patch
++import pandas as pd
++from gsi.personalization.store import (EncryptedUserStore, _FileLock, ProfileStoreError,
++    ProfileConfigurationError, ProfileIntegrityError, _decode_master_key, _read_key_text,
++    generate_master_key, derive_user_key)
++from gsi.personalization.publisher import frame_payload, publish_employee_snapshots
++from gsi.personalization.service import PersonalWorkspace
++
++class NetworkTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory()
++        self.root = Path(self.tmp.name) / 'share'
++        self.key = _decode_master_key(generate_master_key())
++        self.store = EncryptedUserStore(self.root, self.key, '1001')
++    def tearDown(self): self.tmp.cleanup()
++    def test_old_lock_is_not_stolen(self):
++        p = self.root/'old.lock'; p.write_text('active')
++        os.utime(p, (time.time()-10000,)*2)
++        with self.assertRaises(ProfileStoreError):
++            with _FileLock(p, timeout=.01): pass
++        self.assertEqual(p.read_text(), 'active')
++    def test_lock_owner_change_is_preserved(self):
++        p=self.root/'lock'
++        with _FileLock(p): p.write_text('another-owner')
++        self.assertTrue(p.exists())
++    def test_failed_replace_preserves_previous(self):
++        self.store.set('p','value','before')
++        with patch('gsi.personalization.store.os.replace', side_effect=PermissionError):
++            with self.assertRaises(PermissionError): self.store.set('p','value','after')
++        self.assertEqual(self.store.get('p','value'),'before')
++        self.assertEqual(list(self.store.paths.state_dir.glob('*.tmp')),[])
++    def test_transient_sharing_violation_retries(self):
++        real=os.replace; calls=[]
++        def replace(a,b):
++            calls.append(1)
++            if len(calls)==1: raise PermissionError()
++            real(a,b)
++        with patch('gsi.personalization.store.os.replace', side_effect=replace): self.store.set('p','x',1)
++        self.assertEqual(self.store.get('p','x'),1)
++    def test_client_cannot_publish(self):
++        c=EncryptedUserStore(self.root,derive_user_key(self.key,'1001'),'1001',key_is_user=True)
++        with self.assertRaises(ProfileStoreError): c.replace_snapshot({'records':[]})
++        with self.assertRaises(ProfileStoreError): c.set('current','records',[],kind='snapshot')
++    def test_invalid_kind_rejected(self):
++        with self.assertRaises(ValueError): self.store.set('p','x',1,kind='typo')
++    def test_future_schema_rejected(self):
++        con=self.store._new_db(self.store.employee_code,'profile')
++        con.execute("UPDATE meta SET value='999' WHERE key='schema_version'"); con.commit()
++        self.store.paths.profile.write_bytes(self.store._encrypt(con.serialize(),'profile')); con.close()
++        with self.assertRaises(ProfileIntegrityError): self.store.get('p','x')
++    def test_network_disappearance_is_not_empty(self):
++        import shutil
++        shutil.rmtree(self.root)
++        with self.assertRaises(ProfileStoreError): self.store.current_snapshot()
++    def test_utf16_key_file(self):
++        p=Path(self.tmp.name)/'key'; key=generate_master_key(); p.write_text(key,encoding='utf-16')
++        self.assertEqual(_decode_master_key(_read_key_text(p)),_decode_master_key(key))
++    def test_base64_junk_rejected(self):
++        with self.assertRaises(ProfileConfigurationError): _decode_master_key('!'+generate_master_key())
++    def test_nonfinite_json_cleaned(self):
++        d=frame_payload(pd.DataFrame([{'KEY_EMP':'1001','مانده تعهد':float('inf')}]))
++        self.assertIsNone(d['records'][0]['مانده تعهد'])
++    def test_unknown_columns_never_leak(self):
++        d=frame_payload(pd.DataFrame([{'secret':'hidden'}]))
++        self.assertNotIn('secret',str(d))
++    def test_invalid_limit_rejected(self):
++        with self.assertRaises(ValueError): frame_payload(pd.DataFrame(),max_rows=-1)
++    def test_action_fields_preserved(self):
++        d=frame_payload(pd.DataFrame([{'KEY_EMP':'1001','NEXT_ACTION_TITLE':'Call supplier'}]))
++        self.assertEqual(d['records'][0]['NEXT_ACTION_TITLE'],'Call supplier')
++    def test_explicit_empty_scope_clears_previous(self):
++        self.store.replace_snapshot({'records':[{'KEY_REG':'old'}]})
++        with patch.object(EncryptedUserStore,'from_master_env',return_value=self.store):
++            publish_employee_snapshots(pd.DataFrame(columns=['KEY_EMP','KEY_REG']),employee_codes=['1001'])
++        self.assertEqual(self.store.current_snapshot()['records'],[])
++    def test_bad_preferences_rejected(self):
++        ws=PersonalWorkspace('1001',self.store)
++        with self.assertRaises(ValueError): ws.save_preferences({'audience':'unknown'})
++        self.store.set('preferences','audience','unknown')
++        self.assertEqual(ws.preferences()['audience'],'expert')
++    def test_preferences_do_not_share_mutable_defaults(self):
++        ws=PersonalWorkspace('1001',self.store); p=ws.preferences(); p['email_widgets'].clear()
++        self.assertTrue(ws.preferences()['email_widgets'])
++    def test_snapshot_context_consistent(self):
++        self.store.replace_snapshot({'value':1},source_run_id='run1')
++        data,meta=self.store.snapshot_context()
++        self.assertEqual((data['value'],meta['source_run_id']),(1,'run1'))
++
++if __name__=='__main__':
++    result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(NetworkTests))
++    failures=len(result.errors)+len(result.failures)
++    print(f'نتیجه: {result.testsRun-failures} موفق | {failures} ناموفق')
++    sys.exit(bool(failures))
+--- original/tools/windows/install_gsi_personal_protocol.py
++++ updated/tools/windows/install_gsi_personal_protocol.py
+@@ -19,6 +19,7 @@
+ import subprocess
+ import sys
+ from pathlib import Path
++sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ 
+ def _local_dir() -> Path:
+@@ -35,10 +36,10 @@
+     try:
+         subprocess.run(
+             ["icacls", str(path), "/inheritance:r", "/grant:r", f"{user}:(R,W)"],
+-            check=False, capture_output=True, text=True,
++            check=True, capture_output=True, text=True,
+         )
+-    except Exception:
+-        pass
++    except Exception as ex:
++        raise RuntimeError("محدودکردن دسترسی فایل محلی ناموفق بود؛ نصب متوقف شد.") from ex
+ 
+ 
+ def _read_key_from_args(ns: argparse.Namespace) -> str:
+@@ -47,7 +48,8 @@
+         p = Path(ns.user_key_file).expanduser()
+         if not p.is_file():
+             raise SystemExit(f"فایل User Key پیدا نشد: {p}")
+-        return p.read_text(encoding="utf-8").strip()
++        from gsi.personalization.store import _read_key_text
++        return _read_key_text(p)
+     # Backward compatibility only. Kept so older deployment notes do not break,
+     # but the help text explicitly discourages it because process lists/shell
+     # history may expose command-line secrets.
+@@ -57,7 +59,7 @@
+ def _write_launcher(local: Path, package_root: Path) -> Path:
+     """Write a local helper that imports GSI from the exact deployed folder."""
+     launcher = local / "gsi_personal_launcher.py"
+-    source = f'''# Auto-generated by GSI V27.1 installer.\nimport sys\nfrom pathlib import Path\nROOT = Path(r"{str(package_root)}")\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\nfrom gsi.personalization.launcher import render_and_open\nrender_and_open()\n'''
++    source = f'''# Auto-generated by GSI V27.1 installer.\nimport sys\nfrom pathlib import Path\nROOT = Path({str(package_root)!r})\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\nfrom gsi.personalization.launcher import render_and_open\nrender_and_open()\n'''
+     launcher.write_text(source, encoding="utf-8")
+     _restrict_file_windows(launcher)
+     return launcher
+@@ -93,7 +95,14 @@
+     if not root:
+         raise SystemExit("مسیر Shared Folder خالی است.")
+ 
++    from gsi.personalization.store import _decode_master_key, _path_is_under
++    key_text = _read_key_from_args(ns)
++    if not key_text:
++        raise SystemExit("برای نصب یا به‌روزرسانی، فایل کلید همین کاربر لازم است.")
++    _decode_master_key(key_text)
+     local = _local_dir()
++    if _path_is_under(local, Path(root)) or (ns.user_key_file and _path_is_under(Path(ns.user_key_file), Path(root))):
++        raise SystemExit("کلید کاربر باید خارج از پوشه اشتراکی باشد.")
+     local.mkdir(parents=True, exist_ok=True)
+ 
+     identity = local / "identity.json"
+@@ -120,7 +129,6 @@
+     )
+     _restrict_file_windows(config)
+ 
+-    key_text = _read_key_from_args(ns)
+     if key_text:
+         key_path.write_text(key_text, encoding="utf-8")
+         _restrict_file_windows(key_path)

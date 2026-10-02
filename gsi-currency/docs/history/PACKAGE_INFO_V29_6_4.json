@@ -1,0 +1,8 @@
+{
+  "version": "29.6.4",
+  "name": "MATERIAL_HTML_RUNTIME_VISIBLE",
+  "runtime_badge": true,
+  "html_build_badge": true,
+  "material_tab_injection": true,
+  "notes": "MATERIAL_RUNTIME_FIX_V29_6_4_FA.md"
+}

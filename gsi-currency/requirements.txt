@@ -1,0 +1,28 @@
+# GSI — وابستگی‌های اجرا
+# پایتون ۳٫۱۱ یا بالاتر؛ SQLite باید serialize/deserialize را پشتیبانی کند
+# سقف نسخه‌ها = آخرین major تست‌شده. نصب آفلاین تکرارپذیر: requirements-validated.txt
+
+# ── هسته خط لوله ──
+pandas>=2.0,<3        # pandas 3 تغییر پیش‌فرض string dtype و Copy-on-Write دارد؛ تست نشده
+numpy>=1.24,<3
+openpyxl>=3.1,<4
+PyYAML>=6.0,<7       # کتابخانه قوانین gsi/rules/*.yaml بدون این بالا نمی‌آید
+cryptography>=42.0,<47 # AES-256-GCM برای پروفایل/اسنپ‌شات رمزگذاری‌شده کاربران
+pyarrow>=14,<26       # فریم‌های انبار داده به Parquet (قبلاً فقط وابستگی غیرمستقیم Streamlit بود)
+
+# ── داشبورد و Studio ──
+streamlit>=1.49,<2     # .streamlit/config.toml و selectorهای CSS روی 1.x تست شده‌اند
+plotly>=5.20,<8
+streamlit-sortables==0.3.1
+
+# ── بسته ایمیل مدیریتی (python -m gsi email) ──
+matplotlib>=3.7,<4    # نمودارهای PNG ایمیل؛ نبودش یعنی ModuleNotFoundError
+
+# ── اختیاری ──
+# jdatetime         # مبدل شمسی داخلی هست؛ این فقط جایگزین است
+
+# اختیاری: ارسال مستقیم از Classic Outlook روی Windows
+# pywin32>=306
+# اختیاری برای ایندکس مستقیم اسناد در GSI Knowledge Desk (بدون این‌ها فقط همان فایل quarantine می‌شود)
+# pypdf>=5.0
+# python-docx>=1.1

@@ -1,0 +1,7 @@
+﻿date,base,quote,rate,purpose,source,approved,max_age_days,regime
+2026-09-01,EUR,IRR,100000,accounting,SYNTHETIC RATE ONLY,true,0,
+2026-09-01,USD,IRR,90000,customs,SYNTHETIC RATE ONLY,true,0,
+2026-09-01,EUR,IRR,100000,settlement,SYNTHETIC RATE ONLY,true,0,
+2026-09-22,EUR,IRR,100000,accounting,SYNTHETIC RATE ONLY,true,0,
+2026-09-22,USD,IRR,90000,customs,SYNTHETIC RATE ONLY,true,0,
+2026-09-22,EUR,IRR,100000,settlement,SYNTHETIC RATE ONLY,true,0,
