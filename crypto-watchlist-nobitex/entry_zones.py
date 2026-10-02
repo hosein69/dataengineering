@@ -17,9 +17,10 @@ Usage: python entry_zones.py AAVE
 import os
 import random
 import sys
+import time
 
 from deep_analysis import barrier_test, candles, orderbook, supertrend
-from watchlist import binance_price, fmt, indicators, nobitex_stats
+from watchlist import binance_price, fmt, freshness_line, indicators, live_quote, nobitex_stats
 
 WEIGHTS = {
     "POC": 3.0, "VAL": 2.0, "VAH": 1.5, "HVN": 1.5,
@@ -163,7 +164,13 @@ def fib_pullback_backtest(rows):
 def analyse(sym, stats):
     d, h4, h1 = candles(sym, "D", 700), candles(sym, "240", 400), candles(sym, "60", 720)
     live = stats.get(f"{sym.lower()}-usdt", {})
-    price = float(live["latest"]) if live.get("latest") else h1[-1]["close"]
+    try:
+        quote = live_quote(sym)
+    except Exception as error:
+        print(f"[warn] live quote {sym}: {error}", file=sys.stderr)
+        quote = {"price": None, "last": None, "bid": None, "ask": None, "bookAge": None, "fetched": time.time()}
+    price = quote["price"] or (float(live["latest"]) if live.get("latest") else h1[-1]["close"])
+    fresh = freshness_line(quote, (("1h", h1, 2 * 3600), ("1D", d, 2 * 86400)))
     for cs in (d, h4, h1):
         cs[-1]["close"] = price
         cs[-1]["high"], cs[-1]["low"] = max(cs[-1]["high"], price), min(cs[-1]["low"], price)
@@ -269,7 +276,7 @@ def analyse(sym, stats):
     bt_fib = fib_pullback_backtest(rd)
     bt_pull = barrier_test(rd, "PULLBACK_TO_KIJUN")
     bt_mom = barrier_test(rd, "MOMENTUM")
-    return {"weak": weak, "sym": sym, "price": price, "live": live, "atr_d": atr_d, "atr_4": atr_4, "vp": vp,
+    return {"fresh": fresh, "weak": weak, "sym": sym, "price": price, "live": live, "atr_d": atr_d, "atr_4": atr_4, "vp": vp,
             "imps": imps, "avwap": (avwap_lo, avwap_hi), "zones": zones, "ladder": ladder,
             "plan": plan, "trigger": trig, "ob": ob, "bt": {"FIB_0.5_PULLBACK (limit)": bt_fib,
             "PULLBACK_TO_KIJUN (close)": bt_pull, "MOMENTUM / chase (close)": bt_mom},
@@ -278,7 +285,7 @@ def analyse(sym, stats):
 
 def render(x):
     p, f = x["price"], (lambda v: fmt(v, x["price"]))
-    L = [f"## {x['sym']}/USDT entry zones — price {f(p)}", ""]
+    L = [f"## {x['sym']}/USDT entry zones — price {f(p)}", "", x["fresh"] + "  "]
     if x["binance"]:
         L.append(f"Binance {f(x['binance'])} (Nobitex premium {(p / x['binance'] - 1) * 100:+.2f}%)  ")
     L.append(f"ATR 1D {f(x['atr_d'])} ({x['atr_d'] / p * 100:.1f}%), ATR 4H {f(x['atr_4'])} ({x['atr_4'] / p * 100:.1f}%)")

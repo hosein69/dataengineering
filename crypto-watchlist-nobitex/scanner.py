@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import entry_zones
 from deep_analysis import adx, candles, setups, supertrend
-from watchlist import NOBITEX, fmt, get_json, indicators, nobitex_stats
+from watchlist import NOBITEX, fmt, get_json, indicators, live_quote, nobitex_stats
 
 STABLES = {"USDC", "DAI", "TUSD", "BUSD", "FDUSD", "USDE", "USDD", "USDP", "PYUSD", "USDS", "EURT", "EURC"}
 TREND_SETUPS = {"PULLBACK_TO_KIJUN", "BREAKOUT_20D", "MOMENTUM", "UPTREND_CORRECTION"}
@@ -43,7 +43,8 @@ def universe():
         if not bids or not asks or bids[0][0] >= asks[0][0]:
             continue
         mid = (bids[0][0] + asks[0][0]) / 2
-        out[base] = {
+        q = live_quote(base, book)
+        out[base] = {"live": q["price"], "bookAge": q["bookAge"],
             "spread": (asks[0][0] - bids[0][0]) / mid * 100,
             "bid2": sum(p * q for p, q in bids if p >= mid * 0.98),
             "ask2": sum(p * q for p, q in asks if p <= mid * 1.02),
@@ -78,10 +79,13 @@ def trend_backtest(rows, stop_atr=1.5, target_atr=3.0, horizon=20):
     return rs
 
 
-def evaluate(base):
+def evaluate(base, live=None):
     d = candles(base, "D", 700)
     if len(d) < 120:
         return None
+    if live:  # today's candle closes at the live order-book price, not a cached close
+        d[-1]["close"] = live
+        d[-1]["high"], d[-1]["low"] = max(d[-1]["high"], live), min(d[-1]["low"], live)
     rows = indicators(d)
     r = rows[-1]
     spans = [x for x in (r.get("spanA"), r.get("spanB")) if x is not None]
@@ -114,7 +118,7 @@ def main():
 
     def safe(b):
         try:
-            return evaluate(b)
+            return evaluate(b, liquid[b]["live"])
         except Exception as error:
             print(f"[warn] {b}: {error}", file=sys.stderr)
             return None
@@ -141,12 +145,16 @@ def main():
     ranked = sorted(results, key=lambda x: (x["pass"], x["gates"], x["score"]), reverse=True)
     pick = ranked[:top_n]
 
-    L = ["# High-probability watchlist (live Nobitex scan)", "",
+    from datetime import datetime, timezone
+    ages = [m["bookAge"] for m in liquid.values() if m["bookAge"] is not None]
+    L = [f"# High-probability watchlist (live Nobitex scan) — {datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S} UTC", "",
+         f"Prices = live Nobitex order book (last trade within the spread, else mid). "
+         f"Median order-book age: {sorted(ages)[len(ages) // 2]:.0f}s.  " if ages else "Prices = live Nobitex order book.  ",
          f"Universe: {len(uni)} USDT markets → {len(liquid)} liquid (spread ≤ {MAX_SPREAD}%, "
          f"≥ {MIN_DEPTH:,.0f} USDT each side within ±2%) → {sum(x['pass'] for x in results)} pass every trend gate.  ",
          f"Market-wide prior for trend-long setups: win rate {p0:.2f}, expectancy {e0:+.2f}R "
          f"({len(all_r)} trades). Coin stats are shrunk toward it with {k} pseudo-trades.", "",
-         "| # | Coin | Price | Gates | Trades | Wins | P(win) shrunk (90% CI) | Exp. (R) | ADX | RSI | Kijun dist (ATR) | ATR % | Spread % | Depth ±2% bid/ask | Active setups |",
+         "| # | Coin | Live price | Gates | Trades | Wins | P(win) shrunk (90% CI) | Exp. (R) | ADX | RSI | Kijun dist (ATR) | ATR % | Spread % | Depth ±2% bid/ask | Active setups |",
          "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for i, x in enumerate(ranked[:15], 1):
         L.append(f"| {i} | **{x['base']}** | {fmt(x['price'])} | {x['gates']}/5 | {x['n']} | {x['wins']} | "

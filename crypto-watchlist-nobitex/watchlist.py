@@ -85,6 +85,41 @@ def nobitex_stats(symbols):
     return stats
 
 
+def live_quote(symbol, book=None):
+    """Live price from the Nobitex order book: last trade, best bid/ask, book age.
+    Pass an already-fetched book (e.g. from /v3/orderbook/all) to skip the request."""
+    if book is None:
+        book = get_json(f"{NOBITEX}/v3/orderbook/{symbol}USDT")
+    bids = [float(p) for p, _ in book.get("bids", [])]
+    asks = [float(p) for p, _ in book.get("asks", [])]
+    bid, ask = (max(bids) if bids else None), (min(asks) if asks else None)
+    last = float(book.get("lastTradePrice") or 0) or None
+    mid = (bid + ask) / 2 if bid and ask else None
+    upd = book.get("lastUpdate")
+    age = time.time() - float(upd) / 1000 if upd else None
+    price = last if last and bid and ask and bid * 0.99 <= last <= ask * 1.01 else (mid or last)
+    return {"price": price, "last": last, "bid": bid, "ask": ask, "bookAge": age, "fetched": time.time()}
+
+
+def freshness_line(q, candles_by_tf, stale_after=300):
+    """One-line provenance for a coin: where the price came from and how old each input is."""
+    from datetime import datetime, timezone
+    ts = lambda t: datetime.fromtimestamp(t, timezone.utc).strftime("%m-%d %H:%M")
+    parts = [f"fetched {ts(q['fetched'])} UTC", f"last trade {q['last']}", f"bid/ask {q['bid']}/{q['ask']}"]
+    stale = []
+    if q["bookAge"] is not None:
+        parts.append(f"book age {q['bookAge']:.0f}s")
+        if q["bookAge"] > stale_after:
+            stale.append("order book")
+    for tf, cs, limit in candles_by_tf:
+        t = cs[-1]["t"]
+        parts.append(f"last {tf} candle {ts(t)}")
+        if q["fetched"] - t > limit:
+            stale.append(f"{tf} candles")
+    flag = f" ⚠️ STALE: {', '.join(stale)}" if stale else " ✅ fresh"
+    return "Data: " + " · ".join(parts) + flag
+
+
 def binance_price(symbol):
     for name, template in BINANCE_ENDPOINTS:
         try:
