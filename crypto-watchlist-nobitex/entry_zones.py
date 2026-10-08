@@ -134,6 +134,9 @@ def trigger_1h(h1, zone_lo, zone_hi):
         signals.append("1h bullish RSI divergence")
     if last["close"] < zone_lo:
         return "ZONE LOST", "1h close below zone: wait for the next zone"
+    if not signals and last["close"] > zone_hi:
+        # touched earlier but price has already moved away without a trigger
+        return "WAITING", f"price {(last['close'] / zone_hi - 1) * 100:+.1f}% above zone top"
     return ("TRIGGERED" if signals else "IN ZONE — no trigger yet"), ", ".join(signals) or "watch for reclaim/engulfing/divergence"
 
 
