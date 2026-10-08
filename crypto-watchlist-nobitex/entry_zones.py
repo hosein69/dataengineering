@@ -32,6 +32,25 @@ WEIGHTS = {
 }
 
 
+def mirror(cs, m):
+    """Reflect candles around m (p' = 2m - p). Every indicator here is linear in
+    price, so a long analysis of the mirrored series is an exact short analysis
+    (RSI becomes 100 - RSI; ATR, R multiples and volume are unchanged)."""
+    return [{"t": c["t"], "open": 2 * m - c["open"], "high": 2 * m - c["low"], "low": 2 * m - c["high"],
+             "close": 2 * m - c["close"], "volume": c["volume"]} for c in cs]
+
+
+SHORT_NAMES = {"BidWall": "AskWall", "Pivot_low_4H": "Pivot_high_4H", "AVWAP_low": "AVWAP_from_high",
+               "AVWAP_high": "AVWAP_from_low", "VAL": "VAH", "VAH": "VAL"}
+
+
+def short_text(text):
+    for a, b in (("above", "\0"), ("below", "above"), ("\0", "below"), ("top", "\1"), ("bottom", "top"),
+                 ("\1", "bottom"), ("bullish", "bearish"), ("reclaim", "rejection")):
+        text = text.replace(a, b)
+    return text
+
+
 def volume_profile(cs, bins=80):
     lo, hi = min(c["low"] for c in cs), max(c["high"] for c in cs)
     step = (hi - lo) / bins or 1e-9
@@ -161,7 +180,7 @@ def fib_pullback_backtest(rows):
             "expR": sum(rs) / n}
 
 
-def analyse(sym, stats):
+def analyse(sym, stats, side="long"):
     d, h4, h1 = candles(sym, "D", 700), candles(sym, "240", 400), candles(sym, "60", 720)
     live = stats.get(f"{sym.lower()}-usdt", {})
     try:
@@ -174,6 +193,11 @@ def analyse(sym, stats):
     for cs in (d, h4, h1):
         cs[-1]["close"] = price
         cs[-1]["high"], cs[-1]["low"] = max(cs[-1]["high"], price), min(cs[-1]["low"], price)
+    real_price, m = price, None
+    if side == "short":
+        m = max(c["high"] for cs in (d, h4, h1) for c in cs)
+        d, h4, h1 = mirror(d, m), mirror(h4, m), mirror(h1, m)
+        price = 2 * m - price
     rd, r4 = indicators(d), indicators(h4)
     atr_d, atr_4 = rd[-1]["atr"], r4[-1]["atr"]
     levels = []
@@ -224,9 +248,10 @@ def analyse(sym, stats):
             add("Flip_4H", v, WEIGHTS["Flip_4H"] * (1 if i > len(h4) - 120 else 0.5))
     ob = None
     try:
-        ob = orderbook(sym, price)
-        if ob and ob["bidWall"]:
-            add("BidWall", ob["bidWall"][0])
+        ob = orderbook(sym, real_price)
+        wall = ob and (ob["bidWall"] if side == "long" else ob["askWall"])
+        if wall:
+            add("BidWall", wall[0] if side == "long" else 2 * m - wall[0])
     except Exception as error:
         print(f"[warn] orderbook {sym}: {error}", file=sys.stderr)
 
@@ -276,46 +301,81 @@ def analyse(sym, stats):
     bt_fib = fib_pullback_backtest(rd)
     bt_pull = barrier_test(rd, "PULLBACK_TO_KIJUN")
     bt_mom = barrier_test(rd, "MOMENTUM")
-    return {"fresh": fresh, "weak": weak, "sym": sym, "price": price, "live": live, "atr_d": atr_d, "atr_4": atr_4, "vp": vp,
-            "imps": imps, "avwap": (avwap_lo, avwap_hi), "zones": zones, "ladder": ladder,
-            "plan": plan, "trigger": trig, "ob": ob, "bt": {"FIB_0.5_PULLBACK (limit)": bt_fib,
-            "PULLBACK_TO_KIJUN (close)": bt_pull, "MOMENTUM / chase (close)": bt_mom},
-            "binance": binance_price(sym)[1], "h1_bars": len(h1)}
+    out = {"side": side, "fresh": fresh, "weak": weak, "sym": sym, "price": price, "live": live, "atr_d": atr_d,
+           "atr_4": atr_4, "vp": vp, "imps": {k: (v[0], v[1]) for k, v in imps.items()},
+           "avwap": (avwap_lo, avwap_hi), "zones": zones, "ladder": ladder,
+           "plan": plan, "trigger": trig, "ob": ob, "bt": {"FIB_0.5_PULLBACK (limit)": bt_fib,
+           "PULLBACK_TO_KIJUN (close)": bt_pull, "MOMENTUM / chase (close)": bt_mom},
+           "binance": binance_price(sym)[1], "h1_bars": len(h1)}
+    return out if side == "long" else unmirror(out, m, real_price)
+
+
+def unmirror(x, m, real_price):
+    """Map a mirrored (short) analysis back to real prices."""
+    back = lambda v: None if v is None else 2 * m - v
+    x["price"] = real_price
+    vp = x["vp"]
+    x["vp"] = {"POC": back(vp["POC"]), "VAH": back(vp["VAL"]), "VAL": back(vp["VAH"]),
+               "HVN": sorted(back(v) for v in vp["HVN"]), "step": vp["step"]}
+    # impulse stored as (start, end): long = (swing low, swing high), short = (swing high, swing low)
+    x["imps"] = {k: (back(a), back(b)) for k, (a, b) in x["imps"].items()}
+    x["avwap"] = (back(x["avwap"][0]), back(x["avwap"][1]))
+    for z in x["zones"]:
+        z["center"] = back(z["center"])
+        z["lo"], z["hi"] = back(z["hi"]), back(z["lo"])
+        z["members"] = [(SHORT_NAMES.get(n, n), back(v), w) for n, v, w in z["members"]]
+    pl = x["plan"]
+    if pl:
+        pl["avg"], pl["stop"] = back(pl["avg"]), back(pl["stop"])
+        # extensions below a swing low can run past zero on big impulses: keep only sane targets
+        pl["targets"] = [(n.replace("swing high", "swing low"), back(v)) for n, v in pl["targets"]
+                         if back(v) > 0.05 * real_price]
+        pl["risk"] = (pl["stop"] - pl["avg"]) / pl["avg"]
+        pl["size"] = 0.01 / pl["risk"]
+        pl["lev"] = max(1, min(5, int(1 / (2 * pl["risk"] + 0.01))))
+    x["trigger"] = (short_text(x["trigger"][0]), short_text(x["trigger"][1]))
+    if x["trigger"][0] == "WAITING" and x["ladder"]:
+        x["trigger"] = ("WAITING", f"price {(x['ladder'][0]['lo'] / real_price - 1) * 100:.1f}% below zone bottom")
+    return x
 
 
 def render(x):
     p, f = x["price"], (lambda v: fmt(v, x["price"]))
-    L = [f"## {x['sym']}/USDT entry zones — price {f(p)}", "", x["fresh"] + "  "]
+    short = x.get("side") == "short"
+    label = "SHORT entry zones (resistance above price)" if short else "entry zones"
+    L = [f"## {x['sym']}/USDT {label} — price {f(p)}", "", x["fresh"] + "  "]
     if x["binance"]:
         L.append(f"Binance {f(x['binance'])} (Nobitex premium {(p / x['binance'] - 1) * 100:+.2f}%)  ")
     L.append(f"ATR 1D {f(x['atr_d'])} ({x['atr_d'] / p * 100:.1f}%), ATR 4H {f(x['atr_4'])} ({x['atr_4'] / p * 100:.1f}%)")
     vp = x["vp"]
     L += ["", f"- Volume profile ({x['h1_bars']} × 1h): POC {f(vp['POC'])}, value area {f(vp['VAL'])}–{f(vp['VAH'])}, "
           f"HVNs {', '.join(f(v) for v in vp['HVN'][:6]) or '–'}"]
-    for k, (lo, hi, *_rest) in x["imps"].items():
-        L.append(f"- Impulse {k}: {f(lo)} → {f(hi)} | 0.382 {f(hi - .382 * (hi - lo))} · 0.5 {f(hi - .5 * (hi - lo))} · "
-                 f"0.618 {f(hi - .618 * (hi - lo))} · 0.786 {f(hi - .786 * (hi - lo))}")
-    L.append(f"- Anchored VWAP (only when the anchor is inside the 1h history): from swing low {f(x['avwap'][0])}, "
-             f"from swing high {f(x['avwap'][1])}")
-    L += ["", "**Confluence zones below price** (score = weighted count of agreeing methods)", "",
+    for k, (a, b) in x["imps"].items():
+        L.append(f"- Impulse {k}: {f(a)} → {f(b)} | 0.382 {f(b - .382 * (b - a))} · 0.5 {f(b - .5 * (b - a))} · "
+                 f"0.618 {f(b - .618 * (b - a))} · 0.786 {f(b - .786 * (b - a))}")
+    first, second = ("swing high", "swing low") if short else ("swing low", "swing high")
+    L.append(f"- Anchored VWAP (only when the anchor is inside the 1h history): from {first} {f(x['avwap'][0])}, "
+             f"from {second} {f(x['avwap'][1])}")
+    L += ["", f"**Confluence zones {'above' if short else 'below'} price** (score = weighted count of agreeing methods)", "",
           "| Zone | Center | Score | Methods |", "|---|---|---|---|"]
-    for z in sorted(x["zones"], key=lambda z: -z["center"])[:10]:
+    for z in sorted(x["zones"], key=lambda z: abs(z["center"] - p))[:10]:
         mark = " ⭐" if z in x["ladder"] else ""
         L.append(f"| {f(z['lo'])}–{f(z['hi'])}{mark} | {f(z['center'])} | {z['score']:.1f} | "
                  f"{', '.join(sorted({m[0] for m in z['members']}))} |")
     pl = x["plan"]
     if pl:
-        L += ["", "**Limit-order ladder**" + (" (weak confluence: no zone has ≥2 strong agreeing methods)" if x["weak"] else ""), ""]
+        L += ["", ("**Sell-limit ladder (short)**" if short else "**Limit-order ladder**")
+              + (" (weak confluence: no zone has ≥2 strong agreeing methods)" if x["weak"] else ""), ""]
         for i, (z, a) in enumerate(zip(x["ladder"], pl["alloc"]), 1):
             L.append(f"{i}. {a * 100:.0f}% at {f(z['center'])} (zone {f(z['lo'])}–{f(z['hi'])}, "
                      f"{(z['center'] / p - 1) * 100:+.1f}% from price, score {z['score']:.1f})")
         L += [f"- Average entry if all fill: {f(pl['avg'])}",
-              f"- Stop: {f(pl['stop'])} ({pl['risk'] * 100:.1f}% below average entry)",
+              f"- Stop: {f(pl['stop'])} ({pl['risk'] * 100:.1f}% {'above' if short else 'below'} average entry)",
               "- Targets: " + ", ".join(f"{n} {f(v)} ({(v - pl['avg']) / (pl['avg'] - pl['stop']):.1f}R)" for n, v in pl["targets"]),
-              f"- R:R if only order 1 fills (to swing high): {pl['first_fill_rr']:.1f}R",
+              f"- R:R if only order 1 fills (to {second}): {pl['first_fill_rr']:.1f}R",
               f"- Size for 1% account risk: {pl['size'] * 100:.1f}% of account; leverage cap {pl['lev']}×"]
     L += ["", f"**1h trigger on zone 1:** {x['trigger'][0]} — {x['trigger'][1]}", "",
-          "**Entry-method backtest on this coin's daily history** (2R barrier, 20 days)", "",
+          f"**Entry-method backtest on this coin's daily history{' — SHORT trades' if short else ''}** (2R barrier, 20 days)", "",
           "| Method | Trades | Wins | Win-rate posterior (90% CI) | Expectancy (R) |", "|---|---|---|---|---|"]
     for n, b in x["bt"].items():
         L.append(f"| {n} | {b['n']} | {b.get('wins', '–')} | " +

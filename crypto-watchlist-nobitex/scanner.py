@@ -79,13 +79,22 @@ def trend_backtest(rows, stop_atr=1.5, target_atr=3.0, horizon=20):
     return rs
 
 
-def evaluate(base, live=None):
-    d = candles(base, "D", 700)
+SHORT_SETUPS = {"PULLBACK_TO_KIJUN": "RALLY_TO_KIJUN", "BREAKOUT_20D": "BREAKDOWN_20D",
+                "MOMENTUM": "MOMENTUM_DOWN", "UPTREND_CORRECTION": "DOWNTREND_BOUNCE"}
+
+
+def evaluate(base, live=None, side="long", d=None):
+    d = d or candles(base, "D", 700)
     if len(d) < 120:
         return None
+    d = [dict(c) for c in d]
     if live:  # today's candle closes at the live order-book price, not a cached close
         d[-1]["close"] = live
         d[-1]["high"], d[-1]["low"] = max(d[-1]["high"], live), min(d[-1]["low"], live)
+    real = d[-1]["close"]
+    if side == "short":  # mirrored series: the long gates and backtest become exact short ones
+        m = max(c["high"] for c in d)
+        d = entry_zones.mirror(d, m)
     rows = indicators(d)
     r = rows[-1]
     spans = [x for x in (r.get("spanA"), r.get("spanB")) if x is not None]
@@ -102,30 +111,18 @@ def evaluate(base, live=None):
         "not_extended": ext < 3.0 and (r.get("rsi") or 50) < 75,
     }
     rs = trend_backtest(rows)
-    vol_usdt = sum(c["volume"] * c["close"] for c in d[-8:-1]) / 7
-    return {"base": base, "price": r["close"], "rsi": r.get("rsi"), "adx": ad[-1], "ext": ext,
-            "atrPct": r["atr"] / r["close"] * 100, "gate": gate, "pass": all(gate.values()),
+    vol_usdt = sum(c["volume"] for c in d[-8:-1]) / 7 * real
+    active = sorted(setups(rows, len(rows) - 1) & TREND_SETUPS)
+    short = side == "short"
+    return {"base": base, "side": side, "price": real,
+            "rsi": (100 - r["rsi"] if short else r["rsi"]) if r.get("rsi") is not None else None,
+            "adx": ad[-1], "ext": -ext if short else ext,
+            "atrPct": r["atr"] / real * 100, "gate": gate, "pass": all(gate.values()),
             "gates": sum(gate.values()), "rs": rs, "days": len(d), "volUsdt": vol_usdt,
-            "active": sorted(setups(rows, len(rows) - 1) & TREND_SETUPS)}
+            "active": [SHORT_SETUPS[a] for a in active] if short else active}
 
 
-def main():
-    top_n = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("SCAN_TOP", "5"))
-    uni = universe()
-    liquid = {b: m for b, m in uni.items()
-              if m["spread"] <= MAX_SPREAD and min(m["bid2"], m["ask2"]) >= MIN_DEPTH}
-    print(f"[scan] {len(uni)} USDT markets, {len(liquid)} pass liquidity", file=sys.stderr)
-
-    def safe(b):
-        try:
-            return evaluate(b, liquid[b]["live"])
-        except Exception as error:
-            print(f"[warn] {b}: {error}", file=sys.stderr)
-            return None
-
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        results = [x for x in pool.map(safe, sorted(liquid)) if x]
-
+def rank_and_render(side, results, top_n, liquid, stats):
     all_r = [v for x in results for v in x["rs"]]
     p0 = sum(v > 0 for v in all_r) / len(all_r) if all_r else 0.5
     e0 = sum(all_r) / len(all_r) if all_r else 0.0
@@ -141,22 +138,18 @@ def main():
         x["expR"] = (k * e0 + sum(x["rs"])) / (k + n)
         x["score"] = x["pWin"] * (1 + max(-0.5, min(1.0, x["expR"])))
         x.update(liquid[x["base"]])
-
     ranked = sorted(results, key=lambda x: (x["pass"], x["gates"], x["score"]), reverse=True)
     pick = ranked[:top_n]
-
-    from datetime import datetime, timezone
-    ages = [m["bookAge"] for m in liquid.values() if m["bookAge"] is not None]
-    L = [f"# High-probability watchlist (live Nobitex scan) — {datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S} UTC", "",
-         f"Prices = live Nobitex order book (last trade within the spread, else mid). "
-         f"Median order-book age: {sorted(ages)[len(ages) // 2]:.0f}s.  " if ages else "Prices = live Nobitex order book.  ",
-         f"Universe: {len(uni)} USDT markets → {len(liquid)} liquid (spread ≤ {MAX_SPREAD}%, "
-         f"≥ {MIN_DEPTH:,.0f} USDT each side within ±2%) → {sum(x['pass'] for x in results)} pass every trend gate.  ",
-         f"Market-wide prior for trend-long setups: win rate {p0:.2f}, expectancy {e0:+.2f}R "
+    title = "LONG" if side == "long" else "SHORT"
+    gates = ("above Kumo, Tenkan ≥ Kijun, ADX>20 with +DI>−DI, Supertrend up, not over-extended" if side == "long"
+             else "below Kumo, Tenkan ≤ Kijun, ADX>20 with −DI>+DI, Supertrend down, not over-sold")
+    L = [f"## {title} candidates", "",
+         f"Gates: {gates}. {sum(x['pass'] for x in results)} of {len(results)} pass all five.  ",
+         f"Market-wide prior for trend-{side} setups: win rate {p0:.2f}, expectancy {e0:+.2f}R "
          f"({len(all_r)} trades). Coin stats are shrunk toward it with {k} pseudo-trades.", "",
          "| # | Coin | Live price | Gates | Trades | Wins | P(win) shrunk (90% CI) | Exp. (R) | ADX | RSI | Kijun dist (ATR) | ATR % | Spread % | Depth ±2% bid/ask | Active setups |",
          "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
-    for i, x in enumerate(ranked[:15], 1):
+    for i, x in enumerate(ranked[:10], 1):
         L.append(f"| {i} | **{x['base']}** | {fmt(x['price'])} | {x['gates']}/5 | {x['n']} | {x['wins']} | "
                  f"{x['pWin']:.2f} ({x['pLo']:.2f}–{x['pHi']:.2f}) | {x['expR']:+.2f} | {(x['adx'] or 0):.0f} | "
                  f"{(x['rsi'] or 0):.0f} | {x['ext']:+.1f} | {x['atrPct']:.1f} | {x['spread']:.2f} | "
@@ -165,12 +158,51 @@ def main():
     if failed:
         L += ["", "Picked without passing every gate: " + "; ".join(failed)]
     L.append("")
-    stats = nobitex_stats([x["base"] for x in pick])
     for x in pick:
         try:
-            L.append(entry_zones.render(entry_zones.analyse(x["base"], stats)))
+            L.append(entry_zones.render(entry_zones.analyse(x["base"], stats, side)))
         except Exception as error:
-            L.append(f"## {x['base']}\n\nentry-zone analysis failed: {error!r}\n")
+            L.append(f"### {x['base']} {side}\n\nentry-zone analysis failed: {error!r}\n")
+    return L
+
+
+def main():
+    top_n = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("SCAN_TOP", "5"))
+    uni = universe()
+    liquid = {b: m for b, m in uni.items()
+              if m["spread"] <= MAX_SPREAD and min(m["bid2"], m["ask2"]) >= MIN_DEPTH}
+    print(f"[scan] {len(uni)} USDT markets, {len(liquid)} pass liquidity", file=sys.stderr)
+
+    def safe_candles(b):
+        try:
+            return candles(b, "D", 700)
+        except Exception as error:
+            print(f"[warn] {b}: {error}", file=sys.stderr)
+            return None
+
+    def safe(b, side, d):
+        try:
+            return evaluate(b, liquid[b]["live"], side, d)
+        except Exception as error:
+            print(f"[warn] {b} {side}: {error}", file=sys.stderr)
+            return None
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        daily = dict(zip(sorted(liquid), pool.map(lambda b: safe_candles(b), sorted(liquid))))
+    results = [x for x in (safe(b, "long", daily[b]) for b in sorted(liquid) if daily[b]) if x]
+    shorts = [x for x in (safe(b, "short", daily[b]) for b in sorted(liquid) if daily[b]) if x]
+
+    from datetime import datetime, timezone
+    ages = [m["bookAge"] for m in liquid.values() if m["bookAge"] is not None]
+    L = [f"# Live Nobitex scan (long and short) — {datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S} UTC", "",
+         f"Prices = live Nobitex order book (last trade within the spread, else mid). "
+         f"Median order-book age: {sorted(ages)[len(ages) // 2]:.0f}s.  " if ages else "Prices = live Nobitex order book.  ",
+         f"Universe: {len(uni)} USDT markets → {len(liquid)} liquid (spread ≤ {MAX_SPREAD}%, "
+         f"≥ {MIN_DEPTH:,.0f} USDT each side within ±2%).", ""]
+    stats = nobitex_stats(sorted(liquid))
+    short_top = int(os.environ.get("SCAN_TOP_SHORT", "3"))
+    for side, rows, n_pick in (("long", results, top_n), ("short", shorts, short_top)):
+        L += rank_and_render(side, rows, n_pick, liquid, stats)
     report = "\n".join(L)
     print(report)
     os.makedirs("output", exist_ok=True)
